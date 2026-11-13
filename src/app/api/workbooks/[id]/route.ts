@@ -8,6 +8,7 @@ import {
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
+import { getUserAccountByEmail, syncAccountsFromSupabase } from '@/services/storage/server-account-store';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -82,6 +83,27 @@ export async function PUT(req: Request, context: RouteContext) {
       );
     }
 
+    const normEmail = participant?.email ? normalizeEmail(participant.email) : 'tcns@hcmute.edu.vn';
+    const authHeader = req.headers.get('authorization') || '';
+    const bearer = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : null;
+
+    await syncAccountsFromSupabase();
+    const actorAccount = getUserAccountByEmail(normEmail);
+
+    if (actorAccount?.status === 'suspended') {
+      return NextResponse.json(
+        { error: 'Tài khoản đã bị tạm khóa, không có quyền lưu bảng biểu.', code: 'ACCOUNT_SUSPENDED' },
+        { status: 403 }
+      );
+    }
+
+    if (actorAccount?.role === 'viewer') {
+      return NextResponse.json(
+        { error: 'Vai trò Người xem chỉ có quyền tra cứu, không được phép chỉnh sửa dữ liệu.', code: 'FORBIDDEN_VIEWER_WRITE' },
+        { status: 403 }
+      );
+    }
+
     if (existingWb?.data?.C1 && data.C1) {
       const existingC1 = existingWb.data.C1;
       const newC1 = data.C1;
@@ -90,8 +112,9 @@ export async function PUT(req: Request, context: RouteContext) {
         existingC1.some((r, i) => r.id !== newC1[i]?.id || r.maVtvl !== newC1[i]?.maVtvl);
 
       if (isC1Changed) {
-        const isAuth = await getServerAdminAuth();
-        if (!isAuth) {
+        const isAuth = await getServerAdminAuth(normEmail, bearer);
+        const isActiveLeader = actorAccount?.role === 'unit_leader' && actorAccount?.status === 'active';
+        if (!isAuth && !isActiveLeader) {
           return NextResponse.json(
             {
               error: 'Chỉ Quản trị viên hệ thống có quyền sửa đổi cấu trúc danh mục VTVL tại Biểu C1.',
@@ -102,8 +125,6 @@ export async function PUT(req: Request, context: RouteContext) {
         }
       }
     }
-
-    const normEmail = participant?.email ? normalizeEmail(participant.email) : 'tcns@hcmute.edu.vn';
 
     const result = saveServerWorkbook({
       workbookId: id,

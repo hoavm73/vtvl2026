@@ -106,6 +106,13 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'TCNS'): OperatorSe
 }
 
 export function signOutGoogleSession(): void {
+  if (typeof window !== 'undefined') {
+    if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('id_token='))) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
+    fetch('/api/admin/c1-lock', { method: 'DELETE' }).catch(() => {});
+  }
   clearCurrentOperatorSession();
 }
 

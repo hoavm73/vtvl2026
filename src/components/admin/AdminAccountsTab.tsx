@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, RefreshCw, Trash2, ShieldCheck, AlertCircle, CheckCircle2, Users } from 'lucide-react';
+import { Search, RefreshCw, ShieldCheck, AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { AdminAccountCreateForm } from '@/components/admin/AdminAccountCreateForm';
+import { AdminAccountRow } from '@/components/admin/AdminAccountRow';
 import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
 import { getCurrentOperatorSession, saveCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import {
@@ -13,7 +13,6 @@ import {
   UserAccountRecord,
   ROLE_OPTIONS,
   getRoleLabel,
-  getRoleBadgeVariant,
   adminUpdateUserRoleOnServer
 } from '@/services/auth/account-client';
 
@@ -57,6 +56,12 @@ export function AdminAccountsTab() {
 
   useEffect(() => { loadAccounts(); }, [loadAccounts]);
 
+  const roleCounts = useMemo(() => {
+    const counts: Record<UserRole, number> = { admin: 0, unit_leader: 0, editor: 0, viewer: 0 };
+    accounts.forEach((a) => { counts[a.role] = (counts[a.role] || 0) + 1; });
+    return counts;
+  }, [accounts]);
+
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
       if (roleFilter !== 'all' && acc.role !== roleFilter) return false;
@@ -71,13 +76,22 @@ export function AdminAccountsTab() {
     });
   }, [accounts, roleFilter, searchQuery]);
 
-  const handleUpdateAccount = async (target: UserAccountRecord, patch: { role?: UserRole; unitCode?: string }) => {
+  const handleUpdateAccount = async (
+    target: UserAccountRecord,
+    patch: { role?: UserRole; unitCode?: string; title?: string; status?: 'active' | 'suspended' }
+  ) => {
     setUpdatingEmail(target.email);
     setFeedback(null);
     setError(null);
     const cur = getCurrentOperatorSession();
     const res = await adminUpdateUserRoleOnServer(
-      { email: target.email, role: patch.role || target.role, unitCode: patch.unitCode || target.unitCode },
+      {
+        email: target.email,
+        role: patch.role || target.role,
+        unitCode: patch.unitCode || target.unitCode,
+        title: patch.title ?? target.title,
+        status: patch.status ?? target.status
+      },
       cur
     );
     setUpdatingEmail(null);
@@ -95,7 +109,7 @@ export function AdminAccountsTab() {
         role: res.account.role
       });
     }
-    setFeedback(`Đã cập nhật vai trò ${getRoleLabel(res.account.role)} cho ${res.account.email}.`);
+    setFeedback(`Đã cập nhật tài khoản ${res.account.email}: ${getRoleLabel(res.account.role)} · ${res.account.status === 'suspended' ? 'Tạm khóa' : 'Đang hoạt động'}.`);
   };
 
   const handleDeleteAccount = async (email: string) => {
@@ -117,6 +131,27 @@ export function AdminAccountsTab() {
 
   return (
     <div className="space-y-4 min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f4f7fb] border border-[#d8e3ef] text-xs font-bold text-[#004776]">
+          <Users className="w-3.5 h-3.5" />
+          <span>Tổng số: {accounts.length}</span>
+        </span>
+        {ROLE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setRoleFilter((prev) => (prev === opt.value ? 'all' : opt.value))}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+              roleFilter === opt.value
+                ? 'bg-[#004776] text-white border-[#004776]'
+                : 'bg-white text-[#004776] border-[#d8e3ef] hover:bg-[#f4f7fb]'
+            }`}
+          >
+            <span>{opt.label}: {roleCounts[opt.value] || 0}</span>
+          </button>
+        ))}
+      </div>
+
       <AdminAccountCreateForm
         unitOptions={unitOptions}
         onCreated={async (msg) => { setError(null); setFeedback(msg); await loadAccounts(); }}
@@ -179,65 +214,30 @@ export function AdminAccountsTab() {
               <tr className="border-b border-[#cbd5e1] bg-[#f8fafc] text-[#004776]">
                 <th className="p-3 font-bold w-12 text-center border-r border-[#e2e8f0]">STT</th>
                 <th className="p-3 font-bold border-r border-[#e2e8f0]">Tài khoản cán bộ</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[230px]">Đơn vị công tác</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[240px]">
+                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[200px]">Đơn vị công tác</th>
+                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[170px]">Chức danh</th>
+                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[220px]">
                   <span className="inline-flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span>Cập nhật vai trò</span>
                   </span>
                 </th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] whitespace-nowrap">Hoạt động cuối</th>
-                <th className="p-3 font-bold text-center w-20">Xóa</th>
+                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[140px]">Trạng thái</th>
+                <th className="p-3 font-bold text-center w-16">Xóa</th>
               </tr>
             </thead>
             <tbody>
-              {filteredAccounts.map((acc, idx) => {
-                const isUpdating = updatingEmail === acc.email;
-                const isRootAdmin = acc.email === 'tcns@hcmute.edu.vn';
-                return (
-                  <tr key={acc.email} className="border-b border-[#e2e8f0] hover:bg-[#f5f9ff]/60 transition-colors">
-                    <td className="p-2.5 text-center font-medium text-[#476885] border-r border-[#e2e8f0]">{idx + 1}</td>
-                    <td className="p-2.5 border-r border-[#e2e8f0]">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {acc.avatarUrl ? (
-                          <img src={acc.avatarUrl} alt={acc.displayName} className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#cbd5e1]" />
-                        ) : (
-                          <span className="w-8 h-8 rounded-full bg-[#004776] text-white text-[11px] font-bold inline-flex items-center justify-center shrink-0">
-                            {(acc.displayName || acc.email).slice(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-[#004776] truncate">{acc.displayName}</span>
-                            <Badge variant={getRoleBadgeVariant(acc.role)} className="text-[10px] px-1.5 py-0">
-                              {acc.authProvider === 'google' ? 'Google' : 'Phiên'}
-                            </Badge>
-                          </div>
-                          <div className="text-[11px] text-[#476885] truncate">{acc.email} · {acc.title}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-2.5 border-r border-[#e2e8f0]">
-                      <ShadcnSelect value={acc.unitCode} onValueChange={(val) => handleUpdateAccount(acc, { unitCode: val })} options={unitOptions} searchable={true} size="sm" disabled={isUpdating} />
-                    </td>
-                    <td className="p-2.5 border-r border-[#e2e8f0]">
-                      <ShadcnSelect value={acc.role} onValueChange={(val) => handleUpdateAccount(acc, { role: val as UserRole })} options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))} size="sm" disabled={isUpdating || isRootAdmin} />
-                    </td>
-                    <td className="p-2.5 text-[#476885] border-r border-[#e2e8f0] whitespace-nowrap">{acc.lastActiveAt || acc.createdAt}</td>
-                    <td className="p-2.5 text-center">
-                      <button
-                        type="button"
-                        disabled={isRootAdmin || isUpdating}
-                        onClick={() => handleDeleteAccount(acc.email)}
-                        title={isRootAdmin ? 'Không thể xóa tài khoản quản trị gốc' : 'Xóa tài khoản'}
-                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredAccounts.map((acc, idx) => (
+                <AdminAccountRow
+                  key={acc.email}
+                  account={acc}
+                  index={idx}
+                  unitOptions={unitOptions}
+                  isUpdating={updatingEmail === acc.email}
+                  onUpdate={handleUpdateAccount}
+                  onDelete={handleDeleteAccount}
+                />
+              ))}
             </tbody>
           </table>
         </div>

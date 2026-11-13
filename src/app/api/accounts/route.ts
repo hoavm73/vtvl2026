@@ -3,6 +3,7 @@ import {
   syncAccountsFromSupabase,
   getUserAccountByEmail,
   upsertUserAccount,
+  UserAccountRecord,
   UserRole
 } from '@/services/storage/server-account-store';
 import {
@@ -18,6 +19,13 @@ function extractBearer(req: NextRequest): string | null {
   return authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : null;
 }
 
+function sanitizeClientAccount(account: UserAccountRecord, isAdmin: boolean): UserAccountRecord {
+  if (account.role === 'admin' && !isAdmin) {
+    return { ...account, role: 'editor' };
+  }
+  return account;
+}
+
 export async function GET(req: NextRequest) {
   const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
   if (!email) {
@@ -25,10 +33,8 @@ export async function GET(req: NextRequest) {
   }
 
   await syncAccountsFromSupabase();
-  let account = getUserAccountByEmail(email);
-  if (!account) {
-    account = upsertUserAccount({ email });
-  }
+  const existing = getUserAccountByEmail(email);
+  const rawAccount = existing || upsertUserAccount({ email });
 
   const cookieAdmin = await getServerAdminAuth();
   const bearer = extractBearer(req);
@@ -39,6 +45,7 @@ export async function GET(req: NextRequest) {
   }
 
   const isAdmin = cookieAdmin || verifiedGoogleAdmin;
+  const account = sanitizeClientAccount(rawAccount, isAdmin);
   return NextResponse.json({ account, isAdmin });
 }
 
@@ -51,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     await syncAccountsFromSupabase();
-    const account = upsertUserAccount({
+    const rawAccount = upsertUserAccount({
       email,
       displayName: body.displayName,
       unitCode: body.unitCode,
@@ -69,6 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isAdmin = cookieAdmin || verifiedGoogleAdmin;
+    const account = sanitizeClientAccount(rawAccount, isAdmin);
     return NextResponse.json({ account, isAdmin });
   } catch {
     return NextResponse.json({ error: 'Không thể đồng bộ tài khoản người dùng.' }, { status: 400 });
@@ -84,8 +92,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     await syncAccountsFromSupabase();
+    const existing = getUserAccountByEmail(email);
     const bearer = extractBearer(req);
     const isAdmin = await getServerAdminAuth(email, bearer);
+
+    if (existing?.status === 'suspended' && !isAdmin) {
+      return NextResponse.json(
+        { error: 'Tài khoản đang tạm khóa, không thể tự cập nhật hồ sơ.' },
+        { status: 403 }
+      );
+    }
 
     const requestedRole = body.role as UserRole | undefined;
     if (requestedRole && !isAdmin) {
@@ -95,7 +111,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const account = upsertUserAccount(
+    const rawAccount = upsertUserAccount(
       {
         email,
         displayName: body.displayName,
@@ -107,9 +123,9 @@ export async function PATCH(req: NextRequest) {
       isAdmin && Boolean(requestedRole)
     );
 
+    const account = sanitizeClientAccount(rawAccount, isAdmin);
     return NextResponse.json({ account, isAdmin });
   } catch {
     return NextResponse.json({ error: 'Không thể cập nhật thông tin tài khoản.' }, { status: 400 });
   }
 }
-

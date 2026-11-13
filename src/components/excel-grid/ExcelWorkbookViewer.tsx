@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Eye } from 'lucide-react';
 import { useExcelGridState } from './excel-grid-state';
 import { EXCEL_SHEET_METAS } from './excel-sheet-metas';
 import { ExcelSheetTabs } from './ExcelSheetTabs';
@@ -81,12 +82,15 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
 
   const activeMeta = EXCEL_SHEET_METAS[activeSheet];
   const activeRows = data[activeSheet] || [];
+  const isReadOnlyViewer = session?.role === 'viewer';
+  const effectiveC1Unlocked = isC1Unlocked || session?.role === 'unit_leader';
 
   const handleSave = useCallback(() => {
+    if (isReadOnlyViewer) return;
     saveSheetData(activeSheet);
     persistDataForSession(data);
     clearSheetDirty(activeSheet);
-  }, [activeSheet, saveSheetData, persistDataForSession, data]);
+  }, [isReadOnlyViewer, activeSheet, saveSheetData, persistDataForSession, data]);
 
   const handleSaveAndNext = useCallback(() => {
     handleSave();
@@ -137,11 +141,15 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
         orderMode={orderMode}
         canNext={activeSheetIndex < currentSheetOrder.length - 1}
         isExporting={isExporting}
-        isC1Unlocked={isC1Unlocked}
+        isC1Unlocked={effectiveC1Unlocked}
         onSelectSheet={handleSelectSheetSafe}
         onUnitChange={(u) => { gridHandleUnitChange(u); updateSessionUnit(u); setDirtySheets(new Set()); }}
         onSwitchSession={switchSession}
-        onSaveNow={() => { handleSave(); persistDataForSession(data, true); }}
+        onSaveNow={() => {
+          if (isReadOnlyViewer) return;
+          handleSave();
+          persistDataForSession(data, true);
+        }}
         onToggleOrderMode={setOrderMode}
         onOpenGuidance={() => setShowGuidanceModal(true)}
         onOpenQualityModal={() => setShowQualityModal(true)}
@@ -168,11 +176,18 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
         canNext={activeSheetIndex < currentSheetOrder.length - 1}
       />
 
-      {/* 4. BANNER C1 HOẶC LƯỚI BẢNG DỮ LIỆU CHÍNH */}
-      {activeSheet === 'C1' && (
+      {/* 4. BANNER CHẾ ĐỘ CHỈ XEM / BANNER C1 / LƯỚI BẢNG DỮ LIỆU CHÍNH */}
+      {isReadOnlyViewer && (
+        <div className="px-4 py-2.5 border-b border-amber-200 bg-amber-50 flex items-center gap-2 text-xs font-semibold text-amber-900">
+          <Eye className="w-4 h-4 text-amber-700 shrink-0" />
+          <span>Chế độ Người xem / Tra cứu: Tài khoản của bạn chỉ có quyền xem và xuất báo cáo, không thể chỉnh sửa ô dữ liệu.</span>
+        </div>
+      )}
+
+      {activeSheet === 'C1' && !isReadOnlyViewer && (
         <div className="px-4 py-2 border-b border-[var(--border-subtle)] bg-[#f8fafc]">
           <C1AdminStatusBanner
-            isUnlocked={isC1Unlocked}
+            isUnlocked={effectiveC1Unlocked}
             onOpenUnlockModal={() => setShowUnlockModal(true)}
             onLock={lockC1}
           />
@@ -185,17 +200,30 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
         dynamicOptionsMap={dynamicOptionsMap}
         lastSaved={lastSaved}
         lastSavedSheet={lastSavedSheet}
-        isC1Unlocked={isC1Unlocked}
+        isC1Unlocked={effectiveC1Unlocked && !isReadOnlyViewer}
         touchedCells={touchedCells}
         onCellTouch={markCellTouched}
         onCellChange={(rowId, field, val) => {
+          if (isReadOnlyViewer) return;
           markCellTouched(`${rowId}_${field}`);
           markSheetDirty(activeSheet);
           updateCell(activeSheet, rowId, field, val);
         }}
-        onAddRow={() => { markSheetDirty(activeSheet); addRow(activeSheet); }}
-        onSplitRow={(rowId) => { markSheetDirty(activeSheet); splitRow(activeSheet, rowId); }}
-        onDeleteRow={(rowId) => { markSheetDirty(activeSheet); deleteRow(activeSheet, rowId); }}
+        onAddRow={() => {
+          if (isReadOnlyViewer) return;
+          markSheetDirty(activeSheet);
+          addRow(activeSheet);
+        }}
+        onSplitRow={(rowId) => {
+          if (isReadOnlyViewer) return;
+          markSheetDirty(activeSheet);
+          splitRow(activeSheet, rowId);
+        }}
+        onDeleteRow={(rowId) => {
+          if (isReadOnlyViewer) return;
+          markSheetDirty(activeSheet);
+          deleteRow(activeSheet, rowId);
+        }}
         onSaveSheet={handleSave}
         onSaveAndNext={handleSaveAndNext}
         canNext={activeSheetIndex < currentSheetOrder.length - 1}

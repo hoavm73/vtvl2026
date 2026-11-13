@@ -42,17 +42,19 @@ export function useOperatorSession() {
     let isMounted = true;
     const sync = async () => {
       const oauth = consumeGoogleOAuthCallback();
-      let cur = oauth || getCurrentOperatorSession();
-      if (!cur) {
-        cur = saveCurrentOperatorSession('tcns@hcmute.edu.vn', 'TCNS', 'Chuyên viên');
-      }
+      const cur = oauth || getCurrentOperatorSession();
       if (!isMounted) return;
       setSession(cur);
       setIsModalOpen(false);
-      const saved = getSessionByEmail(cur.email);
-      if (saved?.touchedCells) setTouchedCells(new Set(saved.touchedCells));
+      if (cur) {
+        const saved = getSessionByEmail(cur.email);
+        if (saved?.touchedCells) setTouchedCells(new Set(saved.touchedCells));
+      } else {
+        setTouchedCells(new Set());
+      }
+      const targetUnitCode = cur?.unitCode || 'TCNS';
       try {
-        const res = await fetch(`/api/workbooks/wb_${cur.unitCode}_2026`);
+        const res = await fetch(`/api/workbooks/wb_${targetUnitCode}_2026`);
         if (res.ok && isMounted) {
           const json = await res.json();
           if (json.workbook) {
@@ -196,15 +198,18 @@ export function useOperatorSession() {
 
     const runServerSave = async () => {
       const activeWbId = workbookId || `wb_${session.unitCode}_2026`;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
+      if (session.email) headers['x-actor-email'] = session.email;
       try {
         const res = await fetch(`/api/workbooks/${activeWbId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             data, touchedCells: touchedArray, baseRevision: currentRevision,
             commitMessage: `Lưu tự động lúc ${new Date().toLocaleTimeString('vi-VN')}`,
             unitCode: session.unitCode,
-            participant: { email: session.email, displayName: session.email.split('@')[0], roleLabel: session.title, unitCode: session.unitCode }
+            participant: { email: session.email, displayName: session.displayName || session.email.split('@')[0], roleLabel: session.title, unitCode: session.unitCode }
           })
         });
 

@@ -55,9 +55,9 @@ export function validateWorkbookData(
   // 3. Kiểm soát tính toàn vẹn liên thông hệ thống (Cross-sheet System Integrity)
   if (c1Rows.length === 0) {
     issues.push({
-      id: 'sys-empty-c1', ruleId: 'R-SYS-01', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-      cellRef: '6. C1_VTVL!A3', severity: 'fix',
-      title: 'Chưa có danh mục VTVL tại Biểu 6. C1_VTVL', currentValue: '0 VTVL',
+      id: 'sys-empty-c1', ruleId: 'R-SYS-01', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+      cellRef: '3. C1_VTVL!A3', severity: 'fix',
+      title: 'Chưa có danh mục VTVL tại Biểu 3. C1_VTVL', currentValue: '0 VTVL',
       suggestion: 'Đơn vị hoặc Quản trị viên cần nạp danh mục VTVL chuẩn theo Phụ lục I trước.'
     });
   }

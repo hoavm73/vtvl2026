@@ -61,7 +61,36 @@ export function buildHd07CoreSheets(
   ]);
   XLSX.utils.book_append_sheet(wb, wsA2, '2. A2_CongViec');
 
-  // 3. B1_KhoiLuong (19 cột A–S — Bước 3 HD 07, liên kết INDEX/MATCH từ A2 & DM_SAN_PHAM)
+  // 3. C1_VTVL (11 cột A–K — Bước 3: Danh mục VTVL chuẩn)
+  const wsC1 = XLSX.utils.aoa_to_sheet([
+    [`Biểu C1_ Vị trí việc làm (${opts.unitCode})`, '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
+    ['Mã VTVL', 'Tên VTVL', 'Loại nhân lực', 'Quyết định', 'Giờ chuẩn PP2', 'Căn cứ xác định quỹ giờ', 'Trạng thái', 'Giờ riêng được xác nhận', 'Xác nhận giờ riêng', 'Chế độ làm việc', 'Kiểm tra quỹ giờ PP2'],
+    ...positionBreakdown.map((p, idx) => {
+      const r = idx + 3;
+      return [
+        p.vtvlCode,
+        p.frameworkTitle && p.frameworkTitle !== p.vtvlName
+          ? `${p.vtvlName} (Khung Trường: ${p.frameworkTitle} · ${p.careerLevel || 'Bậc 3'})`
+          : `${p.vtvlName} (${p.careerLevel || 'Bậc 3'})`,
+        'Viên chức',
+        `${sourceRule} & Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62)`,
+        fNum(p.standardHoursYear, `IF(A${r}="","",IF(J${r}="Đặc thù",IF(AND(ISNUMBER(H${r}),H${r}>0),H${r},1760),1904))`),
+        p.method === 'PP1'
+          ? 'PP1 – theo cơ cấu và chức danh quản lý'
+          : p.workingRegime === 'Đặc thù'
+            ? 'Thông tư 20/2020/TT-BGDĐT (44 tuần × 40 giờ = 1.760 giờ/năm)'
+            : 'Mức chung 1.904 giờ – quy định về thời giờ làm việc ((261 - 11 - 12) × 8)',
+        'Tiếp tục sử dụng',
+        p.workingRegime === 'Đặc thù' ? p.standardHoursYear : '',
+        p.workingRegime === 'Đặc thù' ? 'Đã kiểm chứng' : '',
+        p.workingRegime,
+        fStr('ĐẠT', `IF(A${r}="","",IF(OR(J${r}="",E${r}=""),"CHƯA ĐỦ CĂN CỨ","ĐẠT"))`)
+      ];
+    })
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsC1, '3. C1_VTVL');
+
+  // 4. B1_KhoiLuong (19 cột A–S — Bước 4 HD 07, liên kết INDEX/MATCH từ A2 & DM_SAN_PHAM)
   const b1Header = [
     'Mã công việc', 'Mã VTVL', 'Số SP/năm', 'Trung bình phút/SP (đo thực tế)', 'Giờ bổ sung (công việc liên quan)',
     'Giờ SP (tính)', 'Giờ tổng (tính)', 'Nguồn SL', 'Nguồn thời gian', 'Trạng thái căn cứ thời gian', 'Kỳ',
@@ -104,9 +133,9 @@ export function buildHd07CoreSheets(
     [`Biểu B1_ Khối lượng (${opts.unitCode})`, '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
     b1Header, ...b1FormulaRows
   ]);
-  XLSX.utils.book_append_sheet(wb, wsB1, '3. B1_KhoiLuong');
+  XLSX.utils.book_append_sheet(wb, wsB1, '4. B1_KhoiLuong');
 
-  // 4. B2_CT_TacDong (19 cột A–S — Bước 4 HD 07)
+  // 5. B2_CT_TacDong (19 cột A–S — Bước 5 HD 07)
   const b2CtHeader = [
     'Mã công việc', 'Mã VTVL', 'Loại tác động', 'Công đoạn', 'SP áp dụng', 'Phút trước', 'Phút sau',
     'Giờ giảm trực tiếp', 'Giờ việc mới', 'Nguồn/bằng chứng', 'Kỳ', 'Cơ sở B1', 'Trạng thái',
@@ -134,9 +163,9 @@ export function buildHd07CoreSheets(
     [`Biểu B2_CT_ Tác động (${opts.unitCode})`, '', '', '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
     b2CtHeader, ...b2CtRows
   ]);
-  XLSX.utils.book_append_sheet(wb, wsB2Ct, '4. B2_CT_TacDong');
+  XLSX.utils.book_append_sheet(wb, wsB2Ct, '5. B2_CT_TacDong');
 
-  // 5. B2_ThayDoi (9 cột A–I — Tự động tổng hợp SUMIFS từ B2_CT_TacDong)
+  // 6. B2_ThayDoi (9 cột A–I — Tự động tổng hợp SUMIFS từ B2_CT_TacDong)
   const b2SummaryRows = processedTemplates.map((t, idx) => {
     const r = idx + 3;
     const before = t.digitalMinutesBefore || t.defaultMinutesPerProduct;
@@ -145,12 +174,12 @@ export function buildHd07CoreSheets(
     return [
       t.computedTaskCode,
       fStr(t.computedVtvlCode, `IF(A${r}="","",IFERROR(INDEX('2. A2_CongViec'!$C$3:$C$500,MATCH(A${r},'2. A2_CongViec'!$A$3:$A$500,0)),""))`),
-      fNum(reduced, `IF(A${r}="","",SUMIFS('4. B2_CT_TacDong'!$N$3:$N$202,'4. B2_CT_TacDong'!$A$3:$A$202,A${r},'4. B2_CT_TacDong'!$C$3:$C$202,"Số hóa")+SUMIFS('4. B2_CT_TacDong'!$N$3:$N$202,'4. B2_CT_TacDong'!$A$3:$A$202,A${r},'4. B2_CT_TacDong'!$C$3:$C$202,"Cải tiến quy trình"))`),
-      fNum(0, `IF(A${r}="","",SUMIF('4. B2_CT_TacDong'!$A$3:$A$202,A${r},'4. B2_CT_TacDong'!$N$3:$N$202)-C${r})`),
-      fNum(0, `IF(A${r}="","",SUMIF('4. B2_CT_TacDong'!$A$3:$A$202,A${r},'4. B2_CT_TacDong'!$O$3:$O$202))`),
+      fNum(reduced, `IF(A${r}="","",SUMIFS('5. B2_CT_TacDong'!$N$3:$N$202,'5. B2_CT_TacDong'!$A$3:$A$202,A${r},'5. B2_CT_TacDong'!$C$3:$C$202,"Số hóa")+SUMIFS('5. B2_CT_TacDong'!$N$3:$N$202,'5. B2_CT_TacDong'!$A$3:$A$202,A${r},'5. B2_CT_TacDong'!$C$3:$C$202,"Cải tiến quy trình"))`),
+      fNum(0, `IF(A${r}="","",SUMIF('5. B2_CT_TacDong'!$A$3:$A$202,A${r},'5. B2_CT_TacDong'!$N$3:$N$202)-C${r})`),
+      fNum(0, `IF(A${r}="","",SUMIF('5. B2_CT_TacDong'!$A$3:$A$202,A${r},'5. B2_CT_TacDong'!$O$3:$O$202))`),
       fNum(-reduced, `IF(A${r}="","",E${r}-C${r}-D${r})`),
       reduced > 0 ? 'Đã kiểm chứng' : 'Không phát sinh',
-      fNum(reduced > 0 ? 1 : 0, `IF(A${r}="","",COUNTIF('4. B2_CT_TacDong'!$A$3:$A$202,A${r}))`),
+      fNum(reduced > 0 ? 1 : 0, `IF(A${r}="","",COUNTIF('5. B2_CT_TacDong'!$A$3:$A$202,A${r}))`),
       'ĐẠT'
     ];
   });
@@ -159,38 +188,9 @@ export function buildHd07CoreSheets(
     ['Mã công việc', 'Mã VTVL', 'Giờ giảm số hóa', 'Giờ giảm thuê/TCh/XHH', 'Giờ việc mới', 'Giờ tác động ròng', 'Trạng thái', 'Số dòng chi tiết', 'Cảnh báo'],
     ...b2SummaryRows
   ]);
-  XLSX.utils.book_append_sheet(wb, wsB2, '5. B2_ThayDoi');
+  XLSX.utils.book_append_sheet(wb, wsB2, '6. B2_ThayDoi');
 
-  // 6. C1_VTVL (11 cột A–K — Bước 5 HD 07)
-  const wsC1 = XLSX.utils.aoa_to_sheet([
-    [`Biểu C1_ Vị trí việc làm (${opts.unitCode})`, '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
-    ['Mã VTVL', 'Tên VTVL', 'Loại nhân lực', 'Quyết định', 'Giờ chuẩn PP2', 'Căn cứ xác định quỹ giờ', 'Trạng thái', 'Giờ riêng được xác nhận', 'Xác nhận giờ riêng', 'Chế độ làm việc', 'Kiểm tra quỹ giờ PP2'],
-    ...positionBreakdown.map((p, idx) => {
-      const r = idx + 3;
-      return [
-        p.vtvlCode,
-        p.frameworkTitle && p.frameworkTitle !== p.vtvlName
-          ? `${p.vtvlName} (Khung Trường: ${p.frameworkTitle} · ${p.careerLevel || 'Bậc 3'})`
-          : `${p.vtvlName} (${p.careerLevel || 'Bậc 3'})`,
-        'Viên chức',
-        `${sourceRule} & Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62)`,
-        fNum(p.standardHoursYear, `IF(A${r}="","",IF(J${r}="Đặc thù",IF(AND(ISNUMBER(H${r}),H${r}>0),H${r},1760),1904))`),
-        p.method === 'PP1'
-          ? 'PP1 – theo cơ cấu và chức danh quản lý'
-          : p.workingRegime === 'Đặc thù'
-            ? 'Thông tư 20/2020/TT-BGDĐT (44 tuần × 40 giờ = 1.760 giờ/năm)'
-            : 'Mức chung 1.904 giờ – quy định về thời giờ làm việc ((261 - 11 - 12) × 8)',
-        'Tiếp tục sử dụng',
-        p.workingRegime === 'Đặc thù' ? p.standardHoursYear : '',
-        p.workingRegime === 'Đặc thù' ? 'Đã kiểm chứng' : '',
-        p.workingRegime,
-        fStr('ĐẠT', `IF(A${r}="","",IF(OR(J${r}="",E${r}=""),"CHƯA ĐỦ CĂN CỨ","ĐẠT"))`)
-      ];
-    })
-  ]);
-  XLSX.utils.book_append_sheet(wb, wsC1, '6. C1_VTVL');
-
-  // 7. C2_NangLuc (7 cột A–G — Mỗi VTVL 1 dòng liên kết trực tiếp từ '6. C1_VTVL'!A{r})
+  // 7. C2_NangLuc (7 cột A–G — Mỗi VTVL 1 dòng liên kết trực tiếp từ '3. C1_VTVL'!A{r})
   const wsC2 = XLSX.utils.aoa_to_sheet([
     [`Biểu C2_ Mô tả năng lực (${opts.unitCode})`, '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
     ['Mã VTVL', 'Trách nhiệm', 'Năng lực chung', 'Chuyên môn', 'Lãnh đạo', 'Căn cứ', 'Nguồn bản mô tả'],
@@ -201,7 +201,7 @@ export function buildHd07CoreSheets(
       const matchedTasks = templates.filter((t) => `${opts.unitCode}-${t.vtvlSuffix}` === p.vtvlCode);
       const taskSummary = matchedTasks.map((t) => t.taskName).join('; ') || `Thực hiện nhiệm vụ chuyên môn của vị trí ${p.vtvlName}`;
       return [
-        fStr(p.vtvlCode, `'6. C1_VTVL'!A${r}`),
+        fStr(p.vtvlCode, `'3. C1_VTVL'!A${r}`),
         tcnsProf ? tcnsProf.responsibility : `[${p.vtvlName}] ${taskSummary}`,
         tcnsProf ? tcnsProf.general : 'Đạo đức nghề nghiệp, giao tiếp hành chính, phối hợp nghiệp vụ và ứng dụng CNTT/chuyển đổi số',
         tcnsProf ? tcnsProf.professional : `${p.careerLevel || 'Bậc 3'} (${p.vtvlGroup4 || 'II. Nhóm VTVL Chuyên môn, nghiệp vụ'} — Khung Trường: ${p.frameworkTitle || p.vtvlName})`,
@@ -213,7 +213,7 @@ export function buildHd07CoreSheets(
   ]);
   XLSX.utils.book_append_sheet(wb, wsC2, '7. C2_NangLuc');
 
-  // 8. C3_NhuCau (14 cột A–N — Bước 6 HD 07, liên kết SUMIFS từ B1, B2_ThayDoi, C1)
+  // 8. C3_NhuCau (14 cột A–N — Bước 8 HD 07, liên kết SUMIFS từ B1, B2_ThayDoi, C1)
   const wsC3 = XLSX.utils.aoa_to_sheet([
     [`Biểu C3_ Nhu cầu (${opts.unitCode})`, '', '', '', '', '', '', '', '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
     ['Mã VTVL', 'Phương pháp', 'Giờ B1', 'Giờ tác động B2', 'Giờ ròng', 'Giờ PP2 (từ C1)', 'Người quy đổi PP2', 'Người PP1', 'Người PP3 (ước lượng, cần giải trình)', 'Người cần bố trí', 'Nguồn/giải trình', 'Trạng thái', 'Cảnh báo', 'Số dòng B1 chưa đạt'],
@@ -223,10 +223,10 @@ export function buildHd07CoreSheets(
       const isPp1Only = p.method === 'PP1';
       return [
         p.vtvlCode, p.method,
-        fNum(p.b1HoursYear, `IF(A${r}="","",SUMIFS('3. B1_KhoiLuong'!$G$3:$G$500,'3. B1_KhoiLuong'!$B$3:$B$500,A${r},'3. B1_KhoiLuong'!$R$3:$R$500,"ĐẠT"))`),
-        fNum(p.b2NetHoursYear, `IF(A${r}="","",SUMIFS('5. B2_ThayDoi'!$F$3:$F$202,'5. B2_ThayDoi'!$B$3:$B$202,A${r}))`),
+        fNum(p.b1HoursYear, `IF(A${r}="","",SUMIFS('4. B1_KhoiLuong'!$G$3:$G$500,'4. B1_KhoiLuong'!$B$3:$B$500,A${r},'4. B1_KhoiLuong'!$R$3:$R$500,"ĐẠT"))`),
+        fNum(p.b2NetHoursYear, `IF(A${r}="","",SUMIFS('6. B2_ThayDoi'!$F$3:$F$202,'6. B2_ThayDoi'!$B$3:$B$202,A${r}))`),
         fNum(p.netHoursYear, `IF(OR(A${r}="",C${r}=""),"",C${r}+IF(D${r}="",0,D${r}))`),
-        fNum(p.standardHoursYear, `IF(A${r}="","",IFERROR(INDEX('6. C1_VTVL'!$E$3:$E$100,MATCH(A${r},'6. C1_VTVL'!$A$3:$A$100,0)),1904))`),
+        fNum(p.standardHoursYear, `IF(A${r}="","",IFERROR(INDEX('3. C1_VTVL'!$E$3:$E$100,MATCH(A${r},'3. C1_VTVL'!$A$3:$A$100,0)),1904))`),
         isPp1Only ? '' : fNum(pp2Ratio, `IF(OR(A${r}="",F${r}<=0),"",ROUND(E${r}/F${r},2))`),
         p.method.includes('PP1') ? p.recommendedFte : '', '',
         fNum(p.recommendedFte, isPp1Only ? `H${r}` : `ROUNDUP(G${r},0)`),
@@ -235,7 +235,7 @@ export function buildHd07CoreSheets(
           : 'Kết quả đo lường khối lượng công việc tại Biểu B1 kỳ 01/10/2025–30/9/2026; quỹ giờ chuẩn 1.904 giờ theo C1',
         'Đã kiểm chứng',
         fStr('ĐẠT', `IF(A${r}="","",IF(J${r}="","CHƯA KẾT LUẬN NGƯỜI CẦN BỐ TRÍ","ĐẠT"))`),
-        fNum(0, `IF(A${r}="","",COUNTIFS('3. B1_KhoiLuong'!$B$3:$B$500,A${r},'3. B1_KhoiLuong'!$R$3:$R$500,"<>ĐẠT"))`)
+        fNum(0, `IF(A${r}="","",COUNTIFS('4. B1_KhoiLuong'!$B$3:$B$500,A${r},'4. B1_KhoiLuong'!$R$3:$R$500,"<>ĐẠT"))`)
       ];
     })
   ]);

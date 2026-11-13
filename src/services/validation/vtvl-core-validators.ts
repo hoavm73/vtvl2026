@@ -131,7 +131,7 @@ export function validateA2Sheet(
         id: `a2-vtvl-invalid-${idx}`, ruleId: 'R-A2-05', sheetKey: 'A2', sheetName: '2. A2_CongViec',
         cellRef: `2. A2_CongViec!C${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: `MÃ VTVL CHƯA CÓ Ở C1: "${vCode}"`, currentValue: vCode || 'Trống',
-        suggestion: 'Mã VTVL phải trùng đúng mã đã ban hành tại Biểu 6. C1_VTVL.'
+        suggestion: 'Mã VTVL phải trùng đúng mã đã ban hành tại Biểu 3. C1_VTVL.'
       });
     }
 
@@ -178,8 +178,8 @@ export function validateB1Sheet(
 
     if (!tCode || !validTaskCodes.has(tCode)) {
       issues.push({
-        id: `b1-task-${idx}`, ruleId: 'R-B1-01', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!A${rowNum}`, rowId: r.id, field: 'maCongViec', severity: 'fix',
+        id: `b1-task-${idx}`, ruleId: 'R-B1-01', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!A${rowNum}`, rowId: r.id, field: 'maCongViec', severity: 'fix',
         title: `MÃ CÔNG VIỆC CHƯA CÓ Ở A2: "${tCode}"`, currentValue: tCode || 'Trống',
         suggestion: 'Mã công việc phải khai báo trước tại Biểu 2. A2_CongViec.'
       });
@@ -187,8 +187,8 @@ export function validateB1Sheet(
 
     if (!vCode || !validVtvlCodes.has(vCode)) {
       issues.push({
-        id: `b1-vtvl-${idx}`, ruleId: 'R-B1-02', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!B${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+        id: `b1-vtvl-${idx}`, ruleId: 'R-B1-02', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!B${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: `THIẾU MÃ VTVL: Không tra cứu được VTVL của "${tCode}"`, currentValue: vCode || 'Trống',
         suggestion: 'Kiểm tra Cột C tại Biểu 2. A2_CongViec đã gán đúng Mã VTVL chuẩn chưa.'
       });
@@ -196,8 +196,8 @@ export function validateB1Sheet(
 
     if (isNaN(qty) || qty <= 0) {
       issues.push({
-        id: `b1-qty-${idx}`, ruleId: 'R-B1-03', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!C${rowNum}`, rowId: r.id, field: 'soSpNam', severity: 'fix',
+        id: `b1-qty-${idx}`, ruleId: 'R-B1-03', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!C${rowNum}`, rowId: r.id, field: 'soSpNam', severity: 'fix',
         title: `THIẾU SẢN LƯỢNG: Công việc "${tCode}" chưa có Số SP/năm`, currentValue: String(r.soSpNam || 'Trống'),
         suggestion: 'Nhập số lượng sản phẩm thực tế phát sinh trong kỳ 01/10/2025–30/9/2026.'
       });
@@ -205,8 +205,8 @@ export function validateB1Sheet(
 
     if (isNaN(measuredMins) || measuredMins <= 0) {
       issues.push({
-        id: `b1-time-${idx}`, ruleId: 'R-B1-04', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!D${rowNum}`, rowId: r.id, field: 'phutThucTe', severity: 'fix',
+        id: `b1-time-${idx}`, ruleId: 'R-B1-04', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!D${rowNum}`, rowId: r.id, field: 'phutThucTe', severity: 'fix',
         title: `THIẾU THỜI GIAN: Công việc "${tCode}" chưa có phút/SP thực tế`, currentValue: String(r.phutThucTe || 'Trống'),
         suggestion: 'Thực hiện bấm giờ đo định mức hoặc nhập thời gian thực tế đã kiểm chứng.'
       });
@@ -214,8 +214,8 @@ export function validateB1Sheet(
 
     if (!sourceQty || sourceQty.includes('gợi ý') || sourceQty.includes('chưa đo thực tế')) {
       issues.push({
-        id: `b1-source-${idx}`, ruleId: 'R-B1-05', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!H${rowNum}`, rowId: r.id, field: 'nguon', severity: 'evidence',
+        id: `b1-source-${idx}`, ruleId: 'R-B1-05', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!H${rowNum}`, rowId: r.id, field: 'nguon', severity: 'evidence',
         title: `Nguồn sản lượng của "${tCode}" còn dùng câu gợi ý mẫu`, currentValue: sourceQty || 'Trống',
         suggestion: 'Ghi cụ thể số hiệu văn bản, hệ thống E-Office hoặc sổ theo dõi nghiệp vụ.'
       });
@@ -224,8 +224,8 @@ export function validateB1Sheet(
     // Validation rule nghiêm ngặt Cột S
     if (explanation !== '' && !explanation.startsWith('Đã xác nhận:')) {
       issues.push({
-        id: `b1-exp-prefix-${idx}`, ruleId: 'R-B1-06', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!S${rowNum}`, rowId: r.id, field: 'giaiTrinhKhacChuan', severity: 'evidence',
+        id: `b1-exp-prefix-${idx}`, ruleId: 'R-B1-06', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!S${rowNum}`, rowId: r.id, field: 'giaiTrinhKhacChuan', severity: 'evidence',
         title: 'CHỜ XÁC NHẬN KHÁC CHUẨN: Giải trình Cột S sai cú pháp', currentValue: explanation,
         suggestion: 'Nội dung giải trình khác chuẩn bắt buộc phải bắt đầu bằng: "Đã xác nhận: ".'
       });
@@ -235,11 +235,11 @@ export function validateB1Sheet(
     const stdMins = stdMinutesMap.get(tCode);
     if (stdMins && stdMins > 0 && measuredMins > 0 && Math.abs(measuredMins - stdMins) / stdMins > 0.3 && !explanation) {
       issues.push({
-        id: `b1-diff-${idx}`, ruleId: 'R-B1-07', sheetKey: 'B1', sheetName: '3. B1_KhoiLuong',
-        cellRef: `3. B1_KhoiLuong!S${rowNum}`, rowId: r.id, field: 'giaiTrinhKhacChuan', severity: 'review',
+        id: `b1-diff-${idx}`, ruleId: 'R-B1-07', sheetKey: 'B1', sheetName: '4. B1_KhoiLuong',
+        cellRef: `4. B1_KhoiLuong!S${rowNum}`, rowId: r.id, field: 'giaiTrinhKhacChuan', severity: 'review',
         title: `Phút thực tế (${measuredMins}p) lệch > 30% so với chuẩn (${stdMins}p)`,
         currentValue: `${measuredMins}p vs ${stdMins}p`,
-        suggestion: 'Cần bổ sung giải trình lý do chênh lệch lớn tại Cột S Biểu 3. B1_KhoiLuong.'
+        suggestion: 'Cần bổ sung giải trình lý do chênh lệch lớn tại Cột S Biểu 4. B1_KhoiLuong.'
       });
     }
   });

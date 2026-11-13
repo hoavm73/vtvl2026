@@ -43,14 +43,37 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px' }
     ]
   },
-  B1: {
-    key: 'B1',
+  C1: {
+    key: 'C1',
     stepNum: 3,
     sheetNumberPrefix: '3',
-    sheetName: '3. B1_KhoiLuong',
-    shortLabel: '3. B1_KhoiLuong',
+    sheetName: '3. C1_VTVL',
+    shortLabel: '3. C1_VTVL',
+    title: 'Biểu C1_ Vị trí việc làm (Khai danh mục VTVL & Quỹ giờ chuẩn PP2)',
+    guideDesc: 'Biểu 3 (Bước 3 nghiệp vụ): Khai danh mục VTVL của đơn vị, chọn chế độ làm việc và xác định quỹ giờ chuẩn PP2 (1.904h hoặc 1.760h).',
+    ruleHint: 'Áp dụng mã Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62) theo quy định HCM-UTE.',
+    columns: [
+      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Phụ lục I)', width: '160px', type: 'select', dynamicOptionsKey: 'pl1VtvlList' },
+      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL cụ thể tại đơn vị', width: '260px' },
+      { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '130px', type: 'select', selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
+      { colLetter: 'D', field: 'quyetDinh', headerName: 'Quyết định / Căn cứ VTVL', width: '200px' },
+      { colLetter: 'E', field: 'gioChuanPp2', headerName: 'Giờ chuẩn PP2', width: '110px', isFormula: true, formulaHint: '=IF(J="Đặc thù",1760,1904)' },
+      { colLetter: 'F', field: 'canCuQuyGio', headerName: 'Căn cứ xác định quỹ giờ', width: '220px' },
+      { colLetter: 'G', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Tiếp tục sử dụng', 'Cần cập nhật', 'Đề nghị bổ sung', 'Đề nghị sửa đổi', 'Đề nghị bãi bỏ'] },
+      { colLetter: 'H', field: 'gioRieng', headerName: 'Giờ riêng được xác nhận', width: '110px' },
+      { colLetter: 'I', field: 'xacNhanGioRieng', headerName: 'Xác nhận giờ riêng', width: '130px' },
+      { colLetter: 'J', field: 'cheDoLamViec', headerName: 'Chế độ làm việc', width: '170px', type: 'select', selectOptions: ['Phổ biến (40 giờ/tuần)', 'Đặc thù'] },
+      { colLetter: 'K', field: 'kiemTra', headerName: 'Kiểm tra quỹ giờ', width: '100px', type: 'status', isFormula: true, formulaHint: '=IF(E>0,"ĐẠT","LỖI")' }
+    ]
+  },
+  B1: {
+    key: 'B1',
+    stepNum: 4,
+    sheetNumberPrefix: '4',
+    sheetName: '4. B1_KhoiLuong',
+    shortLabel: '4. B1_KhoiLuong',
     title: 'Biểu B1_ Khối lượng (Khối lượng sản phẩm & thời gian thực tế kỳ 2025–2026)',
-    guideDesc: 'Biểu 3 (Bước 3 nghiệp vụ): Kê khai sản lượng thực tế trong 12 tháng (Cột C), số phút đo thực tế (Cột D), công thức tự tính Giờ SP và Giờ tổng.',
+    guideDesc: 'Biểu 4 (Bước 4 nghiệp vụ): Kê khai sản lượng thực tế trong 12 tháng (Cột C), số phút đo thực tế (Cột D), công thức tự tính Giờ SP và Giờ tổng.',
     ruleHint: 'Mã VTVL (Cột B) tự lấy từ A2; Giờ SP (Cột F) = Cột C × Cột P / 60; Giờ tổng (Cột G) = F + E.',
     columns: [
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', dynamicOptionsKey: 'taskList' },
@@ -69,12 +92,12 @@ export const CORE_EXCEL_SHEET_METAS: Record<
   },
   B2_CT: {
     key: 'B2_CT',
-    stepNum: 4,
-    sheetNumberPrefix: '4',
-    sheetName: '4. B2_CT_TacDong',
-    shortLabel: '4. B2_CT_TacDong',
+    stepNum: 5,
+    sheetNumberPrefix: '5',
+    sheetName: '5. B2_CT_TacDong',
+    shortLabel: '5. B2_CT_TacDong',
     title: 'Biểu B2_CT_ Chi tiết tác động (Chuyển đổi số, tự chủ, thuê dịch vụ)',
-    guideDesc: 'Biểu 4 (Bước 4 nghiệp vụ): Kê khai các công đoạn được số hóa (phần mềm quản trị, ERP...), ứng dụng AI hoặc chuyển giao giúp tăng năng suất/giảm thời gian.',
+    guideDesc: 'Biểu 5 (Bước 5 nghiệp vụ): Kê khai các công đoạn được số hóa (phần mềm quản trị, ERP...), ứng dụng AI hoặc chuyển giao giúp tăng năng suất/giảm thời gian.',
     ruleHint: 'Giờ biến động (Cột F) âm khi giảm thời gian nhờ CĐS, dương khi phát sinh nhiệm vụ mới.',
     columns: [
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', dynamicOptionsKey: 'taskList' },
@@ -88,12 +111,12 @@ export const CORE_EXCEL_SHEET_METAS: Record<
   },
   B2: {
     key: 'B2',
-    stepNum: 5,
-    sheetNumberPrefix: '5',
-    sheetName: '5. B2_ThayDoi',
-    shortLabel: '5. B2_ThayDoi',
-    title: 'Biểu B2_ Thay đổi (Tổng hợp giờ tăng/giảm tự động từ Biểu 4. B2_CT)',
-    guideDesc: 'Biểu 5: Bảng tổng hợp tự động giờ tăng/giảm bằng công thức SUMIFS từ Biểu 4. B2_CT theo từng Mã công việc và Mã VTVL.',
+    stepNum: 6,
+    sheetNumberPrefix: '6',
+    sheetName: '6. B2_ThayDoi',
+    shortLabel: '6. B2_ThayDoi',
+    title: 'Biểu B2_ Thay đổi (Tổng hợp giờ tăng/giảm tự động từ Biểu 5. B2_CT)',
+    guideDesc: 'Biểu 6: Bảng tổng hợp tự động giờ tăng/giảm bằng công thức SUMIFS từ Biểu 5. B2_CT theo từng Mã công việc và Mã VTVL.',
     ruleHint: 'Giờ tổng sau tác động (Cột F) = Giờ B1 (Cột C) + Giờ biến động (Cột D) + Giờ mới (Cột E).',
     columns: [
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '150px' },
@@ -105,29 +128,6 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'G', field: 'tyLeThayDoi', headerName: 'Tỷ lệ thay đổi', width: '110px', isFormula: true, formulaHint: '=ROUND(D/C*100,1)&"%"' },
       { colLetter: 'H', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Đã kiểm chứng', 'Chưa kiểm chứng', 'Ước lượng tham khảo'] },
       { colLetter: 'I', field: 'doiChieuTrung', headerName: 'Đối chiếu trùng/phạm vi', width: '160px', type: 'select', selectOptions: ['Đã đối chiếu', 'Chờ đối chiếu'] }
-    ]
-  },
-  C1: {
-    key: 'C1',
-    stepNum: 6,
-    sheetNumberPrefix: '6',
-    sheetName: '6. C1_VTVL',
-    shortLabel: '6. C1_VTVL',
-    title: 'Biểu C1_ Vị trí việc làm (Khai danh mục VTVL & Quỹ giờ chuẩn PP2)',
-    guideDesc: 'Biểu 6 (Bước 5 nghiệp vụ): Khai danh mục VTVL của đơn vị, chọn chế độ làm việc và xác định quỹ giờ chuẩn PP2 (1.904h hoặc 1.760h).',
-    ruleHint: 'Áp dụng mã Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62) theo quy định HCM-UTE.',
-    columns: [
-      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Phụ lục I)', width: '160px', type: 'select', dynamicOptionsKey: 'pl1VtvlList' },
-      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL cụ thể tại đơn vị', width: '260px' },
-      { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '130px', type: 'select', selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
-      { colLetter: 'D', field: 'quyetDinh', headerName: 'Quyết định / Căn cứ VTVL', width: '200px' },
-      { colLetter: 'E', field: 'gioChuanPp2', headerName: 'Giờ chuẩn PP2', width: '110px', isFormula: true, formulaHint: '=IF(J="Đặc thù",1760,1904)' },
-      { colLetter: 'F', field: 'canCuQuyGio', headerName: 'Căn cứ xác định quỹ giờ', width: '220px' },
-      { colLetter: 'G', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Tiếp tục sử dụng', 'Cần cập nhật', 'Đề nghị bổ sung', 'Đề nghị sửa đổi', 'Đề nghị bãi bỏ'] },
-      { colLetter: 'H', field: 'gioRieng', headerName: 'Giờ riêng được xác nhận', width: '110px' },
-      { colLetter: 'I', field: 'xacNhanGioRieng', headerName: 'Xác nhận giờ riêng', width: '130px' },
-      { colLetter: 'J', field: 'cheDoLamViec', headerName: 'Chế độ làm việc', width: '170px', type: 'select', selectOptions: ['Phổ biến (40 giờ/tuần)', 'Đặc thù'] },
-      { colLetter: 'K', field: 'kiemTra', headerName: 'Kiểm tra quỹ giờ', width: '100px', type: 'status', isFormula: true, formulaHint: '=IF(E>0,"ĐẠT","LỖI")' }
     ]
   }
 };

@@ -73,7 +73,7 @@ export function createC2RowFromPl1(c1Row: GenericGridRow, index: number): Generi
 }
 
 /**
- * Nạp toàn bộ 56 VTVL chuẩn theo Phụ lục I vào Biểu 6. C1_VTVL
+ * Nạp toàn bộ 56 VTVL chuẩn theo Phụ lục I vào Biểu 3. C1_VTVL
  */
 export function buildFullPl1C1Rows(unitCode: string): GenericGridRow[] {
   return PL1_VTVL_CATALOG.map((item, idx) => createC1RowFromPl1(unitCode, item, idx));

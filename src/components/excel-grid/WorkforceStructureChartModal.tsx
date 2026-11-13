@@ -115,7 +115,7 @@ export function WorkforceStructureChartModal({
                     [{unitCode}] {unitNameVi}
                   </span>
                 </div>
-                <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (6. C1_VTVL) và phương án bố trí biên chế (10. D2_PhuongAn)</p>
+                <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (3. C1_VTVL) và phương án bố trí biên chế (10. D2_PhuongAn)</p>
               </div>
             </div>
 

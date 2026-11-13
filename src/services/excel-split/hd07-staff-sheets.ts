@@ -18,7 +18,7 @@ export function buildHd07StaffSheets(
     const r = d1Rows.length + 3;
     d1Rows.push([
       `${opts.unitCode}-NL${String(staffSeq).padStart(3, '0')}`, vtvlCode, pType,
-      fNum(stdH, `IF(B${r}="","",IF(ISNUMBER(K${r}),K${r},IFERROR(INDEX('6. C1_VTVL'!$E$3:$E$100,MATCH(B${r},'6. C1_VTVL'!$A$3:$A$100,0)),1904)))`),
+      fNum(stdH, `IF(B${r}="","",IF(ISNUMBER(K${r}),K${r},IFERROR(INDEX('3. C1_VTVL'!$E$3:$E$100,MATCH(B${r},'3. C1_VTVL'!$A$3:$A$100,0)),1904)))`),
       stdH, 0, opts.unitNameVi,
       `Danh sách nhân sự chốt ngày ${HD07_CONSTANTS.STAFF_CUTOFF_DATE} (${codeNote})`,
       'Đã kiểm chứng',

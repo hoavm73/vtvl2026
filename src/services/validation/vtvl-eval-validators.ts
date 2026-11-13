@@ -18,26 +18,26 @@ export function validateC1Sheet(rows: GenericGridRow[], unitCode: string): Valid
 
     if (!vCode) {
       issues.push({
-        id: `c1-code-${idx}`, ruleId: 'R-C1-01', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-        cellRef: `6. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+        id: `c1-code-${idx}`, ruleId: 'R-C1-01', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+        cellRef: `3. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: 'Mã VTVL không được để trống', currentValue: 'Trống',
         suggestion: `Chọn mã VTVL chuẩn theo Phụ lục I (ví dụ: ${unitCode}.HT45, ${unitCode}.QL33...).`
       });
     } else {
       if (seenCodes.has(vCode)) {
         issues.push({
-          id: `c1-dup-${idx}`, ruleId: 'R-C1-02', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-          cellRef: `6. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+          id: `c1-dup-${idx}`, ruleId: 'R-C1-02', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+          cellRef: `3. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
           title: `TRÙNG MÃ VTVL Ở C1: Mã "${vCode}" lặp lại`, currentValue: vCode,
-          suggestion: 'Mỗi vị trí việc làm trong đơn vị chỉ khai đúng 1 dòng tại Biểu 6.'
+          suggestion: 'Mỗi vị trí việc làm trong đơn vị chỉ khai đúng 1 dòng tại Biểu 3.'
         });
       }
       seenCodes.add(vCode);
 
       if (vCode.startsWith('XXX')) {
         issues.push({
-          id: `c1-xxx-${idx}`, ruleId: 'R-C1-03', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-          cellRef: `6. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+          id: `c1-xxx-${idx}`, ruleId: 'R-C1-03', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+          cellRef: `3. C1_VTVL!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
           title: `Mã VTVL còn giữ tiền tố mẫu XXX: "${vCode}"`, currentValue: vCode,
           suggestion: `Đổi tiền tố XXX thành mã đơn vị chuẩn: ${unitCode}.`
         });
@@ -46,8 +46,8 @@ export function validateC1Sheet(rows: GenericGridRow[], unitCode: string): Valid
 
     if (!validStatus.includes(status)) {
       issues.push({
-        id: `c1-status-${idx}`, ruleId: 'R-C1-04', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-        cellRef: `6. C1_VTVL!G${rowNum}`, rowId: r.id, field: 'trangThai', severity: 'fix',
+        id: `c1-status-${idx}`, ruleId: 'R-C1-04', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+        cellRef: `3. C1_VTVL!G${rowNum}`, rowId: r.id, field: 'trangThai', severity: 'fix',
         title: `Trạng thái VTVL chưa đúng chuẩn: "${status}"`, currentValue: status || 'Trống',
         suggestion: 'Chỉ chọn 1 trong: Tiếp tục sử dụng, Cần cập nhật, Đề nghị bổ sung, Đề nghị sửa đổi, Đề nghị bãi bỏ.'
       });
@@ -55,8 +55,8 @@ export function validateC1Sheet(rows: GenericGridRow[], unitCode: string): Valid
 
     if (isNaN(stdHours) || stdHours <= 0) {
       issues.push({
-        id: `c1-hours-${idx}`, ruleId: 'R-C1-05', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-        cellRef: `6. C1_VTVL!E${rowNum}`, rowId: r.id, field: 'gioChuanPp2', severity: 'fix',
+        id: `c1-hours-${idx}`, ruleId: 'R-C1-05', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+        cellRef: `3. C1_VTVL!E${rowNum}`, rowId: r.id, field: 'gioChuanPp2', severity: 'fix',
         title: `THIẾU MẪU SỐ: Quỹ giờ PP2 chưa xác định cho "${vCode}"`, currentValue: String(r.gioChuanPp2 || 'Trống'),
         suggestion: 'Quỹ giờ chuẩn phổ biến là 1.904 giờ/năm (hoặc 1.760 giờ cho chế độ đặc thù).'
       });
@@ -64,8 +64,8 @@ export function validateC1Sheet(rows: GenericGridRow[], unitCode: string): Valid
 
     if (pType && !validPersonnel.includes(pType)) {
       issues.push({
-        id: `c1-pType-${idx}`, ruleId: 'R-C1-06', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-        cellRef: `6. C1_VTVL!C${rowNum}`, rowId: r.id, field: 'loaiNhanLuc', severity: 'fix',
+        id: `c1-pType-${idx}`, ruleId: 'R-C1-06', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+        cellRef: `3. C1_VTVL!C${rowNum}`, rowId: r.id, field: 'loaiNhanLuc', severity: 'fix',
         title: `Loại nhân lực chưa đúng chuẩn: "${pType}"`, currentValue: pType,
         suggestion: 'Chỉ chọn 1 trong: Viên chức, Hợp đồng lao động, Hợp đồng khoán việc, Thuê dịch vụ.'
       });
@@ -73,8 +73,8 @@ export function validateC1Sheet(rows: GenericGridRow[], unitCode: string): Valid
 
     if (vName.toLowerCase().includes('trợ giảng') || vCode.includes('V.07.01.23')) {
       issues.push({
-        id: `c1-tg-${idx}`, ruleId: 'R-TT31-TG', sheetKey: 'C1', sheetName: '6. C1_VTVL',
-        cellRef: `6. C1_VTVL!B${rowNum}`, rowId: r.id, field: 'tenVtvl', severity: 'review',
+        id: `c1-tg-${idx}`, ruleId: 'R-TT31-TG', sheetKey: 'C1', sheetName: '3. C1_VTVL',
+        cellRef: `3. C1_VTVL!B${rowNum}`, rowId: r.id, field: 'tenVtvl', severity: 'review',
         title: 'Vị trí Trợ giảng thuộc diện rà soát chuyển tiếp theo TT 31/2026', currentValue: vName,
         suggestion: 'Nếu bổ nhiệm trước 31/3/2026 và đủ chuẩn Giảng viên thì xét bổ nhiệm sang V.07.01.03.',
         legalBasis: 'Khoản 5 Điều 15 Thông tư 31/2026/TT-BGDĐT'
@@ -102,7 +102,7 @@ export function validateC3Sheet(rows: GenericGridRow[], validVtvlCodes: Set<stri
         id: `c3-vtvl-${idx}`, ruleId: 'R-C3-01', sheetKey: 'C3', sheetName: '8. C3_NhuCau',
         cellRef: `8. C3_NhuCau!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: `MÃ VTVL CHƯA CÓ Ở C1: "${vCode}"`, currentValue: vCode || 'Trống',
-        suggestion: 'Mã VTVL phải tồn tại và kích hoạt tại Biểu 6. C1_VTVL.'
+        suggestion: 'Mã VTVL phải tồn tại và kích hoạt tại Biểu 3. C1_VTVL.'
       });
     }
 

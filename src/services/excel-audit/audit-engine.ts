@@ -13,12 +13,12 @@ import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 export const AUDIT_RULES_CATALOG: { code: string; sheet: string; level: string; desc: string }[] = [
   { code: 'R-TEP-*', sheet: 'Toàn bộ tệp', level: 'Phải sửa', desc: 'Kiểm tra đủ 10 trang tính bắt buộc (A1, A2, B1, B2_CT, B2, C1, C2, C3, D1, D2) và cấu trúc cột chuẩn Hướng dẫn 07-HD/BTCTW.' },
   { code: 'R-TT31-40', sheet: '2. A2_CongViec', level: 'Phải sửa', desc: 'Kiểm tra căn cứ pháp lý không còn dẫn chiếu các điều khoản đã hết hiệu lực của TT 40/2020 theo khoản 2 Điều 17 Thông tư số 31/2026/TT-BGDĐT.' },
-  { code: 'R-ND232-BAC', sheet: '6. C1 & 7. C2', level: 'Nên xem lại', desc: 'Kiểm tra Bậc nghề nghiệp (Bậc 1–5) nằm trong giới hạn Phụ lục I văn bản 1907/HD-ĐHCNKT và Nghị định 232/2026/NĐ-CP.' },
-  { code: 'R-B1-SL / TG', sheet: '3. B1_KhoiLuong', level: 'Phải sửa', desc: 'Kiểm tra Số sản phẩm/năm (Cột C) và Trung bình phút/SP (Cột D) phải lớn hơn 0 đối với mọi đầu việc tính theo PP2.' },
-  { code: 'R-B1-NGUON', sheet: '3. B1 & Can_cu_goi_y', level: 'Chưa đủ căn cứ', desc: 'Phát hiện các dòng còn giữ nguyên số phút gợi ý ở ô màu cam ("mức tham khảo, chưa đo thực tế") hoặc thiếu nguồn văn bản E-Office.' },
-  { code: 'R-B1-LECH', sheet: '3. B1_KhoiLuong', level: 'Nên xem lại', desc: 'Kiểm tra trường hợp Phút/SP thực tế lệch trên 30% so với định mức chuẩn ở 11. DM_SAN_PHAM nhưng chưa ghi giải trình tại Cột S.' },
+  { code: 'R-ND232-BAC', sheet: '3. C1 & 7. C2', level: 'Nên xem lại', desc: 'Kiểm tra Bậc nghề nghiệp (Bậc 1–5) nằm trong giới hạn Phụ lục I văn bản 1907/HD-ĐHCNKT và Nghị định 232/2026/NĐ-CP.' },
+  { code: 'R-B1-SL / TG', sheet: '4. B1_KhoiLuong', level: 'Phải sửa', desc: 'Kiểm tra Số sản phẩm/năm (Cột C) và Trung bình phút/SP (Cột D) phải lớn hơn 0 đối với mọi đầu việc tính theo PP2.' },
+  { code: 'R-B1-NGUON', sheet: '4. B1 & Can_cu_goi_y', level: 'Chưa đủ căn cứ', desc: 'Phát hiện các dòng còn giữ nguyên số phút gợi ý ở ô màu cam ("mức tham khảo, chưa đo thực tế") hoặc thiếu nguồn văn bản E-Office.' },
+  { code: 'R-B1-LECH', sheet: '4. B1_KhoiLuong', level: 'Nên xem lại', desc: 'Kiểm tra trường hợp Phút/SP thực tế lệch trên 30% so với định mức chuẩn ở 11. DM_SAN_PHAM nhưng chưa ghi giải trình tại Cột S.' },
   { code: 'R-D1-TRUNG / GIO', sheet: '9. D1_NhanLuc', level: 'Phải sửa', desc: 'Kiểm tra không khai trùng Mã nguồn lực giữa các vị trí và tổng giờ phân bổ không vượt quỹ giờ chuẩn năm (1.760h hoặc 1.904h).' },
-  { code: 'R-TT31-TG', sheet: '6. C1 & 9. D1', level: 'Nên xem lại', desc: 'Rà soát diện chuyển tiếp chức danh Trợ giảng (V.07.01.23) sang Giảng viên (V.07.01.03) theo khoản 5 Điều 15 Thông tư 31/2026/TT-BGDĐT.' }
+  { code: 'R-TT31-TG', sheet: '3. C1 & 9. D1', level: 'Nên xem lại', desc: 'Rà soát diện chuyển tiếp chức danh Trợ giảng (V.07.01.23) sang Giảng viên (V.07.01.03) theo khoản 5 Điều 15 Thông tư 31/2026/TT-BGDĐT.' }
 ];
 
 export async function auditUnitWorkbooks(files: File[], isSampleDemo = false): Promise<AuditReportResult> {
@@ -52,8 +52,8 @@ export async function auditUnitWorkbooks(files: File[], isSampleDemo = false): P
 
     const requiredPrefixes: { code: AuditSheetCode; match: string; desc: string }[] = [
       { code: 'A1', match: 'A1', desc: '1. A1_NhiemVu' }, { code: 'A2', match: 'A2', desc: '2. A2_CongViec' },
-      { code: 'B1', match: 'B1', desc: '3. B1_KhoiLuong' }, { code: 'B2_CT', match: 'B2_CT', desc: '4. B2_CT_TacDong' },
-      { code: 'B2', match: 'B2_ThayDoi', desc: '5. B2_ThayDoi' }, { code: 'C1', match: 'C1', desc: '6. C1_VTVL' },
+      { code: 'C1', match: 'C1', desc: '3. C1_VTVL' }, { code: 'B1', match: 'B1', desc: '4. B1_KhoiLuong' },
+      { code: 'B2_CT', match: 'B2_CT', desc: '5. B2_CT_TacDong' }, { code: 'B2', match: 'B2_ThayDoi', desc: '6. B2_ThayDoi' },
       { code: 'C2', match: 'C2', desc: '7. C2_NangLuc' }, { code: 'C3', match: 'C3', desc: '8. C3_NhuCau' },
       { code: 'D1', match: 'D1', desc: '9. D1_NhanLuc' }, { code: 'D2', match: 'D2', desc: '10. D2_PhuongAn' }
     ];

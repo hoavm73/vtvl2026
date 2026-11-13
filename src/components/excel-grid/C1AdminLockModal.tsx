@@ -64,7 +64,7 @@ export function C1AdminLockModal({
               <h3 id="c1-lock-modal-title" className="text-sm font-bold text-[#004776]">
                 Xác thực quyền Quản trị viên
               </h3>
-              <p className="text-[11px] text-[#64748b]">Biểu 6. C1_VTVL (Danh mục VTVL chuẩn)</p>
+              <p className="text-[11px] text-[#64748b]">Biểu 3. C1_VTVL (Danh mục VTVL chuẩn)</p>
             </div>
           </div>
           <button
@@ -81,7 +81,7 @@ export function C1AdminLockModal({
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
             <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold">Quy chuẩn Ban Tổ chức Trung ương:</span> Danh mục VTVL tại Biểu 6. C1_VTVL do cơ quan đầu mối (Admin) quản lý và ban hành. Chỉ Quản trị viên có mật khẩu mới được phép chỉnh sửa hoặc bổ sung.
+              <span className="font-bold">Quy chuẩn Ban Tổ chức Trung ương:</span> Danh mục VTVL tại Biểu 3. C1_VTVL do cơ quan đầu mối (Admin) quản lý và ban hành. Chỉ Quản trị viên có mật khẩu mới được phép chỉnh sửa hoặc bổ sung.
             </div>
           </div>
 
@@ -170,7 +170,7 @@ export function C1AdminStatusBanner({
       <div className="flex items-center gap-2">
         <Lock className="w-4 h-4 text-amber-700 shrink-0" />
         <span>
-          <strong className="font-bold text-amber-800">Biểu 6. C1_VTVL đã khóa (Chỉ đọc):</strong> Do cơ quan đầu mối (Admin) quản lý và ban hành trước. Đơn vị cơ sở chỉ đối chiếu sử dụng.
+          <strong className="font-bold text-amber-800">Biểu 3. C1_VTVL đã khóa (Chỉ đọc):</strong> Do cơ quan đầu mối (Admin) quản lý và ban hành trước. Đơn vị cơ sở chỉ đối chiếu sử dụng.
         </span>
       </div>
       <button

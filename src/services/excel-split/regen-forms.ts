@@ -32,7 +32,7 @@ export async function regenerateFormsFromEditedUnitWorkbook(
   const d1SheetName = wb.SheetNames.find((s) => s.includes('D1'));
 
   if (!c3SheetName || !b1SheetName) {
-    throw new Error('Tệp đơn vị tải lên thiếu Biểu 8. C3_NhuCau hoặc Biểu 3. B1_KhoiLuong.');
+    throw new Error('Tệp đơn vị tải lên thiếu Biểu 8. C3_NhuCau hoặc Biểu 4. B1_KhoiLuong.');
   }
 
   const c3Rows = XLSX.utils.sheet_to_json<(string | number)[]>(wb.Sheets[c3SheetName], { header: 1, defval: '' });
@@ -53,8 +53,8 @@ export async function regenerateFormsFromEditedUnitWorkbook(
 
   // Tạo Phiếu thu số liệu đầy đủ mới từ tệp đơn vị đã sửa
   const formWb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(formWb, wb.Sheets[b1SheetName], '3. B1_KhoiLuong');
-  if (b2CtSheetName) XLSX.utils.book_append_sheet(formWb, wb.Sheets[b2CtSheetName], '4. B2_CT_TacDong');
+  XLSX.utils.book_append_sheet(formWb, wb.Sheets[b1SheetName], '4. B1_KhoiLuong');
+  if (b2CtSheetName) XLSX.utils.book_append_sheet(formWb, wb.Sheets[b2CtSheetName], '5. B2_CT_TacDong');
   if (d1SheetName) XLSX.utils.book_append_sheet(formWb, wb.Sheets[d1SheetName], '9. D1_NhanLuc');
   if (wb.Sheets['Can_cu_goi_y']) XLSX.utils.book_append_sheet(formWb, wb.Sheets['Can_cu_goi_y'], 'Can_cu_goi_y');
 
@@ -81,7 +81,7 @@ export async function regenerateFormsFromEditedUnitWorkbook(
         b1Header,
         ...posRows
       ]);
-      XLSX.utils.book_append_sheet(posWb, wsPosB1, '3. B1_KhoiLuong');
+      XLSX.utils.book_append_sheet(posWb, wsPosB1, '4. B1_KhoiLuong');
       const posBuf = XLSX.write(posWb, { bookType: 'xlsx', type: 'array' });
       zip.file(`Phieu_ViTri_${vCode}_${compactDate}.xlsx`, posBuf);
     });

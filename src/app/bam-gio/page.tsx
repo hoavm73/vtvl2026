@@ -161,8 +161,8 @@ export default function BamGioPage() {
                 </InfoTip>
               </div>
               <div className="inline-flex rounded-lg bg-[var(--surface-secondary)] p-1 border border-[var(--border-subtle)]">
-                <button type="button" onClick={() => handleSwitchStep(3)} className={`h-8 px-3 rounded-md text-xs font-semibold cursor-pointer transition-colors ${stepMode === 3 ? 'bg-[var(--primary)] text-white' : 'text-[var(--foreground)] hover:text-[var(--primary)]'}`}>Bước 3: B1_KhoiLuong</button>
-                <button type="button" onClick={() => handleSwitchStep(4)} className={`h-8 px-3 rounded-md text-xs font-semibold cursor-pointer transition-colors ${stepMode === 4 ? 'bg-[var(--primary)] text-white' : 'text-[var(--foreground)] hover:text-[var(--primary)]'}`}>Bước 4: B2_CT_TacDong</button>
+                <button type="button" onClick={() => handleSwitchStep(3)} className={`h-8 px-3 rounded-md text-xs font-semibold cursor-pointer transition-colors ${stepMode === 3 ? 'bg-[var(--primary)] text-white' : 'text-[var(--foreground)] hover:text-[var(--primary)]'}`}>Biểu 4: B1_KhoiLuong</button>
+                <button type="button" onClick={() => handleSwitchStep(4)} className={`h-8 px-3 rounded-md text-xs font-semibold cursor-pointer transition-colors ${stepMode === 4 ? 'bg-[var(--primary)] text-white' : 'text-[var(--foreground)] hover:text-[var(--primary)]'}`}>Biểu 5: B2_CT_TacDong</button>
               </div>
             </div>
 

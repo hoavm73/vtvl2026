@@ -57,8 +57,8 @@ export function ExcelOrderSwitcher({
           </span>
           <span className="text-[#334155] truncate max-w-[500px]">
             {isExcel
-              ? '1. A1 → 2. A2 → 3. B1 → 4. B2_CT → 5. B2 → 6. C1 → 7. C2 → 8. C3 → 9. D1 → 10. D2 → 11. DM_SP → DU_BAO → 13. K → 14. T → 15. S'
-              : '11. DM_SP → 6. C1 → 1. A1 → 2. A2 → 3. B1 → 4. B2_CT → 5. B2 → 7. C2 → 9. D1 → 8. C3 → DU_BAO → 10. D2'}
+              ? '1. A1 → 2. A2 → 3. C1 → 4. B1 → 5. B2_CT → 6. B2 → 7. C2 → 8. C3 → 9. D1 → 10. D2 → 11. DM_SP → 12. DU_BAO → 13. K → 14. T → 15. S'
+              : '11. DM_SP → 3. C1 → 1. A1 → 2. A2 → 4. B1 → 5. B2_CT → 6. B2 → 7. C2 → 9. D1 → 8. C3 → 12. DU_BAO → 10. D2'}
           </span>
         </div>
       </div>

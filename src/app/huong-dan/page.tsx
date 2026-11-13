@@ -34,7 +34,7 @@ const ROLE_CARDS = [
     details: [
       'Thực hiện đo định mức thời gian xử lý công việc thực tế (Trung bình phút/sản phẩm) tại Giai đoạn 3 (/bam-gio).',
       'Kê khai sản lượng thực tế phát sinh trong kỳ 01/10/2025–30/9/2026 (Cột C biểu B1), ghi rõ nguồn xác thực (Cột H, I).',
-      'Kê khai chi tiết các công đoạn đã ứng dụng chuyển đổi số tại biểu 4. B2_CT_TacDong.'
+      'Kê khai chi tiết các công đoạn đã ứng dụng chuyển đổi số tại biểu 5. B2_CT_TacDong.'
     ]
   }
 ];

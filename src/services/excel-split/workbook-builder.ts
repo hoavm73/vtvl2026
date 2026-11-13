@@ -155,8 +155,8 @@ export async function generateUnitFiles(opts: UnitSplitOptions): Promise<SplitRe
     ['Lưu ý kiêm nhiệm', 'Trang Thong_tin_don_vi và 9. D1_NhanLuc chỉ có ở Phiếu đầy đủ của đầu mối', 'Phiếu từng vị trí không có D1 để 1 người giữ 2 vị trí không bị tính 2 lần']
   ]);
   XLSX.utils.book_append_sheet(formWb, wsThongTinDonVi, 'Thong_tin_don_vi');
-  XLSX.utils.book_append_sheet(formWb, wsB1, '3. B1_KhoiLuong');
-  XLSX.utils.book_append_sheet(formWb, wsB2Ct, '4. B2_CT_TacDong');
+  XLSX.utils.book_append_sheet(formWb, wsB1, '4. B1_KhoiLuong');
+  XLSX.utils.book_append_sheet(formWb, wsB2Ct, '5. B2_CT_TacDong');
   XLSX.utils.book_append_sheet(formWb, wsD1, '9. D1_NhanLuc');
   if (wb.Sheets['Can_cu_goi_y']) {
     XLSX.utils.book_append_sheet(formWb, wb.Sheets['Can_cu_goi_y'], 'Can_cu_goi_y');
@@ -180,7 +180,7 @@ export async function generateUnitFiles(opts: UnitSplitOptions): Promise<SplitRe
         b1Header,
         ...posRows
       ]);
-      XLSX.utils.book_append_sheet(posWb, wsPosB1, '3. B1_KhoiLuong');
+      XLSX.utils.book_append_sheet(posWb, wsPosB1, '4. B1_KhoiLuong');
       const wsPosCanCu = XLSX.utils.aoa_to_sheet([
         [`CĂN CỨ GỢI Ý Ô MÀU CAM CỦA VỊ TRÍ ${pos.vtvlCode} — ${pos.vtvlName}`],
         ['Mục', 'Nội dung hướng dẫn'],

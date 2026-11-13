@@ -211,7 +211,7 @@ export async function mergeSurveyFormsIntoUnit(
   if (sSheetName) {
     const sData = XLSX.utils.sheet_to_json<(string | number)[]>(unitWb.Sheets[sSheetName], { header: 1, defval: '' });
     sData.push([
-      '01/10/2025–30/9/2026', '3. B1_KhoiLuong & 8. C3_NhuCau', unitCode,
+      '01/10/2025–30/9/2026', '4. B1_KhoiLuong & 8. C3_NhuCau', unitCode,
       `Nạp và gộp ${validFormsCount} phiếu khảo sát (${updatedTasksCount} công việc · ${conflicts.length} xung đột)`,
       unitFile.name, mergedFileName, `Phiếu đã nạp: ${formNamesJoined}`, `Đầu mối đơn vị ${unitCode}`, mergeDate, `v${newVersion}`
     ]);

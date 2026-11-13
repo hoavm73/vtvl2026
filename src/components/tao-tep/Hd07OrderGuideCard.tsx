@@ -57,7 +57,7 @@ ${unit.nameVi} (${unit.nameEn}) kính trình Ban Giám hiệu và Phòng Tổ ch
 
 2. Kết quả định lượng khối lượng công việc và xác định nhu cầu nhân lực:
 - Kỳ thống kê khối lượng công việc (Biểu B1, B2_CT): ${HD07_CONSTANTS.STATISTICAL_PERIOD}; Thời điểm chốt nhân lực D1: ${HD07_CONSTANTS.STAFF_CUTOFF_DATE}.
-- Tổng số vị trí việc làm (Biểu 6. C1_VTVL): ${vtvlCount} vị trí; Tổng số đầu việc gắn sản phẩm chuẩn (Biểu 2. A2 & 3. B1): ${taskCount} công việc.
+- Tổng số vị trí việc làm (Biểu 3. C1_VTVL): ${vtvlCount} vị trí; Tổng số đầu việc gắn sản phẩm chuẩn (Biểu 2. A2 & 4. B1): ${taskCount} công việc.
 - Tổng nhu cầu nhân lực xác định theo phương pháp kết hợp PP1, PP2 (Biểu 8. C3_NhuCau): ${fteTotal} người (FTE).
 
 ${unit.nameVi} kính trình Ban Giám hiệu và Phòng Tổ chức - Nhân sự xem xét, thẩm định./.

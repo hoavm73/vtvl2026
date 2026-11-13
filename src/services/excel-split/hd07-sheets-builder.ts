@@ -102,10 +102,10 @@ export function appendHd07GuideAndRefSheets(
     ['BIỂU 13. K_KiemTra — BẢNG KIỂM SOÁT CHÉO TỰ ĐỘNG BỘ BIỂU VTVL (HD 07-HD/BTCTW, NĐ 232/2026/NĐ-CP & TT 31/2026/TT-BGDĐT)'],
     ['STT', 'Nhóm biểu', 'Chỉ tiêu kiểm soát chéo', 'Bảng nguồn', 'Bảng đích', 'Số dòng lỗi', 'Ngưỡng cho phép', 'Kết luận tự động'],
     [1, 'A2 ↔ A1', 'Mọi công việc tại A2_CongViec phải gắn với Mã nhiệm vụ hợp lệ tại A1_NhiemVu', '2. A2_CongViec', '1. A1_NhiemVu', 0, 0, 'ĐẠT'],
-    [2, 'A2/B1 ↔ C1/C2', 'Mọi Mã VTVL phải tồn tại tại 6. C1_VTVL và gắn Bậc nghề nghiệp (Bậc 1–5) theo Nghị định 232/2026/NĐ-CP tại 7. C2_NangLuc', '3. B1_KhoiLuong', '6. C1_VTVL', fNum(0, `COUNTIFS('6. C1_VTVL'!$A$3:$A$100,"<>",'6. C1_VTVL'!$K$3:$K$100,"<>ĐẠT")`), 0, 'ĐẠT'],
-    [3, 'B1 (Cột R)', 'Kiểm tra cảnh báo dữ liệu khối lượng, thời gian và nguồn số liệu tại B1_KhoiLuong', '3. B1_KhoiLuong', '11. DM_SAN_PHAM', fNum(0, `COUNTIFS('3. B1_KhoiLuong'!$A$3:$A$500,"<>",'3. B1_KhoiLuong'!$R$3:$R$500,"<>ĐẠT")`), 0, opts.unitCode === 'TCNS' ? 'ĐẠT' : 'CẦN RÀ SOÁT (Chờ nạp phiếu đo/khảo sát thực tế)'],
-    [4, 'B2_CT ↔ B1', 'Kiểm tra giờ giảm chuyển đổi số/thuê dịch vụ không vượt giờ B1 và đã đối chiếu trùng', '4. B2_CT_TacDong', '3. B1_KhoiLuong', fNum(0, `COUNTIFS('4. B2_CT_TacDong'!$A$3:$A$202,"<>",'4. B2_CT_TacDong'!$P$3:$P$202,"<>ĐẠT")`), 0, 'ĐẠT'],
-    [5, 'D1 ↔ C1', 'Kiểm tra không trùng Mã nguồn lực, không vượt quỹ giờ và rà soát chuyển tiếp Trợ giảng (khoản 5 Điều 15 TT 31/2026)', '9. D1_NhanLuc', '6. C1_VTVL', fNum(0, `COUNTIFS('9. D1_NhanLuc'!$A$3:$A$500,"<>",'9. D1_NhanLuc'!$J$3:$J$500,"<>Đạt")`), 0, 'ĐẠT'],
+    [2, 'A2/B1 ↔ C1/C2', 'Mọi Mã VTVL phải tồn tại tại 3. C1_VTVL và gắn Bậc nghề nghiệp (Bậc 1–5) theo Nghị định 232/2026/NĐ-CP tại 7. C2_NangLuc', '4. B1_KhoiLuong', '3. C1_VTVL', fNum(0, `COUNTIFS('3. C1_VTVL'!$A$3:$A$100,"<>",'3. C1_VTVL'!$K$3:$K$100,"<>ĐẠT")`), 0, 'ĐẠT'],
+    [3, 'B1 (Cột R)', 'Kiểm tra cảnh báo dữ liệu khối lượng, thời gian và nguồn số liệu tại B1_KhoiLuong', '4. B1_KhoiLuong', '11. DM_SAN_PHAM', fNum(0, `COUNTIFS('4. B1_KhoiLuong'!$A$3:$A$500,"<>",'4. B1_KhoiLuong'!$R$3:$R$500,"<>ĐẠT")`), 0, opts.unitCode === 'TCNS' ? 'ĐẠT' : 'CẦN RÀ SOÁT (Chờ nạp phiếu đo/khảo sát thực tế)'],
+    [4, 'B2_CT ↔ B1', 'Kiểm tra giờ giảm chuyển đổi số/thuê dịch vụ không vượt giờ B1 và đã đối chiếu trùng', '5. B2_CT_TacDong', '4. B1_KhoiLuong', fNum(0, `COUNTIFS('5. B2_CT_TacDong'!$A$3:$A$202,"<>",'5. B2_CT_TacDong'!$P$3:$P$202,"<>ĐẠT")`), 0, 'ĐẠT'],
+    [5, 'D1 ↔ C1', 'Kiểm tra không trùng Mã nguồn lực, không vượt quỹ giờ và rà soát chuyển tiếp Trợ giảng (khoản 5 Điều 15 TT 31/2026)', '9. D1_NhanLuc', '3. C1_VTVL', fNum(0, `COUNTIFS('9. D1_NhanLuc'!$A$3:$A$500,"<>",'9. D1_NhanLuc'!$J$3:$J$500,"<>Đạt")`), 0, 'ĐẠT'],
     [6, 'C3 ↔ D2', 'Kiểm tra nhu cầu nhân lực C3_NhuCau và phương án biên chế 2027–2031 tại D2_PhuongAn', '8. C3_NhuCau', '10. D2_PhuongAn', fNum(0, `COUNTIFS('8. C3_NhuCau'!$A$3:$A$100,"<>",'8. C3_NhuCau'!$M$3:$M$100,"<>ĐẠT")`), 0, 'ĐẠT']
   ]);
   XLSX.utils.book_append_sheet(wb, wsK, '13. K_KiemTra');
@@ -121,7 +121,7 @@ export function appendHd07GuideAndRefSheets(
       opts.unitCode === 'TCNS' ? 'Phòng Tổ chức – Nhân sự (HCM-UTE)' : `${opts.unitNameVi} (HCM-UTE)`,
       fNum(opts.unitCode === 'TCNS' ? 8 : 4, `COUNTA('1. A1_NhiemVu'!$A$3:$A$200)`),
       fNum(totalTasks, `COUNTA('2. A2_CongViec'!$A$3:$A$500)`),
-      fNum(positions.length, `COUNTA('6. C1_VTVL'!$A$3:$A$100)`),
+      fNum(positions.length, `COUNTA('3. C1_VTVL'!$A$3:$A$100)`),
       fNum(totalFte, `SUM('8. C3_NhuCau'!$J$3:$J$100)`),
       opts.unitCode === 'TCNS' ? 'Đã nạp dữ liệu mẫu thực tế TCNS' : 'Đang thu thập phiếu khảo sát thực tế'
     ]

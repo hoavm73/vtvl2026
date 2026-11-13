@@ -214,10 +214,10 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
   // 13. K_KiemTra
   const kRows: GenericGridRow[] = [
     { id: 'k-1', stt: 1, nhomBieu: 'A2 ↔ A1', chiTieu: 'Mọi công việc A2 phải thuộc mã nhiệm vụ hợp lệ tại A1', bangNguon: '2. A2_CongViec', bangDich: '1. A1_NhiemVu', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
-    { id: 'k-2', stt: 2, nhomBieu: 'B1 ↔ C1', chiTieu: 'Mã VTVL tại B1 phải tồn tại và kích hoạt tại C1', bangNguon: '3. B1_KhoiLuong', bangDich: '6. C1_VTVL', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
-    { id: 'k-3', stt: 3, nhomBieu: 'B1 Cảnh báo', chiTieu: 'Khối lượng và thời gian làm việc phải lớn hơn 0', bangNguon: '3. B1_KhoiLuong', bangDich: 'Nội bộ B1', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
-    { id: 'k-4', stt: 4, nhomBieu: 'B2_CT ↔ B1', chiTieu: 'Mã công việc tác động phải khớp công việc đã khai tại B1', bangNguon: '4. B2_CT_TacDong', bangDich: '3. B1_KhoiLuong', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
-    { id: 'k-5', stt: 5, nhomBieu: 'D1 ↔ C1', chiTieu: 'Mã VTVL nhân sự đảm nhận phải khớp danh mục VTVL tại C1', bangNguon: '9. D1_NhanLuc', bangDich: '6. C1_VTVL', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
+    { id: 'k-2', stt: 2, nhomBieu: 'B1 ↔ C1', chiTieu: 'Mã VTVL tại B1 phải tồn tại và kích hoạt tại C1', bangNguon: '4. B1_KhoiLuong', bangDich: '3. C1_VTVL', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
+    { id: 'k-3', stt: 3, nhomBieu: 'B1 Cảnh báo', chiTieu: 'Khối lượng và thời gian làm việc phải lớn hơn 0', bangNguon: '4. B1_KhoiLuong', bangDich: 'Nội bộ B1', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
+    { id: 'k-4', stt: 4, nhomBieu: 'B2_CT ↔ B1', chiTieu: 'Mã công việc tác động phải khớp công việc đã khai tại B1', bangNguon: '5. B2_CT_TacDong', bangDich: '4. B1_KhoiLuong', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
+    { id: 'k-5', stt: 5, nhomBieu: 'D1 ↔ C1', chiTieu: 'Mã VTVL nhân sự đảm nhận phải khớp danh mục VTVL tại C1', bangNguon: '9. D1_NhanLuc', bangDich: '3. C1_VTVL', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
     { id: 'k-6', stt: 6, nhomBieu: 'C3 ↔ D2', chiTieu: 'Nhu cầu nhân sự năm cơ sở phải liên thông với phương án D2', bangNguon: '8. C3_NhuCau', bangDich: '10. D2_PhuongAn', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' }
   ];
 

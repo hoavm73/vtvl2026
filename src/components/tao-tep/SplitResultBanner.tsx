@@ -120,7 +120,7 @@ export function RegenFormsFromUnitBox({ exportDate, includeZip, onDownload }: { 
         <ChevronDown className="w-4 h-4 text-[var(--ink-muted)] transition-transform group-open:rotate-180 shrink-0" />
       </summary>
       <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--sheet)] space-y-3 text-xs sm:text-sm">
-        <p className="text-[var(--ink-muted)]">Gợi ý phút/SP chỉ có ở vị trí tính theo <strong>PP2</strong>. Khi đơn vị đổi phương pháp ở Biểu <code>8. C3_NhuCau</code> hoặc bổ sung công việc ở <code>3. B1_KhoiLuong</code>, hãy chọn tệp đơn vị đã sửa tại đây để tạo lại Phiếu thu số liệu và gói <code>.zip</code> từng vị trí.</p>
+        <p className="text-[var(--ink-muted)]">Gợi ý phút/SP chỉ có ở vị trí tính theo <strong>PP2</strong>. Khi đơn vị đổi phương pháp ở Biểu <code>8. C3_NhuCau</code> hoặc bổ sung công việc ở <code>4. B1_KhoiLuong</code>, hãy chọn tệp đơn vị đã sửa tại đây để tạo lại Phiếu thu số liệu và gói <code>.zip</code> từng vị trí.</p>
         <div>
           <label htmlFor="regen-unit-file" className="block font-bold text-[var(--foreground)] mb-1">Chọn tệp đơn vị đã chỉnh sửa (.xlsx)</label>
           <input id="regen-unit-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => void handleFileChange(e)} className="w-full text-xs rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2 file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--primary)] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white cursor-pointer" />

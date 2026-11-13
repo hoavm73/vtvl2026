@@ -64,16 +64,16 @@ export type SheetOrderMode = 'excel' | 'technical';
 export const EXCEL_NATURAL_SHEET_ORDER: ExcelSheetKey[] = [
   'A1',     // 1. A1_NhiemVu
   'A2',     // 2. A2_CongViec
-  'B1',     // 3. B1_KhoiLuong
-  'B2_CT',  // 4. B2_CT_TacDong
-  'B2',     // 5. B2_ThayDoi
-  'C1',     // 6. C1_VTVL
+  'C1',     // 3. C1_VTVL
+  'B1',     // 4. B1_KhoiLuong
+  'B2_CT',  // 5. B2_CT_TacDong
+  'B2',     // 6. B2_ThayDoi
   'C2',     // 7. C2_NangLuc
   'C3',     // 8. C3_NhuCau
   'D1',     // 9. D1_NhanLuc
   'D2',     // 10. D2_PhuongAn
   'DM_SP',  // 11. DM_SAN_PHAM
-  'DU_BAO', // DU_BAO_5_NAM
+  'DU_BAO', // 12. DU_BAO_5_NAM
   'K',      // 13. K_KiemTra
   'T',      // 14. T_TienDo
   'S'       // 15. S_NhatKy
@@ -86,16 +86,16 @@ export const EXCEL_NATURAL_SHEET_ORDER: ExcelSheetKey[] = [
  */
 export const TECHNICAL_DEPENDENCY_ORDER: ExcelSheetKey[] = [
   'DM_SP',  // Bước 2: 11. DM_SAN_PHAM (tra cứu phút chuẩn)
-  'C1',     // Bước 3: 6. C1_VTVL (nguồn tra cứu VTVL)
+  'C1',     // Bước 3: 3. C1_VTVL (nguồn tra cứu VTVL)
   'A1',     // Bước 4: 1. A1_NhiemVu (danh mục nhiệm vụ gốc)
   'A2',     // Bước 5: 2. A2_CongViec (gắn nhiệm vụ và VTVL)
-  'B1',     // Bước 6: 3. B1_KhoiLuong
-  'B2_CT',  // Bước 7: 4. B2_CT_TacDong
-  'B2',     // Xem: 5. B2_ThayDoi (tự tính)
+  'B1',     // Bước 6: 4. B1_KhoiLuong
+  'B2_CT',  // Bước 7: 5. B2_CT_TacDong
+  'B2',     // Xem: 6. B2_ThayDoi (tự tính)
   'C2',     // Bước 8: 7. C2_NangLuc
   'D1',     // Bước 9: 9. D1_NhanLuc
   'C3',     // Bước 10: 8. C3_NhuCau
-  'DU_BAO', // Bước 11: DU_BAO_5_NAM
+  'DU_BAO', // Bước 11: 12. DU_BAO_5_NAM
   'D2',     // Bước 12: 10. D2_PhuongAn
   'K',      // Bổ sung: 13. K_KiemTra
   'T',      // Bổ sung: 14. T_TienDo

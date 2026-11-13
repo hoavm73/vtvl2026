@@ -218,9 +218,9 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
           splitRow(activeSheet, rowId);
         }}
         onDeleteRow={(rowId) => {
-          if (isReadOnlyViewer) return;
+          if (isReadOnlyViewer) return false;
           markSheetDirty(activeSheet);
-          deleteRow(activeSheet, rowId);
+          return deleteRow(activeSheet, rowId);
         }}
         onSaveSheet={handleSave}
         onSaveAndNext={handleSaveAndNext}

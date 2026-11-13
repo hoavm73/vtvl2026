@@ -3,7 +3,8 @@ import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDE
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
-import { isMissionCodeDuplicate, canDeleteMission, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
+import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
+import { validateRowDeletion } from './excel-grid-delete-guards';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
 import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
@@ -149,18 +150,16 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     });
   }, [currentUnit.code, currentUnit.nameVi]);
 
-  const deleteRow = useCallback((sheetKey: ExcelSheetKey, rowIdOrIds: string | string[]) => {
+  const deleteRow = useCallback((sheetKey: ExcelSheetKey, rowIdOrIds: string | string[]): boolean => {
     const ids = Array.isArray(rowIdOrIds) ? rowIdOrIds : [rowIdOrIds];
-    if (ids.length === 0) return;
-    if (sheetKey === 'A1') {
-      for (const id of ids) {
-        const check = canDeleteMission(data.A1 || [], data.A2 || [], id);
-        if (!check.canDelete) {
-          alert(check.message);
-          return;
-        }
-      }
+    if (ids.length === 0) return false;
+
+    const guard = validateRowDeletion(data, sheetKey, ids);
+    if (!guard.canDelete) {
+      alert(guard.message);
+      return false;
     }
+
     setData((prev) => {
       let nextData = prev;
       for (const id of ids) {
@@ -168,7 +167,8 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
       }
       return recalculateGridFormulas(nextData, currentUnit.code, currentUnit.nameVi);
     });
-  }, [currentUnit.code, currentUnit.nameVi, data.A1, data.A2]);
+    return true;
+  }, [currentUnit.code, currentUnit.nameVi, data]);
 
   const splitRow = useCallback((sheetKey: ExcelSheetKey, rowId: string) => {
     if (sheetKey !== 'A1') return;

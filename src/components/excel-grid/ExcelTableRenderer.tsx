@@ -22,7 +22,7 @@ interface ExcelTableRendererProps {
   onCellChange: (rowId: string, field: string, value: string | number) => void;
   onAddRow: () => void;
   onSplitRow?: (rowId: string) => void;
-  onDeleteRow: (rowId: string | string[]) => void;
+  onDeleteRow: (rowId: string | string[]) => boolean | void;
   onSaveSheet?: () => void;
   onSaveAndNext?: () => void;
   canNext?: boolean;
@@ -109,22 +109,19 @@ export function ExcelTableRenderer({
       setConfirmDeleteId('selected');
       return;
     }
-    const idx = rows.findIndex((r) => r.id === rowId);
-    if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
-    setLastDeletedCount(1);
-    onDeleteRow(rowId);
-    if (selectedRowIds.has(rowId)) {
-      const next = new Set(selectedRowIds);
-      next.delete(rowId);
-      setSelectedRowIds(next);
+    const ok = onDeleteRow(rowId);
+    if (ok !== false) {
+      const idx = rows.findIndex((r) => r.id === rowId);
+      if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
+      setLastDeletedCount(1);
+      if (selectedRowIds.has(rowId)) setSelectedRowIds((prev) => { const next = new Set(prev); next.delete(rowId); return next; });
     }
   };
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return;
     const ids = Array.from(selectedRowIds);
-    if (ids.length > 0) {
-      onDeleteRow(ids);
+    if (ids.length > 0 && onDeleteRow(ids) !== false) {
       setLastDeletedCount(ids.length);
       setSelectedRowIds(new Set());
     }

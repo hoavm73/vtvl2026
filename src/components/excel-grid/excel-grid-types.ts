@@ -71,9 +71,9 @@ export const EXCEL_NATURAL_SHEET_ORDER: ExcelSheetKey[] = [
   'C2',     // 7. C2_NangLuc
   'C3',     // 8. C3_NhuCau
   'D1',     // 9. D1_NhanLuc
-  'D2',     // 10. D2_PhuongAn
-  'DM_SP',  // 11. DM_SAN_PHAM
-  'DU_BAO', // 12. DU_BAO_5_NAM
+  'DU_BAO', // 10. DU_BAO_5_NAM
+  'D2',     // 11. D2_PhuongAn
+  'DM_SP',  // 12. DM_SAN_PHAM
   'K',      // 13. K_KiemTra
   'T',      // 14. T_TienDo
   'S'       // 15. S_NhatKy
@@ -85,7 +85,7 @@ export const EXCEL_NATURAL_SHEET_ORDER: ExcelSheetKey[] = [
  * DM_SP -> C1 -> A1 -> A2 -> B1 -> B2_CT -> B2 -> C2 -> D1 -> C3 -> DU_BAO -> D2.
  */
 export const TECHNICAL_DEPENDENCY_ORDER: ExcelSheetKey[] = [
-  'DM_SP',  // Bước 2: 11. DM_SAN_PHAM (tra cứu phút chuẩn)
+  'DM_SP',  // Bước 2: 12. DM_SAN_PHAM (tra cứu phút chuẩn)
   'C1',     // Bước 3: 3. C1_VTVL (nguồn tra cứu VTVL)
   'A1',     // Bước 4: 1. A1_NhiemVu (danh mục nhiệm vụ gốc)
   'A2',     // Bước 5: 2. A2_CongViec (gắn nhiệm vụ và VTVL)
@@ -95,8 +95,8 @@ export const TECHNICAL_DEPENDENCY_ORDER: ExcelSheetKey[] = [
   'C2',     // Bước 8: 7. C2_NangLuc
   'D1',     // Bước 9: 9. D1_NhanLuc
   'C3',     // Bước 10: 8. C3_NhuCau
-  'DU_BAO', // Bước 11: 12. DU_BAO_5_NAM
-  'D2',     // Bước 12: 10. D2_PhuongAn
+  'DU_BAO', // Bước 11: 10. DU_BAO_5_NAM
+  'D2',     // Bước 12: 11. D2_PhuongAn
   'K',      // Bổ sung: 13. K_KiemTra
   'T',      // Bổ sung: 14. T_TienDo
   'S'       // Bổ sung: 15. S_NhatKy

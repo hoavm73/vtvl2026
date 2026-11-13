@@ -105,165 +105,68 @@ export function splitMissionRow(
   return { newRow, nextCode };
 }
 
-export function buildNewGridRow(
-  sheetKey: string,
-  prevData: Record<string, GenericGridRow[]>,
-  currentUnit: { code: string; nameVi: string }
-): { newRow: GenericGridRow; extraC2Row?: GenericGridRow } {
-  const sheetRows = prevData[sheetKey] || [];
-  const newId = `${sheetKey.toLowerCase()}-${Date.now().toString(36)}`;
+export { buildNewGridRow } from './excel-grid-row-templates';
 
-  if (sheetKey === 'A1') {
-    const nextCode = getNextMissionCode(sheetRows, currentUnit.code);
-    return {
-      newRow: {
-        id: newId,
-        maNhiemVu: nextCode,
-        tenNhiemVu: '',
-        coQuan: currentUnit.nameVi,
-        canCu: '',
-        ky: '01/10/2025–30/9/2026',
-        trangThai: 'Tiếp tục thực hiện',
-        nguon: ''
-      }
-    };
-  }
-
-  if (sheetKey === 'A2') {
-    const existingA2 = prevData.A2 || [];
-    const lastRow = existingA2[existingA2.length - 1];
-    const targetMission =
-      (lastRow?.maNhiemVu as string) ||
-      (prevData.A1 && (prevData.A1[0]?.maNhiemVu as string)) ||
-      `${currentUnit.code}.NV01`;
-    const nextTaskCode = getNextTaskCode(existingA2, targetMission);
-    return {
-      newRow: {
-        id: newId,
-        maCongViec: nextTaskCode,
-        maNhiemVu: targetMission,
-        maVtvl: '',
-        tenCongViec: '',
-        sanPham: '',
-        dvt: '',
-        chatLuong: '',
-        canCu: ''
-      }
-    };
-  }
-
-  if (sheetKey === 'B1') {
-    return {
-      newRow: {
-        id: newId,
-        maCongViec: '',
-        maVtvl: '',
-        soSpNam: '',
-        phutThucTe: '',
-        gioBoSung: 0,
-        gioSp: 0,
-        gioTong: 0,
-        nguon: '',
-        ppThucTe: '',
-        phutApDung: 0,
-        canhBao: 'CHƯA ĐẠT'
-      }
-    };
-  }
-
-  if (sheetKey === 'B2_CT') {
-    return {
-      newRow: {
-        id: newId,
-        maCongViec: '',
-        maVtvl: '',
-        congDoan: '',
-        loaiTacDong: '',
-        mucDo: '',
-        gioBienDong: '',
-        vanBan: ''
-      }
-    };
-  }
-
-  if (sheetKey === 'B2') {
-    return {
-      newRow: {
-        id: newId,
-        maCongViec: '',
-        maVtvl: '',
-        gioB1: '',
-        gioGiam: '',
-        gioMoi: '',
-        gioSauTacDong: '',
-        tyLeThayDoi: '',
-        trangThai: 'Đã kiểm chứng',
-        doiChieuTrung: 'Đã đối chiếu'
-      }
-    };
-  }
-
-  if (sheetKey === 'C1') {
-    return {
-      newRow: {
-        id: newId,
-        maVtvl: '',
-        tenVtvl: '',
-        loaiNhanLuc: '',
-        quyetDinh: '',
-        gioChuanPp2: 1904,
-        canCuQuyGio: 'Mức chung 1.904 giờ – quy định về thời giờ làm việc',
-        trangThai: 'Tiếp tục sử dụng',
-        gioRieng: '',
-        xacNhanGioRieng: 'Không',
-        cheDoLamViec: 'Phổ biến (40 giờ/tuần)',
-        kiemTra: 'ĐẠT'
-      }
-    };
-  }
-
-  if (sheetKey === 'D2') {
-    return {
-      newRow: {
-        id: newId,
-        maVtvl: '',
-        nam: '2027',
-        soNguoiCanBoTri: '',
-        soNguoiCoTheBoTri: '',
-        bienCheGiao: '',
-        deNghiDieuChinh: '',
-        nguonGiaiTrinh: '',
-        canhBao: 'CHƯA ĐẠT',
-        trangThai: 'Đang xây dựng'
-      }
-    };
-  }
-
-  return { newRow: { id: newId } };
-}
-
-export function createFiveYearD2Rows(
+export function createFiveYearForecastRows(
+  sheetKey: 'DU_BAO' | 'D2',
   sheetRows: GenericGridRow[],
   rowId: string,
   selectedVtvl: string,
-  countD1: number,
-  baseNeed: number
+  extra: { countD1?: number; baseNeed?: number }
 ): GenericGridRow[] {
-  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const YEARS = ['2027', '2028', '2029', '2030', '2031'];
   const otherRows = sheetRows.filter((r) => r.id !== rowId && r.maVtvl !== selectedVtvl);
-  const newFiveRows: GenericGridRow[] = D2_YEARS.map((yr) => ({
-    id: `d2-${selectedVtvl}-${yr}-${Date.now().toString(36)}`,
-    maVtvl: selectedVtvl,
-    nam: yr,
-    soNguoiCanBoTri: baseNeed,
-    soNguoiCoTheBoTri: countD1,
-    bienCheGiao: countD1,
-    deNghiDieuChinh: baseNeed - countD1,
-    nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
-    canhBao: 'ĐẠT',
-    trangThai: 'Đang xây dựng'
-  }));
+  const baseNeed = extra.baseNeed || 1;
+  const countD1 = extra.countD1 || 0;
+  const newFiveRows: GenericGridRow[] = YEARS.map((yr) => {
+    if (sheetKey === 'DU_BAO') {
+      return {
+        id: `dubao-${selectedVtvl}-${yr}-${Date.now().toString(36)}`,
+        maVtvl: selectedVtvl,
+        nam: yr,
+        bienDong: 0,
+        noiDungThayDoi: `Duy trì ổn định nhân lực năm ${yr}`,
+        canCuNguon: 'Chiến lược phát triển HCM-UTE 2026–2030',
+        nguoiC3: baseNeed,
+        nguoiCanBoTriNam: baseNeed,
+        kiemTra: 'ĐẠT'
+      };
+    }
+    return {
+      id: `d2-${selectedVtvl}-${yr}-${Date.now().toString(36)}`,
+      maVtvl: selectedVtvl,
+      nam: yr,
+      soNguoiCanBoTri: baseNeed,
+      soNguoiCoTheBoTri: countD1,
+      bienCheGiao: countD1,
+      deNghiDieuChinh: baseNeed - countD1,
+      nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
+      canhBao: 'ĐẠT',
+      trangThai: 'Đang xây dựng'
+    };
+  });
   return [...otherRows, ...newFiveRows];
+}
+
+export function syncFiveYearVtvlSelect(
+  prev: Record<string, GenericGridRow[]>,
+  sheetKey: 'DU_BAO' | 'D2',
+  rowId: string,
+  rawValue: string,
+  unitCode: string
+): Record<string, GenericGridRow[]> {
+  const rawCode = rawValue.trim();
+  const sheetRows = prev[sheetKey] || [];
+  if (!rawCode) {
+    const updatedRows = sheetRows.map((r) => (r.id === rowId ? { ...r, maVtvl: '' } : r));
+    return { ...prev, [sheetKey]: updatedRows };
+  }
+  const selectedVtvl = rawCode.includes('.') ? rawCode : `${unitCode}.${rawCode}`;
+  const countD1 = (prev.D1 || []).filter((d) => d.maVtvl === selectedVtvl).length;
+  const c3Match = (prev.C3 || []).find((c) => c.maVtvl === selectedVtvl);
+  const baseNeed = Number(c3Match?.nguoiCanBoTri) || 1;
+  const newRows = createFiveYearForecastRows(sheetKey, sheetRows, rowId, selectedVtvl, { countD1, baseNeed });
+  return { ...prev, [sheetKey]: newRows };
 }
 
 export function handleSyncDeleteRow(

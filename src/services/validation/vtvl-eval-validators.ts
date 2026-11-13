@@ -159,8 +159,8 @@ export function validateDuBaoSheet(rows: GenericGridRow[], validVtvlCodes: Set<s
 
     if (!vCode || !validVtvlCodes.has(vCode)) {
       issues.push({
-        id: `dubao-vtvl-${idx}`, ruleId: 'R-DB-01', sheetKey: 'DU_BAO', sheetName: 'DU_BAO_5_NAM',
-        cellRef: `DU_BAO_5_NAM!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+        id: `dubao-vtvl-${idx}`, ruleId: 'R-DB-01', sheetKey: 'DU_BAO', sheetName: '10. DU_BAO_5_NAM',
+        cellRef: `10. DU_BAO_5_NAM!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: `Mã VTVL chưa có ở C1: "${vCode}"`, currentValue: vCode || 'Trống',
         suggestion: 'Mã VTVL phải khớp danh mục vị trí việc làm đã ban hành.'
       });
@@ -168,8 +168,8 @@ export function validateDuBaoSheet(rows: GenericGridRow[], validVtvlCodes: Set<s
 
     if (isNaN(year) || year < 2027 || year > 2031 || !Number.isInteger(year)) {
       issues.push({
-        id: `dubao-year-${idx}`, ruleId: 'R-DB-02', sheetKey: 'DU_BAO', sheetName: 'DU_BAO_5_NAM',
-        cellRef: `DU_BAO_5_NAM!B${rowNum}`, rowId: r.id, field: 'nam', severity: 'fix',
+        id: `dubao-year-${idx}`, ruleId: 'R-DB-02', sheetKey: 'DU_BAO', sheetName: '10. DU_BAO_5_NAM',
+        cellRef: `10. DU_BAO_5_NAM!B${rowNum}`, rowId: r.id, field: 'nam', severity: 'fix',
         title: `NĂM KHÔNG HỢP LỆ: "${r.nam}"`, currentValue: String(r.nam || 'Trống'),
         suggestion: 'Năm dự báo phải là số nguyên trong khoảng 2027 đến 2031.'
       });
@@ -178,8 +178,8 @@ export function validateDuBaoSheet(rows: GenericGridRow[], validVtvlCodes: Set<s
     if (vCode && year) {
       if (seenPairs.has(pairKey)) {
         issues.push({
-          id: `dubao-dup-${idx}`, ruleId: 'R-DB-03', sheetKey: 'DU_BAO', sheetName: 'DU_BAO_5_NAM',
-          cellRef: `DU_BAO_5_NAM!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+          id: `dubao-dup-${idx}`, ruleId: 'R-DB-03', sheetKey: 'DU_BAO', sheetName: '10. DU_BAO_5_NAM',
+          cellRef: `10. DU_BAO_5_NAM!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
           title: `TRÙNG MÃ VTVL – NĂM: Cặp (${vCode}, ${year}) lặp lại`, currentValue: pairKey,
           suggestion: 'Mỗi vị trí chỉ có duy nhất 1 dòng dự báo cho mỗi năm.'
         });
@@ -190,8 +190,8 @@ export function validateDuBaoSheet(rows: GenericGridRow[], validVtvlCodes: Set<s
     // Rule nghiêm ngặt: Phân biệt 0 (hợp lệ) với rỗng/null/undefined
     if (rawDiff === '' || rawDiff === null || rawDiff === undefined || isNaN(Number(rawDiff))) {
       issues.push({
-        id: `dubao-diff-${idx}`, ruleId: 'R-DB-04', sheetKey: 'DU_BAO', sheetName: 'DU_BAO_5_NAM',
-        cellRef: `DU_BAO_5_NAM!C${rowNum}`, rowId: r.id, field: 'bienDong', severity: 'fix',
+        id: `dubao-diff-${idx}`, ruleId: 'R-DB-04', sheetKey: 'DU_BAO', sheetName: '10. DU_BAO_5_NAM',
+        cellRef: `10. DU_BAO_5_NAM!C${rowNum}`, rowId: r.id, field: 'bienDong', severity: 'fix',
         title: 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)', currentValue: String(rawDiff ?? 'Trống'),
         suggestion: 'Bắt buộc nhập số nguyên biến động biên chế (+/- người). Nếu không đổi thì nhập 0.'
       });
@@ -256,8 +256,8 @@ export function validateD2Sheet(rows: GenericGridRow[], validVtvlCodes: Set<stri
 
     if (vCode && !validVtvlCodes.has(vCode)) {
       issues.push({
-        id: `d2-vtvl-${idx}`, ruleId: 'R-D2-01', sheetKey: 'D2', sheetName: '10. D2_PhuongAn',
-        cellRef: `10. D2_PhuongAn!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
+        id: `d2-vtvl-${idx}`, ruleId: 'R-D2-01', sheetKey: 'D2', sheetName: '11. D2_PhuongAn',
+        cellRef: `11. D2_PhuongAn!A${rowNum}`, rowId: r.id, field: 'maVtvl', severity: 'fix',
         title: `Mã VTVL chưa có ở C1: "${vCode}"`, currentValue: vCode,
         suggestion: 'Phương án biên chế chỉ lập cho các vị trí việc làm có trong danh mục C1.'
       });
@@ -265,8 +265,8 @@ export function validateD2Sheet(rows: GenericGridRow[], validVtvlCodes: Set<stri
 
     if (rawAdjust === '' || rawAdjust === null || rawAdjust === undefined || isNaN(Number(rawAdjust))) {
       issues.push({
-        id: `d2-adjust-${idx}`, ruleId: 'R-D2-02', sheetKey: 'D2', sheetName: '10. D2_PhuongAn',
-        cellRef: `10. D2_PhuongAn!G${rowNum}`, rowId: r.id, field: 'deNghiDieuChinh', severity: 'fix',
+        id: `d2-adjust-${idx}`, ruleId: 'R-D2-02', sheetKey: 'D2', sheetName: '11. D2_PhuongAn',
+        cellRef: `11. D2_PhuongAn!G${rowNum}`, rowId: r.id, field: 'deNghiDieuChinh', severity: 'fix',
         title: 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)', currentValue: String(rawAdjust ?? 'Trống'),
         suggestion: 'Bắt buộc nhập số người đề nghị điều chỉnh tăng/giảm (+/- người). Nhập 0 nếu giữ nguyên.'
       });

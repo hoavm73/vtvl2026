@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, TECHNICAL_DEPENDENCY_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
-import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, createFiveYearD2Rows } from './excel-grid-code-helpers';
+import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
 import { isMissionCodeDuplicate, canDeleteMission, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
@@ -118,19 +118,10 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         return recalculateGridFormulas({ ...prev, B2_CT: updatedRows }, currentUnit.code, currentUnit.nameVi);
       }
 
-      // 5. Khi chọn Mã VTVL ở Biểu D2 -> tự động sinh 5 hàng tương ứng 5 năm 2027–2031
-      if (sheetKey === 'D2' && field === 'maVtvl') {
-        const rawCode = String(value).trim();
-        if (!rawCode) {
-          const updatedRows = sheetRows.map((r) => (r.id === rowId ? { ...r, maVtvl: '' } : r));
-          return recalculateGridFormulas({ ...prev, D2: updatedRows }, currentUnit.code, currentUnit.nameVi);
-        }
-        const selectedVtvl = rawCode.includes('.') ? rawCode : `${currentUnit.code}.${rawCode}`;
-        const countD1 = (prev.D1 || []).filter((d) => d.maVtvl === selectedVtvl).length;
-        const c3Match = (prev.C3 || []).find((c) => c.maVtvl === selectedVtvl);
-        const baseNeed = Number(c3Match?.nguoiCanBoTri) || 1;
-        const updatedD2 = createFiveYearD2Rows(sheetRows, rowId, selectedVtvl, countD1, baseNeed);
-        return recalculateGridFormulas({ ...prev, D2: updatedD2 }, currentUnit.code, currentUnit.nameVi);
+      // 5. Khi chọn Mã VTVL ở Biểu DU_BAO hoặc D2 -> tự động sinh 5 hàng tương ứng 5 năm 2027–2031
+      if ((sheetKey === 'DU_BAO' || sheetKey === 'D2') && field === 'maVtvl') {
+        const nextData = syncFiveYearVtvlSelect(prev, sheetKey, rowId, String(value), currentUnit.code);
+        return recalculateGridFormulas(nextData, currentUnit.code, currentUnit.nameVi);
       }
 
       const updatedRows = sheetRows.map((row) => (row.id === rowId ? { ...row, [field]: value } : row));

@@ -119,51 +119,55 @@ export function recalculateGridFormulas(
   });
   next.C3 = updatedC3;
 
-  // 4. DU_BAO_5_NAM
-  const duBaoMap = new Map((next.DU_BAO || []).map((r) => [String(r.maVtvl), r]));
-  const updatedDuBao: GenericGridRow[] = c1Positions.map((c, idx) => {
-    const vCode = String(c.maVtvl);
-    const existing = duBaoMap.get(vCode);
-    const c3Match = updatedC3.find((r) => r.maVtvl === vCode);
-    const basePeople = Number(c3Match?.nguoiCanBoTri) || 1;
-    const rawBienDong = existing?.bienDong;
-    const isMissingBienDong = rawBienDong === '' || rawBienDong === null || rawBienDong === undefined;
-    const diff = isMissingBienDong ? 0 : Number(rawBienDong);
-    const duBaoAlert = isMissingBienDong ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
-    return {
-      id: existing?.id || `dubao-sync-${idx + 1}`,
-      maVtvl: vCode,
-      nam: existing?.nam || '2027',
-      bienDong: isMissingBienDong ? '' : diff,
-      noiDungThayDoi: existing?.noiDungThayDoi || 'Duy trì ổn định nhân lực',
-      canCuNguon: existing?.canCuNguon || 'Kế hoạch chiến lược HCM-UTE',
-      nguoiC3: basePeople,
-      nguoiCanBoTriNam: Math.max(0, basePeople + diff),
-      kiemTra: duBaoAlert
-    };
-  });
-  next.DU_BAO = updatedDuBao;
-
-  // 5. D2_PhuongAn (Tự động sinh đủ 5 năm 2027–2031 cho mỗi VTVL)
+  // 4. DU_BAO_5_NAM (5 năm 2027–2031 cho mỗi VTVL)
   const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
-  const d2Map = new Map((next.D2 || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
-  const d1Staff = next.D1 || [];
-  const d2VtvlList = Array.from(new Set([
+  const allForecastVtvls = Array.from(new Set([
     ...c1Positions.map((c) => String(c.maVtvl)).filter(Boolean),
+    ...(next.DU_BAO || []).map((d) => String(d.maVtvl)).filter(Boolean),
     ...(next.D2 || []).map((d) => String(d.maVtvl)).filter(Boolean)
   ]));
 
-  const updatedD2: GenericGridRow[] = d2VtvlList.flatMap((vCode, cIdx) => {
-    const duBaoMatch = updatedDuBao.find((d) => d.maVtvl === vCode);
+  const duBaoMap = new Map((next.DU_BAO || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
+  const updatedDuBao: GenericGridRow[] = allForecastVtvls.flatMap((vCode, cIdx) => {
     const c3Match = updatedC3.find((r) => r.maVtvl === vCode);
-    const baseNeed = Number(c3Match?.nguoiCanBoTri) || Number(duBaoMatch?.nguoiCanBoTriNam) || 1;
+    const basePeople = Number(c3Match?.nguoiCanBoTri) || 1;
+
+    return D2_YEARS.map((yr) => {
+      const key = `${vCode}_${yr}`;
+      const existing = duBaoMap.get(key);
+      const rawBienDong = existing?.bienDong;
+      const isMissing = rawBienDong === '' || rawBienDong === null || rawBienDong === undefined;
+      const diff = isMissing ? 0 : Number(rawBienDong);
+      const alert = isMissing ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
+      return {
+        id: existing?.id || `dubao-sync-${cIdx + 1}-${yr}`,
+        maVtvl: vCode,
+        nam: yr,
+        bienDong: isMissing ? '' : diff,
+        noiDungThayDoi: existing?.noiDungThayDoi || `Duy trì ổn định nhân lực năm ${yr}`,
+        canCuNguon: existing?.canCuNguon || 'Kế hoạch chiến lược HCM-UTE',
+        nguoiC3: basePeople,
+        nguoiCanBoTriNam: Math.max(0, basePeople + diff),
+        kiemTra: alert
+      };
+    });
+  });
+  next.DU_BAO = updatedDuBao;
+
+  // 5. D2_PhuongAn (Tự động đồng bộ số người cần bố trí từ 10. DU_BAO_5_NAM)
+  const d2Map = new Map((next.D2 || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
+  const duBaoLookup = new Map(updatedDuBao.map((d) => [`${d.maVtvl}_${d.nam}`, d]));
+  const d1Staff = next.D1 || [];
+
+  const updatedD2: GenericGridRow[] = allForecastVtvls.flatMap((vCode, cIdx) => {
     const countD1 = d1Staff.filter((d) => d.maVtvl === vCode).length;
 
     return D2_YEARS.map((yr) => {
       const key = `${vCode}_${yr}`;
       const existing = d2Map.get(key);
-      const need = existing?.soNguoiCanBoTri ? Number(existing.soNguoiCanBoTri) : baseNeed;
-      const count = existing?.soNguoiCoTheBoTri ? Number(existing.soNguoiCoTheBoTri) : countD1;
+      const duBaoItem = duBaoLookup.get(key);
+      const need = duBaoItem ? Number(duBaoItem.nguoiCanBoTriNam) : (Number(existing?.soNguoiCanBoTri) || 1);
+      const count = existing?.soNguoiCoTheBoTri !== undefined && existing?.soNguoiCoTheBoTri !== '' ? Number(existing.soNguoiCoTheBoTri) : countD1;
       const rawAdjust = existing?.deNghiDieuChinh;
       const isMissingAdjust = rawAdjust === '' || rawAdjust === null || rawAdjust === undefined;
       const adjustVal = isMissingAdjust ? (need - count) : Number(rawAdjust);
@@ -177,7 +181,7 @@ export function recalculateGridFormulas(
         soNguoiCoTheBoTri: count,
         bienCheGiao: existing?.bienCheGiao ?? count,
         deNghiDieuChinh: isMissingAdjust ? '' : adjustVal,
-        nguonGiaiTrinh: existing?.nguonGiaiTrinh || `Phương án cân đối nhân sự năm ${yr}`,
+        nguonGiaiTrinh: existing?.nguonGiaiTrinh || (duBaoItem?.canCuNguon ? `${duBaoItem.canCuNguon} - ${duBaoItem.noiDungThayDoi}` : `Phương án cân đối nhân sự năm ${yr}`),
         canhBao: d2Alert,
         trangThai: existing?.trangThai || 'Đã hoàn thành ở đơn vị'
       };
@@ -206,7 +210,7 @@ export function recalculateGridFormulas(
     { id: 'k-3', stt: 3, nhomBieu: 'B1 Cảnh báo', chiTieu: 'Khối lượng và thời gian làm việc phải lớn hơn 0', bangNguon: '4. B1_KhoiLuong', bangDich: 'Nội bộ B1', soDongLoi: k3Errors, nguongChoPhep: '0', ketLuan: k3Errors === 0 ? 'ĐẠT' : 'LỖI' },
     { id: 'k-4', stt: 4, nhomBieu: 'B2_CT ↔ B1', chiTieu: 'Mã công việc tác động phải khớp công việc đã khai tại B1', bangNguon: '5. B2_CT_TacDong', bangDich: '4. B1_KhoiLuong', soDongLoi: k4Errors, nguongChoPhep: '0', ketLuan: k4Errors === 0 ? 'ĐẠT' : 'LỖI' },
     { id: 'k-5', stt: 5, nhomBieu: 'D1 ↔ C1', chiTieu: 'Mã VTVL nhân sự đảm nhận phải khớp danh mục VTVL tại C1', bangNguon: '9. D1_NhanLuc', bangDich: '3. C1_VTVL', soDongLoi: k5Errors, nguongChoPhep: '0', ketLuan: k5Errors === 0 ? 'ĐẠT' : 'LỖI' },
-    { id: 'k-6', stt: 6, nhomBieu: 'C3 ↔ D2', chiTieu: 'Nhu cầu nhân sự năm cơ sở phải liên thông với phương án D2', bangNguon: '8. C3_NhuCau', bangDich: '10. D2_PhuongAn', soDongLoi: k6Errors, nguongChoPhep: '0', ketLuan: k6Errors === 0 ? 'ĐẠT' : 'LỖI' }
+    { id: 'k-6', stt: 6, nhomBieu: 'C3 ↔ D2', chiTieu: 'Nhu cầu nhân sự năm cơ sở phải liên thông với phương án D2', bangNguon: '8. C3_NhuCau', bangDich: '11. D2_PhuongAn', soDongLoi: k6Errors, nguongChoPhep: '0', ketLuan: k6Errors === 0 ? 'ĐẠT' : 'LỖI' }
   ];
 
   // 7. Update T_TienDo

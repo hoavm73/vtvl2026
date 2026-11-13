@@ -155,8 +155,8 @@ export const HD07_12_STEP_ORDER = [
   { step: 8, sheet: '7. C2_NangLuc', title: 'Hoàn thiện bản mô tả vị trí việc làm và khung năng lực' },
   { step: 9, sheet: '9. D1_NhanLuc', title: 'Kê khai nguồn nhân lực hiện có chốt tại 30/9/2026 (rà soát chuyển tiếp Trợ giảng)' },
   { step: 10, sheet: '8. C3_NhuCau', title: 'Xác định nhu cầu nhân lực năm cơ sở theo PP1, PP2, PP3' },
-  { step: 11, sheet: 'DU_BAO_5_NAM', title: 'Dự báo thay đổi khối lượng công việc giai đoạn 2027–2031' },
-  { step: 12, sheet: '10. D2_PhuongAn', title: 'Lập phương án biên chế từng năm giai đoạn 2027–2031 và kiểm tra K_KiemTra' }
+  { step: 11, sheet: '10. DU_BAO_5_NAM', title: 'Dự báo thay đổi khối lượng công việc giai đoạn 2027–2031' },
+  { step: 12, sheet: '11. D2_PhuongAn', title: 'Lập phương án biên chế từng năm giai đoạn 2027–2031 và kiểm tra K_KiemTra' }
 ] as const;
 
 export const STANDARD_PRODUCTS_CATALOG: StandardProductItem[] = [

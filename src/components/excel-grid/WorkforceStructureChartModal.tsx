@@ -115,7 +115,7 @@ export function WorkforceStructureChartModal({
                     [{unitCode}] {unitNameVi}
                   </span>
                 </div>
-                <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (3. C1_VTVL) và phương án bố trí biên chế (10. D2_PhuongAn)</p>
+                <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (3. C1_VTVL) và phương án bố trí biên chế (11. D2_PhuongAn)</p>
               </div>
             </div>
 
@@ -215,7 +215,7 @@ export function WorkforceStructureChartModal({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-2">
                 <div>
                   <h3 className="text-xs font-semibold text-[#004776]">3. Đối chiếu Nhu cầu cần bố trí và Nhân lực có thể bố trí theo từng VTVL (Biểu D2 ↔ C1)</h3>
-                  <p className="text-[11px] text-[#476885]">So sánh Cột C (Cần bố trí), Cột D (Có thể bố trí) và Cột G (Đề nghị điều chỉnh) tại Biểu 10. D2_PhuongAn</p>
+                  <p className="text-[11px] text-[#476885]">So sánh Cột C (Cần bố trí), Cột D (Có thể bố trí) và Cột G (Đề nghị điều chỉnh) tại Biểu 11. D2_PhuongAn</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
                   <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#0072BC]" /> Cần bố trí (D2.C)</span>

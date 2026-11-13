@@ -177,41 +177,43 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
     };
   });
 
-  // 11. DU_BAO_5_NAM
-  const duBaoRows: GenericGridRow[] = c1Rows.map((c, idx) => {
+  // 10. DU_BAO_5_NAM (Tự động sinh 5 hàng tương ứng 5 năm 2027–2031 cho mỗi VTVL)
+  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const duBaoRows: GenericGridRow[] = c1Rows.flatMap((c, idx) => {
     const c3Item = c3Rows.find((r) => r.maVtvl === c.maVtvl);
     const baseCount = Number(c3Item?.nguoiCanBoTri) || 1;
-    return {
-      id: `dubao-${idx + 1}`,
+    return D2_YEARS.map((yr) => ({
+      id: `dubao-${idx + 1}-${yr}`,
       maVtvl: c.maVtvl,
-      nam: '2027',
+      nam: yr,
       bienDong: 0,
-      noiDungThayDoi: 'Duy trì ổn định nhân lực theo đề án vị trí việc làm',
+      noiDungThayDoi: `Duy trì ổn định nhân lực năm ${yr}`,
       canCuNguon: 'Chiến lược phát triển HCM-UTE 2026–2030',
       nguoiC3: baseCount,
       nguoiCanBoTriNam: baseCount,
       kiemTra: 'ĐẠT'
-    };
+    }));
   });
 
-  // 12. D2_PhuongAn (Tự động sinh 5 hàng tương ứng 5 năm 2027–2031 cho mỗi VTVL)
-  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  // 11. D2_PhuongAn (Đồng bộ số người cần bố trí từ DU_BAO)
   const d2Rows: GenericGridRow[] = c1Rows.flatMap((c, idx) => {
-    const c3Item = c3Rows.find((r) => r.maVtvl === c.maVtvl);
-    const targetPeople = Number(c3Item?.nguoiCanBoTri) || 1;
     const currentPeople = d1Rows.filter((d) => d.maVtvl === c.maVtvl).length;
-    return D2_YEARS.map((yr) => ({
-      id: `d2-${idx + 1}-${yr}`,
-      maVtvl: c.maVtvl,
-      nam: yr,
-      soNguoiCanBoTri: targetPeople,
-      soNguoiCoTheBoTri: currentPeople,
-      bienCheGiao: currentPeople,
-      deNghiDieuChinh: targetPeople - currentPeople,
-      trangThai: 'Đã hoàn thành ở đơn vị',
-      nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
-      canhBao: 'ĐẠT'
-    }));
+    return D2_YEARS.map((yr) => {
+      const duBaoItem = duBaoRows.find((db) => db.maVtvl === c.maVtvl && db.nam === yr);
+      const targetPeople = Number(duBaoItem?.nguoiCanBoTriNam) || 1;
+      return {
+        id: `d2-${idx + 1}-${yr}`,
+        maVtvl: c.maVtvl,
+        nam: yr,
+        soNguoiCanBoTri: targetPeople,
+        soNguoiCoTheBoTri: currentPeople,
+        bienCheGiao: currentPeople,
+        deNghiDieuChinh: targetPeople - currentPeople,
+        trangThai: 'Đã hoàn thành ở đơn vị',
+        nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
+        canhBao: 'ĐẠT'
+      };
+    });
   });
 
   // 13. K_KiemTra
@@ -221,7 +223,7 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
     { id: 'k-3', stt: 3, nhomBieu: 'B1 Cảnh báo', chiTieu: 'Khối lượng và thời gian làm việc phải lớn hơn 0', bangNguon: '4. B1_KhoiLuong', bangDich: 'Nội bộ B1', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
     { id: 'k-4', stt: 4, nhomBieu: 'B2_CT ↔ B1', chiTieu: 'Mã công việc tác động phải khớp công việc đã khai tại B1', bangNguon: '5. B2_CT_TacDong', bangDich: '4. B1_KhoiLuong', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
     { id: 'k-5', stt: 5, nhomBieu: 'D1 ↔ C1', chiTieu: 'Mã VTVL nhân sự đảm nhận phải khớp danh mục VTVL tại C1', bangNguon: '9. D1_NhanLuc', bangDich: '3. C1_VTVL', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' },
-    { id: 'k-6', stt: 6, nhomBieu: 'C3 ↔ D2', chiTieu: 'Nhu cầu nhân sự năm cơ sở phải liên thông với phương án D2', bangNguon: '8. C3_NhuCau', bangDich: '10. D2_PhuongAn', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' }
+    { id: 'k-6', stt: 6, nhomBieu: 'C3 ↔ D2', chiTieu: 'Nhu cầu nhân sự năm cơ sở phải liên thông với phương án D2', bangNguon: '8. C3_NhuCau', bangDich: '11. D2_PhuongAn', soDongLoi: 0, nguongChoPhep: '0', ketLuan: 'ĐẠT' }
   ];
 
   // 14. T_TienDo

@@ -82,7 +82,7 @@ export function computeStageStatuses(
     { num: 2, stepNum: 2, shortLabel: 'Bước 2: Công việc & SP (A2)', fullTitle: 'Bước 2/8 (HD 07) — Xác định công việc, công đoạn và sản phẩm đầu ra (Biểu 2. A2_CongViec & 11. DM_SAN_PHAM)' },
     { num: 3, stepNum: 5, shortLabel: 'Bước 5: Danh mục VTVL (C1, C2)', fullTitle: 'Bước 5/8 (HD 07) — Đối chiếu danh mục VTVL chuẩn, xây dựng bản mô tả công việc và khung năng lực (Biểu 6. C1 & 7. C2)' },
     { num: 4, stepNum: 6, shortLabel: 'Bước 6: Nhu cầu (C3) & Xuất biểu', fullTitle: 'Bước 6/8 (HD 07) — Xác định số lượng người làm việc cần thiết PP1/PP2/PP3 (Biểu 8. C3_NhuCau) & Xuất bộ 10 biểu gốc' },
-    { num: 5, stepNum: 7, shortLabel: 'Bước 7: Đối chiếu D1 & Phương án D2', fullTitle: 'Bước 7/8 (HD 07) — Đối chiếu số lượng người làm việc hiện có (Biểu 9. D1_NhanLuc) & Lập phương án sử dụng biên chế (Biểu 10. D2_PhuongAn)' }
+    { num: 5, stepNum: 7, shortLabel: 'Bước 7: Đối chiếu D1, Dự báo & Phương án D2', fullTitle: 'Bước 7/8 (HD 07) — Đối chiếu nhân lực (Biểu 9. D1_NhanLuc), Dự báo 5 năm (10. DU_BAO_5_NAM) & Phương án biên chế (11. D2_PhuongAn)' }
   ];
 
   return labels.map((item) => {

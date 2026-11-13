@@ -55,7 +55,7 @@ export async function auditUnitWorkbooks(files: File[], isSampleDemo = false): P
       { code: 'C1', match: 'C1', desc: '3. C1_VTVL' }, { code: 'B1', match: 'B1', desc: '4. B1_KhoiLuong' },
       { code: 'B2_CT', match: 'B2_CT', desc: '5. B2_CT_TacDong' }, { code: 'B2', match: 'B2_ThayDoi', desc: '6. B2_ThayDoi' },
       { code: 'C2', match: 'C2', desc: '7. C2_NangLuc' }, { code: 'C3', match: 'C3', desc: '8. C3_NhuCau' },
-      { code: 'D1', match: 'D1', desc: '9. D1_NhanLuc' }, { code: 'D2', match: 'D2', desc: '10. D2_PhuongAn' }
+      { code: 'D1', match: 'D1', desc: '9. D1_NhanLuc' }, { code: 'D2', match: 'D2', desc: '11. D2_PhuongAn' }
     ];
 
     for (const req of requiredPrefixes) {

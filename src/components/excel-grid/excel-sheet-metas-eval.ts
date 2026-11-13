@@ -69,14 +69,34 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
       { colLetter: 'J', field: 'ghiChu', headerName: 'Ghi chú', width: '180px' }
     ]
   },
-  D2: {
-    key: 'D2',
+  DU_BAO: {
+    key: 'DU_BAO',
     stepNum: 10,
     sheetNumberPrefix: '10',
-    sheetName: '10. D2_PhuongAn',
-    shortLabel: '10. D2_PhuongAn',
-    title: 'Biểu D2_ Phương án (Lập phương án biên chế từng năm 2027–2031)',
-    guideDesc: 'Biểu 10 (Bước 7 nghiệp vụ): So sánh số người cần bố trí (Cột C, lấy từ DU_BAO_5_NAM) với số người có thể bố trí (Cột D, đếm từ D1_NhanLuc).',
+    sheetName: '10. DU_BAO_5_NAM',
+    shortLabel: '10. DU_BAO_5_NAM',
+    title: 'Biểu 10. DU_BAO_5_NAM — Dự báo thay đổi khối lượng công việc 2027–2031',
+    guideDesc: 'Biểu 10 (Bước 7 nghiệp vụ): Dự báo biến động nhu cầu nhân lực từng năm giai đoạn 2027–2031 so với năm cơ sở (C3).',
+    ruleHint: 'Mỗi thay đổi tăng/giảm (+/- người) phải có căn cứ rõ ràng và được lãnh đạo xác nhận.',
+    columns: [
+      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
+      { colLetter: 'B', field: 'nam', headerName: 'Năm dự báo', width: '100px' },
+      { colLetter: 'C', field: 'bienDong', headerName: 'Biến động (+/- người, 0 nếu không đổi)', width: '160px', type: 'number' },
+      { colLetter: 'D', field: 'noiDungThayDoi', headerName: 'Nội dung thay đổi', width: '260px' },
+      { colLetter: 'E', field: 'canCuNguon', headerName: 'Căn cứ nguồn', width: '200px' },
+      { colLetter: 'G', field: 'nguoiC3', headerName: 'Người C3 năm cơ sở', width: '130px', isFormula: true, formulaHint: '=INDEX(C3!J,...)' },
+      { colLetter: 'H', field: 'nguoiCanBoTriNam', headerName: 'Người cần bố trí trong năm', width: '160px', isFormula: true, formulaHint: '=G+C' },
+      { colLetter: 'I', field: 'kiemTra', headerName: 'Kiểm tra, đối chiếu', width: '180px', type: 'status' }
+    ]
+  },
+  D2: {
+    key: 'D2',
+    stepNum: 11,
+    sheetNumberPrefix: '11',
+    sheetName: '11. D2_PhuongAn',
+    shortLabel: '11. D2_PhuongAn',
+    title: 'Biểu 11. D2_PhuongAn — Lập phương án biên chế từng năm 2027–2031',
+    guideDesc: 'Biểu 11 (Bước 7 nghiệp vụ): So sánh số người cần bố trí (Cột C, lấy từ 10. DU_BAO_5_NAM) với số người có thể bố trí (Cột D, đếm từ D1_NhanLuc).',
     ruleHint: 'Đề nghị điều chỉnh (Cột G) = Cột C - Cột D. Bắt buộc nhập số nguyên (nhập 0 nếu không đổi).',
     columns: [
       { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
@@ -92,12 +112,12 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
   },
   DM_SP: {
     key: 'DM_SP',
-    stepNum: 11,
-    sheetNumberPrefix: '11',
-    sheetName: '11. DM_SAN_PHAM',
-    shortLabel: '11. DM_SAN_PHAM',
-    title: 'Biểu 11. DM_SAN_PHAM — Danh mục 06 nhóm sản phẩm chuẩn và định mức',
-    guideDesc: 'Biểu 11: Tra cứu sản phẩm chuẩn phân nhóm I–VI và thời gian định mức (phút/SP) được HCM-UTE xác nhận.',
+    stepNum: 12,
+    sheetNumberPrefix: '12',
+    sheetName: '12. DM_SAN_PHAM',
+    shortLabel: '12. DM_SAN_PHAM',
+    title: 'Biểu 12. DM_SAN_PHAM — Danh mục 06 nhóm sản phẩm chuẩn và định mức',
+    guideDesc: 'Biểu 12: Tra cứu sản phẩm chuẩn phân nhóm I–VI và thời gian định mức (phút/SP) được HCM-UTE xác nhận.',
     ruleHint: 'Nếu sử dụng mã sản phẩm chuẩn thì B1_KhoiLuong sẽ tự động tra cứu định mức chuẩn.',
     columns: [
       { colLetter: 'A', field: 'maSpChuan', headerName: 'Mã SP chuẩn', width: '120px' },
@@ -108,26 +128,6 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
       { colLetter: 'F', field: 'vanBan', headerName: 'Văn bản / Nguồn xác nhận', width: '220px' },
       { colLetter: 'G', field: 'trangThai', headerName: 'Trạng thái chuẩn', width: '130px', type: 'select', selectOptions: ['Đã xác nhận', 'Đang thẩm định'] },
       { colLetter: 'H', field: 'coQuan', headerName: 'Cơ quan xác nhận', width: '160px' }
-    ]
-  },
-  DU_BAO: {
-    key: 'DU_BAO',
-    stepNum: 12,
-    sheetNumberPrefix: 'DU_BAO',
-    sheetName: 'DU_BAO_5_NAM',
-    shortLabel: 'DU_BAO_5_NAM',
-    title: 'Biểu DU_BAO_5_NAM — Dự báo thay đổi khối lượng công việc 2027–2031',
-    guideDesc: 'Biểu DU_BAO_5_NAM: Dự báo biến động nhu cầu nhân lực từng năm giai đoạn 2027–2031 so với năm cơ sở (C3).',
-    ruleHint: 'Mỗi thay đổi tăng/giảm (+/- người) phải có căn cứ rõ ràng và được lãnh đạo xác nhận.',
-    columns: [
-      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'B', field: 'nam', headerName: 'Năm dự báo', width: '100px' },
-      { colLetter: 'C', field: 'bienDong', headerName: 'Biến động (+/- người, 0 nếu không đổi)', width: '160px', type: 'number' },
-      { colLetter: 'D', field: 'noiDungThayDoi', headerName: 'Nội dung thay đổi', width: '260px' },
-      { colLetter: 'E', field: 'canCuNguon', headerName: 'Căn cứ nguồn', width: '200px' },
-      { colLetter: 'G', field: 'nguoiC3', headerName: 'Người C3 năm cơ sở', width: '130px', isFormula: true, formulaHint: '=INDEX(C3!J,...)' },
-      { colLetter: 'H', field: 'nguoiCanBoTriNam', headerName: 'Người cần bố trí trong năm', width: '160px', isFormula: true, formulaHint: '=G+C' },
-      { colLetter: 'I', field: 'kiemTra', headerName: 'Kiểm tra, đối chiếu', width: '180px', type: 'status' }
     ]
   },
   K: {

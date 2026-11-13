@@ -64,3 +64,4 @@ export function buildCombinedWorkforceItems(c1Rows: GenericGridRow[], d2Rows: Ge
   });
   return list;
 }
+

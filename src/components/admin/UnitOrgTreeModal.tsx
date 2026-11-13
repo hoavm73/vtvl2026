@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Network, Maximize2, Minimize2, ArrowLeft } from 'lucide-react';
+import { X, Network, Maximize2, Minimize2, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
 import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { ModalPortal } from '@/components/ui/ModalPortal';
@@ -28,6 +28,7 @@ export function UnitOrgTreeModal({
   const [selectedNode, setSelectedNode] = useState<UnitOrgNode | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isCompact, setIsCompact] = useState(true);
 
   const treeData = useMemo(() => {
     return buildUnitOrgTree(
@@ -145,11 +146,11 @@ export function UnitOrgTreeModal({
             </div>
           </div>
 
-          {/* Action bar: Bộ chọn đơn vị & Thống kê nhanh */}
-          <div className="px-3.5 sm:px-6 py-2.5 bg-[#f8fafc] border-b border-[#cbd5e1] flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <div className="flex flex-wrap items-center gap-2.5 min-w-0 flex-1">
+          {/* Action bar: Bộ chọn đơn vị & Thống kê nhanh & Nút thu nhỏ tổng quan */}
+          <div className="px-3.5 sm:px-6 py-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
               <span className="text-xs font-bold text-[#004776] shrink-0">Chọn đơn vị:</span>
-              <div className="w-64 sm:w-80">
+              <div className="w-56 sm:w-72">
                 <ShadcnSelect
                   value={selectedUnitCode}
                   onValueChange={setSelectedUnitCode}
@@ -165,20 +166,34 @@ export function UnitOrgTreeModal({
                 />
               </div>
 
-              <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#64748b]">
-                <span className="px-2.5 py-1 rounded-md bg-white border border-[#cbd5e1] text-[#004776]">
+              <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-[#64748b]">
+                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#004776]">
                   {treeData.totalPositions} VTVL
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-white border border-[#cbd5e1] text-emerald-800">
-                  {treeData.totalExpectedStaff} người dự kiến
+                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-emerald-800">
+                  {treeData.totalExpectedStaff} người
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-white border border-[#cbd5e1] text-sky-800">
+                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-sky-800">
                   {treeData.totalTasks} đầu việc
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsCompact(!isCompact)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer ${
+                  isCompact
+                    ? 'bg-[#004776] text-white border-[#004776] shadow-2xs'
+                    : 'bg-white text-[#004776] border-[#cbd5e1] hover:bg-slate-100'
+                }`}
+                title={isCompact ? 'Chuyển sang chế độ chi tiết' : 'Thu nhỏ để xem tổng quan hơn'}
+              >
+                {isCompact ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
+                <span>{isCompact ? 'Thu nhỏ tổng quan' : 'Chế độ chuẩn'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleExpandAll}
@@ -198,15 +213,15 @@ export function UnitOrgTreeModal({
             </div>
           </div>
 
-          {/* Nội dung chính: 2 cột */}
+          {/* Nội dung chính: 2 cột (Cột cây 50% - Cột chi tiết 50%) */}
           <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden min-h-0 divide-y md:divide-y-0 md:divide-x divide-[#cbd5e1]">
-            <div className="md:col-span-5 p-4 overflow-y-auto space-y-3 bg-[#f8fafc]/50">
+            <div className="md:col-span-6 p-3 sm:p-4 overflow-y-auto space-y-2 bg-[#f8fafc]/50">
               <div className="flex items-center justify-between pb-1 border-b border-[#e2e8f0]">
                 <h4 className="text-xs font-bold text-[#004776] uppercase tracking-wide">
                   Sơ đồ phân cấp thứ bậc VTVL
                 </h4>
                 <span className="text-[11px] text-[#64748b] italic">
-                  Bấm vào node cha để sổ cấp dưới
+                  Bấm vào thẻ để xem công việc bên phải
                 </span>
               </div>
 
@@ -216,16 +231,17 @@ export function UnitOrgTreeModal({
                 expandedIds={expandedIds}
                 onToggleExpand={handleToggleExpand}
                 onSelectNode={setSelectedNode}
+                isCompact={isCompact}
               />
             </div>
 
-            <div className="md:col-span-7 flex flex-col overflow-hidden bg-white">
+            <div className="md:col-span-6 flex flex-col overflow-hidden bg-white">
               <UnitOrgNodeDetailPane node={currentViewingNode} />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between shrink-0">
+          <div className="px-3.5 sm:px-6 py-2 sm:py-2.5 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between shrink-0">
             <span className="text-xs text-[#64748b]">
               Dữ liệu sơ đồ được liên kết tự động từ 15 sheet nghiệp vụ của {treeData.unitNameVi}.
             </span>

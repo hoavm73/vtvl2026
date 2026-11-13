@@ -197,14 +197,14 @@ export function ExcelRowCardEditor({
                       <ShadcnSelect
                         value={String(val ?? '')}
                         onValueChange={(v) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, v); }}
-                        options={selectOpts.map((opt) => ({ value: opt, label: opt }))}
-                        placeholder="-- Chọn --"
+                        options={[{ value: '', label: 'Chọn' }, ...selectOpts.map((opt) => ({ value: opt, label: opt }))]}
+                        placeholder="Chọn"
                         size="md"
                       />
                     ) : col.type === 'number' ? (
                       <input type="number" value={val !== undefined ? String(val) : ''} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, Number(e.target.value)); }} className={`${inputCls} text-right`} />
                     ) : (
-                      <textarea rows={3} value={String(val ?? '')} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, e.target.value); }} className={inputCls} placeholder={`Nhập ${col.headerName.toLowerCase()}...`} />
+                      <textarea rows={3} value={String(val ?? '')} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, e.target.value); }} className={inputCls} placeholder="Nhập nội dung" />
                     )}
                   </div>
                 );

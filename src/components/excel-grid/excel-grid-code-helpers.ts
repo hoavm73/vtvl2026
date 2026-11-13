@@ -119,12 +119,12 @@ export function buildNewGridRow(
       newRow: {
         id: newId,
         maNhiemVu: nextCode,
-        tenNhiemVu: `Nhiệm vụ mới (${nextCode})`,
+        tenNhiemVu: '',
         coQuan: currentUnit.nameVi,
-        canCu: 'QĐ 2266/QĐ-ĐHCNKT',
+        canCu: '',
         ky: '01/10/2025–30/9/2026',
         trangThai: 'Tiếp tục thực hiện',
-        nguon: 'QĐ 2266/QĐ-ĐHCNKT ngày 23/6/2026'
+        nguon: ''
       }
     };
   }
@@ -137,21 +137,17 @@ export function buildNewGridRow(
       (prevData.A1 && (prevData.A1[0]?.maNhiemVu as string)) ||
       `${currentUnit.code}.NV01`;
     const nextTaskCode = getNextTaskCode(existingA2, targetMission);
-    const defaultVtvl =
-      (lastRow?.maVtvl as string) ||
-      (prevData.C1 && (prevData.C1[0]?.maVtvl as string)) ||
-      `${currentUnit.code}.CM63`;
     return {
       newRow: {
         id: newId,
         maCongViec: nextTaskCode,
         maNhiemVu: targetMission,
-        maVtvl: defaultVtvl,
-        tenCongViec: `Công việc mới (${nextTaskCode})`,
-        sanPham: 'Sản phẩm hoàn thành',
-        dvt: 'Hồ sơ / Báo cáo',
-        chatLuong: 'Đạt chuẩn quy định',
-        canCu: 'QĐ 2266 & Mô tả công việc'
+        maVtvl: '',
+        tenCongViec: '',
+        sanPham: '',
+        dvt: '',
+        chatLuong: '',
+        canCu: ''
       }
     };
   }

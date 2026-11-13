@@ -136,7 +136,7 @@ export function ShadcnSelect({
         className={`w-full inline-flex items-center justify-between gap-1.5 border font-normal transition-all outline-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${sizeClass} ${borderClass}`}
         title={selectedOption?.label || value || placeholder}
       >
-        <span className={`truncate text-left ${selectedOption || value ? 'text-[#004776]' : 'text-[#64748b]'}`}>
+        <span className={`truncate text-left ${selectedOption && selectedOption.value !== '' ? 'text-[#004776]' : 'text-[#64748b]'}`}>
           {selectedOption ? selectedOption.label : value || placeholder}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-[#64748b] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />

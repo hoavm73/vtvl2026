@@ -102,7 +102,7 @@ export function ExcelDataCell({
   if (col.type === 'select' || (dynamicOptions && dynamicOptions.length > 0)) {
     const rawOptions = dynamicOptions && dynamicOptions.length > 0 ? dynamicOptions : (col.selectOptions || []);
     const shadcnOptions = [
-      { value: '', label: '-- Chọn --' },
+      { value: '', label: 'Chọn' },
       ...rawOptions.map((opt) => ({ value: opt, label: opt }))
     ];
     return (
@@ -114,7 +114,7 @@ export function ExcelDataCell({
           hasError={isEmptyRequired}
           ariaDescribedBy={isEmptyRequired ? errorId : undefined}
           size={isCompact ? 'cell-compact' : 'cell-comfortable'}
-          placeholder="-- Chọn --"
+          placeholder="Chọn"
           onFocus={() => { setIsFocused(true); onCellTouch?.(cellKey); }}
           onBlur={() => { setIsFocused(false); setHasBlurred(true); }}
           onChange={(nextVal) => {
@@ -179,7 +179,7 @@ export function ExcelDataCell({
           e.target.style.height = `${Math.max(e.target.scrollHeight, minH)}px`;
         }}
         className={`w-full ${minHeightClass} py-1.5 px-2.5 rounded-md border text-[13px] font-normal leading-relaxed resize-none overflow-hidden whitespace-normal break-words outline-hidden ${cellStyle}`}
-        placeholder="Nhập nội dung..."
+        placeholder="Nhập nội dung"
       />
       {isEmptyRequired && (
         <span id={errorId} className="text-[11px] text-[var(--fix)] mt-0.5 px-1 font-medium flex items-center gap-0.5">

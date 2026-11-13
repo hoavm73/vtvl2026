@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
 
 export interface ShadcnSelectOption {
@@ -50,9 +51,21 @@ export function ShadcnSelect({
   onFocus
 }: ShadcnSelectProps) {
   const [open, setOpen] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
   const [search, setSearch] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; openUpward: boolean }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUpward: false
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const selectedOption = useMemo(
     () => options.find((o) => o.value === value || (Boolean(value) && value.endsWith(`.${o.value}`))),
@@ -67,10 +80,50 @@ export function ShadcnSelect({
     );
   }, [options, search]);
 
+  const updateCoords = useCallback(() => {
+    if (!containerRef.current || typeof window === 'undefined') return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const shouldOpenUpward = spaceBelow < 250 && spaceAbove > spaceBelow;
+
+    const targetWidth = Math.max(rect.width, 240);
+    const maxWidth = Math.min(targetWidth, Math.min(420, window.innerWidth - 16));
+
+    let left = rect.left;
+    if (left + maxWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - maxWidth - 8);
+    }
+    if (left < 8) left = 8;
+
+    setCoords({
+      top: shouldOpenUpward ? rect.top - 6 : rect.bottom + 6,
+      left,
+      width: maxWidth,
+      openUpward: shouldOpenUpward
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateCoords();
+
+    const handleScrollOrResize = () => updateCoords();
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [open, updateCoords]);
+
   useEffect(() => {
     if (!open) return;
     const handleOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const isInsideContainer = containerRef.current && containerRef.current.contains(target);
+      const isInsideMenu = menuRef.current && menuRef.current.contains(target);
+      if (!isInsideContainer && !isInsideMenu) {
         setOpen(false);
         setSearch('');
         onBlur?.();
@@ -112,15 +165,77 @@ export function ShadcnSelect({
     if (disabled) return;
     if (!open) {
       onFocus?.();
-      if (containerRef.current && typeof window !== 'undefined') {
-        const rect = containerRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        setOpenUpward(spaceBelow < 270 && spaceAbove > spaceBelow);
-      }
+      updateCoords();
     }
     setOpen((prev) => !prev);
   };
+
+  const menuDropdown = open && (
+    <div
+      ref={menuRef}
+      role="listbox"
+      aria-label={ariaLabel || placeholder}
+      style={{
+        position: 'fixed',
+        left: `${coords.left}px`,
+        ...(coords.openUpward
+          ? { bottom: `${Math.max(8, window.innerHeight - coords.top)}px` }
+          : { top: `${coords.top}px` }),
+        width: `${coords.width}px`,
+        zIndex: 99999
+      }}
+      className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xl py-1 max-h-60 flex flex-col animate-in fade-in-50 zoom-in-95 duration-100"
+    >
+      {showSearch && (
+        <div className="px-2 pb-1 pt-0.5 border-b border-[#f1f5f9]">
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-[#94a3b8] absolute left-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm lựa chọn..."
+              autoFocus
+              className="w-full h-8 pl-7 pr-2 text-xs rounded-md border border-[#cbd5e1] bg-[#f8fafc] text-[#004776] focus:border-[#004776] outline-hidden"
+            />
+          </div>
+        </div>
+      )}
+      <div className="overflow-y-auto py-0.5 max-h-52">
+        {filteredOptions.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-[#64748b] text-center">Không có kết quả</div>
+        ) : (
+          filteredOptions.map((opt) => {
+            const isSelected = opt.value === value || (Boolean(value) && value.endsWith(`.${opt.value}`));
+            return (
+              <button
+                key={`${opt.value}-${opt.label}`}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={opt.disabled}
+                onClick={() => {
+                  onChange?.(opt.value);
+                  onValueChange?.(opt.value);
+                  setOpen(false);
+                  setSearch('');
+                  onBlur?.();
+                }}
+                className={`w-full text-left px-2.5 py-1.5 text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#eef5ff] text-[#004776] font-semibold'
+                    : 'text-[#004776] hover:bg-[#f8fafc] font-normal'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-[#004776] shrink-0" />}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div ref={containerRef} className={`relative w-full min-w-0 ${className}`}>
@@ -144,63 +259,7 @@ export function ShadcnSelect({
         <ChevronDown className={`w-3.5 h-3.5 text-[#64748b] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div
-          role="listbox"
-          aria-label={ariaLabel || placeholder}
-          className={`absolute left-0 ${
-            openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
-          } min-w-full w-[max(100%,14rem)] max-w-[min(22rem,calc(100vw-2rem))] bg-white rounded-xl border border-[#cbd5e1] shadow-xl z-[120] py-1 max-h-60 flex flex-col`}
-        >
-          {showSearch && (
-            <div className="px-2 pb-1 pt-0.5 border-b border-[#f1f5f9]">
-              <div className="relative flex items-center">
-                <Search className="w-3.5 h-3.5 text-[#94a3b8] absolute left-2.5 pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm lựa chọn..."
-                  className="w-full h-8 pl-7 pr-2 text-xs rounded-md border border-[#cbd5e1] bg-[#f8fafc] text-[#004776] focus:border-[#004776] outline-hidden"
-                />
-              </div>
-            </div>
-          )}
-          <div className="overflow-y-auto py-0.5">
-            {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-[#64748b] text-center">Không có kết quả</div>
-            ) : (
-              filteredOptions.map((opt) => {
-                const isSelected = opt.value === value || (Boolean(value) && value.endsWith(`.${opt.value}`));
-                return (
-                  <button
-                    key={`${opt.value}-${opt.label}`}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    disabled={opt.disabled}
-                    onClick={() => {
-                      onChange?.(opt.value);
-                      onValueChange?.(opt.value);
-                      setOpen(false);
-                      setSearch('');
-                      onBlur?.();
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#eef5ff] text-[#004776] font-semibold'
-                        : 'text-[#004776] hover:bg-[#f8fafc] font-normal'
-                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                  >
-                    <span className="truncate">{opt.label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#004776] shrink-0" />}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+      {mounted && typeof document !== 'undefined' && createPortal(menuDropdown, document.body)}
     </div>
   );
 }

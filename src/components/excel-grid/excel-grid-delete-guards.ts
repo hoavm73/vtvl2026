@@ -131,3 +131,4 @@ export function validateRowDeletion(
 
   return { canDelete: true };
 }
+

@@ -163,7 +163,7 @@ export function appendHd07GuideAndRefSheets(
     ['Đối tượng', 'Cấu trúc mã chuẩn', 'Ví dụ minh họa'],
     ['Mã nhiệm vụ (A1)', '[MÃ_ĐV].NV[01..99]', `${opts.unitCode}.NV01`],
     ['Mã công việc (A2, B1, B2)', '[MÃ_NV].CV[01..99]', `${opts.unitCode}.NV01.CV01`],
-    ['Mã vị trí việc làm (C1, C2, C3, D1, D2)', '[MÃ_ĐV]-[MÃ_PL1] (QL10–QL60 | CM63–CM113 | HT26–HT62)', `${opts.unitCode}-QL33, ${opts.unitCode}-HT45`],
+    ['Mã vị trí việc làm (C1, C2, C3, D1, D2)', '[MÃ_ĐV].[MÃ_PL1] (QL10–QL60 | CM63–CM113 | HT26–HT62)', `${opts.unitCode}.QL33, ${opts.unitCode}.HT45`],
     ['Phụ lục I Danh mục VTVL HCM-UTE', 'I. Quản lý (QL10–QL60) | II. Nghề nghiệp (CM63–CM113) | III. Hỗ trợ, phục vụ (HT26–HT62)', 'Bậc nghề nghiệp từ Bậc 1 đến Bậc 5'],
     ['Mã chức danh giảng viên ĐH (Khoản 9 Điều 2 TT 31/2026)', 'CM76: V.07.01.01 (Bậc 5) | V.07.01.02 (Bậc 4) | V.07.01.03 (Bậc 3)', 'Giảng viên cao cấp (A3.1) | Giảng viên chính (A2.1) | Giảng viên (A1)']
   ]);

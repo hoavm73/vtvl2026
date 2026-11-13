@@ -64,6 +64,13 @@ export function UserProfilePopover() {
     window.dispatchEvent(new CustomEvent('vtvl-open-session-modal'));
   };
 
+  const handleLogout = () => {
+    setIsProfileOpen(false);
+    setIsAdmin(false);
+    setSession(null);
+    signOutGoogleSession();
+  };
+
   const handleQuickRoleUpdate = async (newRole: string) => {
     if (!session) return;
     setRoleUpdating(true);
@@ -124,7 +131,7 @@ export function UserProfilePopover() {
   const label = session.displayName || session.email.split('@')[0];
   const initials = label.slice(0, 2).toUpperCase();
   const activeRole = session.role || 'editor';
-  const canManageAdminRoles = isAdmin || activeRole === 'admin';
+  const canManageAdminRoles = isAdmin;
 
   return (
     <>
@@ -255,7 +262,7 @@ export function UserProfilePopover() {
               </Link>
             )}
 
-            <PopoverClose onClick={signOutGoogleSession}>
+            <PopoverClose onClick={handleLogout}>
               <span className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-[#fdeceb] hover:bg-[#fbd5d3] text-xs font-bold text-[#b42318] transition-colors">
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất</span>

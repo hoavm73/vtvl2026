@@ -55,18 +55,20 @@ export function WorkforceStructureChartModal({
     const totalAdjustment = filteredItems.reduce((s, i) => s + i.deNghiDieuChinh, 0);
     const maxHeadcount = Math.max(1, ...filteredItems.map((i) => Math.max(i.canBoTri, i.coTheBoTri, i.bienCheGiao, 1)));
 
+    // Hệ màu Xanh thẫm & Đỏ thương hiệu chuẩn HCM-UTE
     const byGroup = [
       { key: 'QL', label: 'Lãnh đạo, quản lý (QL)', color: '#004776' },
-      { key: 'CM', label: 'Chuyên môn, nghề nghiệp (CM)', color: '#005fa3' },
-      { key: 'HT', label: 'Hỗ trợ, phục vụ (HT)', color: '#13653f' }
+      { key: 'CM', label: 'Chuyên môn, nghề nghiệp (CM)', color: '#006cee' },
+      { key: 'HT', label: 'Hỗ trợ, phục vụ (HT)', color: '#c8102e' }
     ].map((g) => {
       const m = filteredItems.filter((i) => i.groupKind === g.key);
       return { ...g, count: m.length, people: m.reduce((s, i) => s + i.canBoTri, 0), pct: totalPositions > 0 ? Math.round((m.length / totalPositions) * 100) : 0 };
     });
 
-    const laborTypes = ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'].map((lt) => {
+    const laborTypes = ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'].map((lt, idx) => {
       const m = filteredItems.filter((i) => i.loaiNhanLuc === lt);
-      return { label: lt, count: m.length, pct: totalPositions > 0 ? Math.round((m.length / totalPositions) * 100) : 0 };
+      const color = idx % 2 === 0 ? '#004776' : '#c8102e';
+      return { label: lt, count: m.length, pct: totalPositions > 0 ? Math.round((m.length / totalPositions) * 100) : 0, color };
     });
 
     return { totalPositions, totalRequired, totalAvailable, totalAdjustment, maxHeadcount, byGroup, laborTypes };
@@ -165,19 +167,20 @@ export function WorkforceStructureChartModal({
           <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 flex-1 min-h-0 bg-white">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
               {[
-                { label: 'Tổng vị trí (Biểu C1)', val: `${stats.totalPositions} VTVL`, bg: 'bg-[#f8fafc]', color: 'text-[#004776]', icon: <Briefcase className="w-4 h-4 text-[#005fa3]" /> },
-                { label: 'Nhu cầu cần bố trí (D2)', val: `${stats.totalRequired} người`, bg: 'bg-[#eef5ff]', color: 'text-[#005fa3]', icon: <Users className="w-4 h-4 text-[#005fa3]" /> },
-                { label: 'Hiện có có thể bố trí (D2)', val: `${stats.totalAvailable} người`, bg: 'bg-[var(--ok-soft)]', color: 'text-[var(--ok)]', icon: <Users className="w-4 h-4 text-[var(--ok)]" /> },
-                { label: 'Đề nghị điều chỉnh (D2)', val: `${stats.totalAdjustment > 0 ? `+${stats.totalAdjustment}` : stats.totalAdjustment} người`, bg: 'bg-[#f8fafc]', color: stats.totalAdjustment > 0 ? 'text-[var(--warn)]' : stats.totalAdjustment < 0 ? 'text-[var(--fix)]' : 'text-[var(--ok)]', icon: <Scale className="w-4 h-4 text-[#004776]" /> }
+                { label: 'Tổng vị trí (Biểu C1)', val: `${stats.totalPositions} VTVL`, bg: 'bg-[#f4f8ff]', color: 'text-[#004776]', icon: <Briefcase className="w-4 h-4 text-[#004776]" /> },
+                { label: 'Nhu cầu cần bố trí (D2)', val: `${stats.totalRequired} người`, bg: 'bg-[#eef5ff]', color: 'text-[#006cee]', icon: <Users className="w-4 h-4 text-[#006cee]" /> },
+                { label: 'Hiện có có thể bố trí (D2)', val: `${stats.totalAvailable} người`, bg: 'bg-[#e8f1fa]', color: 'text-[#004776]', icon: <Users className="w-4 h-4 text-[#004776]" /> },
+                { label: 'Đề nghị điều chỉnh (D2)', val: `${stats.totalAdjustment > 0 ? `+${stats.totalAdjustment}` : stats.totalAdjustment} người`, bg: stats.totalAdjustment !== 0 ? 'bg-[#fdeceb]' : 'bg-[#f8fafc]', color: stats.totalAdjustment !== 0 ? 'text-[#c8102e]' : 'text-[#004776]', icon: <Scale className="w-4 h-4 text-[#c8102e]" /> }
               ].map((s, idx) => (
                 <div key={idx} className={`p-3 rounded-xl ${s.bg} border border-[#cbd5e1] flex items-center gap-2.5`}>
-                  <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shrink-0 shadow-2xs">{s.icon}</div>
+                  <div className="w-8 h-8 rounded-lg bg-white/90 flex items-center justify-center shrink-0 shadow-2xs">{s.icon}</div>
                   <div><div className="text-[11px] text-[#476885]">{s.label}</div><div className={`text-base font-semibold tabular-nums ${s.color}`}>{s.val}</div></div>
                 </div>
               ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+              {/* 1. Cơ cấu theo 03 nhóm chức danh (Xanh thẫm #004776, Xanh tươi #006cee, Đỏ HCM-UTE #c8102e) */}
               <div className="p-3.5 rounded-xl border border-[#cbd5e1] bg-white space-y-2.5">
                 <div className="flex items-center justify-between"><h3 className="text-xs font-semibold text-[#004776]">1. Cơ cấu VTVL theo 03 nhóm chức danh (Biểu C1)</h3><span className="text-xs text-[#476885] tabular-nums">{stats.totalPositions} vị trí</span></div>
                 <div className="w-full h-3 rounded-full bg-[#f1f5f9] overflow-hidden flex">
@@ -187,25 +190,27 @@ export function WorkforceStructureChartModal({
                   {stats.byGroup.map((g) => (
                     <div key={g.key} className="flex items-center justify-between text-xs">
                       <span className="flex items-center gap-2 font-medium text-[#004776]"><span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: g.color }} /><span>{g.label}</span></span>
-                      <span className="tabular-nums text-[#476885]"><strong className="text-[#004776]">{g.count}</strong> VTVL · <strong className="text-[#005fa3]">{g.people}</strong> người ({g.pct}%)</span>
+                      <span className="tabular-nums text-[#476885]"><strong className="text-[#004776]">{g.count}</strong> VTVL · <strong style={{ color: g.color }}>{g.people}</strong> người ({g.pct}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* 2. Cơ cấu theo Loại nhân lực (Màu Xanh & Đỏ thương hiệu HCM-UTE) */}
               <div className="p-3.5 rounded-xl border border-[#cbd5e1] bg-white space-y-2.5">
                 <div className="flex items-center justify-between"><h3 className="text-xs font-semibold text-[#004776]">2. Cơ cấu theo Loại nhân lực (Biểu C1)</h3><span className="text-xs text-[#476885]">Chuẩn Data Validation</span></div>
                 <div className="space-y-2">
                   {stats.laborTypes.map((lt) => (
                     <div key={lt.label} className="space-y-0.5">
                       <div className="flex items-center justify-between text-xs"><span className="font-medium text-[#004776]">{lt.label}</span><span className="tabular-nums text-[#476885]"><strong className="text-[#004776]">{lt.count}</strong> VTVL ({lt.pct}%)</span></div>
-                      <div className="w-full h-1.5 rounded-full bg-[#f1f5f9] overflow-hidden"><div className="h-full rounded-full bg-[#005fa3] transition-all" style={{ width: `${Math.max(lt.count > 0 ? 6 : 0, lt.pct)}%` }} /></div>
+                      <div className="w-full h-1.5 rounded-full bg-[#f1f5f9] overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${Math.max(lt.count > 0 ? 6 : 0, lt.pct)}%`, backgroundColor: lt.color }} /></div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
+            {/* 3. Đối chiếu Nhu cầu cần bố trí và Nhân lực có thể bố trí */}
             <div className="p-3.5 rounded-xl border border-[#cbd5e1] bg-white space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-2">
                 <div>
@@ -213,9 +218,9 @@ export function WorkforceStructureChartModal({
                   <p className="text-[11px] text-[#476885]">So sánh Cột C (Cần bố trí), Cột D (Có thể bố trí) và Cột G (Đề nghị điều chỉnh) tại Biểu 10. D2_PhuongAn</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
-                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#005fa3]" /> Cần bố trí (D2.C)</span>
-                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#13653f]" /> Có thể bố trí (D2.D)</span>
-                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#94a3b8]" /> Biên chế giao (D2.E)</span>
+                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#004776]" /> Cần bố trí (D2.C)</span>
+                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#006cee]" /> Có thể bố trí (D2.D)</span>
+                  <span className="inline-flex items-center gap-1 text-[#004776] font-medium"><span className="w-2.5 h-2.5 rounded-xs bg-[#c8102e]" /> Điều chỉnh/Thiếu hụt (D2.G)</span>
                 </div>
               </div>
 
@@ -225,21 +230,21 @@ export function WorkforceStructureChartModal({
                 <div className="space-y-2">
                   {filteredItems.map((item) => {
                     const bars = [
-                      { label: 'Cần bố trí', val: item.canBoTri, pct: Math.round((item.canBoTri / stats.maxHeadcount) * 100), color: 'bg-[#005fa3]', text: 'text-[#005fa3]', h: 'h-2' },
-                      { label: 'Có thể bố trí', val: item.coTheBoTri, pct: Math.round((item.coTheBoTri / stats.maxHeadcount) * 100), color: 'bg-[#13653f]', text: 'text-[#13653f]', h: 'h-2' },
+                      { label: 'Cần bố trí', val: item.canBoTri, pct: Math.round((item.canBoTri / stats.maxHeadcount) * 100), color: 'bg-[#004776]', text: 'text-[#004776]', h: 'h-2' },
+                      { label: 'Có thể bố trí', val: item.coTheBoTri, pct: Math.round((item.coTheBoTri / stats.maxHeadcount) * 100), color: 'bg-[#006cee]', text: 'text-[#006cee]', h: 'h-2' },
                       { label: 'Biên chế giao', val: item.bienCheGiao, pct: Math.round((item.bienCheGiao / stats.maxHeadcount) * 100), color: 'bg-[#94a3b8]', text: 'text-[#476885]', h: 'h-1.5' }
                     ];
                     return (
                       <div key={item.maVtvl} className="p-2.5 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] space-y-1.5">
                         <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="px-1.5 py-0.5 rounded bg-[#eef5ff] text-[#005fa3] font-semibold text-[11px] shrink-0">{item.maVtvl}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-[#eef5ff] text-[#004776] font-semibold text-[11px] shrink-0">{item.maVtvl}</span>
                             <span className="font-semibold text-[#004776] truncate" title={item.tenVtvl}>{item.tenVtvl}</span>
                             <span className="text-[#64748b] hidden sm:inline text-[11px]">· {item.loaiNhanLuc}</span>
                           </div>
                           <div className="flex items-center gap-2 tabular-nums shrink-0 text-xs">
-                            <span className="text-[#476885]">Cần: <strong className="text-[#005fa3]">{item.canBoTri}</strong> · Có: <strong className="text-[#13653f]">{item.coTheBoTri}</strong></span>
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${item.deNghiDieuChinh > 0 ? 'bg-[var(--warn-soft)] text-[var(--warn)]' : item.deNghiDieuChinh < 0 ? 'bg-[var(--fix-soft)] text-[var(--fix)]' : 'bg-[var(--ok-soft)] text-[var(--ok)]'}`}>
+                            <span className="text-[#476885]">Cần: <strong className="text-[#004776]">{item.canBoTri}</strong> · Có: <strong className="text-[#006cee]">{item.coTheBoTri}</strong></span>
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${item.deNghiDieuChinh !== 0 ? 'bg-[#fdeceb] text-[#c8102e] border border-[#fca5a5]' : 'bg-[#eef5ff] text-[#004776]'}`}>
                               {item.deNghiDieuChinh > 0 ? `+${item.deNghiDieuChinh} bổ sung` : item.deNghiDieuChinh < 0 ? `${item.deNghiDieuChinh} dôi dư` : 'Cân đối (0)'}
                             </span>
                           </div>
@@ -265,7 +270,7 @@ export function WorkforceStructureChartModal({
 
           {/* Footer */}
           <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between shrink-0">
-            <span className="text-xs text-[#64748b]">Trực quan hóa cơ cấu nhân lực tự động từ Biểu C1 và Biểu D2 của {unitNameVi}.</span>
+            <span className="text-xs text-[#64748b]">Trực quan hóa cơ cấu nhân lực tự động từ Biểu C1 và Biểu D2 theo màu sắc thương hiệu HCM-UTE.</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"

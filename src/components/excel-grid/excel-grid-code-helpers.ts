@@ -177,10 +177,38 @@ export function handleSyncDeleteRow(
   const currentSheetRows = (prev[sheetKey] || []).filter((r) => r.id !== rowId);
   const next = { ...prev, [sheetKey]: currentSheetRows };
 
+  if (sheetKey === 'A2') {
+    const targetRow = (prev.A2 || []).find((r) => r.id === rowId);
+    if (targetRow?.maCongViec) {
+      next.B1 = (prev.B1 || []).filter((b) => b.maCongViec !== targetRow.maCongViec);
+      next.B2_CT = (prev.B2_CT || []).filter((c) => c.maCongViec !== targetRow.maCongViec);
+      next.B2 = (prev.B2 || []).filter((b) => b.maCongViec !== targetRow.maCongViec);
+    }
+  }
+
+  if (sheetKey === 'B1') {
+    const targetRow = (prev.B1 || []).find((r) => r.id === rowId);
+    if (targetRow?.maCongViec) {
+      next.A2 = (prev.A2 || []).filter((a) => a.maCongViec !== targetRow.maCongViec);
+      next.B2_CT = (prev.B2_CT || []).filter((c) => c.maCongViec !== targetRow.maCongViec);
+      next.B2 = (prev.B2 || []).filter((b) => b.maCongViec !== targetRow.maCongViec);
+    }
+  }
+
   if (sheetKey === 'B2') {
     const targetRow = (prev.B2 || []).find((r) => r.id === rowId);
     if (targetRow?.maCongViec) {
       next.B2_CT = (prev.B2_CT || []).filter((c) => c.maCongViec !== targetRow.maCongViec);
+    }
+  }
+
+  if (sheetKey === 'C1') {
+    const targetRow = (prev.C1 || []).find((r) => r.id === rowId);
+    if (targetRow?.maVtvl) {
+      next.C2 = (prev.C2 || []).filter((c) => c.maVtvl !== targetRow.maVtvl);
+      next.C3 = (prev.C3 || []).filter((c) => c.maVtvl !== targetRow.maVtvl);
+      next.DU_BAO = (prev.DU_BAO || []).filter((db) => db.maVtvl !== targetRow.maVtvl);
+      next.D2 = (prev.D2 || []).filter((d) => d.maVtvl !== targetRow.maVtvl);
     }
   }
 

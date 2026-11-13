@@ -104,22 +104,32 @@ export function ExcelTableRenderer({
     setSelectedRowIds(next);
   };
 
+  const handleDeleteRow = (rowId: string) => {
+    if (selectedRowIds.size > 1 && selectedRowIds.has(rowId)) {
+      setConfirmDeleteId('selected');
+      return;
+    }
+    const idx = rows.findIndex((r) => r.id === rowId);
+    if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
+    setLastDeletedCount(1);
+    onDeleteRow(rowId);
+    if (selectedRowIds.has(rowId)) {
+      const next = new Set(selectedRowIds);
+      next.delete(rowId);
+      setSelectedRowIds(next);
+    }
+  };
+
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return;
-    if (confirmDeleteId === 'selected' || (selectedRowIds.size > 0 && selectedRowIds.has(confirmDeleteId))) {
-      const ids = Array.from(selectedRowIds);
+    const ids = Array.from(selectedRowIds);
+    if (ids.length > 0) {
       onDeleteRow(ids);
       setLastDeletedCount(ids.length);
       setSelectedRowIds(new Set());
-      setConfirmDeleteId(null);
-      setDeletedRowBackup(null);
-      return;
     }
-    const idx = rows.findIndex((r) => r.id === confirmDeleteId);
-    if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
-    setLastDeletedCount(1);
-    onDeleteRow(confirmDeleteId);
     setConfirmDeleteId(null);
+    setDeletedRowBackup(null);
   };
 
   return (
@@ -154,7 +164,7 @@ export function ExcelTableRenderer({
             onCellChange={onCellChange}
             onAddRow={onAddRow}
             onSplitRow={onSplitRow}
-            onDeleteRow={(id) => setConfirmDeleteId(selectedRowIds.has(id) ? 'selected' : id)}
+            onDeleteRow={(id) => handleDeleteRow(id)}
           />
         </div>
       )}
@@ -247,7 +257,7 @@ export function ExcelTableRenderer({
                       {!isC1Locked && (
                         <button
                           type="button"
-                          onClick={() => setConfirmDeleteId(selectedRowIds.has(row.id) ? 'selected' : row.id)}
+                          onClick={() => handleDeleteRow(row.id)}
                           aria-label={`Xóa dòng ${rIdx + 1}`}
                           title="Xóa dòng"
                           className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer"

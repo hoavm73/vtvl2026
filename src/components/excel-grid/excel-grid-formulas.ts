@@ -119,73 +119,51 @@ export function recalculateGridFormulas(
   });
   next.C3 = updatedC3;
 
-  // 4. DU_BAO_5_NAM (5 năm 2027–2031 cho mỗi VTVL)
-  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
-  const allForecastVtvls = Array.from(new Set([
-    ...c1Positions.map((c) => String(c.maVtvl)).filter(Boolean),
-    ...(next.DU_BAO || []).map((d) => String(d.maVtvl)).filter(Boolean),
-    ...(next.D2 || []).map((d) => String(d.maVtvl)).filter(Boolean)
-  ]));
-
-  const duBaoMap = new Map((next.DU_BAO || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
-  const updatedDuBao: GenericGridRow[] = allForecastVtvls.flatMap((vCode, cIdx) => {
-    const c3Match = updatedC3.find((r) => r.maVtvl === vCode);
-    const basePeople = Number(c3Match?.nguoiCanBoTri) || 1;
-
-    return D2_YEARS.map((yr) => {
-      const key = `${vCode}_${yr}`;
-      const existing = duBaoMap.get(key);
-      const rawBienDong = existing?.bienDong;
-      const isMissing = rawBienDong === '' || rawBienDong === null || rawBienDong === undefined;
-      const diff = isMissing ? 0 : Number(rawBienDong);
-      const alert = isMissing ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
-      return {
-        id: existing?.id || `dubao-sync-${cIdx + 1}-${yr}`,
-        maVtvl: vCode,
-        nam: yr,
-        bienDong: isMissing ? '' : diff,
-        noiDungThayDoi: existing?.noiDungThayDoi || `Duy trì ổn định nhân lực năm ${yr}`,
-        canCuNguon: existing?.canCuNguon || 'Kế hoạch chiến lược HCM-UTE',
-        nguoiC3: basePeople,
-        nguoiCanBoTriNam: Math.max(0, basePeople + diff),
-        kiemTra: alert
-      };
-    });
+  // 4. DU_BAO_5_NAM (Đồng bộ động nhu cầu năm cơ sở từ C3)
+  const updatedDuBao: GenericGridRow[] = (next.DU_BAO || []).map((r) => {
+    const vCode = String(r.maVtvl || '');
+    const c3Match = updatedC3.find((c) => c.maVtvl === vCode);
+    const basePeople = Number(c3Match?.nguoiCanBoTri) || Number(r.nguoiC3) || 1;
+    const rawBienDong = r.bienDong;
+    const isMissing = rawBienDong === '' || rawBienDong === null || rawBienDong === undefined;
+    const diff = isMissing ? 0 : Number(rawBienDong);
+    const alert = isMissing ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
+    return {
+      ...r,
+      nguoiC3: basePeople,
+      nguoiCanBoTriNam: Math.max(0, basePeople + diff),
+      kiemTra: alert
+    };
   });
   next.DU_BAO = updatedDuBao;
 
   // 5. D2_PhuongAn (Tự động đồng bộ số người cần bố trí từ 10. DU_BAO_5_NAM)
-  const d2Map = new Map((next.D2 || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
   const duBaoLookup = new Map(updatedDuBao.map((d) => [`${d.maVtvl}_${d.nam}`, d]));
   const d1Staff = next.D1 || [];
 
-  const updatedD2: GenericGridRow[] = allForecastVtvls.flatMap((vCode, cIdx) => {
+  const updatedD2: GenericGridRow[] = (next.D2 || []).map((r) => {
+    const vCode = String(r.maVtvl || '');
+    const yr = String(r.nam || '');
+    const key = `${vCode}_${yr}`;
+    const duBaoItem = duBaoLookup.get(key);
     const countD1 = d1Staff.filter((d) => d.maVtvl === vCode).length;
+    const need = duBaoItem ? Number(duBaoItem.nguoiCanBoTriNam) : (Number(r.soNguoiCanBoTri) || 1);
+    const count = r.soNguoiCoTheBoTri !== undefined && r.soNguoiCoTheBoTri !== '' ? Number(r.soNguoiCoTheBoTri) : countD1;
+    const rawAdjust = r.deNghiDieuChinh;
+    const isMissingAdjust = rawAdjust === '' || rawAdjust === null || rawAdjust === undefined;
+    const adjustVal = isMissingAdjust ? (need - count) : Number(rawAdjust);
+    const d2Alert = isMissingAdjust ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
 
-    return D2_YEARS.map((yr) => {
-      const key = `${vCode}_${yr}`;
-      const existing = d2Map.get(key);
-      const duBaoItem = duBaoLookup.get(key);
-      const need = duBaoItem ? Number(duBaoItem.nguoiCanBoTriNam) : (Number(existing?.soNguoiCanBoTri) || 1);
-      const count = existing?.soNguoiCoTheBoTri !== undefined && existing?.soNguoiCoTheBoTri !== '' ? Number(existing.soNguoiCoTheBoTri) : countD1;
-      const rawAdjust = existing?.deNghiDieuChinh;
-      const isMissingAdjust = rawAdjust === '' || rawAdjust === null || rawAdjust === undefined;
-      const adjustVal = isMissingAdjust ? (need - count) : Number(rawAdjust);
-      const d2Alert = isMissingAdjust ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
-
-      return {
-        id: existing?.id || `d2-sync-${cIdx + 1}-${yr}`,
-        maVtvl: vCode,
-        nam: yr,
-        soNguoiCanBoTri: need,
-        soNguoiCoTheBoTri: count,
-        bienCheGiao: existing?.bienCheGiao ?? count,
-        deNghiDieuChinh: isMissingAdjust ? '' : adjustVal,
-        nguonGiaiTrinh: existing?.nguonGiaiTrinh || (duBaoItem?.canCuNguon ? `${duBaoItem.canCuNguon} - ${duBaoItem.noiDungThayDoi}` : `Phương án cân đối nhân sự năm ${yr}`),
-        canhBao: d2Alert,
-        trangThai: existing?.trangThai || 'Đã hoàn thành ở đơn vị'
-      };
-    });
+    return {
+      ...r,
+      soNguoiCanBoTri: need,
+      soNguoiCoTheBoTri: count,
+      bienCheGiao: r.bienCheGiao ?? count,
+      deNghiDieuChinh: isMissingAdjust ? '' : adjustVal,
+      nguonGiaiTrinh: r.nguonGiaiTrinh || (duBaoItem?.canCuNguon ? `${duBaoItem.canCuNguon} - ${duBaoItem.noiDungThayDoi}` : `Phương án cân đối nhân sự năm ${yr}`),
+      canhBao: d2Alert,
+      trangThai: r.trangThai || 'Đã hoàn thành ở đơn vị'
+    };
   });
   next.D2 = updatedD2;
 

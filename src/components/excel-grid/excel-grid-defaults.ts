@@ -12,7 +12,7 @@ export const DM_SP_DEFAULT_ROWS: GenericGridRow[] = [
   { id: 'sp-2', maSpChuan: 'SP-II-01', tenSp: 'Báo cáo tổng kết / Thống kê số liệu chuyên sâu', linhVuc: 'Hành chính / Nhân sự', nhom: 'Nhóm II', phutChuan: 240, vanBan: 'HD 07 / QĐ 2266', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' },
   { id: 'sp-3', maSpChuan: 'SP-III-01', tenSp: 'Hồ sơ tuyển dụng / Nâng ngạch / Bổ nhiệm', linhVuc: 'Tổ chức cán bộ', nhom: 'Nhóm III', phutChuan: 120, vanBan: 'HD 07 / QĐ 2266', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' },
   { id: 'sp-4', maSpChuan: 'SP-IV-01', tenSp: 'Quyết định hành chính / Công văn hướng dẫn', linhVuc: 'Văn thư / Pháp chế', nhom: 'Nhóm IV', phutChuan: 90, vanBan: 'NĐ 30/2020 / HCM-UTE', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' },
-  { id: 'sp-5', maSpChuan: 'SP-V-01', tenSp: 'Hồ sơ xác nhận quá trình / Giải quyết thủ tục người học', linhVuc: 'Đào tạo / Dịch vụ', nhom: 'Nhóm V', phutChuan: 30, vanBan: 'S-Link HCM-UTE', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' },
+  { id: 'sp-5', maSpChuan: 'SP-V-01', tenSp: 'Hồ sơ xác nhận quá trình / Giải quyết thủ tục người học', linhVuc: 'Đào tạo / Dịch vụ', nhom: 'Nhóm V', phutChuan: 30, vanBan: 'Quy định HCM-UTE', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' },
   { id: 'sp-6', maSpChuan: 'SP-VI-01', tenSp: 'Số hóa dữ liệu / Cập nhật phần mềm hệ thống', linhVuc: 'Chuyển đổi số', nhom: 'Nhóm VI', phutChuan: 15, vanBan: 'QĐ CĐS HCM-UTE', trangThai: 'Đã xác nhận', coQuan: 'HCM-UTE' }
 ];
 
@@ -73,7 +73,7 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
       gioBoSung: 0,
       gioSp: hours,
       gioTong: hours,
-      nguon: 'Hệ thống S-Link & Sổ theo dõi 2025–2026',
+      nguon: 'Hệ thống thông tin nội bộ & Sổ theo dõi 2025–2026',
       ppThucTe: 'nhật ký công việc',
       phutApDung: minutes,
       canhBao: 'ĐẠT'
@@ -85,7 +85,7 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
     id: `b2ct-${idx + 1}`,
     maCongViec: t.maCongViec,
     maVtvl: t.maVtvl,
-    congDoan: `Số hóa tiếp nhận và xử lý trên nền tảng S-Link`,
+    congDoan: `Số hóa tiếp nhận và xử lý trực tuyến`,
     loaiTacDong: 'Số hóa',
     mucDo: 'Toàn phần',
     gioBienDong: -60 - idx * 30,

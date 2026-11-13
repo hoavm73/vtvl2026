@@ -74,7 +74,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     sheetName: '4. B2_CT_TacDong',
     shortLabel: '4. B2_CT_TacDong',
     title: 'Biểu B2_CT_ Chi tiết tác động (Chuyển đổi số, tự chủ, thuê dịch vụ)',
-    guideDesc: 'Biểu 4 (Bước 4 nghiệp vụ): Kê khai các công đoạn được số hóa (hệ thống S-Link, ERP...), ứng dụng AI hoặc chuyển giao giúp tăng năng suất/giảm thời gian.',
+    guideDesc: 'Biểu 4 (Bước 4 nghiệp vụ): Kê khai các công đoạn được số hóa (phần mềm quản trị, ERP...), ứng dụng AI hoặc chuyển giao giúp tăng năng suất/giảm thời gian.',
     ruleHint: 'Giờ biến động (Cột F) âm khi giảm thời gian nhờ CĐS, dương khi phát sinh nhiệm vụ mới.',
     columns: [
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', dynamicOptionsKey: 'taskList' },

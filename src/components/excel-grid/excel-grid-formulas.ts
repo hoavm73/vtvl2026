@@ -31,7 +31,7 @@ export function recalculateGridFormulas(
       gioBoSung: extra,
       gioSp: hours,
       gioTong: total,
-      nguon: existing?.nguon || 'Hệ thống S-Link & Sổ theo dõi 2025–2026',
+      nguon: existing?.nguon || 'Hệ thống thông tin nội bộ & Sổ theo dõi 2025–2026',
       ppThucTe: existing?.ppThucTe || 'nhật ký công việc',
       phutApDung: mins,
       canhBao: b1Alert,

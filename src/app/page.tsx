@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Building2, CheckCircle2, History, FileText, BookOpenCheck, Clock, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { ArrowRight, Building2, CheckCircle2, History, FileText, Clock, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { Badge } from '@/components/ui/Badge';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
@@ -248,10 +248,6 @@ export default function HomePage() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[13.5px] text-[#476885]">10 biểu nghiệp vụ A1–D2 ({HD07_12_STEP_ORDER.length} biểu liên kết)</span>
-            <Link href="/huong-dan" className="inline-flex items-center gap-1.5 font-semibold text-[#004776] hover:underline">
-              <BookOpenCheck className="w-4 h-4" />
-              <span>Xem Phụ lục HD 07</span>
-            </Link>
           </div>
         </div>
       </details>

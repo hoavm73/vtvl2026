@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { ExcelSheetMeta } from './excel-grid-types';
-import { X, BookOpen, ExternalLink, ShieldCheck, Info, FileSpreadsheet } from 'lucide-react';
+import { X, BookOpen, ShieldCheck, Info } from 'lucide-react';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 
 interface GuidanceDrawerModalProps {
@@ -117,17 +116,7 @@ export function GuidanceDrawerModal({ isOpen, onClose, meta }: GuidanceDrawerMod
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-3.5 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between shrink-0">
-            <Link
-              href="/huong-dan"
-              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#004776] hover:underline"
-              onClick={onClose}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Mở cẩm nang HD 07 toàn bộ</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-
+          <div className="px-5 py-3.5 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-end shrink-0">
             <button
               type="button"
               onClick={onClose}

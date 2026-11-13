@@ -8,7 +8,6 @@ import {
   Home,
   Menu,
   X,
-  BookOpenCheck,
   ShieldCheck
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
@@ -17,7 +16,8 @@ import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 const NAV_ITEMS = [
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
   { href: '/?view=overview', label: 'Tổng quan 08 bước', icon: Home },
-  { href: '/huong-dan', label: 'Phụ lục HD 07', icon: BookOpenCheck },
+  // Tạm ẩn theo yêu cầu:
+  // { href: '/huong-dan', label: 'Phụ lục HD 07', icon: BookOpenCheck },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];
 

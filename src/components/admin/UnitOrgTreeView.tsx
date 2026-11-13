@@ -42,20 +42,21 @@ export function UnitOrgTreeView({
   };
 
   const getNodeIcon = () => {
+    const cls = isCompact ? "w-3.5 h-3.5 text-[#0072BC]" : "w-4 h-4 text-[#0072BC]";
     switch (node.nodeType) {
-      case 'unit': return <Building2 className={isCompact ? "w-3.5 h-3.5 text-[#005fa3]" : "w-4 h-4 text-[#005fa3]"} />;
-      case 'dean': return <UserCheck className={isCompact ? "w-3.5 h-3.5 text-emerald-600" : "w-4 h-4 text-emerald-600"} />;
-      case 'vice-dean': return <Briefcase className={isCompact ? "w-3.5 h-3.5 text-sky-600" : "w-4 h-4 text-sky-600"} />;
-      default: return <GraduationCap className={isCompact ? "w-3.5 h-3.5 text-indigo-600" : "w-4 h-4 text-indigo-600"} />;
+      case 'unit': return <Building2 className={cls} />;
+      case 'dean': return <UserCheck className={cls} />;
+      case 'vice-dean': return <Briefcase className={cls} />;
+      default: return <GraduationCap className={cls} />;
     }
   };
 
   const getNodeBadgeClass = () => {
     switch (node.nodeType) {
-      case 'unit': return 'bg-[#004776] text-white';
-      case 'dean': return 'bg-emerald-700 text-white';
-      case 'vice-dean': return 'bg-sky-700 text-white';
-      default: return 'bg-indigo-50 text-indigo-800 border border-indigo-200';
+      case 'unit': return 'bg-[#0072BC] text-white';
+      case 'dean': return 'bg-[#0072BC] text-white';
+      case 'vice-dean': return 'bg-[#0072BC]/90 text-white';
+      default: return 'bg-[#0072BC]/10 text-[#0072BC] border border-[#0072BC]/20';
     }
   };
 
@@ -68,8 +69,8 @@ export function UnitOrgTreeView({
           isCompact ? 'p-2 sm:p-2.5' : 'p-3'
         } ${
           isSelected
-            ? 'border-[#005fa3] bg-sky-50/85 shadow-2xs ring-2 ring-[#005fa3]/25'
-            : 'border-[#cbd5e1] hover:border-[#005fa3]/60 bg-white hover:bg-slate-50/80'
+            ? 'border-[#0072BC] bg-sky-50/85 shadow-2xs ring-2 ring-[#0072BC]/25'
+            : 'border-[#cbd5e1] hover:border-[#0072BC]/60 bg-white hover:bg-slate-50/80'
         }`}
       >
         {/* Toggle chevron (nếu có con) */}
@@ -81,7 +82,7 @@ export function UnitOrgTreeView({
               className="w-5 h-5 rounded hover:bg-black/5 flex items-center justify-center text-[#64748b] transition-colors cursor-pointer"
               title={isExpanded ? 'Thu gọn nhánh dưới' : 'Mở rộng nhánh con'}
             >
-              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-[#004776]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#004776]" />}
+              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-[#0072BC]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#0072BC]" />}
             </button>
           ) : (
             <div className="w-5 h-5 flex items-center justify-center">
@@ -93,18 +94,18 @@ export function UnitOrgTreeView({
         {/* Node info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <div className={`${isCompact ? 'w-5 h-5' : 'w-6 h-6'} rounded bg-slate-100 flex items-center justify-center shrink-0`}>
+            <div className={`${isCompact ? 'w-5 h-5' : 'w-6 h-6'} rounded bg-[#0072BC]/10 flex items-center justify-center shrink-0`}>
               {getNodeIcon()}
             </div>
             <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${getNodeBadgeClass()}`}>
               {node.levelLabel}
             </span>
-            <span className="text-[10px] font-semibold text-[#64748b]">
+            <span className="text-[10px] font-bold text-[#0072BC]">
               [{node.roleCode}]
             </span>
           </div>
 
-          <h4 className={`${isCompact ? 'text-xs leading-snug mt-0.5' : 'text-xs sm:text-sm mt-1 leading-snug'} font-bold text-[#004776] line-clamp-2`}>
+          <h4 className={`${isCompact ? 'text-xs leading-snug mt-0.5' : 'text-xs sm:text-sm mt-1 leading-snug'} font-bold text-[#0072BC] line-clamp-2`}>
             {node.title}
           </h4>
 
@@ -116,13 +117,13 @@ export function UnitOrgTreeView({
 
           {/* Quick stats chips */}
           <div className={`flex flex-wrap items-center gap-1.5 ${isCompact ? 'mt-1 text-[10px]' : 'mt-2 text-[11px]'}`}>
-            <span className="inline-flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              <Users className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+            <span className="inline-flex items-center gap-1 font-semibold text-[#0072BC] bg-[#0072BC]/10 px-1.5 py-0.5 rounded border border-[#0072BC]/20">
+              <Users className="w-2.5 h-2.5 text-[#0072BC] shrink-0" />
               <span>{node.expectedStaffCount} người</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 font-semibold text-[#004776] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-              <CheckSquare className="w-2.5 h-2.5 text-[#005fa3] shrink-0" />
+            <span className="inline-flex items-center gap-1 font-semibold text-[#0072BC] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+              <CheckSquare className="w-2.5 h-2.5 text-[#0072BC] shrink-0" />
               <span>{node.tasks.length} việc</span>
             </span>
 

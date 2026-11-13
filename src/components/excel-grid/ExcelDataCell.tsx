@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ExcelColumnDef } from './excel-grid-types';
 import { FunctionSquare, AlertCircle } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
@@ -50,6 +50,17 @@ export function ExcelDataCell({
 
   const isCompact = density === 'compact';
   const uniformHeightClass = isCompact ? 'h-8' : 'h-9';
+  const minHeightClass = isCompact ? 'min-h-[32px]' : 'min-h-[36px]';
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const minH = isCompact ? 32 : 36;
+    el.style.height = `${Math.max(el.scrollHeight, minH)}px`;
+  }, [strVal, isCompact]);
 
   // 1. Trạng thái Status (ĐẠT / CHƯA ĐẠT)
   if (col.type === 'status') {
@@ -147,11 +158,12 @@ export function ExcelDataCell({
     );
   }
 
-  // 5. Text & Code input cell — Chiều cao đồng nhất (h-9 / h-8)
+  // 5. Text & Code textarea cell — Tự động giãn chiều cao (auto-resize) & xuống dòng đầy đủ
   return (
     <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative">
-      <input
-        type="text"
+      <textarea
+        ref={textareaRef}
+        rows={1}
         value={strVal}
         title={strVal}
         aria-label={col.headerName}
@@ -162,8 +174,11 @@ export function ExcelDataCell({
         onChange={(e) => {
           onCellTouch?.(cellKey);
           onCellChange(rowId, col.field, e.target.value);
+          e.target.style.height = 'auto';
+          const minH = isCompact ? 32 : 36;
+          e.target.style.height = `${Math.max(e.target.scrollHeight, minH)}px`;
         }}
-        className={`w-full ${uniformHeightClass} px-2.5 rounded-md border text-[13px] font-normal outline-hidden ${cellStyle}`}
+        className={`w-full ${minHeightClass} py-1.5 px-2.5 rounded-md border text-[13px] font-normal leading-relaxed resize-none overflow-hidden whitespace-normal break-words outline-hidden ${cellStyle}`}
         placeholder="Nhập nội dung..."
       />
       {isEmptyRequired && (

@@ -158,16 +158,23 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     });
   }, [currentUnit.code, currentUnit.nameVi]);
 
-  const deleteRow = useCallback((sheetKey: ExcelSheetKey, rowId: string) => {
+  const deleteRow = useCallback((sheetKey: ExcelSheetKey, rowIdOrIds: string | string[]) => {
+    const ids = Array.isArray(rowIdOrIds) ? rowIdOrIds : [rowIdOrIds];
+    if (ids.length === 0) return;
     if (sheetKey === 'A1') {
-      const check = canDeleteMission(data.A1 || [], data.A2 || [], rowId);
-      if (!check.canDelete) {
-        alert(check.message);
-        return;
+      for (const id of ids) {
+        const check = canDeleteMission(data.A1 || [], data.A2 || [], id);
+        if (!check.canDelete) {
+          alert(check.message);
+          return;
+        }
       }
     }
     setData((prev) => {
-      const nextData = handleSyncDeleteRow(prev, sheetKey, rowId);
+      let nextData = prev;
+      for (const id of ids) {
+        nextData = handleSyncDeleteRow(nextData, sheetKey, id);
+      }
       return recalculateGridFormulas(nextData, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi, data.A1, data.A2]);

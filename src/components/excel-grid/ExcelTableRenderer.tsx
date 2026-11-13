@@ -22,7 +22,7 @@ interface ExcelTableRendererProps {
   onCellChange: (rowId: string, field: string, value: string | number) => void;
   onAddRow: () => void;
   onSplitRow?: (rowId: string) => void;
-  onDeleteRow: (rowId: string) => void;
+  onDeleteRow: (rowId: string | string[]) => void;
   onSaveSheet?: () => void;
   onSaveAndNext?: () => void;
   canNext?: boolean;
@@ -44,6 +44,7 @@ export function ExcelTableRenderer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [lastDeletedCount, setLastDeletedCount] = useState<number>(0);
   const [deletedRowBackup, setDeletedRowBackup] = useState<{ row: GenericGridRow; index: number } | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('table');
 
@@ -105,40 +106,39 @@ export function ExcelTableRenderer({
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return;
+    if (confirmDeleteId === 'selected' || (selectedRowIds.size > 0 && selectedRowIds.has(confirmDeleteId))) {
+      const ids = Array.from(selectedRowIds);
+      onDeleteRow(ids);
+      setLastDeletedCount(ids.length);
+      setSelectedRowIds(new Set());
+      setConfirmDeleteId(null);
+      setDeletedRowBackup(null);
+      return;
+    }
     const idx = rows.findIndex((r) => r.id === confirmDeleteId);
     if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
+    setLastDeletedCount(1);
     onDeleteRow(confirmDeleteId);
     setConfirmDeleteId(null);
   };
 
   return (
-    <div className={`flex flex-col bg-white overflow-hidden w-full max-w-full min-w-0 transition-all ${
-      isFullscreen ? 'fixed inset-2 z-50 rounded-xl border border-[#cbd5e1] shadow-xl' : 'h-full'
-    }`}>
+    <div className={`flex flex-col bg-white overflow-hidden w-full max-w-full min-w-0 transition-all ${isFullscreen ? 'fixed inset-2 z-50 rounded-xl border border-[#cbd5e1] shadow-xl' : 'h-full'}`}>
       <TableDeleteConfirmModal
-        confirmDeleteId={confirmDeleteId}
-        deletedRowBackup={deletedRowBackup}
-        onCancel={() => setConfirmDeleteId(null)}
-        onConfirm={handleConfirmDelete}
+        confirmDeleteId={confirmDeleteId} selectedCount={selectedRowIds.size}
+        lastDeletedCount={lastDeletedCount} deletedRowBackup={deletedRowBackup}
+        onCancel={() => setConfirmDeleteId(null)} onConfirm={handleConfirmDelete}
         onRestoreBackup={() => { onAddRow(); setDeletedRowBackup(null); }}
       />
 
       <TableControlBar
-        meta={meta}
-        rowsCount={processedRows.length}
-        selectedCount={selectedRowIds.size}
-        isC1Locked={isC1Locked}
-        searchTerm={params.q}
-        filterMode={params.filter}
-        density={density}
-        isFullscreen={isFullscreen}
-        mobileViewMode={mobileViewMode}
-        onMobileViewModeChange={setMobileViewMode}
-        onAddRow={onAddRow}
-        onSearchChange={(val) => setParam('q', val)}
-        onFilterModeChange={(mode) => setParam('filter', mode)}
-        onDensityChange={setDensity}
-        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+        meta={meta} rowsCount={processedRows.length} selectedCount={selectedRowIds.size}
+        isC1Locked={isC1Locked} searchTerm={params.q} filterMode={params.filter}
+        density={density} isFullscreen={isFullscreen} mobileViewMode={mobileViewMode}
+        onMobileViewModeChange={setMobileViewMode} onAddRow={onAddRow}
+        onDeleteSelected={() => setConfirmDeleteId('selected')}
+        onSearchChange={(val) => setParam('q', val)} onFilterModeChange={(mode) => setParam('filter', mode)}
+        onDensityChange={setDensity} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />
 
       {/* MOBILE CARD MODE (Optional toggle on < 768px) */}
@@ -154,7 +154,7 @@ export function ExcelTableRenderer({
             onCellChange={onCellChange}
             onAddRow={onAddRow}
             onSplitRow={onSplitRow}
-            onDeleteRow={(id) => setConfirmDeleteId(id)}
+            onDeleteRow={(id) => setConfirmDeleteId(selectedRowIds.has(id) ? 'selected' : id)}
           />
         </div>
       )}
@@ -247,7 +247,7 @@ export function ExcelTableRenderer({
                       {!isC1Locked && (
                         <button
                           type="button"
-                          onClick={() => setConfirmDeleteId(row.id)}
+                          onClick={() => setConfirmDeleteId(selectedRowIds.has(row.id) ? 'selected' : row.id)}
                           aria-label={`Xóa dòng ${rIdx + 1}`}
                           title="Xóa dòng"
                           className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer"

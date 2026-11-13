@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Filter, SlidersHorizontal, Maximize2, Minimize2, X, Plus, Check } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Maximize2, Minimize2, X, Plus, Check, Trash2 } from 'lucide-react';
 import { ExcelSheetMeta } from './excel-grid-types';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose } from '@/components/ui/Popover';
 
@@ -17,6 +17,7 @@ interface TableControlBarProps {
   mobileViewMode?: 'table' | 'cards';
   onMobileViewModeChange?: (mode: 'table' | 'cards') => void;
   onAddRow?: () => void;
+  onDeleteSelected?: () => void;
   onSearchChange: (val: string) => void;
   onFilterModeChange: (mode: 'all' | 'touched' | 'incomplete') => void;
   onDensityChange: (density: 'compact' | 'comfortable') => void;
@@ -35,6 +36,7 @@ export function TableControlBar({
   mobileViewMode = 'table',
   onMobileViewModeChange,
   onAddRow,
+  onDeleteSelected,
   onSearchChange,
   onFilterModeChange,
   onDensityChange,
@@ -60,10 +62,26 @@ export function TableControlBar({
 
         <span className="text-[13px] font-medium text-[#476885]">
           Tổng số: <strong className="font-bold text-[#004776] tabular-nums">{rowsCount}</strong> dòng
-          {selectedCount > 0 && (
-            <span className="ml-1.5 text-[#004776] font-bold">· {selectedCount} đã chọn</span>
-          )}
         </span>
+
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#004776] bg-[#eef5ff] px-2 py-1 rounded-md">
+              {selectedCount} đã chọn
+            </span>
+            {onDeleteSelected && !isC1Locked && (
+              <button
+                type="button"
+                onClick={onDeleteSelected}
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer transition-colors shadow-2xs"
+                title={`Xóa ${selectedCount} dòng đã chọn`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Xóa {selectedCount} dòng đã chọn</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {onMobileViewModeChange && (
           <div className="inline-flex md:hidden items-center rounded-xl border border-[#d8e3ef] bg-[#f4f7fb] p-0.5 text-xs">

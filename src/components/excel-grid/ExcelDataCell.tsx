@@ -138,6 +138,7 @@ export function ExcelDataCell({
         <input
           type="number"
           value={strVal}
+          placeholder="Nhập nội dung"
           aria-label={col.headerName}
           aria-invalid={isEmptyRequired || undefined}
           aria-describedby={isEmptyRequired ? errorId : undefined}
@@ -145,9 +146,10 @@ export function ExcelDataCell({
           onBlur={() => { setIsFocused(false); setHasBlurred(true); }}
           onChange={(e) => {
             onCellTouch?.(cellKey);
-            onCellChange(rowId, col.field, Number(e.target.value));
+            const raw = e.target.value;
+            onCellChange(rowId, col.field, raw === '' ? '' : Number(raw));
           }}
-          className={`w-full ${uniformHeightClass} px-2.5 rounded-md border text-[13px] font-normal text-right outline-hidden tabular-nums ${cellStyle}`}
+          className={`w-full ${uniformHeightClass} px-2.5 rounded-md border text-[13px] font-normal text-right outline-hidden tabular-nums placeholder:text-left placeholder:text-xs placeholder:text-[#94a3b8] ${cellStyle}`}
         />
         {isEmptyRequired && (
           <span id={errorId} className="text-[11px] text-[var(--fix)] mt-0.5 px-1 font-medium flex items-center gap-0.5">

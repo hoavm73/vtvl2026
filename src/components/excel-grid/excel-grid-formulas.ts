@@ -12,10 +12,14 @@ export function recalculateGridFormulas(
   const b1Map = new Map((next.B1 || []).map((r) => [String(r.maCongViec), r]));
   const updatedB1: GenericGridRow[] = existingA2.map((t, idx) => {
     const existing = b1Map.get(String(t.maCongViec));
-    const qty = Number(existing?.soSpNam ?? 50 + (idx % 6) * 20);
-    const mins = Number(existing?.phutThucTe ?? 90 + (idx % 5) * 30);
-    const extra = Number(existing?.gioBoSung ?? 0);
-    const hours = Math.round((qty * mins / 60) * 10) / 10;
+    const rawQty = existing?.soSpNam;
+    const rawMins = existing?.phutThucTe;
+    const qty = rawQty !== undefined && rawQty !== null && rawQty !== '' ? Number(rawQty) : '';
+    const mins = rawMins !== undefined && rawMins !== null && rawMins !== '' ? Number(rawMins) : '';
+    const extra = existing?.gioBoSung !== undefined && existing?.gioBoSung !== null && existing?.gioBoSung !== '' ? Number(existing.gioBoSung) : 0;
+    const numQty = typeof qty === 'number' ? qty : 0;
+    const numMins = typeof mins === 'number' ? mins : 0;
+    const hours = (numQty > 0 && numMins > 0) ? Math.round((numQty * numMins / 60) * 10) / 10 : 0;
     const total = Math.round((hours + extra) * 10) / 10;
     const rawGiaiTrinh = String(existing?.giaiTrinhKhacChuan || '');
     let b1Alert = total > 0 ? 'ĐẠT' : 'CHƯA ĐẠT';
@@ -31,9 +35,9 @@ export function recalculateGridFormulas(
       gioBoSung: extra,
       gioSp: hours,
       gioTong: total,
-      nguon: existing?.nguon || 'Hệ thống thông tin nội bộ & Sổ theo dõi 2025–2026',
-      ppThucTe: existing?.ppThucTe || 'nhật ký công việc',
-      phutApDung: mins,
+      nguon: existing?.nguon ?? '',
+      ppThucTe: existing?.ppThucTe ?? '',
+      phutApDung: mins !== '' ? mins : 0,
       canhBao: b1Alert,
       giaiTrinhKhacChuan: rawGiaiTrinh
     };

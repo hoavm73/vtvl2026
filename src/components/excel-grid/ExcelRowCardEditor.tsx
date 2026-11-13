@@ -202,7 +202,18 @@ export function ExcelRowCardEditor({
                         size="md"
                       />
                     ) : col.type === 'number' ? (
-                      <input type="number" value={val !== undefined ? String(val) : ''} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, Number(e.target.value)); }} className={`${inputCls} text-right`} />
+                      <input
+                        type="number"
+                        value={val !== undefined && val !== '' ? String(val) : ''}
+                        placeholder="Nhập nội dung"
+                        onFocus={() => onCellTouch?.(cellKey)}
+                        onChange={(e) => {
+                          onCellTouch?.(cellKey);
+                          const raw = e.target.value;
+                          onCellChange(editingRow.id, col.field, raw === '' ? '' : Number(raw));
+                        }}
+                        className={`${inputCls} text-right placeholder:text-left placeholder:text-xs placeholder:text-[#94a3b8]`}
+                      />
                     ) : (
                       <textarea rows={3} value={String(val ?? '')} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, e.target.value); }} className={inputCls} placeholder="Nhập nội dung" />
                     )}

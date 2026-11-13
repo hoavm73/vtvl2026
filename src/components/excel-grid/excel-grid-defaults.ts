@@ -194,23 +194,24 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
     };
   });
 
-  // 12. D2_PhuongAn
-  const d2Rows: GenericGridRow[] = c1Rows.map((c, idx) => {
+  // 12. D2_PhuongAn (Tự động sinh 5 hàng tương ứng 5 năm 2027–2031 cho mỗi VTVL)
+  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const d2Rows: GenericGridRow[] = c1Rows.flatMap((c, idx) => {
     const c3Item = c3Rows.find((r) => r.maVtvl === c.maVtvl);
     const targetPeople = Number(c3Item?.nguoiCanBoTri) || 1;
     const currentPeople = d1Rows.filter((d) => d.maVtvl === c.maVtvl).length;
-    return {
-      id: `d2-${idx + 1}`,
+    return D2_YEARS.map((yr) => ({
+      id: `d2-${idx + 1}-${yr}`,
       maVtvl: c.maVtvl,
-      nam: '2027',
+      nam: yr,
       soNguoiCanBoTri: targetPeople,
       soNguoiCoTheBoTri: currentPeople,
       bienCheGiao: currentPeople,
       deNghiDieuChinh: targetPeople - currentPeople,
       trangThai: 'Đã hoàn thành ở đơn vị',
-      nguonGiaiTrinh: 'Phương án cân đối nhân sự 2027',
+      nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
       canhBao: 'ĐẠT'
-    };
+    }));
   });
 
   // 13. K_KiemTra

@@ -144,30 +144,44 @@ export function recalculateGridFormulas(
   });
   next.DU_BAO = updatedDuBao;
 
-  // 5. D2_PhuongAn
-  const d2Map = new Map((next.D2 || []).map((r) => [String(r.maVtvl), r]));
+  // 5. D2_PhuongAn (Tự động sinh đủ 5 năm 2027–2031 cho mỗi VTVL)
+  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const d2Map = new Map((next.D2 || []).map((r) => [`${r.maVtvl}_${r.nam}`, r]));
   const d1Staff = next.D1 || [];
-  const updatedD2: GenericGridRow[] = c1Positions.map((c, idx) => {
-    const vCode = String(c.maVtvl);
-    const existing = d2Map.get(vCode);
+  const d2VtvlList = Array.from(new Set([
+    ...c1Positions.map((c) => String(c.maVtvl)).filter(Boolean),
+    ...(next.D2 || []).map((d) => String(d.maVtvl)).filter(Boolean)
+  ]));
+
+  const updatedD2: GenericGridRow[] = d2VtvlList.flatMap((vCode, cIdx) => {
     const duBaoMatch = updatedDuBao.find((d) => d.maVtvl === vCode);
-    const need = Number(duBaoMatch?.nguoiCanBoTriNam) || 1;
+    const c3Match = updatedC3.find((r) => r.maVtvl === vCode);
+    const baseNeed = Number(c3Match?.nguoiCanBoTri) || Number(duBaoMatch?.nguoiCanBoTriNam) || 1;
     const countD1 = d1Staff.filter((d) => d.maVtvl === vCode).length;
-    const rawAdjust = existing?.deNghiDieuChinh;
-    const isMissingAdjust = rawAdjust === '' || rawAdjust === null || rawAdjust === undefined;
-    const adjustVal = isMissingAdjust ? (need - countD1) : Number(rawAdjust);
-    const d2Alert = isMissingAdjust ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
-    return {
-      id: existing?.id || `d2-sync-${idx + 1}`,
-      maVtvl: vCode,
-      nam: existing?.nam || '2027',
-      soNguoiCanBoTri: need,
-      soNguoiCoTheBoTri: countD1,
-      bienCheGiao: existing?.bienCheGiao ?? countD1,
-      deNghiDieuChinh: isMissingAdjust ? '' : adjustVal,
-      nguonGiaiTrinh: existing?.nguonGiaiTrinh || 'Cân đối nhân sự năm 2027',
-      canhBao: d2Alert
-    };
+
+    return D2_YEARS.map((yr) => {
+      const key = `${vCode}_${yr}`;
+      const existing = d2Map.get(key);
+      const need = existing?.soNguoiCanBoTri ? Number(existing.soNguoiCanBoTri) : baseNeed;
+      const count = existing?.soNguoiCoTheBoTri ? Number(existing.soNguoiCoTheBoTri) : countD1;
+      const rawAdjust = existing?.deNghiDieuChinh;
+      const isMissingAdjust = rawAdjust === '' || rawAdjust === null || rawAdjust === undefined;
+      const adjustVal = isMissingAdjust ? (need - count) : Number(rawAdjust);
+      const d2Alert = isMissingAdjust ? 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)' : 'ĐẠT';
+
+      return {
+        id: existing?.id || `d2-sync-${cIdx + 1}-${yr}`,
+        maVtvl: vCode,
+        nam: yr,
+        soNguoiCanBoTri: need,
+        soNguoiCoTheBoTri: count,
+        bienCheGiao: existing?.bienCheGiao ?? count,
+        deNghiDieuChinh: isMissingAdjust ? '' : adjustVal,
+        nguonGiaiTrinh: existing?.nguonGiaiTrinh || `Phương án cân đối nhân sự năm ${yr}`,
+        canhBao: d2Alert,
+        trangThai: existing?.trangThai || 'Đã hoàn thành ở đơn vị'
+      };
+    });
   });
   next.D2 = updatedD2;
 

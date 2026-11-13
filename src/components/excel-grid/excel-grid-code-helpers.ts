@@ -222,7 +222,48 @@ export function buildNewGridRow(
     };
   }
 
+  if (sheetKey === 'D2') {
+    return {
+      newRow: {
+        id: newId,
+        maVtvl: '',
+        nam: '2027',
+        soNguoiCanBoTri: '',
+        soNguoiCoTheBoTri: '',
+        bienCheGiao: '',
+        deNghiDieuChinh: '',
+        nguonGiaiTrinh: '',
+        canhBao: 'CHƯA ĐẠT',
+        trangThai: 'Đang xây dựng'
+      }
+    };
+  }
+
   return { newRow: { id: newId } };
+}
+
+export function createFiveYearD2Rows(
+  sheetRows: GenericGridRow[],
+  rowId: string,
+  selectedVtvl: string,
+  countD1: number,
+  baseNeed: number
+): GenericGridRow[] {
+  const D2_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const otherRows = sheetRows.filter((r) => r.id !== rowId && r.maVtvl !== selectedVtvl);
+  const newFiveRows: GenericGridRow[] = D2_YEARS.map((yr) => ({
+    id: `d2-${selectedVtvl}-${yr}-${Date.now().toString(36)}`,
+    maVtvl: selectedVtvl,
+    nam: yr,
+    soNguoiCanBoTri: baseNeed,
+    soNguoiCoTheBoTri: countD1,
+    bienCheGiao: countD1,
+    deNghiDieuChinh: baseNeed - countD1,
+    nguonGiaiTrinh: `Phương án cân đối nhân sự năm ${yr}`,
+    canhBao: 'ĐẠT',
+    trangThai: 'Đang xây dựng'
+  }));
+  return [...otherRows, ...newFiveRows];
 }
 
 export function handleSyncDeleteRow(

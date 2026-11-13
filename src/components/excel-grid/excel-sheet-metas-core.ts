@@ -38,7 +38,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'C', field: 'maVtvl', headerName: 'Mã VTVL (từ C1)', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
       { colLetter: 'D', field: 'tenCongViec', headerName: 'Tên công việc cụ thể', width: '420px' },
       { colLetter: 'E', field: 'sanPham', headerName: 'Sản phẩm đầu ra', width: '250px' },
-      { colLetter: 'F', field: 'dvt', headerName: 'Đơn vị tính', width: '90px' },
+      { colLetter: 'F', field: 'dvt', headerName: 'Đơn vị tính', width: '130px' },
       { colLetter: 'G', field: 'chatLuong', headerName: 'Yêu cầu chất lượng', width: '250px' },
       { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px' }
     ]

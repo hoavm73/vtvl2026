@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, TECHNICAL_DEPENDENCY_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
-import { getNextMissionCode, getNextTaskCode, buildNewGridRow } from './excel-grid-code-helpers';
+import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow } from './excel-grid-code-helpers';
 import { isMissionCodeDuplicate, canDeleteMission, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
@@ -101,6 +101,17 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         return recalculateGridFormulas({ ...prev, C1: updatedC1, C2: updatedC2 }, currentUnit.code, currentUnit.nameVi);
       }
 
+      // 4. Khi chọn mã công việc ở B2_CT -> tự tra cứu mã VTVL từ A2
+      if (sheetKey === 'B2_CT' && field === 'maCongViec') {
+        const taskCode = String(value);
+        const a2Item = (prev.A2 || []).find((a) => a.maCongViec === taskCode);
+        const vCode = a2Item?.maVtvl || '';
+        const updatedRows = sheetRows.map((row) =>
+          row.id === rowId ? { ...row, maCongViec: taskCode, maVtvl: vCode } : row
+        );
+        return recalculateGridFormulas({ ...prev, B2_CT: updatedRows }, currentUnit.code, currentUnit.nameVi);
+      }
+
       const updatedRows = sheetRows.map((row) => (row.id === rowId ? { ...row, [field]: value } : row));
       return recalculateGridFormulas({ ...prev, [sheetKey]: updatedRows }, currentUnit.code, currentUnit.nameVi);
     });
@@ -118,6 +129,11 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         return recalculateGridFormulas({ ...prev, C1: nextC1, C2: nextC2 }, currentUnit.code, currentUnit.nameVi);
       }
 
+      if (sheetKey === 'B2') {
+        const nextB2Ct = [...(prev.B2_CT || []), { ...newRow, id: `b2ct-${Date.now().toString(36)}` }];
+        return recalculateGridFormulas({ ...prev, B2_CT: nextB2Ct }, currentUnit.code, currentUnit.nameVi);
+      }
+
       return recalculateGridFormulas({ ...prev, [sheetKey]: [...sheetRows, newRow] }, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked]);
@@ -132,8 +148,8 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
       }
     }
     setData((prev) => {
-      const sheetRows = (prev[sheetKey] || []).filter((r) => r.id !== rowId);
-      return recalculateGridFormulas({ ...prev, [sheetKey]: sheetRows }, currentUnit.code, currentUnit.nameVi);
+      const nextData = handleSyncDeleteRow(prev, sheetKey, rowId);
+      return recalculateGridFormulas(nextData, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked, data.A1, data.A2]);
 
@@ -173,9 +189,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         versionCount: prev.S?.length || 0
       });
       synced.S = [logEntry, ...(synced.S || []).slice(0, 49)];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`hcmute_vtvl_grid_${currentUnit.code}`, JSON.stringify(synced));
-      }
+      if (typeof window !== 'undefined') localStorage.setItem(`hcmute_vtvl_grid_${currentUnit.code}`, JSON.stringify(synced));
       return synced;
     });
     setLastSaved(timeStr);
@@ -185,27 +199,20 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
 
   const currentSheetOrder = useMemo(() => {
     const rawOrder = orderMode === 'technical' ? TECHNICAL_DEPENDENCY_ORDER : EXCEL_NATURAL_SHEET_ORDER;
-    if (isAdmin) return rawOrder;
-    return rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
+    return isAdmin ? rawOrder : rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
   }, [orderMode, isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) {
-      setActiveSheet('A1');
-    }
+    if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) setActiveSheet('A1');
   }, [isAdmin, activeSheet]);
 
   const activeSheetIndex = currentSheetOrder.indexOf(activeSheet);
   const goToNextSheet = useCallback(() => {
-    if (activeSheetIndex < currentSheetOrder.length - 1) {
-      setActiveSheet(currentSheetOrder[activeSheetIndex + 1]);
-    }
+    if (activeSheetIndex < currentSheetOrder.length - 1) setActiveSheet(currentSheetOrder[activeSheetIndex + 1]);
   }, [activeSheetIndex, currentSheetOrder]);
 
   const goToPrevSheet = useCallback(() => {
-    if (activeSheetIndex > 0) {
-      setActiveSheet(currentSheetOrder[activeSheetIndex - 1]);
-    }
+    if (activeSheetIndex > 0) setActiveSheet(currentSheetOrder[activeSheetIndex - 1]);
   }, [activeSheetIndex, currentSheetOrder]);
 
   const saveAndGoNext = useCallback(() => {
@@ -225,8 +232,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     if (!isC1Unlocked) return;
     setData((prev) => {
       const fullC1 = buildFullPl1C1Rows(currentUnit.code);
-      const fullC2 = buildFullPl1C2Rows(fullC1);
-      return recalculateGridFormulas({ ...prev, C1: fullC1, C2: fullC2 }, currentUnit.code, currentUnit.nameVi);
+      return recalculateGridFormulas({ ...prev, C1: fullC1, C2: buildFullPl1C2Rows(fullC1) }, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked]);
 
@@ -234,8 +240,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     if (!isC1Unlocked) return;
     setData((prev) => {
       const recC1 = buildRecommendedC1Rows(currentUnit.code, currentUnit.group);
-      const recC2 = buildFullPl1C2Rows(recC1);
-      return recalculateGridFormulas({ ...prev, C1: recC1, C2: recC2 }, currentUnit.code, currentUnit.nameVi);
+      return recalculateGridFormulas({ ...prev, C1: recC1, C2: buildFullPl1C2Rows(recC1) }, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi, currentUnit.group, isC1Unlocked]);
 
@@ -246,7 +251,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         unitCode: currentUnit.code,
         unitNameVi: currentUnit.nameVi,
         reportingPeriod: '01/10/2025–30/9/2026',
-        data: data
+        data
       });
     } catch {
       alert('Không thể tạo file Excel từ dữ liệu đang điền, vui lòng thử lại.');
@@ -256,35 +261,10 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
   }, [currentUnit, data]);
 
   return {
-    unitCode,
-    currentUnit,
-    orderMode,
-    setOrderMode,
-    currentSheetOrder,
-    activeSheet,
-    activeSheetIndex,
-    data,
-    lastSaved,
-    lastSavedSheet,
-    isExporting,
-    dynamicOptionsMap,
-    isC1Unlocked,
-    unlockC1,
-    lockC1,
-    handleUnitChange,
-    handleLoadTcnsData,
-    restoreWorkbookData,
-    loadFullPl1Catalog,
-    loadRecommendedVtvls,
-    setActiveSheet,
-    updateCell,
-    addRow,
-    splitRow,
-    deleteRow,
-    saveSheetData,
-    saveAndGoNext,
-    exportFullWorkbook,
-    goToNextSheet,
-    goToPrevSheet
+    unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder, activeSheet, activeSheetIndex,
+    data, lastSaved, lastSavedSheet, isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1, lockC1,
+    handleUnitChange, handleLoadTcnsData, restoreWorkbookData, loadFullPl1Catalog, loadRecommendedVtvls,
+    setActiveSheet, updateCell, addRow, splitRow, deleteRow, saveSheetData, saveAndGoNext,
+    exportFullWorkbook, goToNextSheet, goToPrevSheet
   };
 }

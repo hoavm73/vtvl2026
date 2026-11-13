@@ -152,6 +152,94 @@ export function buildNewGridRow(
     };
   }
 
+  if (sheetKey === 'B1') {
+    return {
+      newRow: {
+        id: newId,
+        maCongViec: '',
+        maVtvl: '',
+        soSpNam: '',
+        phutThucTe: '',
+        gioBoSung: 0,
+        gioSp: 0,
+        gioTong: 0,
+        nguon: '',
+        ppThucTe: '',
+        phutApDung: 0,
+        canhBao: 'CHƯA ĐẠT'
+      }
+    };
+  }
+
+  if (sheetKey === 'B2_CT') {
+    return {
+      newRow: {
+        id: newId,
+        maCongViec: '',
+        maVtvl: '',
+        congDoan: '',
+        loaiTacDong: '',
+        mucDo: '',
+        gioBienDong: '',
+        vanBan: ''
+      }
+    };
+  }
+
+  if (sheetKey === 'B2') {
+    return {
+      newRow: {
+        id: newId,
+        maCongViec: '',
+        maVtvl: '',
+        gioB1: '',
+        gioGiam: '',
+        gioMoi: '',
+        gioSauTacDong: '',
+        tyLeThayDoi: '',
+        trangThai: 'Đã kiểm chứng',
+        doiChieuTrung: 'Đã đối chiếu'
+      }
+    };
+  }
+
+  if (sheetKey === 'C1') {
+    return {
+      newRow: {
+        id: newId,
+        maVtvl: '',
+        tenVtvl: '',
+        loaiNhanLuc: '',
+        quyetDinh: '',
+        gioChuanPp2: 1904,
+        canCuQuyGio: 'Mức chung 1.904 giờ – quy định về thời giờ làm việc',
+        trangThai: 'Tiếp tục sử dụng',
+        gioRieng: '',
+        xacNhanGioRieng: 'Không',
+        cheDoLamViec: 'Phổ biến (40 giờ/tuần)',
+        kiemTra: 'ĐẠT'
+      }
+    };
+  }
+
   return { newRow: { id: newId } };
+}
+
+export function handleSyncDeleteRow(
+  prev: Record<string, GenericGridRow[]>,
+  sheetKey: string,
+  rowId: string
+): Record<string, GenericGridRow[]> {
+  const currentSheetRows = (prev[sheetKey] || []).filter((r) => r.id !== rowId);
+  const next = { ...prev, [sheetKey]: currentSheetRows };
+
+  if (sheetKey === 'B2') {
+    const targetRow = (prev.B2 || []).find((r) => r.id === rowId);
+    if (targetRow?.maCongViec) {
+      next.B2_CT = (prev.B2_CT || []).filter((c) => c.maCongViec !== targetRow.maCongViec);
+    }
+  }
+
+  return next;
 }
 

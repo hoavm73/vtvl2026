@@ -44,26 +44,40 @@ export function recalculateGridFormulas(
   });
   next.B1 = updatedB1;
 
-  // 2. Sync B2_CT & B2
-  const b2Ct = next.B2_CT || [];
+  // 2. Sync B2_CT (maVtvl tra cứu từ A2) & B2 (tổng hợp động theo danh mục công việc biến động)
+  const a2VtvlLookup = new Map(existingA2.map((t) => [String(t.maCongViec), String(t.maVtvl || '')]));
+  const updatedB2Ct: GenericGridRow[] = (next.B2_CT || []).map((c) => ({
+    ...c,
+    maVtvl: a2VtvlLookup.get(String(c.maCongViec)) || (c.maVtvl as string) || ''
+  }));
+  next.B2_CT = updatedB2Ct;
+
   const b2Map = new Map((next.B2 || []).map((r) => [String(r.maCongViec), r]));
-  const updatedB2: GenericGridRow[] = existingA2.map((t, idx) => {
-    const existing = b2Map.get(String(t.maCongViec));
-    const b1Item = updatedB1.find((b) => b.maCongViec === t.maCongViec);
+  const activeTaskCodes = Array.from(new Set([
+    ...updatedB2Ct.map((c) => String(c.maCongViec || '').trim()).filter(Boolean),
+    ...(next.B2 || []).filter((b) => (Number(b.gioMoi) || 0) > 0).map((b) => String(b.maCongViec || '').trim()).filter(Boolean)
+  ]));
+
+  const updatedB2: GenericGridRow[] = activeTaskCodes.map((taskCode, idx) => {
+    const existing = b2Map.get(taskCode);
+    const b1Item = updatedB1.find((b) => b.maCongViec === taskCode);
+    const a2Item = existingA2.find((a) => a.maCongViec === taskCode);
     const b1Hours = Number(b1Item?.gioTong) || 0;
-    const ctMatches = b2Ct.filter((c) => c.maCongViec === t.maCongViec);
+    const ctMatches = updatedB2Ct.filter((c) => c.maCongViec === taskCode);
     const sumVar = ctMatches.reduce((acc, c) => acc + (Number(c.gioBienDong) || 0), 0);
     const newHours = Number(existing?.gioMoi) || 0;
     const finalHours = Math.max(0, Math.round((b1Hours + sumVar + newHours) * 10) / 10);
     return {
-      id: existing?.id || `b2-sync-${idx + 1}`,
-      maCongViec: t.maCongViec,
-      maVtvl: t.maVtvl,
+      id: existing?.id || `b2-${taskCode}-${idx + 1}`,
+      maCongViec: taskCode,
+      maVtvl: a2Item?.maVtvl || b1Item?.maVtvl || existing?.maVtvl || '',
       gioB1: b1Hours,
       gioGiam: sumVar,
       gioMoi: newHours,
       gioSauTacDong: finalHours,
-      tyLeThayDoi: b1Hours > 0 ? `${Math.round((sumVar / b1Hours) * 100)}%` : '0%'
+      tyLeThayDoi: b1Hours > 0 ? `${Math.round((sumVar / b1Hours) * 100)}%` : '0%',
+      trangThai: existing?.trangThai || 'Đã kiểm chứng',
+      doiChieuTrung: existing?.doiChieuTrung || 'Đã đối chiếu'
     };
   });
   next.B2 = updatedB2;

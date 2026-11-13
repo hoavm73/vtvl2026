@@ -92,16 +92,18 @@ export function buildDefaultGridWorkbook(unitCode: string): Record<ExcelSheetKey
     vanBan: 'Kế hoạch CĐS HCM-UTE 2026–2030'
   }));
 
-  // 7. B2_ThayDoi
-  const b2Rows: GenericGridRow[] = a2Rows.map((t, idx) => {
-    const b1Item = b1Rows.find((b) => b.maCongViec === t.maCongViec);
-    const ctMatch = b2CtRows.filter((c) => c.maCongViec === t.maCongViec);
+  // 7. B2_ThayDoi (Đồng bộ theo danh mục công việc có tác động từ B2_CT)
+  const b2TaskCodes = Array.from(new Set(b2CtRows.map((c) => String(c.maCongViec)).filter(Boolean)));
+  const b2Rows: GenericGridRow[] = b2TaskCodes.map((tCode, idx) => {
+    const a2Item = a2Rows.find((a) => a.maCongViec === tCode);
+    const b1Item = b1Rows.find((b) => b.maCongViec === tCode);
+    const ctMatch = b2CtRows.filter((c) => c.maCongViec === tCode);
     const varHours = ctMatch.reduce((acc, c) => acc + (Number(c.gioBienDong) || 0), 0);
     const b1Hours = Number(b1Item?.gioTong) || 0;
     return {
       id: `b2-${idx + 1}`,
-      maCongViec: t.maCongViec,
-      maVtvl: t.maVtvl,
+      maCongViec: tCode,
+      maVtvl: a2Item?.maVtvl || '',
       gioB1: b1Hours,
       gioGiam: varHours,
       gioMoi: 0,

@@ -102,5 +102,11 @@ export const TECHNICAL_DEPENDENCY_ORDER: ExcelSheetKey[] = [
   'S'       // Bổ sung: 15. S_NhatKy
 ];
 
+/**
+ * Danh sách 3 biểu chỉ dành cho Admin (tạm ẩn đối với người dùng thông thường):
+ * 13. K_KiemTra, 14. T_TienDo, 15. S_NhatKy
+ */
+export const ADMIN_ONLY_SHEETS = new Set<ExcelSheetKey>(['K', 'T', 'S']);
+
 export const WORKFLOW_SHEET_ORDER: ExcelSheetKey[] = EXCEL_NATURAL_SHEET_ORDER;
 

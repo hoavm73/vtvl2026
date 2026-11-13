@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Building2, ChevronDown, Layers, AlertTriangle, HelpCircle, ShieldCheck, Check } from 'lucide-react';
-import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER } from './excel-grid-types';
+import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { EXCEL_SHEET_METAS } from './excel-sheet-metas';
 import { getActiveHcmuteUnits } from '@/configs/hcmute-units';
 import { HcmuteUnit } from '@/types/vtvl';
@@ -49,7 +49,8 @@ export function WorkspaceHeaderRow({
 
   const activeMeta = EXCEL_SHEET_METAS[activeSheet];
   const fixCount = qualityReport.summary.fixCount;
-  const sheetOrder = orderMode === 'technical' ? WORKFLOW_SHEET_ORDER : EXCEL_NATURAL_SHEET_ORDER;
+  const rawSheetOrder = orderMode === 'technical' ? WORKFLOW_SHEET_ORDER : EXCEL_NATURAL_SHEET_ORDER;
+  const sheetOrder = isAdmin ? rawSheetOrder : rawSheetOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
 
   useEffect(() => {
     const handleUnitsUpdated = () => setAvailableUnits(getActiveHcmuteUnits());
@@ -80,7 +81,7 @@ export function WorkspaceHeaderRow({
 
           <PopoverContent align="start" className="w-[min(21rem,calc(100vw-2rem))] p-2 max-h-80 overflow-y-auto">
             <div className="px-3 py-1.5 text-xs font-bold text-[#476885] border-b border-[#e8eff7] mb-1">
-              Chọn biểu tính (15 biểu HD 07)
+              Chọn biểu tính ({sheetOrder.length} biểu HD 07)
             </div>
             <div className="space-y-0.5">
               {sheetOrder.map((key, idx) => {

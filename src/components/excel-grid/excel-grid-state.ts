@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, TECHNICAL_DEPENDENCY_ORDER } from './excel-grid-types';
+import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, TECHNICAL_DEPENDENCY_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow } from './excel-grid-code-helpers';
@@ -19,7 +19,7 @@ function getInitialUnitCode(fallback: string): string {
   } catch { return fallback; }
 }
 
-export function useExcelGridState(initialUnitCode = 'TCNS') {
+export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
   const [unitCode, setUnitCode] = useState(() => getInitialUnitCode(initialUnitCode));
   const [orderMode, setOrderMode] = useState<SheetOrderMode>('excel');
   const [activeSheet, setActiveSheet] = useState<ExcelSheetKey>('A1');
@@ -184,8 +184,16 @@ export function useExcelGridState(initialUnitCode = 'TCNS') {
   }, [currentUnit.code, currentUnit.nameVi]);
 
   const currentSheetOrder = useMemo(() => {
-    return orderMode === 'technical' ? TECHNICAL_DEPENDENCY_ORDER : EXCEL_NATURAL_SHEET_ORDER;
-  }, [orderMode]);
+    const rawOrder = orderMode === 'technical' ? TECHNICAL_DEPENDENCY_ORDER : EXCEL_NATURAL_SHEET_ORDER;
+    if (isAdmin) return rawOrder;
+    return rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
+  }, [orderMode, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) {
+      setActiveSheet('A1');
+    }
+  }, [isAdmin, activeSheet]);
 
   const activeSheetIndex = currentSheetOrder.indexOf(activeSheet);
   const goToNextSheet = useCallback(() => {

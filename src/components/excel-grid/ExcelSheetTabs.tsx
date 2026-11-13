@@ -65,7 +65,7 @@ export function ExcelSheetTabs({
 
           <PopoverContent align="start" className="w-[calc(100vw-24px)] p-2 max-h-72 overflow-y-auto space-y-0.5">
             <div className="px-3 py-1.5 text-xs font-bold text-[#476885] border-b border-[#e8eff7] mb-1">
-              15 biểu mẫu theo chuẩn Hướng dẫn số 07
+              {displayOrder.length} biểu mẫu theo chuẩn Hướng dẫn số 07
             </div>
             {displayOrder.map((key, idx) => {
               const m = EXCEL_SHEET_METAS[key];
@@ -119,7 +119,7 @@ export function ExcelSheetTabs({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
           role="tablist"
-          aria-label="Danh sách các biểu mẫu 15 sheet theo chuẩn Hướng dẫn 07"
+          aria-label={`Danh sách ${displayOrder.length} biểu mẫu theo chuẩn Hướng dẫn 07`}
         >
           {displayOrder.map((key, index) => {
             const meta = EXCEL_SHEET_METAS[key];

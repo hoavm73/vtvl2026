@@ -70,6 +70,8 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
     closeModal, persistDataForSession, retrySync
   } = useOperatorSession();
 
+  const isAdmin = session?.role === 'admin';
+
   const {
     unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder,
     activeSheet, activeSheetIndex, data, lastSaved, lastSavedSheet,
@@ -78,7 +80,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
     loadRecommendedVtvls, setActiveSheet,
     updateCell, addRow, splitRow, deleteRow, saveSheetData,
     exportFullWorkbook, goToNextSheet, goToPrevSheet
-  } = useExcelGridState(session?.unitCode || initialUnitCode);
+  } = useExcelGridState(session?.unitCode || initialUnitCode, isAdmin);
 
   useEffect(() => {
     if (session?.unitCode && session.unitCode !== unitCode) {

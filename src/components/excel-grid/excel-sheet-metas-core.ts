@@ -105,7 +105,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'C', field: 'congDoan', headerName: 'Công đoạn / Quy trình tác động', width: '240px' },
       { colLetter: 'D', field: 'loaiTacDong', headerName: 'Loại tác động', width: '160px', type: 'select', selectOptions: ['Số hóa', 'Cải tiến quy trình', 'Thuê dịch vụ/đặt hàng', 'Tự chủ', 'Xã hội hóa', 'Công việc mới phát sinh'] },
       { colLetter: 'E', field: 'mucDo', headerName: 'Mức độ', width: '100px', type: 'select', selectOptions: ['Toàn phần', 'Một phần'] },
-      { colLetter: 'F', field: 'gioBienDong', headerName: 'Giờ biến động (h/năm)', width: '140px', type: 'number' },
+      { colLetter: 'F', field: 'gioBienDong', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm)', width: '140px', type: 'number' },
       { colLetter: 'G', field: 'vanBan', headerName: 'Văn bản / Đề án căn cứ', width: '220px' }
     ]
   },
@@ -122,7 +122,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '150px' },
       { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '120px', isFormula: true, formulaHint: '=INDEX(B1!B,MATCH(A,B1!A,0))' },
       { colLetter: 'C', field: 'gioB1', headerName: 'Giờ B1 gốc', width: '110px', isFormula: true, formulaHint: '=INDEX(B1!G,MATCH(A,B1!A,0))' },
-      { colLetter: 'D', field: 'gioGiam', headerName: 'Giờ giảm (SUMIFS)', width: '130px', isFormula: true, formulaHint: '=SUMIFS(B2_CT!F,A,B2_CT!A)' },
+      { colLetter: 'D', field: 'gioGiam', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm) (SUMIFS)', width: '130px', isFormula: true, formulaHint: '=SUMIFS(B2_CT!F,A,B2_CT!A)' },
       { colLetter: 'E', field: 'gioMoi', headerName: 'Giờ việc mới', width: '110px', type: 'number' },
       { colLetter: 'F', field: 'gioSauTacDong', headerName: 'Giờ sau tác động', width: '140px', isFormula: true, formulaHint: '=ROUND(C+D+E,2)' },
       { colLetter: 'G', field: 'tyLeThayDoi', headerName: 'Tỷ lệ thay đổi', width: '110px', isFormula: true, formulaHint: '=ROUND(D/C*100,1)&"%"' },

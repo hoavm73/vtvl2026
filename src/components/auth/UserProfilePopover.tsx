@@ -101,9 +101,9 @@ export function UserProfilePopover() {
 
         <PopoverContent align="end" className="w-80 p-4 space-y-3">
           <div className="space-y-1">
-            <h4 className="text-sm font-bold text-[#004776]">Đăng nhập tài khoản HCM-UTE</h4>
+            <h4 className="text-sm font-bold text-[#0072BC]">Đăng nhập tài khoản HCM-UTE</h4>
             <p className="text-xs font-medium text-[#476885] leading-relaxed">
-              Sử dụng tài khoản Google công vụ @hcmute.edu.vn để đồng bộ hồ sơ an toàn trên Supabase.
+              Sử dụng tài khoản Google công vụ @hcmute.edu.vn để đồng bộ hồ sơ an toàn và tự động lưu phiên làm việc.
             </p>
           </div>
 

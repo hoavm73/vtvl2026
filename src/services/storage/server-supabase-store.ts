@@ -112,7 +112,7 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
           data: r.du_lieu_ho_so_json?.data || buildDefaultGridWorkbook(unitCode),
           actorEmail: email.trim().toLowerCase(),
           actorTitle: title,
-          changeSummary: 'Đồng bộ từ tiến độ đơn vị Supabase',
+          changeSummary: 'Đồng bộ từ tiến độ đơn vị trực tuyến',
           createdAt: updated
         }]
       });
@@ -158,7 +158,7 @@ export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: 
       so_cong_viec_a2: a2Count,
       so_vtvl_c1: c1Count,
       tong_fte_c3: Math.round(fteTotal * 100) / 100,
-      trang_thai_ra_soat: 'Đã lưu trực tuyến Supabase',
+      trang_thai_ra_soat: 'Đã lưu trực tuyến',
       du_lieu_ho_so_json: {
         serverWorkbook: wb,
         actorEmail: latestPart.email,

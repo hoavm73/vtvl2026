@@ -8,11 +8,12 @@ import { TableDeleteConfirmModal } from './TableDeleteConfirmModal';
 import { TableControlBar } from './TableControlBar';
 import { ArrowUpDown, Plus, Trash2, Copy } from 'lucide-react';
 import { useQueryFilter } from '@/services/query/use-query-filter';
+import { ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
 
 interface ExcelTableRendererProps {
   meta: ExcelSheetMeta;
   rows: GenericGridRow[];
-  dynamicOptionsMap?: Record<string, string[]>;
+  dynamicOptionsMap?: Record<string, (string | ShadcnSelectOption)[]>;
   lastSaved?: string;
   lastSavedSheet?: string;
   isC1Unlocked?: boolean;
@@ -46,7 +47,7 @@ export function ExcelTableRenderer({
   const [deletedRowBackup, setDeletedRowBackup] = useState<{ row: GenericGridRow; index: number } | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('table');
 
-  const isC1Locked = meta.key === 'C1' && !isC1Unlocked;
+  const isC1Locked = false;
 
   const { params, setParam, setParams, data: processedRows } = useQueryFilter<GenericGridRow, TableQueryFilterParams>({
     queryKey: ['excel-sheet-rows', meta.key],

@@ -129,12 +129,13 @@ export function syncC1VtvlChange(
   const isQl = pl1Item?.pl1Code.startsWith('QL') ?? newVtvl.includes('QL');
   const oldRow = sheetRows.find((r) => r.id === rowId);
   const oldVtvl = String(oldRow?.maVtvl || '');
+  const posName = pl1Item ? (pl1Item.positionName || pl1Item.titleOrRole) : '';
   const updatedC1 = sheetRows.map((row) =>
     row.id === rowId
       ? {
           ...row,
           maVtvl: newVtvl,
-          tenVtvl: pl1Item ? (pl1Item.titleOrRole || pl1Item.positionName) : row.tenVtvl,
+          tenVtvl: posName || row.tenVtvl || '',
           canCuQuyGio: isQl ? 'PP1 – theo cơ cấu và chức danh quản lý' : 'Mức chung 1.904 giờ – quy định về thời giờ làm việc'
         }
       : row
@@ -145,7 +146,7 @@ export function syncC1VtvlChange(
       ? {
           ...c2,
           maVtvl: newVtvl,
-          tenVtvl: pl1Item ? (pl1Item.titleOrRole || pl1Item.positionName) : c2.tenVtvl,
+          tenVtvl: posName || c2.tenVtvl || '',
           bacNgheNghiep: getPl1CareerLevel(newVtvl)
         }
       : c2

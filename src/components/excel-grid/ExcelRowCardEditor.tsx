@@ -6,12 +6,12 @@ import {
   Pencil, Trash2, Copy, Plus, X, Search, ChevronRight,
   ArrowLeft, ArrowRight
 } from 'lucide-react';
-import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
+import { ShadcnSelect, ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
 
 interface ExcelRowCardEditorProps {
   meta: ExcelSheetMeta;
   rows: GenericGridRow[];
-  dynamicOptionsMap?: Record<string, string[]>;
+  dynamicOptionsMap?: Record<string, (string | ShadcnSelectOption)[]>;
   isC1Locked: boolean;
   touchedCells?: Set<string>;
   onCellTouch?: (cellKey: string) => void;
@@ -197,8 +197,9 @@ export function ExcelRowCardEditor({
                       <ShadcnSelect
                         value={String(val ?? '')}
                         onValueChange={(v) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, v); }}
-                        options={[{ value: '', label: 'Chọn' }, ...selectOpts.map((opt) => ({ value: opt, label: opt }))]}
+                        options={[{ value: '', label: 'Chọn' }, ...selectOpts.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))]}
                         placeholder="Chọn"
+                        displayValue={col.field === 'maVtvl'}
                         size="md"
                       />
                     ) : col.type === 'number' ? (

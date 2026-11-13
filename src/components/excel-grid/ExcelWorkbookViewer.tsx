@@ -192,23 +192,13 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
         </div>
       )}
 
-      {activeSheet === 'C1' && !isReadOnlyViewer && (
-        <div className="px-4 py-2 border-b border-[var(--border-subtle)] bg-[#f8fafc]">
-          <C1AdminStatusBanner
-            isUnlocked={effectiveC1Unlocked}
-            onOpenUnlockModal={() => setShowUnlockModal(true)}
-            onLock={lockC1}
-          />
-        </div>
-      )}
-
       <ExcelTableRenderer
         meta={activeMeta}
         rows={activeRows}
         dynamicOptionsMap={dynamicOptionsMap}
         lastSaved={lastSaved}
         lastSavedSheet={lastSavedSheet}
-        isC1Unlocked={effectiveC1Unlocked && !isReadOnlyViewer}
+        isC1Unlocked={!isReadOnlyViewer}
         touchedCells={touchedCells}
         onCellTouch={markCellTouched}
         onCellChange={(rowId, field, val) => {

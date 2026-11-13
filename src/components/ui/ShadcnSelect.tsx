@@ -25,6 +25,7 @@ export interface ShadcnSelectProps {
   className?: string;
   searchable?: boolean;
   searchableThreshold?: number;
+  displayValue?: boolean;
   onBlur?: () => void;
   onFocus?: () => void;
 }
@@ -44,6 +45,7 @@ export function ShadcnSelect({
   className = '',
   searchable,
   searchableThreshold = 8,
+  displayValue = false,
   onBlur,
   onFocus
 }: ShadcnSelectProps) {
@@ -53,7 +55,7 @@ export function ShadcnSelect({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = useMemo(
-    () => options.find((o) => o.value === value),
+    () => options.find((o) => o.value === value || (Boolean(value) && value.endsWith(`.${o.value}`))),
     [options, value]
   );
 
@@ -136,8 +138,8 @@ export function ShadcnSelect({
         className={`w-full inline-flex items-center justify-between gap-1.5 border font-normal transition-all outline-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${sizeClass} ${borderClass}`}
         title={selectedOption?.label || value || placeholder}
       >
-        <span className={`truncate text-left ${selectedOption && selectedOption.value !== '' ? 'text-[#004776]' : 'text-[#64748b]'}`}>
-          {selectedOption ? selectedOption.label : value || placeholder}
+        <span className={`truncate text-left ${value !== '' ? 'text-[#004776]' : 'text-[#64748b]'}`}>
+          {displayValue ? (value || placeholder) : (selectedOption ? selectedOption.label : value || placeholder)}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-[#64748b] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -169,7 +171,7 @@ export function ShadcnSelect({
               <div className="px-3 py-2 text-xs text-[#64748b] text-center">Không có kết quả</div>
             ) : (
               filteredOptions.map((opt) => {
-                const isSelected = opt.value === value;
+                const isSelected = opt.value === value || (Boolean(value) && value.endsWith(`.${opt.value}`));
                 return (
                   <button
                     key={`${opt.value}-${opt.label}`}

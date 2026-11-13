@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ExcelColumnDef } from './excel-grid-types';
 import { FunctionSquare, AlertCircle } from 'lucide-react';
-import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
+import { ShadcnSelect, ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
 
 interface ExcelDataCellProps {
   col: ExcelColumnDef;
@@ -12,7 +12,7 @@ interface ExcelDataCellProps {
   isComputed: boolean;
   isTouched: boolean;
   cellKey: string;
-  dynamicOptions?: string[];
+  dynamicOptions?: (string | ShadcnSelectOption)[];
   density?: 'compact' | 'comfortable';
   onCellTouch?: (key: string) => void;
   onCellChange: (rowId: string, field: string, val: string | number) => void;
@@ -101,9 +101,9 @@ export function ExcelDataCell({
   // 3. Shadcn Dropdown / Select cell
   if (col.type === 'select' || (dynamicOptions && dynamicOptions.length > 0)) {
     const rawOptions = dynamicOptions && dynamicOptions.length > 0 ? dynamicOptions : (col.selectOptions || []);
-    const shadcnOptions = [
+    const shadcnOptions: ShadcnSelectOption[] = [
       { value: '', label: 'Chọn' },
-      ...rawOptions.map((opt) => ({ value: opt, label: opt }))
+      ...rawOptions.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))
     ];
     return (
       <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative">
@@ -115,6 +115,7 @@ export function ExcelDataCell({
           ariaDescribedBy={isEmptyRequired ? errorId : undefined}
           size={isCompact ? 'cell-compact' : 'cell-comfortable'}
           placeholder="Chọn"
+          displayValue={col.field === 'maVtvl'}
           onFocus={() => { setIsFocused(true); onCellTouch?.(cellKey); }}
           onBlur={() => { setIsFocused(false); setHasBlurred(true); }}
           onChange={(nextVal) => {

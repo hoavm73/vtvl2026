@@ -95,9 +95,15 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         return recalculateGridFormulas({ ...prev, A2: updatedRows }, currentUnit.code, currentUnit.nameVi);
       }
 
-      // 3. Khi đổi mã VTVL ở C1 -> tra cứu tên chuẩn từ Phụ lục I và đồng bộ sang C2
+      // 3. Khi chọn mã VTVL ở C1 -> gán mã đơn vị phía trước và tự động điền Tên VTVL từ danh mục trường
       if (sheetKey === 'C1' && field === 'maVtvl') {
-        const { updatedC1, updatedC2 } = syncC1VtvlChange(prev, rowId, String(value));
+        const rawCode = String(value).trim().toUpperCase();
+        if (!rawCode) {
+          const updatedRows = sheetRows.map((r) => (r.id === rowId ? { ...r, maVtvl: '', tenVtvl: '' } : r));
+          return recalculateGridFormulas({ ...prev, C1: updatedRows }, currentUnit.code, currentUnit.nameVi);
+        }
+        const finalVtvl = rawCode.includes('.') ? rawCode : `${currentUnit.code}.${rawCode}`;
+        const { updatedC1, updatedC2 } = syncC1VtvlChange(prev, rowId, finalVtvl);
         return recalculateGridFormulas({ ...prev, C1: updatedC1, C2: updatedC2 }, currentUnit.code, currentUnit.nameVi);
       }
 
@@ -118,7 +124,6 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
   }, [currentUnit.code, currentUnit.nameVi]);
 
   const addRow = useCallback((sheetKey: ExcelSheetKey) => {
-    if (sheetKey === 'C1' && !isC1Unlocked) return;
     setData((prev) => {
       const sheetRows = prev[sheetKey] || [];
       const { newRow, extraC2Row } = buildNewGridRow(sheetKey, prev, currentUnit);
@@ -136,10 +141,9 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
 
       return recalculateGridFormulas({ ...prev, [sheetKey]: [...sheetRows, newRow] }, currentUnit.code, currentUnit.nameVi);
     });
-  }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked]);
+  }, [currentUnit.code, currentUnit.nameVi]);
 
   const deleteRow = useCallback((sheetKey: ExcelSheetKey, rowId: string) => {
-    if (sheetKey === 'C1' && !isC1Unlocked) return;
     if (sheetKey === 'A1') {
       const check = canDeleteMission(data.A1 || [], data.A2 || [], rowId);
       if (!check.canDelete) {
@@ -151,7 +155,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
       const nextData = handleSyncDeleteRow(prev, sheetKey, rowId);
       return recalculateGridFormulas(nextData, currentUnit.code, currentUnit.nameVi);
     });
-  }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked, data.A1, data.A2]);
+  }, [currentUnit.code, currentUnit.nameVi, data.A1, data.A2]);
 
   const splitRow = useCallback((sheetKey: ExcelSheetKey, rowId: string) => {
     if (sheetKey !== 'A1') return;
@@ -225,24 +229,25 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     missionList: Array.from(new Set((data.A1 || []).map((r) => String(r.maNhiemVu || '')).filter(Boolean))),
     taskList: Array.from(new Set((data.A2 || []).map((r) => String(r.maCongViec || '')).filter(Boolean))),
     productList: Array.from(new Set((data.DM_SP || []).map((r) => String(r.maSpChuan || '')).filter(Boolean))),
-    pl1VtvlList: PL1_VTVL_CATALOG.map((item) => `${currentUnit.code}.${item.pl1Code}`)
-  }), [data.C1, data.A1, data.A2, data.DM_SP, currentUnit.code]);
+    pl1VtvlList: PL1_VTVL_CATALOG.map((item) => ({
+      value: item.pl1Code,
+      label: `${item.pl1Code} – ${item.positionName}`
+    }))
+  }), [data.C1, data.A1, data.A2, data.DM_SP]);
 
   const loadFullPl1Catalog = useCallback(() => {
-    if (!isC1Unlocked) return;
     setData((prev) => {
       const fullC1 = buildFullPl1C1Rows(currentUnit.code);
       return recalculateGridFormulas({ ...prev, C1: fullC1, C2: buildFullPl1C2Rows(fullC1) }, currentUnit.code, currentUnit.nameVi);
     });
-  }, [currentUnit.code, currentUnit.nameVi, isC1Unlocked]);
+  }, [currentUnit.code, currentUnit.nameVi]);
 
   const loadRecommendedVtvls = useCallback(() => {
-    if (!isC1Unlocked) return;
     setData((prev) => {
       const recC1 = buildRecommendedC1Rows(currentUnit.code, currentUnit.group);
       return recalculateGridFormulas({ ...prev, C1: recC1, C2: buildFullPl1C2Rows(recC1) }, currentUnit.code, currentUnit.nameVi);
     });
-  }, [currentUnit.code, currentUnit.nameVi, currentUnit.group, isC1Unlocked]);
+  }, [currentUnit.code, currentUnit.nameVi, currentUnit.group]);
 
   const exportFullWorkbook = useCallback(async () => {
     setIsExporting(true);

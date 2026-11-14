@@ -57,7 +57,8 @@ export default function LoginPage() {
         displayName: acc.displayName,
         role: acc.role,
         authProvider: acc.authProvider || 'email',
-        hasSelectedUnit: acc.hasSelectedUnit ?? true
+        hasSelectedUnit: acc.hasSelectedUnit ?? true,
+        accessToken: json.sessionToken
       });
       router.push(getLandingRouteByRole(acc.role));
     } catch {

@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import {
   getAllActiveServerWorkbooks,
   deleteServerWorkbook,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
 
-export async function GET() {
-  const isAuth = await getServerAdminAuth();
+export async function GET(req: NextRequest) {
+  const caller = await getCallerSession(req);
+  const isAuth = caller.isAdmin || (await getServerAdminAuth());
   if (!isAuth) {
     return NextResponse.json(
       { error: 'Yêu cầu quyền Quản trị viên để truy cập dữ liệu này.', code: 'UNAUTHORIZED_ADMIN' },
@@ -66,7 +68,8 @@ export async function GET() {
 }
 
 export async function DELETE(req: Request) {
-  const isAuth = await getServerAdminAuth();
+  const caller = await getCallerSession(req);
+  const isAuth = caller.isAdmin || (await getServerAdminAuth());
   if (!isAuth) {
     return NextResponse.json(
       { error: 'Yêu cầu quyền Quản trị viên để xóa hồ sơ.', code: 'UNAUTHORIZED_ADMIN' },

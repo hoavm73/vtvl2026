@@ -1,15 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   getAllActiveServerWorkbooks,
   getOrCreateWorkbook,
   normalizeEmail,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để truy cập danh sách hồ sơ bảng tính.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+  if (caller.isSuspended) {
+    return NextResponse.json(
+      { error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' },
+      { status: 403 }
+    );
+  }
+
   try {
     await syncServerWorkbooksFromSupabase();
-    const list = getAllActiveServerWorkbooks();
+    let list = getAllActiveServerWorkbooks();
+
+    // Phân quyền đa đơn vị: Chỉ Admin được xem toàn trường, đơn vị khác chỉ thấy hồ sơ của mình
+    if (!caller.isAdmin) {
+      list = list.filter((w) => w.unitId.toUpperCase() === caller.unitCode.toUpperCase());
+    }
+
     const summary = list.map((w) => ({
       id: w.id,
       unitCode: w.unitId,
@@ -28,31 +49,38 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để khởi tạo hồ sơ.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+  if (caller.isSuspended) {
+    return NextResponse.json(
+      { error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const { unitCode, reportingPeriod, email, displayName, roleLabel } = body;
+    const { unitCode, reportingPeriod, roleLabel } = body;
+    const requestedUnit = (unitCode || caller.unitCode).toUpperCase();
 
-    if (!unitCode || !email) {
+    if (!caller.isAdmin && requestedUnit !== caller.unitCode) {
       return NextResponse.json(
-        { error: 'Thiếu thông tin đơn vị hoặc email người thực hiện.' },
-        { status: 400 }
-      );
-    }
-
-    const normEmail = normalizeEmail(email);
-    if (!normEmail) {
-      return NextResponse.json(
-        { error: 'Email không hợp lệ.' },
-        { status: 400 }
+        { error: 'Bạn không có quyền khởi tạo hồ sơ cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+        { status: 403 }
       );
     }
 
     const workbook = getOrCreateWorkbook(
-      unitCode,
+      requestedUnit,
       reportingPeriod || '01/10/2025–30/9/2026',
-      normEmail,
-      roleLabel || 'Người thực hiện'
+      caller.email,
+      roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Cán bộ – Giảng viên')
     );
 
     return NextResponse.json({ success: true, workbook });

@@ -1,15 +1,28 @@
 import { NextResponse } from 'next/server';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { postServerRest } from '@/services/storage/server-supabase-store';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { AuditReportResult } from '@/types/vtvl';
 
 export async function POST(req: Request) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { report, unitCode } = body as { report: AuditReportResult; unitCode: string };
 
     if (!unitCode || unitCode === 'X99') {
       return NextResponse.json({ error: 'Mã đơn vị không hợp lệ.' }, { status: 400 });
+    }
+
+    if (!caller.isAdmin && unitCode.toUpperCase() !== caller.unitCode.toUpperCase()) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền đồng bộ kết quả rà soát của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+        { status: 403 }
+      );
     }
 
     try {

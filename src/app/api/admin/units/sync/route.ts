@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import {
   getAllUserAccounts,
   upsertUserAccount,
@@ -18,7 +19,8 @@ import { migrateTicketsForUnit } from '@/services/storage/server-ticket-store';
 
 export async function POST(req: NextRequest) {
   try {
-    const isAdmin = await getServerAdminAuth();
+    const caller = await getCallerSession(req);
+    const isAdmin = caller.isAdmin || (await getServerAdminAuth());
     if (!isAdmin) {
       return NextResponse.json({ error: 'Chỉ Quản trị viên hệ thống mới có quyền đồng bộ đơn vị.' }, { status: 403 });
     }

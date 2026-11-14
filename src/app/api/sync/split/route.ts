@@ -3,9 +3,14 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import { MISSIONS_BY_GROUP } from '@/configs/hcmute-hd07-catalog';
 import { postServerRest } from '@/services/storage/server-supabase-store';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
 export async function POST(req: Request) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const summary: SplitResultSummary = body.summary;
@@ -17,6 +22,13 @@ export async function POST(req: Request) {
 
     if (!summary?.unitCode) {
       return NextResponse.json({ error: 'Mã đơn vị không hợp lệ.' }, { status: 400 });
+    }
+
+    if (!caller.isAdmin && summary.unitCode.toUpperCase() !== caller.unitCode.toUpperCase()) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền đồng bộ hồ sơ cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+        { status: 403 }
+      );
     }
 
     try {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import {
   getServerUnits,
   upsertServerUnit,
@@ -31,7 +32,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const isAdmin = await getServerAdminAuth();
+    const caller = await getCallerSession(req);
+    const isAdmin = caller.isAdmin || (await getServerAdminAuth());
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Chỉ Quản trị viên hệ thống mới có quyền quản trị đơn vị.' },
@@ -118,7 +120,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const isAdmin = await getServerAdminAuth();
+    const caller = await getCallerSession(req);
+    const isAdmin = caller.isAdmin || (await getServerAdminAuth());
     if (!isAdmin) {
       return NextResponse.json({ error: 'Chỉ Quản trị viên mới có quyền xóa đơn vị.' }, { status: 403 });
     }
@@ -133,9 +136,10 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-export async function PUT() {
+export async function PUT(req: NextRequest) {
   try {
-    const isAdmin = await getServerAdminAuth();
+    const caller = await getCallerSession(req);
+    const isAdmin = caller.isAdmin || (await getServerAdminAuth());
     if (!isAdmin) {
       return NextResponse.json({ error: 'Chỉ Quản trị viên mới có quyền khôi phục danh mục.' }, { status: 403 });
     }

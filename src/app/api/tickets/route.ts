@@ -12,22 +12,48 @@ import {
   normalizeEmail,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
-import { getUserAccountByEmail } from '@/services/storage/server-account-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 
 export async function GET(req: NextRequest) {
-  const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để truy cập phiếu công việc.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+  if (caller.isSuspended) {
+    return NextResponse.json(
+      { error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' },
+      { status: 403 }
+    );
+  }
+
   const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
-  const userAccount = email ? getUserAccountByEmail(email) : null;
-  const resolvedUnitCode = (userAccount?.unitCode || unitCodeParam || 'FIT').toUpperCase();
-  const unit = findHcmuteUnit(resolvedUnitCode);
+
+  // Kiểm soát phân quyền đa đơn vị (Tenant Isolation)
+  if (!caller.isAdmin && unitCodeParam && unitCodeParam !== caller.unitCode) {
+    return NextResponse.json(
+      { error: 'Bạn không có quyền truy cập dữ liệu của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+      { status: 403 }
+    );
+  }
+
+  const effectiveUnitCode = caller.isAdmin && unitCodeParam ? unitCodeParam : caller.unitCode;
+  const unit = findHcmuteUnit(effectiveUnitCode);
 
   await syncServerWorkbooksFromSupabase();
-  const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', email || 'guest@hcmute.edu.vn', 'Cán bộ – Giảng viên');
+  const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
   syncTicketsFromWorkbook(wb.data, unit.code);
 
-  const myTickets = email ? getTicketsByOwner(email, unit.code) : [];
-  const unitTickets = getTicketsByUnit(unit.code);
+  // IDOR Protection: Nhân viên chỉ xem phiếu của chính mình, Admin/Leader xem được danh sách đơn vị
+  const myTickets = getTicketsByOwner(caller.email, unit.code);
+  const rawUnitTickets = getTicketsByUnit(unit.code);
+
+  const unitTickets = caller.isAdmin || caller.isUnitLeader
+    ? rawUnitTickets
+    : rawUnitTickets.filter((t) => t.ownerEmail === caller.email || t.status === 'Đã nộp');
 
   return NextResponse.json({
     myTickets,
@@ -42,12 +68,40 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để lập phiếu công việc.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+  if (caller.isSuspended) {
+    return NextResponse.json(
+      { error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const ownerEmail = normalizeEmail(body.ownerEmail || '');
-    if (!ownerEmail) {
-      return NextResponse.json({ error: 'Thiếu thông tin email người lập phiếu.' }, { status: 400 });
+    const targetOwner = normalizeEmail(body.ownerEmail || caller.email);
+
+    // IDOR & Spoofing Protection: Nhân viên không được tạo/sửa phiếu dưới danh nghĩa người khác
+    if (!caller.isAdmin && targetOwner !== caller.email) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền thao tác trên phiếu của người khác.', code: 'FORBIDDEN_IDOR' },
+        { status: 403 }
+      );
     }
+
+    const requestedUnitCode = (body.unitCode || caller.unitCode).toUpperCase();
+    if (!caller.isAdmin && requestedUnitCode !== caller.unitCode) {
+      return NextResponse.json(
+        { error: 'Bạn không thể lập phiếu cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+        { status: 403 }
+      );
+    }
+
     if (!body.maNhiemVu || !body.tenCongViec || !body.maVtvl) {
       return NextResponse.json(
         { error: 'Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm và nhập Tên công việc cụ thể.' },
@@ -55,15 +109,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userAccount = ownerEmail ? getUserAccountByEmail(ownerEmail) : null;
-    const resolvedUnitCode = (body.unitCode || userAccount?.unitCode || 'FIT').toUpperCase();
+    const existingTickets = getTicketsByUnit(requestedUnitCode);
+    if (body.id) {
+      const existing = existingTickets.find((t) => t.id === body.id);
+      if (existing && existing.ownerEmail !== caller.email && !caller.isAdmin) {
+        return NextResponse.json(
+          { error: 'Bạn không có quyền cập nhật phiếu của người khác.', code: 'FORBIDDEN_IDOR' },
+          { status: 403 }
+        );
+      }
+    }
 
     const result = await upsertTicketAndSyncUnit({
       id: body.id,
-      unitCode: resolvedUnitCode,
-      ownerEmail,
-      ownerName: body.ownerName || ownerEmail.split('@')[0],
-      ownerTitle: body.ownerTitle || 'Cán bộ – Giảng viên',
+      unitCode: requestedUnitCode,
+      ownerEmail: targetOwner,
+      ownerName: body.ownerName || caller.email.split('@')[0],
+      ownerTitle: body.ownerTitle || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Cán bộ – Giảng viên'),
       status: body.status === 'Đã nộp' ? 'Đã nộp' : 'Nháp',
       maNhiemVu: String(body.maNhiemVu),
       maCongViec: String(body.maCongViec || ''),
@@ -92,13 +154,37 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get('id') || '';
-  const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
-  if (!id || !email) {
-    return NextResponse.json({ error: 'Thiếu mã phiếu hoặc thông tin tài khoản.' }, { status: 400 });
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để xóa phiếu công việc.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+  if (caller.isSuspended) {
+    return NextResponse.json(
+      { error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' },
+      { status: 403 }
+    );
   }
 
-  const deleted = await deleteTicketAndSyncUnit(id, email);
+  const id = req.nextUrl.searchParams.get('id') || '';
+  if (!id) {
+    return NextResponse.json({ error: 'Thiếu mã phiếu cần xóa.' }, { status: 400 });
+  }
+
+  // IDOR & Cross-User Tampering: Phải kiểm tra quyền sở hữu phiếu
+  const unitTickets = getTicketsByUnit(caller.unitCode);
+  const targetTicket = unitTickets.find((t) => t.id === id);
+
+  if (targetTicket && targetTicket.ownerEmail !== caller.email && !caller.isAdmin) {
+    return NextResponse.json(
+      { error: 'Bạn không có quyền xóa phiếu công việc của người khác.', code: 'FORBIDDEN_IDOR' },
+      { status: 403 }
+    );
+  }
+
+  const deleted = await deleteTicketAndSyncUnit(id, caller.isAdmin ? (targetTicket?.ownerEmail || caller.email) : caller.email);
   if (!deleted) {
     return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa phiếu này.' }, { status: 403 });
   }
@@ -106,15 +192,29 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  // API phụ trợ lấy mã công việc tự nhảy tiếp theo khi người dùng chọn Mã nhiệm vụ trên form
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+
   const body = await req.json();
-  const unitCode = (body.unitCode || 'FIT').toUpperCase();
+  const requestedUnit = (body.unitCode || caller.unitCode).toUpperCase();
+  if (!caller.isAdmin && requestedUnit !== caller.unitCode) {
+    return NextResponse.json(
+      { error: 'Không thể cấp mã cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+      { status: 403 }
+    );
+  }
+
   const maNhiemVu = String(body.maNhiemVu || '').trim();
   if (!maNhiemVu) return NextResponse.json({ nextTaskCode: '' });
 
   await syncServerWorkbooksFromSupabase();
-  const wb = getOrCreateWorkbook(unitCode, '01/10/2025–30/9/2026', 'system@hcmute.edu.vn', 'System');
-  const unitTickets = getTicketsByUnit(unitCode);
-  const nextTaskCode = allocateNextTaskCode(unitCode, maNhiemVu, wb.data.A2 || [], unitTickets, body.excludeTicketId);
+  const wb = getOrCreateWorkbook(requestedUnit, '01/10/2025–30/9/2026', caller.email, caller.role);
+  const unitTickets = getTicketsByUnit(requestedUnit);
+  const nextTaskCode = allocateNextTaskCode(requestedUnit, maNhiemVu, wb.data.A2 || [], unitTickets, body.excludeTicketId);
   return NextResponse.json({ nextTaskCode, maCongViec: nextTaskCode });
 }

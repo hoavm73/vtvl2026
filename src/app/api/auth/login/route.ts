@@ -6,6 +6,10 @@ import {
   stripAccountSensitiveFields
 } from '@/services/storage/server-account-store';
 import { generateAdminToken, setServerAdminCookie } from '@/services/storage/server-admin-auth';
+import {
+  generateUserSessionToken,
+  setUserSessionCookie
+} from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
 export async function POST(req: NextRequest) {
@@ -46,13 +50,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sessionToken = generateUserSessionToken({
+      email: verified.email,
+      role: verified.role,
+      unitCode: verified.unitCode
+    });
+    await setUserSessionCookie(sessionToken);
+
     if (verified.role === 'admin') {
       await setServerAdminCookie(generateAdminToken());
     }
 
     return NextResponse.json({
       ok: true,
-      account: stripAccountSensitiveFields(verified)
+      account: stripAccountSensitiveFields(verified),
+      sessionToken
     });
   } catch {
     return NextResponse.json({ error: 'Không thể xử lý yêu cầu đăng nhập.' }, { status: 500 });

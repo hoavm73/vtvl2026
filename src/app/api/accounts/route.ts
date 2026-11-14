@@ -13,6 +13,7 @@ import {
   generateAdminToken,
   setServerAdminCookie
 } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
 function extractBearer(req: NextRequest): string | null {
@@ -29,34 +30,47 @@ function sanitizeClientAccount(account: UserAccountRecord, isAdmin: boolean): Us
 }
 
 export async function GET(req: NextRequest) {
-  const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
-  if (!email) {
-    return NextResponse.json({ error: 'Thiếu email người dùng.' }, { status: 400 });
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   }
 
+  const requestedEmail = normalizeEmail(req.nextUrl.searchParams.get('email') || caller.email);
   await syncAccountsFromSupabase();
-  const rawAccount = getUserAccountByEmail(email);
+  const rawAccount = getUserAccountByEmail(requestedEmail);
 
-  const cookieAdmin = await getServerAdminAuth();
-  const bearer = extractBearer(req);
-  const verifiedGoogleAdmin = bearer ? await isVerifiedAdminAccount(email, bearer) : false;
-
-  if (verifiedGoogleAdmin && !cookieAdmin) {
-    await setServerAdminCookie(generateAdminToken());
+  if (!rawAccount) {
+    return NextResponse.json({ account: null, isAdmin: false });
   }
 
-  const isExplicitAdmin = email === 'tcns@hcmute.edu.vn' || rawAccount?.role === 'admin';
-  const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin);
-  const account = rawAccount ? sanitizeClientAccount(rawAccount, isAdmin) : null;
-  return NextResponse.json({ account, isAdmin });
+  // IDOR Protection: Chỉ Admin hoặc Lãnh đạo đơn vị được xem hồ sơ người khác
+  if (!caller.isAdmin && requestedEmail !== caller.email) {
+    if (!caller.isUnitLeader || rawAccount.unitCode !== caller.unitCode) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền xem thông tin tài khoản này.', code: 'FORBIDDEN' },
+        { status: 403 }
+      );
+    }
+  }
+
+  const account = sanitizeClientAccount(rawAccount, caller.isAdmin);
+  return NextResponse.json({ account, isAdmin: caller.isAdmin });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await getCallerSession(req);
     const body = await req.json();
-    const email = normalizeEmail(body.email || '');
+    const email = normalizeEmail(body.email || (caller.isAuthenticated ? caller.email : ''));
     if (!email) {
       return NextResponse.json({ error: 'Email công vụ không hợp lệ.' }, { status: 400 });
+    }
+
+    if (caller.isAuthenticated && !caller.isAdmin && email !== caller.email) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền thao tác trên tài khoản khác.', code: 'FORBIDDEN_IDOR' },
+        { status: 403 }
+      );
     }
 
     await syncAccountsFromSupabase(true);
@@ -65,7 +79,14 @@ export async function POST(req: NextRequest) {
     const bearer = extractBearer(req);
     const verifiedGoogleAdmin = bearer ? await isVerifiedAdminAccount(email, bearer) : false;
     const isExplicitAdmin = email === 'tcns@hcmute.edu.vn' || existing?.role === 'admin' || body.role === 'admin';
-    const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin);
+    const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin || caller.isAdmin);
+
+    if (body.role === 'admin' && !isAdmin) {
+      return NextResponse.json(
+        { error: 'Chỉ Quản trị viên hệ thống mới có quyền thiết lập vai trò Quản trị.' },
+        { status: 403 }
+      );
+    }
 
     const hasExistingAssignment = Boolean(
       existing?.hasSelectedUnit ||
@@ -104,16 +125,24 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const caller = await getCallerSession(req);
     const body = await req.json();
-    const email = normalizeEmail(body.email || '');
+    const email = normalizeEmail(body.email || (caller.isAuthenticated ? caller.email : ''));
     if (!email) {
       return NextResponse.json({ error: 'Email công vụ không hợp lệ.' }, { status: 400 });
+    }
+
+    if (caller.isAuthenticated && !caller.isAdmin && email !== caller.email) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền sửa thông tin của tài khoản khác.', code: 'FORBIDDEN_IDOR' },
+        { status: 403 }
+      );
     }
 
     await syncAccountsFromSupabase(true);
     const existing = getUserAccountByEmail(email);
     const bearer = extractBearer(req);
-    const isAdmin = await getServerAdminAuth(email, bearer);
+    const isAdmin = caller.isAdmin || (await getServerAdminAuth(email, bearer));
 
     if (existing?.status === 'suspended' && !isAdmin) {
       return NextResponse.json(

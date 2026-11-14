@@ -6,8 +6,13 @@ import {
   setServerAdminCookie,
   clearServerAdminCookie
 } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const caller = await getCallerSession(req);
+  if (caller.isAdmin || caller.isUnitLeader) {
+    return NextResponse.json({ unlocked: true });
+  }
   const isAuth = await getServerAdminAuth();
   return NextResponse.json({ unlocked: isAuth });
 }

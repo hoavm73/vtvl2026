@@ -1,273 +1,280 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, LogOut, FileSpreadsheet, Building2 } from 'lucide-react';
-import {
-  getCurrentOperatorSession,
-  saveCurrentOperatorSession,
-  clearCurrentOperatorSession,
-  OperatorSession
-} from '@/services/telemetry/operator-session';
-import { StaffWorkTicket } from '@/types/staff-ticket';
+import { Plus, LogOut, FileSpreadsheet, Building2, User, Clock, Users } from 'lucide-react';
+import { getCurrentOperatorSession, clearCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
+import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { StaffTicketInlineForm } from '@/components/staff-portal/StaffTicketInlineForm';
 import { StaffMyTicketsList } from '@/components/staff-portal/StaffMyTicketsList';
+import { UnitTicketsReviewList } from '@/components/staff-portal/UnitTicketsReviewList';
 import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrintModal';
+import { StaffTicketDetailModal } from '@/components/staff-portal/StaffTicketDetailModal';
+import { StaffTicketRevisionModal } from '@/components/staff-portal/StaffTicketRevisionModal';
+import { StaffTicketMergePreviewModal } from '@/components/staff-portal/StaffTicketMergePreviewModal';
 import { CoordinatedTaskModal } from '@/components/staff-portal/CoordinatedTaskModal';
-import { UnitTasksReadOnlyPanel } from '@/components/staff-portal/UnitTasksReadOnlyPanel';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
 
 export default function StaffWorkTicketsPage() {
   const router = useRouter();
   const [session, setSession] = useState<OperatorSession | null>(null);
   const [unitNameVi, setUnitNameVi] = useState('');
   const [myTickets, setMyTickets] = useState<StaffWorkTicket[]>([]);
+  const [unitTickets, setUnitTickets] = useState<StaffWorkTicket[]>([]);
   const [a1Missions, setA1Missions] = useState<GenericGridRow[]>([]);
   const [c1Vtvls, setC1Vtvls] = useState<GenericGridRow[]>([]);
-  const [unitA2Tasks, setUnitA2Tasks] = useState<GenericGridRow[]>([]);
-  const [unitB1Volumes, setUnitB1Volumes] = useState<GenericGridRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Điều khiển Tab: 'my' (Phiếu của tôi), 'pending' (Chờ duyệt), 'unit' (Toàn bộ phiếu đơn vị)
+  const [activeTab, setActiveTab] = useState<'my' | 'pending' | 'unit'>('my');
+
+  // Modals
   const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null);
+  const [detailTicket, setDetailTicket] = useState<StaffWorkTicket | null>(null);
   const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
+  const [revisionTicket, setRevisionTicket] = useState<StaffWorkTicket | null>(null);
+  const [mergeTicket, setMergeTicket] = useState<StaffWorkTicket | null>(null);
   const [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
+
   const lastLoadedKeyRef = useRef<string>('');
 
   const loadData = useCallback(async (op: OperatorSession) => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/tickets?email=${encodeURIComponent(op.email)}&unitCode=${encodeURIComponent(op.unitCode)}`
-      );
+      let activeToken = op.accessToken;
+      if (!activeToken) {
+        await syncOperatorAccountWithServer(op);
+        const refreshed = getCurrentOperatorSession();
+        if (refreshed?.accessToken) activeToken = refreshed.accessToken;
+      }
+      const headers: Record<string, string> = { 'x-actor-email': op.email };
+      if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
+      const res = await fetch(`/api/tickets?email=${encodeURIComponent(op.email)}&unitCode=${encodeURIComponent(op.unitCode)}`, { headers });
       if (res.ok) {
         const json = await res.json();
         setUnitNameVi(json.unitNameVi || op.unitNameVi);
         setMyTickets(json.myTickets || []);
+        setUnitTickets(json.unitTickets || []);
         setA1Missions(json.a1Missions || []);
         setC1Vtvls(json.c1Vtvls || []);
-        setUnitA2Tasks(json.unitA2Tasks || []);
-        setUnitB1Volumes(json.unitB1Volumes || []);
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, []);
 
-  const syncWithActiveSession = useCallback((op: OperatorSession | null) => {
-    if (!op) {
-      router.replace('/login');
-      return;
-    }
-    setSession((prev) => {
-      if (prev && prev.unitCode !== op.unitCode) {
-        setEditingTicket(null);
-      }
-      return op;
-    });
+  const syncWithSession = useCallback((op: OperatorSession | null) => {
+    if (!op) { router.replace('/login'); return; }
+    setSession((prev) => { if (prev && prev.unitCode !== op.unitCode) setEditingTicket(null); return op; });
     setUnitNameVi(op.unitNameVi);
-
-    const sessionKey = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
-    if (lastLoadedKeyRef.current !== sessionKey) {
-      lastLoadedKeyRef.current = sessionKey;
-      loadData(op);
-    }
+    const key = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
+    if (lastLoadedKeyRef.current !== key) { lastLoadedKeyRef.current = key; loadData(op); }
   }, [router, loadData]);
 
   useEffect(() => {
-    const op = getCurrentOperatorSession();
-    syncWithActiveSession(op);
+    syncWithSession(getCurrentOperatorSession());
+    const onUp = () => { lastLoadedKeyRef.current = ''; syncWithSession(getCurrentOperatorSession()); };
+    window.addEventListener('vtvl-operator-changed', onUp);
+    window.addEventListener('storage', onUp);
+    return () => { window.removeEventListener('vtvl-operator-changed', onUp); window.removeEventListener('storage', onUp); };
+  }, [syncWithSession]);
 
-    const handleSessionChange = () => {
-      syncWithActiveSession(getCurrentOperatorSession());
-    };
+  const isLeader = session?.role === 'unit_leader' || session?.role === 'admin';
 
-    const handleGridSync = (e: Event) => {
-      const customEvent = e as CustomEvent<{ oldCode: string; newCode: string; newNameVi?: string }>;
-      const cur = getCurrentOperatorSession();
-      if (cur && customEvent.detail?.oldCode && cur.unitCode.toUpperCase() === customEvent.detail.oldCode.toUpperCase()) {
-        const nextCode = customEvent.detail.newCode.toUpperCase();
-        lastLoadedKeyRef.current = '';
-        const updated = saveCurrentOperatorSession(cur.email, nextCode, cur.title, {
-          displayName: cur.displayName,
-          avatarUrl: cur.avatarUrl,
-          authProvider: cur.authProvider,
-          accessToken: cur.accessToken,
-          role: cur.role,
-          hasSelectedUnit: true
-        });
-        syncWithActiveSession(updated);
-      } else {
-        lastLoadedKeyRef.current = '';
-        syncWithActiveSession(getCurrentOperatorSession());
-      }
-    };
+  // Số lượng phiếu chờ duyệt
+  const pendingCount = useMemo(() => {
+    return unitTickets.filter((t) => {
+      const c = toCanonicalStatus(t.status);
+      return c === 'submitted' || c === 'resubmitted';
+    }).length;
+  }, [unitTickets]);
 
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'hcmute_vtvl_current_operator_v1' || e.key === 'vtvl_operator_session') {
-        lastLoadedKeyRef.current = '';
-        syncWithActiveSession(getCurrentOperatorSession());
-      }
-    };
+  const sendPatchAction = async (payload: Record<string, unknown>) => {
+    if (!session) return false;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-actor-email': session.email };
+    if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
+    const res = await fetch('/api/tickets', { method: 'PATCH', headers, body: JSON.stringify(payload) });
+    if (res.ok) { loadData(session); return true; }
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || 'Thao tác không thành công.');
+    return false;
+  };
 
-    window.addEventListener('vtvl-operator-changed', handleSessionChange);
-    window.addEventListener('vtvl-grid-sync', handleGridSync);
-    window.addEventListener('storage', handleStorageChange);
+  const handleApprove = async (t: StaffWorkTicket) => {
+    if (!window.confirm(`Xác nhận phê duyệt phiếu [${t.maCongViec} - ${t.tenCongViec}]?`)) return;
+    await sendPatchAction({ ticketId: t.id, action: 'approve' });
+  };
 
-    let channel: BroadcastChannel | null = null;
-    if (typeof BroadcastChannel !== 'undefined') {
-      try {
-        channel = new BroadcastChannel('hcmute_vtvl_realtime');
-        channel.onmessage = (event) => {
-          if (event.data?.type === 'OPERATOR_CHANGED') {
-            syncWithActiveSession(getCurrentOperatorSession());
-          }
-        };
-      } catch { /* ignore */ }
-    }
+  const handleRevisionSubmit = async (t: StaffWorkTicket, reason: string) => {
+    await sendPatchAction({ ticketId: t.id, action: 'changes_requested', reason });
+  };
 
-    return () => {
-      window.removeEventListener('vtvl-operator-changed', handleSessionChange);
-      window.removeEventListener('vtvl-grid-sync', handleGridSync);
-      window.removeEventListener('storage', handleStorageChange);
-      if (channel) channel.close();
-    };
-  }, [syncWithActiveSession]);
+  const handleMergeSubmit = async (t: StaffWorkTicket) => {
+    await sendPatchAction({ ticketId: t.id, action: 'merge' });
+  };
+
+  const handleSubmitMyTicket = async (t: StaffWorkTicket, isResubmit: boolean) => {
+    const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
+    if (!window.confirm(msg)) return;
+    await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit' });
+  };
 
   const handleDelete = async (ticket: StaffWorkTicket) => {
-    if (!session) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa phiếu [${ticket.maCongViec}]?\nDòng tương ứng trên bảng đơn vị cũng sẽ được xóa.`)) {
-      return;
-    }
-    const res = await fetch(
-      `/api/tickets?id=${encodeURIComponent(ticket.id)}&email=${encodeURIComponent(session.email)}`,
-      { method: 'DELETE' }
-    );
-    if (res.ok) {
-      if (editingTicket?.id === ticket.id) setEditingTicket(null);
-      loadData(session);
-    }
-  };
-
-  const handleEditClick = (ticket: StaffWorkTicket) => {
-    if (ticket.unitCode !== session?.unitCode) return;
-    setEditingTicket(ticket);
-    const el = document.getElementById('staff-ticket-form-card');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleCreateNewClick = () => {
-    setEditingTicket(null);
-    const el = document.getElementById('staff-ticket-form-card');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleLogout = () => {
-    clearCurrentOperatorSession();
-    router.push('/login');
+    if (!session || !window.confirm(`Xóa phiếu [${ticket.maCongViec}]?`)) return;
+    const headers: Record<string, string> = { 'x-actor-email': session.email };
+    if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
+    const res = await fetch(`/api/tickets?id=${encodeURIComponent(ticket.id)}`, { method: 'DELETE', headers });
+    if (res.ok) { if (editingTicket?.id === ticket.id) setEditingTicket(null); loadData(session); }
   };
 
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6">
-      <div className="max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
-        {/* Banner chào mừng */}
-        <div className="bg-white rounded-2xl border border-[#dbeafe] shadow-xs p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-          <div className="space-y-1.5 min-w-0 flex-1">
+    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6 print:p-0 print:m-0 print:bg-white print:min-h-0">
+      <div className="max-w-[1440px] mx-auto space-y-4 print:space-y-0 print:max-w-none print:w-full">
+        {/* Banner */}
+        <div className="bg-white rounded-2xl border border-[#dbeafe] shadow-xs p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 print:hidden">
+          <div className="space-y-1">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
-              <Building2 className="w-3.5 h-3.5 shrink-0" />
+              <Building2 className="w-3.5 h-3.5" />
               <span>{unitNameVi || findHcmuteUnit(session.unitCode).nameVi} ({findHcmuteUnit(session.unitCode).code})</span>
             </div>
-            <h1 className="text-lg sm:text-2xl font-bold text-[#004776] leading-tight">
-              Chào mừng {session.displayName || session.email} đến với Hệ thống Vị trí việc làm HCM-UTE
+            <h1 className="text-lg sm:text-2xl font-bold text-[#004776]">
+              Phiếu khảo sát khối lượng công việc cá nhân HCM-UTE
             </h1>
-            <p className="text-xs sm:text-[13px] text-[#475569] leading-relaxed">
-              {session.role === 'unit_leader'
-                ? 'Không gian Lãnh đạo đơn vị • Rà soát, duyệt phiếu công việc và quản trị toàn bộ dữ liệu đơn vị.'
-                : 'Không gian Cán bộ – Giảng viên • Kê khai trực tiếp phiếu công việc cá nhân và đối chiếu danh sách công việc chung của đơn vị.'}
-            </p>
+            {isLeader && (
+              <p className="text-xs text-[#475569]">
+                Không gian Lãnh đạo đơn vị • Kê khai cá nhân, rà soát duyệt phiếu và tổng hợp vào B1/B2.
+              </p>
+            )}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 pt-2 xl:pt-0 border-t xl:border-t-0 border-[#f1f5f9]">
-            <Link
-              href="/bang-tinh"
-              className="h-10 px-3.5 sm:px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs sm:text-[13px] font-semibold text-[#004776] flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
-              <span>{session.role === 'unit_leader' ? 'Vào bảng tính đơn vị' : 'Xem bảng biểu đơn vị'}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/bang-tinh" className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5 shadow-2xs">
+              <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" /> <span>Vào bảng tính đơn vị</span>
             </Link>
-            <button
-              type="button"
-              onClick={handleCreateNewClick}
-              className="h-10 px-3.5 sm:px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs sm:text-[13px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tạo phiếu mới</span>
+            <button type="button" onClick={() => { setActiveTab('my'); setEditingTicket(null); }} className="h-10 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
+              <Plus className="w-4 h-4" /> <span>Tạo phiếu mới</span>
             </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="h-10 px-3 rounded-xl border border-[#e2e8f0] hover:bg-red-50 text-xs sm:text-[13px] font-medium text-[#64748b] hover:text-red-600 flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-              title="Đăng xuất"
-            >
+            <button type="button" onClick={() => { clearCurrentOperatorSession(); router.push('/login'); }} className="h-10 px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#64748b] hover:text-red-600 cursor-pointer">
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </div>
         </div>
 
-        {/* Bố cục 2 cột: Trái (Phiếu công việc nằm sẵn to ra + Danh sách phiếu của tôi) | Phải (Danh sách công việc đơn vị) */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-          {/* Cột Trái */}
-          <div className="xl:col-span-7 space-y-5">
-            {/* Form Phiếu công việc nằm sẵn to ra */}
-            <StaffTicketInlineForm
-              unitCode={session.unitCode}
-              ownerEmail={session.email}
-              ownerName={session.displayName || session.email.split('@')[0]}
-              ownerTitle={session.title}
-              editingTicket={editingTicket?.unitCode === session.unitCode ? editingTicket : null}
-              a1Missions={a1Missions}
-              c1Vtvls={c1Vtvls}
-              onCancelEdit={() => setEditingTicket(null)}
-              onSaved={() => loadData(session)}
-            />
+        {/* Thanh chuyển đổi Tab */}
+        <div className="flex items-center gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-2 rounded-t-2xl print:hidden">
+          <button
+            type="button"
+            onClick={() => setActiveTab('my')}
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+              activeTab === 'my' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
+            }`}
+          >
+            <User className="w-4 h-4" /> <span>Phiếu của tôi ({myTickets.length})</span>
+          </button>
 
-            {/* Danh sách phiếu đã tạo của tôi */}
-            <StaffMyTicketsList
-              tickets={myTickets}
-              loading={loading}
-              onEditTicket={handleEditClick}
-              onPrintTicket={setPrintTicket}
-              onCoordTicket={setCoordTicket}
-              onDeleteTicket={handleDelete}
+          {isLeader && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('pending')}
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+                activeTab === 'pending' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>Chờ duyệt</span>
+              {pendingCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('unit')}
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+              activeTab === 'unit' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>{isLeader ? 'Toàn bộ phiếu đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} ({unitTickets.length})</span>
+          </button>
+        </div>
+
+        {/* Nội dung Tab */}
+        {activeTab === 'my' && (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start print:block">
+            <div className="xl:col-span-6 print:w-full">
+              <StaffTicketInlineForm
+                unitCode={session.unitCode} ownerEmail={session.email}
+                ownerName={session.displayName || session.email.split('@')[0]} ownerTitle={session.title}
+                editingTicket={editingTicket?.unitCode === session.unitCode ? editingTicket : null}
+                a1Missions={a1Missions} c1Vtvls={c1Vtvls}
+                onCancelEdit={() => setEditingTicket(null)}
+                onSaved={(savedTicket?: StaffWorkTicket) => {
+                  if (savedTicket) {
+                    setMyTickets((prev) => {
+                      const idx = prev.findIndex((t) => t.id === savedTicket.id);
+                      if (idx >= 0) {
+                        const next = [...prev];
+                        next[idx] = savedTicket;
+                        return next;
+                      }
+                      return [savedTicket, ...prev];
+                    });
+                  }
+                  loadData(session);
+                }}
+              />
+            </div>
+            <div className="xl:col-span-6 print:hidden">
+              <StaffMyTicketsList
+                tickets={myTickets} loading={loading}
+                onEditTicket={(t) => { setEditingTicket(t); setActiveTab('my'); }}
+                onPrintTicket={setPrintTicket} onViewTicket={setDetailTicket}
+                onCoordTicket={setCoordTicket} onDeleteTicket={handleDelete}
+                onSubmitTicket={handleSubmitMyTicket}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'pending' && isLeader && (
+          <div className="print:hidden">
+            <UnitTicketsReviewList
+              tickets={unitTickets} loading={loading} mode="pending"
+              currentUserRole={session.role} currentUserEmail={session.email}
+              onViewTicket={setDetailTicket} onPrintTicket={setPrintTicket}
+              onApproveTicket={handleApprove}
+              onRequestChanges={(t) => setRevisionTicket(t)}
+              onMergeTicket={(t) => setMergeTicket(t)}
             />
           </div>
+        )}
 
-          {/* Cột Phải: Danh sách công việc của đơn vị (Chỉ đọc) */}
-          <UnitTasksReadOnlyPanel
-            unitCode={session.unitCode}
-            unitA2Tasks={unitA2Tasks}
-            unitB1Volumes={unitB1Volumes}
-          />
-        </div>
+        {activeTab === 'unit' && (
+          <div className="print:hidden">
+            <UnitTicketsReviewList
+              tickets={unitTickets} loading={loading} mode="all"
+              currentUserRole={session.role} currentUserEmail={session.email}
+              onViewTicket={setDetailTicket} onPrintTicket={setPrintTicket}
+              onApproveTicket={isLeader ? handleApprove : undefined}
+              onRequestChanges={isLeader ? (t) => setRevisionTicket(t) : undefined}
+              onMergeTicket={isLeader ? (t) => setMergeTicket(t) : undefined}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Modal In / Xuất PDF khổ A4 */}
-      <StaffTicketPrintModal
-        ticket={printTicket}
-        unitNameVi={unitNameVi}
-        onClose={() => setPrintTicket(null)}
-      />
-
-      {/* Modal gán công việc phối hợp liên đơn vị */}
-      <CoordinatedTaskModal
-        ticket={coordTicket}
-        onClose={() => setCoordTicket(null)}
-        onSaved={() => loadData(session)}
-      />
+      {/* Modals */}
+      <StaffTicketDetailModal ticket={detailTicket} unitNameVi={unitNameVi} onClose={() => setDetailTicket(null)} onPrint={setPrintTicket} />
+      <StaffTicketPrintModal ticket={printTicket} unitNameVi={unitNameVi} onClose={() => setPrintTicket(null)} />
+      <StaffTicketRevisionModal ticket={revisionTicket} onClose={() => setRevisionTicket(null)} onSubmit={handleRevisionSubmit} />
+      <StaffTicketMergePreviewModal ticket={mergeTicket} onClose={() => setMergeTicket(null)} onConfirmMerge={handleMergeSubmit} />
+      <CoordinatedTaskModal ticket={coordTicket} onClose={() => setCoordTicket(null)} onSaved={() => loadData(session)} />
     </div>
   );
 }

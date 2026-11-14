@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 import {
   verifyAdminPassword,
   generateAdminToken,
@@ -17,6 +19,19 @@ function extractBearer(req: NextRequest): string | null {
 const ADMIN_COOKIE = 'hcmute_vtvl_admin_token_v2';
 
 export async function GET(req: NextRequest) {
+  const caller = await getCallerSession(req);
+  if (caller.isAdmin) {
+    return NextResponse.json({ authenticated: true, role: 'admin', unitCode: caller.unitCode });
+  }
+  if (caller.isUnitLeader) {
+    return NextResponse.json({
+      authenticated: true,
+      role: 'unit_leader',
+      unitCode: caller.unitCode,
+      unitNameVi: findHcmuteUnit(caller.unitCode).nameVi
+    });
+  }
+
   const reqCookieToken = req.cookies.get(ADMIN_COOKIE)?.value;
   if (reqCookieToken && verifyAdminToken(reqCookieToken) !== null) {
     return NextResponse.json({ authenticated: true, role: 'admin' });
@@ -50,7 +65,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ authenticated: false });
+  return NextResponse.json({
+    authenticated: false,
+    role: caller.role,
+    error: caller.isStaff ? 'Tài khoản Cán bộ không có quyền truy cập trang Quản trị.' : undefined
+  });
 }
 
 export async function POST(req: NextRequest) {

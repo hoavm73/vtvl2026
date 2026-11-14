@@ -9,20 +9,30 @@ import { UserRole, ROLE_OPTIONS, getRoleLabel } from '@/services/auth/account-cl
 
 interface AdminAccountCreateFormProps {
   unitOptions: { value: string; label: string }[];
+  currentUserRole?: UserRole;
+  currentUserUnit?: string;
   onCreated: (message: string) => void;
   onError: (message: string) => void;
 }
 
 export function AdminAccountCreateForm({
   unitOptions,
+  currentUserRole,
+  currentUserUnit,
   onCreated,
   onError
 }: AdminAccountCreateFormProps) {
+  const isLeader = currentUserRole === 'unit_leader';
+  const initialUnit = isLeader && currentUserUnit ? currentUserUnit : 'CNTT';
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [unitCode, setUnitCode] = useState('CNTT');
+  const [unitCode, setUnitCode] = useState(initialUnit);
   const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
+
+  const availableRoles = isLeader
+    ? ROLE_OPTIONS.filter((r) => r.value !== 'admin')
+    : ROLE_OPTIONS;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,13 +44,14 @@ export function AdminAccountCreateForm({
       if (cur?.accessToken) headers.Authorization = `Bearer ${cur.accessToken}`;
       if (cur?.email) headers['x-actor-email'] = cur.email;
 
+      const targetUnit = isLeader && currentUserUnit ? currentUserUnit : unitCode;
       const res = await fetch('/api/admin/accounts', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           email: email.trim(),
           displayName: displayName.trim() || undefined,
-          unitCode,
+          unitCode: targetUnit,
           title: getRoleLabel(role),
           role
         })
@@ -94,18 +105,19 @@ export function AdminAccountCreateForm({
           className="h-10 px-3 text-xs bg-white border border-[#cbd5e1] rounded-lg text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
         />
         <ShadcnSelect
-          value={unitCode}
+          value={isLeader && currentUserUnit ? currentUserUnit : unitCode}
           onValueChange={setUnitCode}
           options={unitOptions}
           searchable={true}
           size="md"
+          disabled={isLeader}
         />
         <div className="flex gap-2">
           <div className="flex-1 min-w-0">
             <ShadcnSelect
               value={role}
               onValueChange={(v) => setRole(v as UserRole)}
-              options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
+              options={availableRoles.map((r) => ({ value: r.value, label: r.label }))}
               size="md"
             />
           </div>

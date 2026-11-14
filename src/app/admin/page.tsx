@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileSpreadsheet, UserCheck, Building2, ShieldCheck, RefreshCw, AlertCircle, Users
+  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, RefreshCw
 } from 'lucide-react';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -23,6 +23,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [currentRole, setCurrentRole] = useState<'admin' | 'unit_leader' | 'staff'>('admin');
   const [activeTab, setActiveTab] = useState<AdminTabKey>('sessions');
 
   const [sessionCount, setSessionCount] = useState(0);
@@ -43,20 +44,20 @@ export default function AdminPage() {
   const checkAuthAndLoadStats = useCallback(async () => {
     try {
       const cur = getCurrentOperatorSession();
+      if (cur?.role === 'staff') {
+        router.replace('/?notice=forbidden_staff_admin');
+        return;
+      }
+
       const headers: Record<string, string> = {};
       let adminToken = '';
       if (typeof window !== 'undefined') {
         try {
           adminToken = sessionStorage.getItem('hcmute_vtvl_admin_token') || '';
-        } catch {
-          // ignore
-        }
+        } catch { /* ignore */ }
       }
-      if (adminToken) {
-        headers.Authorization = `Bearer ${adminToken}`;
-      } else if (cur?.accessToken) {
-        headers.Authorization = `Bearer ${cur.accessToken}`;
-      }
+      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
+      else if (cur?.accessToken) headers.Authorization = `Bearer ${cur.accessToken}`;
       if (cur?.email) headers['x-actor-email'] = cur.email;
 
       const authQuery = cur?.email ? `?email=${encodeURIComponent(cur.email)}` : '';
@@ -74,36 +75,46 @@ export default function AdminPage() {
         return;
       }
 
+      const isLeader = authJson.role === 'unit_leader' || cur?.role === 'unit_leader';
+      const role = isLeader ? 'unit_leader' : 'admin';
+      setCurrentRole(role);
       setIsAuthenticated(true);
       setAuthError(null);
 
       let activeSession = cur;
-      if (cur?.email !== 'tcns@hcmute.edu.vn' && cur?.role !== 'admin') {
+      if (role === 'admin' && cur?.email !== 'tcns@hcmute.edu.vn' && cur?.role !== 'admin') {
         activeSession = loginAsAdminSession();
       }
 
       setActiveUnitCode(activeSession ? `[${activeSession.unitCode}] ${activeSession.email}` : 'Chưa kích hoạt');
       setUnitCount(getAdminUnits().length);
 
-      const [sessRes, accRes] = await Promise.all([
-        fetch('/api/admin/sessions', { headers }),
-        fetch('/api/admin/accounts', { headers })
-      ]);
-      if (sessRes.ok) {
-        const sessJson = await sessRes.json();
-        setSessionCount(sessJson.total || 0);
+      if (role === 'unit_leader') {
+        setActiveTab('accounts');
+        const accRes = await fetch('/api/admin/accounts', { headers });
+        if (accRes.ok) {
+          const accJson = await accRes.json();
+          setAccountCount(accJson.total || (accJson.accounts?.length ?? 0));
+        }
       } else {
-        setSessionCount(0);
-      }
-      if (accRes.ok) {
-        const accJson = await accRes.json();
-        setAccountCount(accJson.total || 0);
+        const [sessRes, accRes] = await Promise.all([
+          fetch('/api/admin/sessions', { headers }),
+          fetch('/api/admin/accounts', { headers })
+        ]);
+        if (sessRes.ok) {
+          const sessJson = await sessRes.json();
+          setSessionCount(sessJson.total || 0);
+        }
+        if (accRes.ok) {
+          const accJson = await accRes.json();
+          setAccountCount(accJson.total || 0);
+        }
       }
     } catch {
       setIsAuthenticated(false);
       setAuthError('Không thể xác minh quyền quản trị do lỗi kết nối mạng.');
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     checkAuthAndLoadStats();
@@ -117,10 +128,10 @@ export default function AdminPage() {
   }, [checkAuthAndLoadStats]);
 
   useEffect(() => {
-    if (isAuthenticated === false) {
+    if (isAuthenticated === false && currentRole !== 'staff') {
       router.replace('/login?redirect=/admin&admin=true');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, currentRole, router]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -138,9 +149,7 @@ export default function AdminPage() {
     router.push('/login?redirect=/admin&admin=true');
   };
 
-  if (isAuthenticated === null) {
-    return <AdminSkeletonLoading />;
-  }
+  if (isAuthenticated === null) return <AdminSkeletonLoading />;
 
   if (authError) {
     return (
@@ -149,10 +158,8 @@ export default function AdminPage() {
           <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-200">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-[#004776]">Không thể xác minh quyền quản trị</h3>
-            <p className="text-xs text-[#64748b] mt-1">{authError}</p>
-          </div>
+          <h3 className="text-base font-bold text-[#004776]">Không thể xác minh quyền quản trị</h3>
+          <p className="text-xs text-[#64748b] mt-1">{authError}</p>
           <button
             type="button"
             onClick={checkAuthAndLoadStats}
@@ -173,32 +180,44 @@ export default function AdminPage() {
     );
   }
 
+  const isLeader = currentRole === 'unit_leader';
+  const tabs: { key: AdminTabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
+    ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accountCount})`, icon: Users }]
+    : [
+        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessionCount})`, icon: FileSpreadsheet },
+        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accountCount})`, icon: Users },
+        { key: 'session-control', label: '3. Quản trị phiên', icon: UserCheck },
+        { key: 'units', label: `4. Quản trị đơn vị (${unitCount})`, icon: Building2 }
+      ];
+
   return (
     <main className="min-h-screen bg-[#f8fafc] py-3 sm:py-5 px-3 sm:px-5 lg:px-6">
       <div className="max-w-[1680px] mx-auto min-w-0">
         <div className="bg-white rounded-[14px] border border-[#e2e8f0] shadow-2xs overflow-visible min-w-0 max-w-full">
           <AdminHeader
             onLogout={handleLogout}
-            onOpenOrgTree={() => setIsOrgTreeModalOpen(true)}
+            onOpenOrgTree={isLeader ? undefined : () => setIsOrgTreeModalOpen(true)}
           />
 
           <div className="px-4 sm:px-5 py-2.5 bg-slate-50/50 border-b border-[#f1f5f9] flex flex-wrap items-center gap-2 min-w-0">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-              <span>{sessionCount} hồ sơ</span>
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                title="Làm mới dữ liệu từ máy chủ"
-                className="ml-1 text-[#004776]/70 hover:text-[#004776] transition-colors cursor-pointer"
-              >
-                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+            {!isLeader && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#004776] shrink-0" />
+                <span>{sessionCount} hồ sơ</span>
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  title="Làm mới dữ liệu từ máy chủ"
+                  className="ml-1 text-[#004776]/70 hover:text-[#004776] transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-[#004776] border border-sky-200/70">
               <Users className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-              <span>{accountCount} tài khoản</span>
+              <span>{accountCount} tài khoản {isLeader ? 'thuộc đơn vị' : ''}</span>
             </div>
 
             <div
@@ -209,79 +228,51 @@ export default function AdminPage() {
               <span className="truncate">Phiên: {activeUnitCode}</span>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
-              <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
-              <span>{unitCount} đơn vị</span>
-            </div>
+            {!isLeader && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
+                <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                <span>{unitCount} đơn vị</span>
+              </div>
+            )}
           </div>
 
           <div className="px-3 sm:px-6 border-b border-[#e2e8f0] flex items-center gap-1 sm:gap-2 bg-white overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setActiveTab('sessions')}
-              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
-                activeTab === 'sessions'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
-                  : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
-              }`}
-            >
-              <FileSpreadsheet className="w-4 h-4 shrink-0" />
-              <span>1. Phiên &amp; Bảng biểu kết quả ({sessionCount})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('accounts')}
-              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
-                activeTab === 'accounts'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
-                  : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
-              }`}
-            >
-              <Users className="w-4 h-4 shrink-0" />
-              <span>2. Tài khoản &amp; Phân quyền ({accountCount})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('session-control')}
-              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
-                activeTab === 'session-control'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
-                  : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
-              }`}
-            >
-              <UserCheck className="w-4 h-4 shrink-0" />
-              <span>3. Quản trị phiên làm việc</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('units')}
-              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
-                activeTab === 'units'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
-                  : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
-              }`}
-            >
-              <Building2 className="w-4 h-4 shrink-0" />
-              <span>4. Quản trị đơn vị &amp; Mã đơn vị ({unitCount})</span>
-            </button>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
+                    isActive
+                      ? 'text-[#004776] border-[#004776] bg-blue-50/40'
+                      : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="p-4 sm:p-5">
-            {activeTab === 'sessions' && <AdminSessionsTab />}
+            {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
             {activeTab === 'accounts' && <AdminAccountsTab />}
-            {activeTab === 'session-control' && <AdminSessionControlTab />}
-            {activeTab === 'units' && <AdminUnitsTab />}
+            {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}
+            {activeTab === 'units' && !isLeader && <AdminUnitsTab />}
           </div>
         </div>
 
-        <UnitOrgTreeModal
-          isOpen={isOrgTreeModalOpen}
-          onClose={() => setIsOrgTreeModalOpen(false)}
-          defaultUnitCode={getCurrentOperatorSession()?.unitCode || 'CNTT'}
-        />
+        {!isLeader && (
+          <UnitOrgTreeModal
+            isOpen={isOrgTreeModalOpen}
+            onClose={() => setIsOrgTreeModalOpen(false)}
+            defaultUnitCode={getCurrentOperatorSession()?.unitCode || 'CNTT'}
+          />
+        )}
       </div>
     </main>
   );

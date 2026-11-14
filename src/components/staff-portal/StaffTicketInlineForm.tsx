@@ -6,6 +6,7 @@ import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { StaffTicketModernForm } from './StaffTicketModernForm';
 import { StaffTicketA4Preview } from './StaffTicketA4Preview';
 import { StaffTicketToolbar } from './StaffTicketToolbar';
@@ -19,7 +20,7 @@ interface StaffTicketInlineFormProps {
   a1Missions: GenericGridRow[];
   c1Vtvls: GenericGridRow[];
   onCancelEdit: () => void;
-  onSaved: () => void;
+  onSaved: (ticket?: StaffWorkTicket) => void;
 }
 
 export function StaffTicketInlineForm({
@@ -127,9 +128,17 @@ export function StaffTicketInlineForm({
     }
     setSaving(true);
     try {
+      const op = getCurrentOperatorSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-actor-email': ownerEmail
+      };
+      if (op?.accessToken) {
+        headers.Authorization = `Bearer ${op.accessToken}`;
+      }
       const res = await fetch('/api/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: editingTicket?.id,
           unitCode,
@@ -158,7 +167,7 @@ export function StaffTicketInlineForm({
         return;
       }
       setSuccessMsg(status === 'Đã nộp' ? 'Đã lưu và gửi thành công lên dữ liệu đơn vị!' : 'Đã lưu nháp và giữ mã công việc ở đơn vị!');
-      onSaved();
+      onSaved(json.ticket);
       if (!editingTicket) resetForm();
     } catch {
       setErr('Lỗi kết nối máy chủ khi lưu phiếu.');
@@ -197,8 +206,8 @@ export function StaffTicketInlineForm({
   return (
     <div id="staff-ticket-form-card" className="space-y-3">
       {/* Thanh công cụ và chuyển đổi chế độ xem */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#cbd5e1] shadow-2xs">
-        <div className="inline-flex p-1 bg-[#f1f5f9] rounded-xl border border-[#e2e8f0]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-[#cbd5e1] shadow-2xs print:hidden">
+        <div className="inline-flex p-1 bg-[#f1f5f9] rounded-xl border border-[#e2e8f0] shrink-0">
           <button
             type="button"
             onClick={() => setViewMode('form')}
@@ -234,9 +243,11 @@ export function StaffTicketInlineForm({
       {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
       {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
 
-      {viewMode === 'form' ? (
+      <div className={viewMode === 'form' ? 'block print:hidden' : 'hidden print:hidden'}>
         <StaffTicketModernForm {...formProps} />
-      ) : (
+      </div>
+
+      <div className={viewMode === 'preview' ? 'block' : 'hidden print:block'}>
         <StaffTicketA4Preview
           {...formProps}
           unitNameVi={unit.nameVi}
@@ -246,7 +257,7 @@ export function StaffTicketInlineForm({
           ownerTitle={ownerTitle}
           editingTicket={editingTicket}
         />
-      )}
+      </div>
     </div>
   );
 }

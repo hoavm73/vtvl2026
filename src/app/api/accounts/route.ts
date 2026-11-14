@@ -13,7 +13,12 @@ import {
   generateAdminToken,
   setServerAdminCookie
 } from '@/services/storage/server-admin-auth';
-import { getCallerSession } from '@/services/storage/server-auth-guard';
+import {
+  getCallerSession,
+  generateUserSessionToken,
+  setUserSessionCookie,
+  USER_SESSION_COOKIE_NAME
+} from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
 function extractBearer(req: NextRequest): string | null {
@@ -116,8 +121,23 @@ export async function POST(req: NextRequest) {
       await setServerAdminCookie(generateAdminToken());
     }
 
+    const sessionToken = generateUserSessionToken({
+      email: rawAccount.email,
+      role: rawAccount.role,
+      unitCode: rawAccount.unitCode
+    });
+    await setUserSessionCookie(sessionToken);
+
     const account = sanitizeClientAccount(rawAccount, isAdmin);
-    return NextResponse.json({ account, isAdmin });
+    const res = NextResponse.json({ account, isAdmin, sessionToken });
+    res.cookies.set(USER_SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60
+    });
+    return res;
   } catch (err: unknown) {
     const errorObj = err as { code?: string; status?: number };
     if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {
@@ -202,8 +222,23 @@ export async function PATCH(req: NextRequest) {
       canChangeRole && Boolean(requestedRole)
     );
 
+    const sessionToken = generateUserSessionToken({
+      email: rawAccount.email,
+      role: rawAccount.role,
+      unitCode: rawAccount.unitCode
+    });
+    await setUserSessionCookie(sessionToken);
+
     const account = sanitizeClientAccount(rawAccount, isAdmin);
-    return NextResponse.json({ account, isAdmin });
+    const res = NextResponse.json({ account, isAdmin, sessionToken });
+    res.cookies.set(USER_SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60
+    });
+    return res;
   } catch (err: unknown) {
     const errorObj = err as { code?: string; status?: number };
     if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {

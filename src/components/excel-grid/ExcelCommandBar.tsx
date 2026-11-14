@@ -63,6 +63,8 @@ export function ExcelCommandBar({
   onExportWorkbook,
   onOpenUnlockModal
 }: ExcelCommandBarProps) {
+  const isReadOnlyViewer = session?.role === 'staff';
+
   const getSyncStatusContent = () => {
     if (syncStatus === 'saving') {
       return (
@@ -156,16 +158,18 @@ export function ExcelCommandBar({
         </div>
 
         {/* Nút Lưu máy chủ nhỏ gọn đặt ngay cạnh trạng thái máy chủ */}
-        <button
-          type="button"
-          onClick={onSaveNow}
-          disabled={syncStatus === 'saving'}
-          className="inline-flex items-center gap-1.5 h-9 px-3 bg-white hover:bg-[#eef5fc] border border-[#cbd5e1] hover:border-[#004776] text-[#004776] rounded-xl font-semibold text-[13px] transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
-          title="Lưu đồng bộ toàn bộ 15 bảng tính lên máy chủ HCM-UTE"
-        >
-          <Save className="w-3.5 h-3.5" />
-          <span>Lưu máy chủ</span>
-        </button>
+        {!isReadOnlyViewer && (
+          <button
+            type="button"
+            onClick={onSaveNow}
+            disabled={syncStatus === 'saving'}
+            className="inline-flex items-center gap-1.5 h-9 px-3 bg-white hover:bg-[#eef5fc] border border-[#cbd5e1] hover:border-[#004776] text-[#004776] rounded-xl font-semibold text-[13px] transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
+            title="Lưu đồng bộ toàn bộ 15 bảng tính lên máy chủ HCM-UTE"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>Lưu máy chủ</span>
+          </button>
+        )}
       </div>
 
       {/* KHỐI PHẢI: 4 thao tác trực tiếp duy nhất */}
@@ -183,18 +187,20 @@ export function ExcelCommandBar({
         </button>
 
         {/* 2. Lưu biểu (Ghost button - trên mobile nằm trong menu Công cụ) */}
-        <button
-          type="button"
-          onClick={onSaveSheet}
-          className="hidden sm:inline-flex relative h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl items-center gap-1.5 cursor-pointer transition-colors"
-          title="Lưu dữ liệu biểu hiện tại vào bộ nhớ cục bộ"
-        >
-          <Save className="w-4 h-4 text-[#004776]" />
-          <span>Lưu biểu</span>
-          {isDirty && (
-            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="Có thay đổi chưa lưu" />
-          )}
-        </button>
+        {!isReadOnlyViewer && (
+          <button
+            type="button"
+            onClick={onSaveSheet}
+            className="hidden sm:inline-flex relative h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl items-center gap-1.5 cursor-pointer transition-colors"
+            title="Lưu dữ liệu biểu hiện tại vào bộ nhớ cục bộ"
+          >
+            <Save className="w-4 h-4 text-[#004776]" />
+            <span>Lưu biểu</span>
+            {isDirty && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="Có thay đổi chưa lưu" />
+            )}
+          </button>
+        )}
 
         {/* 3. Lưu & sang biểu tiếp (Primary CTA) */}
         <button
@@ -202,10 +208,10 @@ export function ExcelCommandBar({
           onClick={onSaveAndNext}
           disabled={!canNext}
           className="h-9 px-3.5 text-[13px] font-bold text-white bg-[#004776] hover:bg-[#00365c] rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Lưu biểu này và tự động chuyển sang biểu nghiệp vụ tiếp theo"
+          title={isReadOnlyViewer ? 'Chuyển sang biểu nghiệp vụ tiếp theo' : 'Lưu biểu này và tự động chuyển sang biểu nghiệp vụ tiếp theo'}
         >
-          <span className="sm:hidden">Lưu &amp; tiếp</span>
-          <span className="hidden sm:inline">Lưu &amp; sang biểu tiếp</span>
+          <span className="sm:hidden">{isReadOnlyViewer ? 'Sang tiếp' : 'Lưu & tiếp'}</span>
+          <span className="hidden sm:inline">{isReadOnlyViewer ? 'Sang biểu tiếp' : 'Lưu & sang biểu tiếp'}</span>
           <ArrowRight className="w-4 h-4 shrink-0" />
         </button>
 

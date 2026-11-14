@@ -7,6 +7,7 @@ import {
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { appendAuditLog } from '@/services/storage/server-audit-store';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -146,6 +147,16 @@ export async function PUT(req: Request, context: RouteContext) {
         { status: 409 }
       );
     }
+
+    appendAuditLog({
+      workbookId: id,
+      unitCode: targetUnit,
+      unitName: existingWb?.unitNameVi || targetUnit,
+      action: 'SỬA_BIỂU',
+      details: commitMessage || 'Cập nhật bảng tính 15 biểu',
+      actorEmail: caller.email,
+      actorRole: caller.role
+    });
 
     return NextResponse.json({ success: true, workbook: result });
   } catch (error) {

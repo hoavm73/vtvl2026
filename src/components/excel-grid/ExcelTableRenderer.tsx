@@ -17,6 +17,7 @@ interface ExcelTableRendererProps {
   lastSaved?: string;
   lastSavedSheet?: string;
   isC1Unlocked?: boolean;
+  isReadOnly?: boolean;
   touchedCells?: Set<string>;
   onCellTouch?: (cellKey: string) => void;
   onCellChange: (rowId: string, field: string, value: string | number) => void;
@@ -37,7 +38,7 @@ type TableQueryFilterParams = {
 
 export function ExcelTableRenderer({
   meta, rows, dynamicOptionsMap,
-  isC1Unlocked = false, touchedCells, onCellTouch, onCellChange,
+  isC1Unlocked = false, isReadOnly = false, touchedCells, onCellTouch, onCellChange,
   onAddRow, onSplitRow, onDeleteRow
 }: ExcelTableRendererProps) {
   const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
@@ -48,7 +49,7 @@ export function ExcelTableRenderer({
   const [deletedRowBackup, setDeletedRowBackup] = useState<{ row: GenericGridRow; index: number } | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('table');
 
-  const isC1Locked = false;
+  const isLocked = isReadOnly || (meta.key === 'C1' && !isC1Unlocked);
 
   const { params, setParam, setParams, data: processedRows } = useQueryFilter<GenericGridRow, TableQueryFilterParams>({
     queryKey: ['excel-sheet-rows', meta.key],
@@ -92,15 +93,10 @@ export function ExcelTableRenderer({
   };
 
   const allSelected = processedRows.length > 0 && processedRows.every((r) => selectedRowIds.has(r.id));
-  const toggleSelectAll = () => {
-    if (allSelected) setSelectedRowIds(new Set());
-    else setSelectedRowIds(new Set(processedRows.map((r) => r.id)));
-  };
-
+  const toggleSelectAll = () => setSelectedRowIds(allSelected ? new Set() : new Set(processedRows.map((r) => r.id)));
   const toggleSelectRow = (id: string) => {
     const next = new Set(selectedRowIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) next.delete(id); else next.add(id);
     setSelectedRowIds(next);
   };
 
@@ -140,10 +136,10 @@ export function ExcelTableRenderer({
 
       <TableControlBar
         meta={meta} rowsCount={processedRows.length} selectedCount={selectedRowIds.size}
-        isC1Locked={isC1Locked} searchTerm={params.q} filterMode={params.filter}
+        isC1Locked={isLocked} searchTerm={params.q} filterMode={params.filter}
         density={density} isFullscreen={isFullscreen} mobileViewMode={mobileViewMode}
-        onMobileViewModeChange={setMobileViewMode} onAddRow={onAddRow}
-        onDeleteSelected={() => setConfirmDeleteId('selected')}
+        onMobileViewModeChange={setMobileViewMode} onAddRow={isLocked ? undefined : onAddRow}
+        onDeleteSelected={isLocked ? undefined : () => setConfirmDeleteId('selected')}
         onSearchChange={(val) => setParam('q', val)} onFilterModeChange={(mode) => setParam('filter', mode)}
         onDensityChange={setDensity} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />
@@ -155,7 +151,7 @@ export function ExcelTableRenderer({
             meta={meta}
             rows={processedRows}
             dynamicOptionsMap={dynamicOptionsMap}
-            isC1Locked={isC1Locked}
+            isC1Locked={isLocked}
             touchedCells={touchedCells}
             onCellTouch={onCellTouch}
             onCellChange={onCellChange}
@@ -231,7 +227,7 @@ export function ExcelTableRenderer({
                   {meta.columns.map((col) => (
                     <ExcelDataCell
                       key={col.field} col={col} val={row[col.field]} rowId={row.id}
-                      isComputed={col.isFormula || col.readOnly || isC1Locked}
+                      isComputed={col.isFormula || col.readOnly || isLocked}
                       isTouched={touchedCells?.has(`${row.id}_${col.field}`) ?? false}
                       cellKey={`${row.id}_${col.field}`}
                       dynamicOptions={col.dynamicOptionsKey ? dynamicOptionsMap?.[col.dynamicOptionsKey] : undefined}
@@ -239,30 +235,34 @@ export function ExcelTableRenderer({
                     />
                   ))}
                   <td className="w-16 py-1 px-1.5 text-center sticky right-0 z-2 bg-inherit border-l border-[#f1f5f9]">
-                    <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                      {meta.key === 'A1' && (
-                        <button
-                          type="button"
-                          onClick={() => onSplitRow?.(row.id)}
-                          aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`}
-                          title="Tách nhiệm vụ"
-                          className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {!isC1Locked && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteRow(row.id)}
-                          aria-label={`Xóa dòng ${rIdx + 1}`}
-                          title="Xóa dòng"
-                          className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {isReadOnly ? (
+                      <span className="text-[#94a3b8] text-[11px] select-none">—</span>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                        {meta.key === 'A1' && (
+                          <button
+                            type="button"
+                            onClick={() => onSplitRow?.(row.id)}
+                            aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`}
+                            title="Tách nhiệm vụ"
+                            className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {!isLocked && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRow(row.id)}
+                            aria-label={`Xóa dòng ${rIdx + 1}`}
+                            title="Xóa dòng"
+                            className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))
@@ -273,7 +273,7 @@ export function ExcelTableRenderer({
 
       {/* FOOTER BẢNG */}
       <div className="px-4 py-2 bg-[#f8fafc] border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[#476885]">
-        {!isC1Locked ? (
+        {!isLocked ? (
           <button
             type="button"
             onClick={onAddRow}

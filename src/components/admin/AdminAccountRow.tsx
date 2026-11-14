@@ -22,6 +22,7 @@ interface AdminAccountRowProps {
   index: number;
   unitOptions: { value: string; label: string }[];
   isUpdating: boolean;
+  currentUserRole?: UserRole;
   onUpdate: (
     account: UserAccountRecord,
     patch: { role?: UserRole; unitCode?: string; title?: string; status?: 'active' | 'suspended' }
@@ -34,10 +35,17 @@ export function AdminAccountRow({
   index,
   unitOptions,
   isUpdating,
+  currentUserRole,
   onUpdate,
   onDelete
 }: AdminAccountRowProps) {
+  const isLeader = currentUserRole === 'unit_leader';
   const isRootAdmin = acc.email === 'tcns@hcmute.edu.vn';
+  const cannotEdit = isRootAdmin || (isLeader && acc.role === 'admin');
+
+  const availableRoles = isLeader
+    ? ROLE_OPTIONS.filter((r) => r.value !== 'admin')
+    : ROLE_OPTIONS;
 
   return (
     <tr className="border-b border-[#e2e8f0] hover:bg-[#f5f9ff]/60 transition-colors">
@@ -69,7 +77,7 @@ export function AdminAccountRow({
           options={unitOptions}
           searchable={true}
           size="sm"
-          disabled={isUpdating}
+          disabled={isUpdating || isLeader}
         />
       </td>
       <td className="p-2.5 border-r border-[#e2e8f0]">
@@ -79,9 +87,9 @@ export function AdminAccountRow({
             const nextRole = val as UserRole;
             onUpdate(acc, { role: nextRole, title: getRoleLabel(nextRole) });
           }}
-          options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
+          options={availableRoles.map((r) => ({ value: r.value, label: r.label }))}
           size="sm"
-          disabled={isUpdating || isRootAdmin}
+          disabled={isUpdating || cannotEdit}
         />
       </td>
       <td className="p-2.5 border-r border-[#e2e8f0]">
@@ -90,15 +98,15 @@ export function AdminAccountRow({
           onValueChange={(val) => onUpdate(acc, { status: val as 'active' | 'suspended' })}
           options={STATUS_OPTIONS}
           size="sm"
-          disabled={isUpdating || isRootAdmin}
+          disabled={isUpdating || cannotEdit}
         />
       </td>
       <td className="p-2.5 text-center">
         <button
           type="button"
-          disabled={isRootAdmin || isUpdating}
+          disabled={cannotEdit || isUpdating}
           onClick={() => onDelete(acc.email)}
-          title={isRootAdmin ? 'Không thể xóa tài khoản quản trị gốc' : 'Xóa tài khoản'}
+          title={isRootAdmin ? 'Không thể xóa tài khoản quản trị gốc' : cannotEdit ? 'Lãnh đạo đơn vị không thể xóa tài khoản Quản trị viên' : 'Xóa tài khoản'}
           className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Trash2 className="w-3.5 h-3.5" />

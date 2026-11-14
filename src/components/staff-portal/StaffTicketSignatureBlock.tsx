@@ -9,7 +9,7 @@ interface StaffTicketSignatureBlockProps {
 export function StaffTicketSignatureBlock({ ownerName }: StaffTicketSignatureBlockProps) {
   const today = new Date();
   return (
-    <div className="hidden print:grid grid-cols-2 gap-6 mt-8 text-center text-[13px]">
+    <div className="grid grid-cols-2 gap-6 mt-8 text-center text-[13px] break-inside-avoid">
       <div>
         <div className="font-bold uppercase">XÁC NHẬN CỦA TRƯỞNG ĐƠN VỊ</div>
         <div className="text-[11.5px] italic">(Ký, ghi rõ họ tên)</div>

@@ -10,6 +10,12 @@ export interface ServerAuditLog {
   details: string;
   actorEmail?: string;
   actorRole?: string;
+  targetId?: string;
+  targetEntity?: string;
+  oldValues?: Record<string, unknown> | null;
+  newValues?: Record<string, unknown> | null;
+  ipAddress?: string;
+  userAgent?: string;
   createdAt: string;
   timestamp: number;
 }

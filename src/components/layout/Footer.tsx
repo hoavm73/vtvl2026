@@ -4,7 +4,7 @@ import { Globe, Mail } from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer className="relative z-20 w-full bg-[#06366E] text-white border-t border-white/10 py-3 mt-6">
+    <footer className="relative z-20 w-full bg-[#06366E] text-white border-t border-white/10 py-3 mt-6 print:hidden">
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/85">
         <div className="flex items-center gap-3">
           <Link href="/" className="inline-flex items-center">

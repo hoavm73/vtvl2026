@@ -63,6 +63,12 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
+  if (caller.isStaff) {
+    return NextResponse.json(
+      { error: 'Cán bộ – Giảng viên không có quyền khởi tạo hồ sơ bảng tính đơn vị.', code: 'FORBIDDEN_STAFF_WRITE' },
+      { status: 403 }
+    );
+  }
 
   try {
     const body = await req.json();

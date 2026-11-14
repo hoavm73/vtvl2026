@@ -151,6 +151,8 @@ export function AdminAccountsTab() {
 
       <AdminAccountCreateForm
         unitOptions={unitOptions}
+        currentUserRole={getCurrentOperatorSession()?.role}
+        currentUserUnit={getCurrentOperatorSession()?.unitCode}
         onCreated={async (msg) => { setError(null); setFeedback(msg); await loadAccounts(); }}
         onError={(msg) => { setFeedback(null); setError(msg); }}
       />
@@ -230,6 +232,7 @@ export function AdminAccountsTab() {
                   index={idx}
                   unitOptions={unitOptions}
                   isUpdating={updatingEmail === acc.email}
+                  currentUserRole={getCurrentOperatorSession()?.role}
                   onUpdate={handleUpdateAccount}
                   onDelete={handleDeleteAccount}
                 />

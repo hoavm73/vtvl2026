@@ -1,8 +1,7 @@
-import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
+import { StaffWorkTicket, TicketStatus, toDisplayStatus, WorkSurveyStatusHistory } from '@/types/staff-ticket';
 import { normalizeEmail } from './server-workbook-store';
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-// Thao tác đặc quyền server-side: Bắt buộc duy nhất SUPABASE_SERVICE_ROLE_KEY ở mọi môi trường
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 export function assertTicketDbConfigured(operation: string): boolean {
@@ -29,7 +28,9 @@ function getServiceHeaders(): Record<string, string> {
 export interface DbTicketRow {
   id: string;
   unit_code: string;
+  unit_id?: string;
   owner_email: string;
+  owner_id?: string;
   owner_name?: string;
   owner_title?: string;
   status?: string;
@@ -46,6 +47,19 @@ export interface DbTicketRow {
   gio_bo_sung?: number;
   nguon_so_lieu?: string;
   coordinated_tasks?: unknown;
+  source_ticket_id?: string;
+  submitted_at?: string;
+  resubmitted_at?: string;
+  approved_at?: string;
+  approved_by?: string;
+  revision_reason?: string;
+  revision_requested_at?: string;
+  revision_requested_by?: string;
+  merged_at?: string;
+  merged_by?: string;
+  b1_row_id?: string;
+  b2_row_id?: string;
+  is_merged_to_b1_b2?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -55,10 +69,12 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
   return {
     id: row.id,
     unitCode: row.unit_code || 'CNTT',
+    unitId: row.unit_id || row.unit_code,
     ownerEmail: normEmail,
+    ownerId: row.owner_id || normEmail,
     ownerName: row.owner_name || normEmail.split('@')[0],
     ownerTitle: row.owner_title || 'Cán bộ – Giảng viên',
-    status: (row.status === 'Đã nộp' ? 'Đã nộp' : 'Nháp') as TicketStatus,
+    status: toDisplayStatus(row.status) as TicketStatus,
     maNhiemVu: row.ma_nhiem_vu || '',
     maCongViec: row.ma_cong_viec,
     tenCongViec: row.ten_cong_viec,
@@ -72,6 +88,19 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
     phutThucTe: Number(row.phut_thuc_te) || 0,
     gioBoSung: Number(row.gio_bo_sung) || 0,
     coordinatedTasks: Array.isArray(row.coordinated_tasks) ? row.coordinated_tasks : [],
+    sourceTicketId: row.source_ticket_id || row.id,
+    submittedAt: row.submitted_at,
+    resubmittedAt: row.resubmitted_at,
+    approvedAt: row.approved_at,
+    approvedBy: row.approved_by,
+    revisionReason: row.revision_reason,
+    revisionRequestedAt: row.revision_requested_at,
+    revisionRequestedBy: row.revision_requested_by,
+    mergedAt: row.merged_at,
+    mergedBy: row.merged_by,
+    b1RowId: row.b1_row_id,
+    b2RowId: row.b2_row_id,
+    isMergedToB1B2: Boolean(row.is_merged_to_b1_b2),
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString()
   };
@@ -80,7 +109,7 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
 export async function fetchTicketsFromSupabase(unitCode?: string): Promise<StaffWorkTicket[] | null> {
   if (!assertTicketDbConfigured('fetchTickets')) return null;
   const filter = unitCode ? `?unit_code=eq.${encodeURIComponent(unitCode)}` : '';
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets${filter}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets${filter}&order=updated_at.desc`, {
     headers: getServiceHeaders(),
     cache: 'no-store'
   });
@@ -105,7 +134,9 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
   const payload: DbTicketRow = {
     id: ticket.id,
     unit_code: ticket.unitCode,
+    unit_id: ticket.unitId || ticket.unitCode,
     owner_email: normEmail,
+    owner_id: ticket.ownerId || normEmail,
     owner_name: ticket.ownerName,
     owner_title: ticket.ownerTitle,
     status: ticket.status,
@@ -122,15 +153,58 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
     gio_bo_sung: Number(ticket.gioBoSung) || 0,
     nguon_so_lieu: ticket.nguonSoLieu || '',
     coordinated_tasks: ticket.coordinatedTasks || [],
+    source_ticket_id: ticket.sourceTicketId || ticket.id,
+    submitted_at: ticket.submittedAt,
+    resubmitted_at: ticket.resubmittedAt,
+    approved_at: ticket.approvedAt,
+    approved_by: ticket.approvedBy,
+    revision_reason: ticket.revisionReason,
+    revision_requested_at: ticket.revisionRequestedAt,
+    revision_requested_by: ticket.revisionRequestedBy,
+    merged_at: ticket.mergedAt,
+    merged_by: ticket.mergedBy,
+    b1_row_id: ticket.b1RowId,
+    b2_row_id: ticket.b2RowId,
+    is_merged_to_b1_b2: ticket.isMergedToB1B2,
     created_at: ticket.createdAt,
     updated_at: ticket.updatedAt || new Date().toISOString()
   };
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets?on_conflict=id`, {
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets?on_conflict=id`, {
     method: 'POST',
     headers: { ...getServiceHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(payload)
   });
+  if (!res.ok && res.status === 400) {
+    const corePayload = {
+      id: ticket.id,
+      unit_code: ticket.unitCode,
+      owner_email: normEmail,
+      owner_name: ticket.ownerName,
+      owner_title: ticket.ownerTitle,
+      status: toDisplayStatus(ticket.status),
+      ma_nhiem_vu: ticket.maNhiemVu,
+      ma_cong_viec: ticket.maCongViec,
+      ten_cong_viec: ticket.tenCongViec,
+      ma_vtvl: ticket.maVtvl,
+      ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '',
+      san_pham: ticket.sanPham || '',
+      chat_luong: ticket.chatLuong || '',
+      can_cu: ticket.canCu || '',
+      so_sp_nam: Number(ticket.soSpNam) || 0,
+      phut_thuc_te: Number(ticket.phutThucTe) || 0,
+      gio_bo_sung: Number(ticket.gioBoSung) || 0,
+      nguon_so_lieu: ticket.nguonSoLieu || '',
+      coordinated_tasks: ticket.coordinatedTasks || [],
+      created_at: ticket.createdAt,
+      updated_at: ticket.updatedAt || new Date().toISOString()
+    };
+    res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets?on_conflict=id`, {
+      method: 'POST',
+      headers: { ...getServiceHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(corePayload)
+    });
+  }
   if (!res.ok) {
     const err = new Error(`[DB_ERROR] staff_work_tickets persist failed with status ${res.status}`);
     (err as unknown as { table: string; status: number; code: string }).table = 'staff_work_tickets';
@@ -156,4 +230,24 @@ export async function deleteTicketFromSupabase(ticketId: string): Promise<boolea
     throw err;
   }
   return true;
+}
+
+export async function recordStatusHistoryInSupabase(h: Omit<WorkSurveyStatusHistory, 'id' | 'createdAt'>): Promise<void> {
+  if (!assertTicketDbConfigured('recordStatusHistory')) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/work_survey_status_history`, {
+      method: 'POST',
+      headers: { ...getServiceHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        survey_id: h.surveyId,
+        from_status: h.fromStatus,
+        to_status: h.toStatus,
+        action: h.action,
+        reason: h.reason,
+        actor_id: h.actorId,
+        actor_role: h.actorRole,
+        unit_id: h.unitId
+      })
+    });
+  } catch { /* non-blocking */ }
 }

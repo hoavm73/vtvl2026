@@ -1,4 +1,28 @@
-export type TicketStatus = 'Nháp' | 'Đã nộp';
+export type CanonicalTicketStatus = 'draft' | 'submitted' | 'changes_requested' | 'resubmitted' | 'approved';
+export type DisplayTicketStatus = 'Nháp' | 'Đã nộp' | 'Yêu cầu bổ sung' | 'Đã nộp lại' | 'Đã duyệt' | 'Trả lại';
+export type TicketStatus = CanonicalTicketStatus | DisplayTicketStatus;
+
+export function toCanonicalStatus(status: string | undefined): CanonicalTicketStatus {
+  if (!status) return 'draft';
+  const s = status.trim();
+  if (s === 'draft' || s === 'Nháp') return 'draft';
+  if (s === 'submitted' || s === 'Đã nộp') return 'submitted';
+  if (s === 'changes_requested' || s === 'Yêu cầu bổ sung' || s === 'Trả lại') return 'changes_requested';
+  if (s === 'resubmitted' || s === 'Đã nộp lại') return 'resubmitted';
+  if (s === 'approved' || s === 'Đã duyệt') return 'approved';
+  return 'draft';
+}
+
+export function toDisplayStatus(status: string | undefined): DisplayTicketStatus {
+  const c = toCanonicalStatus(status);
+  switch (c) {
+    case 'draft': return 'Nháp';
+    case 'submitted': return 'Đã nộp';
+    case 'changes_requested': return 'Yêu cầu bổ sung';
+    case 'resubmitted': return 'Đã nộp lại';
+    case 'approved': return 'Đã duyệt';
+  }
+}
 
 export interface CoordinatedTaskLink {
   id: string;
@@ -9,39 +33,66 @@ export interface CoordinatedTaskLink {
   note?: string;
 }
 
+export interface WorkSurveyStatusHistory {
+  id: string;
+  surveyId: string;
+  fromStatus?: string;
+  toStatus: string;
+  action: string;
+  reason?: string;
+  actorId: string;
+  actorRole: string;
+  unitId: string;
+  createdAt: string;
+}
+
+export interface WorkSurveyMergeLink {
+  id: string;
+  surveyId: string;
+  targetSheet: 'B1' | 'B2' | 'A2';
+  targetRecordId: string;
+  sourceVersion: number;
+  mergedBy: string;
+  mergedAt: string;
+  updatedAt: string;
+}
+
 export interface StaffWorkTicket {
   id: string;
   unitCode: string;
+  unitId?: string;
   ownerEmail: string;
+  ownerId?: string;
   ownerName: string;
   ownerTitle: string;
   status: TicketStatus;
-  /** 1. Mã nhiệm vụ (chọn từ Biểu A1) */
   maNhiemVu: string;
-  /** 2. Mã công việc (tự động sinh [maNhiemVu].CVxx) */
   maCongViec: string;
-  /** 3. Tên công việc cụ thể */
   tenCongViec: string;
-  /** 3a. Mã vị trí việc làm chính (chọn từ Biểu C1) */
   maVtvl: string;
-  /** 3b. Mã vị trí việc làm phối hợp (chọn từ Biểu C1, tùy chọn) */
   maVtvlPhoiHop?: string;
-  /** 4. Sản phẩm đầu ra (Biểu A2) */
   sanPham: string;
-  /** 5. Yêu cầu chất lượng (Biểu A2) */
   chatLuong: string;
-  /** 6. Giải trình / Căn cứ nguồn tài liệu (Biểu A2) */
   canCu: string;
-  /** 7a. Số lượng sản phẩm tạo ra từ 01/10/2025 đến 30/09/2026 (Biểu B1) */
   soSpNam: number;
-  /** 7b. Giải trình nguồn số liệu sản lượng (Biểu B1) */
   nguonSoLieu: string;
-  /** 8. Trung bình 1 sản phẩm mất bao nhiêu phút (Biểu B1) */
   phutThucTe: number;
-  /** 9. Giờ bổ sung (Biểu B1) */
   gioBoSung: number;
-  /** Danh sách công việc phối hợp liên đơn vị (tính năng mở rộng) */
   coordinatedTasks?: CoordinatedTaskLink[];
+  sourceTicketId?: string;
+  submittedAt?: string;
+  resubmittedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  revisionReason?: string;
+  revisionRequestedAt?: string;
+  revisionRequestedBy?: string;
+  mergedAt?: string;
+  mergedBy?: string;
+  b1RowId?: string;
+  b2RowId?: string;
+  isMergedToB1B2?: boolean;
+  statusHistory?: WorkSurveyStatusHistory[];
   createdAt: string;
   updatedAt: string;
 }

@@ -318,3 +318,71 @@ textarea::placeholder {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Quy chuẩn in ấn và xuất PDF A4 theo Nghị định 30/2020/NĐ-CP (Chuẩn lề 2-2-3-2)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    /* Chuẩn lề 2-2-3-2 cm: Trên 20mm, Phải 20mm, Dưới 20mm, Trái 30mm (Nghị định 30/2020/NĐ-CP) */
+    margin: 20mm 20mm 20mm 30mm;
+  }
+
+  /* Ẩn toàn bộ khung điều hướng trang web */
+  header,
+  footer,
+  aside,
+  nav,
+  .workflow-sidebar,
+  .sticky-action-bar,
+  #app-header,
+  #app-sidebar,
+  #overview-welcome-banner,
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    font-family: "Times New Roman", Times, serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .vtvl-printable-sheet {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

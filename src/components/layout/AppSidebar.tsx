@@ -114,7 +114,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   return (
     <aside
       aria-label="Thanh điều hướng nghiệp vụ chính"
-      className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-[#d8e3ef] shadow-[2px_0_12px_-4px_rgba(0,71,118,0.04)] transition-all duration-300 z-20 ${
+      className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-[#d8e3ef] shadow-[2px_0_12px_-4px_rgba(0,71,118,0.04)] transition-all duration-300 z-20 print:hidden ${
         collapsed ? 'w-[72px]' : 'w-[272px]'
       }`}
     >
@@ -158,7 +158,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
               {visibleItems.map((item) => {
                 const Icon = item.icon;
                 const active = isItemActive(item.href);
-                const targetHref = item.href === '/admin' && currentRole !== 'admin'
+                const targetHref = item.href === '/admin' && currentRole !== 'admin' && currentRole !== 'unit_leader'
                   ? '/login?redirect=/admin&admin=true'
                   : item.href;
 

@@ -116,12 +116,13 @@ export async function syncOperatorAccountWithServer(
         account.unitCode !== session.unitCode ||
         account.title !== session.title ||
         account.hasSelectedUnit !== session.hasSelectedUnit;
-      if (changed) {
+      const needTokenUpdate = Boolean(json.sessionToken && json.sessionToken !== session.accessToken);
+      if (changed || needTokenUpdate) {
         saveCurrentOperatorSession(account.email, account.unitCode, account.title, {
           displayName: account.displayName,
           avatarUrl: account.avatarUrl || session.avatarUrl,
           authProvider: session.authProvider,
-          accessToken: session.accessToken,
+          accessToken: json.sessionToken || session.accessToken,
           role: account.role,
           hasSelectedUnit: account.hasSelectedUnit ?? true
         });

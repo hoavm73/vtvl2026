@@ -8,7 +8,8 @@ import {
 import { generateAdminToken, setServerAdminCookie } from '@/services/storage/server-admin-auth';
 import {
   generateUserSessionToken,
-  setUserSessionCookie
+  setUserSessionCookie,
+  USER_SESSION_COOKIE_NAME
 } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
@@ -79,6 +80,14 @@ export async function POST(req: NextRequest) {
         maxAge: 24 * 60 * 60
       });
     }
+
+    res.cookies.set(USER_SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60
+    });
 
     return res;
   } catch (err: unknown) {

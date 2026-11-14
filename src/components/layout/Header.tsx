@@ -63,7 +63,7 @@ export function Header() {
   }, [mobileOpen]);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#d8e3ef] shadow-[0_2px_12px_-4px_rgba(0,71,118,0.06)]">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#d8e3ef] shadow-[0_2px_12px_-4px_rgba(0,71,118,0.06)] print:hidden">
       <div className="w-full px-3 sm:px-5 lg:px-6 flex h-16 items-center justify-between gap-3">
         {/* Nhận diện thương hiệu HCM-UTE bên trái */}
         <div className="flex items-center gap-2.5 min-w-0">

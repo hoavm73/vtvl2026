@@ -215,3 +215,32 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
 
   return unauthContext;
 }
+
+/** Ma trận quyền: Kiểm tra quyền truy cập dữ liệu của một đơn vị */
+export function canAccessUnit(caller: CallerAuthContext, targetUnitCode: string): boolean {
+  if (!caller.isAuthenticated || caller.isSuspended) return false;
+  if (caller.isAdmin) return true;
+  return targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
+}
+
+/** Ma trận quyền: Chỉ Admin và Lãnh đạo đơn vị được sửa 15 biểu của đơn vị */
+export function canEditUnitWorkbook(caller: CallerAuthContext, targetUnitCode: string): boolean {
+  if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
+  if (caller.isAdmin) return true;
+  return caller.isUnitLeader && targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
+}
+
+/** Ma trận quyền: Duyệt/trả lại phiếu (Chỉ Admin và Lãnh đạo đơn vị tương ứng) */
+export function canReviewTicket(caller: CallerAuthContext, ticketUnitCode: string): boolean {
+  if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
+  if (caller.isAdmin) return true;
+  return caller.isUnitLeader && ticketUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
+}
+
+/** Ma trận quyền: Quản trị tài khoản (Admin toàn trường; Lãnh đạo chỉ trong đơn vị) */
+export function canManageUnitAccounts(caller: CallerAuthContext, targetUnitCode?: string): boolean {
+  if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
+  if (caller.isAdmin) return true;
+  if (!targetUnitCode) return caller.isUnitLeader;
+  return caller.isUnitLeader && targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
+}

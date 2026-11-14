@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { appendAuditLog } from '@/services/storage/server-audit-store';
 import {
   getServerUnits,
   upsertServerUnit,
@@ -117,6 +118,15 @@ export async function POST(req: NextRequest) {
       migratedTickets = migrateTicketsForUnit(normOldCode, normNewCode);
     }
 
+    appendAuditLog({
+      unitCode: normNewCode,
+      unitName: newNameVi || normNewCode,
+      action: 'THAY_ĐỔI_ĐƠN_VỊ',
+      details: `Cập nhật đơn vị [${normOldCode} -> ${normNewCode}]: ${newNameVi}. Đồng bộ ${migratedAccounts} tài khoản, hồ sơ biểu: ${migratedWorkbook}, ${migratedTickets} phiếu.`,
+      actorEmail: caller.email,
+      actorRole: caller.role
+    });
+
     return NextResponse.json({
       success: true,
       units,
@@ -145,6 +155,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Thiếu mã đơn vị cần xóa.' }, { status: 400 });
     }
     const units = await deleteServerUnit(code);
+    appendAuditLog({
+      unitCode: code.toUpperCase(),
+      unitName: code.toUpperCase(),
+      action: 'THAY_ĐỔI_ĐƠN_VỊ',
+      details: `Xóa đơn vị [${code.toUpperCase()}] khỏi danh mục hệ thống.`,
+      actorEmail: caller.email,
+      actorRole: caller.role
+    });
     return NextResponse.json({ success: true, units });
   } catch (err: unknown) {
     return handleUnitsError(err, 'Lỗi máy chủ khi xóa đơn vị.');
@@ -159,6 +177,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Chỉ Quản trị viên mới có quyền khôi phục danh mục.' }, { status: 403 });
     }
     const units = await resetServerUnits();
+    appendAuditLog({
+      unitCode: 'ALL',
+      unitName: 'Toàn trường',
+      action: 'THAY_ĐỔI_ĐƠN_VỊ',
+      details: 'Khôi phục danh mục 51 đơn vị chuẩn HCM-UTE.',
+      actorEmail: caller.email,
+      actorRole: caller.role
+    });
     return NextResponse.json({ success: true, units });
   } catch (err: unknown) {
     return handleUnitsError(err, 'Lỗi máy chủ khi khôi phục danh mục.');

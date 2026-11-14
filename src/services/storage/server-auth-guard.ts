@@ -11,10 +11,10 @@ import {
   isVerifiedAdminAccount
 } from './server-admin-auth';
 import { normalizeEmail } from './server-workbook-store';
+import { getAuthSecret, safeCompareSignature } from './account-crypto';
 
 export const USER_SESSION_COOKIE_NAME = 'hcmute_vtvl_session_token';
 export const ADMIN_COOKIE_NAME = 'hcmute_vtvl_admin_token_v2';
-const SERVER_AUTH_SECRET = process.env.ADMIN_SERVER_SECRET || 'hcmute_vtvl_admin_jwt_secret_2026_super_secure';
 
 export interface UserSessionPayload {
   email: string;
@@ -50,16 +50,18 @@ export function generateUserSessionToken(payload: {
     issuedAt: new Date().toISOString(),
     expiresAt: Date.now() + ttl * 60 * 60 * 1000
   };
+  const secret = getAuthSecret();
   const body = Buffer.from(JSON.stringify(data)).toString('base64url');
-  const signature = crypto.createHmac('sha256', SERVER_AUTH_SECRET).update(body).digest('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(body).digest('base64url');
   return `${body}.${signature}`;
 }
 
 export function verifyUserSessionToken(token: string): UserSessionPayload | null {
   if (!token || !token.includes('.')) return null;
+  const secret = getAuthSecret();
   const [body, signature] = token.split('.');
-  const expectedSig = crypto.createHmac('sha256', SERVER_AUTH_SECRET).update(body).digest('base64url');
-  if (signature !== expectedSig) return null;
+  const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  if (!safeCompareSignature(signature, expectedSig)) return null;
 
   try {
     const payload: UserSessionPayload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
@@ -147,6 +149,10 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
     if (userPayload) {
       await syncAccountsFromSupabase();
       const acc = getUserAccountByEmail(userPayload.email);
+      // Trên production: không tin cậy token nếu tài khoản không còn tồn tại trong DB source-of-truth
+      if (!acc && process.env.NODE_ENV === 'production' && userPayload.email !== 'tcns@hcmute.edu.vn') {
+        return unauthContext;
+      }
       if (acc && acc.status === 'suspended') {
         return { ...unauthContext, isSuspended: true, email: acc.email };
       }
@@ -174,7 +180,7 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
         return { ...unauthContext, isSuspended: true, email: verifiedGoogleEmail };
       }
       const role = acc?.role || (verifiedGoogleEmail === 'tcns@hcmute.edu.vn' ? 'admin' : 'staff');
-      const unitCode = (acc?.unitCode || 'FIT').toUpperCase();
+      const unitCode = (acc?.unitCode || 'CNTT').toUpperCase();
       const isAdmin = role === 'admin' || verifiedGoogleEmail === 'tcns@hcmute.edu.vn';
       return {
         isAuthenticated: true,

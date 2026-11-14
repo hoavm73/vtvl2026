@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const { password } = body;
     if (!password || !verifyAdminPassword(password)) {
       return NextResponse.json(
-        { error: 'Mật khẩu quản trị viên không chính xác. Mặc định: Hcmute@2026' },
+        { error: 'Mật khẩu quản trị viên không chính xác. Vui lòng liên hệ Phòng TCNS để được cấp quyền.' },
         { status: 401 }
       );
     }

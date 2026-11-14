@@ -8,8 +8,9 @@
     "build": "next build",
     "start": "next start -p 3360",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/vtvl-workflow.test.mjs && node tests/security-stress-rls.test.mjs",
+    "test": "node tests/vtvl-workflow.test.mjs && node tests/security-stress-rls.test.mjs && node tests/schema-reconciliation.test.mjs",
     "test:security": "node tests/security-stress-rls.test.mjs",
+    "test:schema": "node tests/schema-reconciliation.test.mjs",
     "generate:templates": "node scripts/generate-templates.mjs"
   },
   "dependencies": {

@@ -32,11 +32,11 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
     actions: [
       {
         id: 'admin-units',
-        title: 'Quản lý danh mục 51 đơn vị & Cấu hình mã',
+        title: 'Quản lý danh mục 48 đơn vị & Cấu hình mã',
         target: 'Trang Quản trị · Danh mục đơn vị',
         desc: 'Thiết lập mã đơn vị, tên đơn vị, tự động đồng bộ liên thông sang 15 biểu, mã nhiệm vụ, công việc và công thức.',
         href: '/admin?tab=units',
-        btnLabel: 'Quản lý 51 đơn vị',
+        btnLabel: 'Quản lý 48 đơn vị',
         icon: Building2,
         tag: 'Cấu hình nền tảng'
       },
@@ -44,7 +44,7 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
         id: 'admin-accounts',
         title: 'Quản trị tài khoản & Phân quyền cán bộ',
         target: 'Trang Quản trị · Tài khoản & Phân quyền',
-        desc: 'Khởi tạo tài khoản công vụ, phân công Lãnh đạo đơn vị cho 51 đơn vị, cấp quyền hoặc khóa tài khoản.',
+        desc: 'Khởi tạo tài khoản công vụ, phân công Lãnh đạo đơn vị cho 48 đơn vị, cấp quyền hoặc khóa tài khoản.',
         href: '/admin?tab=accounts',
         btnLabel: 'Quản trị phân quyền',
         icon: UserCog,
@@ -64,7 +64,7 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
         id: 'admin-audit',
         title: 'Giám sát tiến độ & Thẩm định đề án các đơn vị',
         target: 'Trang Rà soát · Báo cáo Thẩm định',
-        desc: 'Theo dõi tiến độ nộp đề án của 51 đơn vị, kiểm tra chéo 6 chỉ tiêu K_KiemTra và xuất báo cáo thẩm định gửi BGH.',
+        desc: 'Theo dõi tiến độ nộp đề án của 48 đơn vị, kiểm tra chéo 6 chỉ tiêu K_KiemTra và xuất báo cáo thẩm định gửi BGH.',
         href: '/ra-soat',
         btnLabel: 'Thẩm định đề án',
         icon: ShieldCheck,

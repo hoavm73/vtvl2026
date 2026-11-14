@@ -25,7 +25,7 @@ export function validateStep1Data(
       stage: 1,
       targetId: 'task-1-unit',
       label: 'Bước 1 — Đơn vị thực hiện (A1)',
-      message: 'Vui lòng chọn đơn vị thuộc HCM-UTE trong danh mục 51 đơn vị.'
+      message: 'Vui lòng chọn đơn vị thuộc HCM-UTE trong danh mục 48 đơn vị.'
     });
   }
   const emailTrim = actorEmail.trim();

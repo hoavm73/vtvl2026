@@ -280,7 +280,7 @@ export default function AdminPage() {
         <UnitOrgTreeModal
           isOpen={isOrgTreeModalOpen}
           onClose={() => setIsOrgTreeModalOpen(false)}
-          defaultUnitCode={getCurrentOperatorSession()?.unitCode || 'FIT'}
+          defaultUnitCode={getCurrentOperatorSession()?.unitCode || 'CNTT'}
         />
       </div>
     </main>

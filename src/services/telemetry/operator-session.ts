@@ -47,7 +47,7 @@ export function getCurrentOperatorSession(): OperatorSession | null {
     if (!raw) {
       const p = new URLSearchParams(window.location.search);
       if (p.has('preview') || p.has('operator')) {
-        const u = findHcmuteUnit(p.get('unit') || 'FIT');
+        const u = findHcmuteUnit(p.get('unit') || 'CNTT');
         const now = new Date().toISOString();
         return { email: normalizeEmail(p.get('email') || 'dfdfff@hcmute.edu.vn'), unitCode: u.code, unitNameVi: u.nameVi, title: 'Thư ký khoa / Trợ lý đào tạo', startedAt: now, lastActiveAt: now };
       }

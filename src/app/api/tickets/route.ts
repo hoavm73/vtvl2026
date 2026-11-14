@@ -5,7 +5,8 @@ import {
   upsertTicketAndSyncUnit,
   deleteTicketAndSyncUnit,
   allocateNextTaskCode,
-  syncTicketsFromWorkbook
+  syncTicketsFromWorkbook,
+  syncTicketsFromSupabase
 } from '@/services/storage/server-ticket-store';
 import {
   getOrCreateWorkbook,
@@ -43,9 +44,10 @@ export async function GET(req: NextRequest) {
   const effectiveUnitCode = caller.isAdmin && unitCodeParam ? unitCodeParam : caller.unitCode;
   const unit = findHcmuteUnit(effectiveUnitCode);
 
+  await syncTicketsFromSupabase(unit.code);
   await syncServerWorkbooksFromSupabase();
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-  syncTicketsFromWorkbook(wb.data, unit.code);
+  await syncTicketsFromWorkbook(wb.data, unit.code);
 
   // IDOR Protection: Nhân viên chỉ xem phiếu của chính mình, Admin/Leader xem được danh sách đơn vị
   const myTickets = getTicketsByOwner(caller.email, unit.code);
@@ -147,9 +149,18 @@ export async function POST(req: NextRequest) {
       ticket: result.ticket,
       unitWorkbookRevision: result.unitWorkbookRevision
     });
-  } catch (err) {
-    console.error('Ticket POST error:', err);
-    return NextResponse.json({ error: 'Không thể lưu phiếu công việc.' }, { status: 500 });
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string; status?: number };
+    if (errorObj?.code === 'REVISION_CONFLICT' || errorObj?.status === 409) {
+      return NextResponse.json(
+        { error: 'Xung đột phiên bản dữ liệu với máy chủ. Vui lòng tải lại và thử lại.', code: 'REVISION_CONFLICT' },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'Lưu phiếu công việc vào CSDL máy chủ thất bại. Vui lòng thử lại sau.', code: 'PERSISTENCE_FAILED' },
+      { status: 502 }
+    );
   }
 }
 
@@ -184,11 +195,26 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const deleted = await deleteTicketAndSyncUnit(id, caller.isAdmin ? (targetTicket?.ownerEmail || caller.email) : caller.email);
-  if (!deleted) {
-    return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa phiếu này.' }, { status: 403 });
+  try {
+    const actor = caller.isAdmin ? (targetTicket?.ownerEmail || caller.email) : caller.email;
+    const deleted = await deleteTicketAndSyncUnit(id, actor);
+    if (!deleted) {
+      return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa phiếu này.' }, { status: 403 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string; status?: number };
+    if (errorObj?.code === 'REVISION_CONFLICT' || errorObj?.status === 409) {
+      return NextResponse.json(
+        { error: 'Xung đột phiên bản dữ liệu khi xóa phiếu. Vui lòng thử lại.', code: 'REVISION_CONFLICT' },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'Xóa phiếu công việc trên máy chủ thất bại. Vui lòng thử lại sau.', code: 'PERSISTENCE_FAILED' },
+      { status: 502 }
+    );
   }
-  return NextResponse.json({ ok: true });
 }
 
 export async function PUT(req: NextRequest) {

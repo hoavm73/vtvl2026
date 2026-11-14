@@ -1,6 +1,6 @@
 /**
  * src/services/org-chart/unit-org-tree-builder.ts
- * Bộ máy trích xuất và dựng Sơ đồ cây VTVL và Danh mục công việc dự kiến của 51 đơn vị
+ * Bộ máy trích xuất và dựng Sơ đồ cây VTVL và Danh mục công việc dự kiến của 48 đơn vị
  */
 
 import { findHcmuteUnit } from '@/configs/hcmute-units';

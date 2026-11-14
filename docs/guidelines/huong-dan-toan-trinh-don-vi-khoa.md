@@ -14,7 +14,7 @@ Mỗi Khoa / Đơn vị thực hiện rà soát dựa trên sự kết hợp đ�
 ```mermaid
 flowchart TD
     G1["GIAI ĐOẠN 1: CHUẨN BỊ TẠI ĐƠN VỊ (1-2 ngày)<br/>1. Thành lập Tổ rà soát VTVL cấp Khoa/Đơn vị<br/>2. Chốt danh sách nhân sự tại 30/9/2026 (Biểu D1)<br/>3. Rà soát chức năng, nhiệm vụ (Biểu A1)"]
-    G2["GIAI ĐOẠN 2: TẠO TỆP & PHÁT PHIẾU (http://localhost:3360/tao-tep)<br/>1. Chọn mã đơn vị (VD: FME, FIT, AAO...)<br/>2. Nhập cơ cấu nhân sự theo mã TT 31/2026 & NĐ 232/2026<br/>3. Tải bộ biểu gốc v1 (21 sheet) + Gói .zip phiếu từng vị trí"]
+    G2["GIAI ĐOẠN 2: TẠO TỆP & PHÁT PHIẾU (http://localhost:3360/tao-tep)<br/>1. Chọn mã đơn vị (VD: CK, CNTT, DT...)<br/>2. Nhập cơ cấu nhân sự theo mã TT 31/2026 & NĐ 232/2026<br/>3. Tải bộ biểu gốc v1 (21 sheet) + Gói .zip phiếu từng vị trí"]
     G3["GIAI ĐOẠN 3: ĐO BẤM GIỜ & KHẢO SÁT B1 - B2_CT (3-5 ngày)<br/>1. Bộ môn / Cá nhân bấm giờ đo Phút/SP tại /bam-gio<br/>2. Thống kê sản lượng kỳ 01/10/2025-30/9/2026 (Biểu B1)<br/>3. Kê khai giờ giảm do số hóa UTEx / E-Office (Biểu B2_CT)"]
     G4["GIAI ĐOẠN 4: NẠP GỘP PHIẾU & LẬP PHƯƠNG ÁN 2027-2031<br/>1. Tổ thư ký nạp toàn bộ phiếu đã thu vào Bước 4 (/tao-tep#buoc-4)<br/>2. Hệ thống tự tính Giờ SP, Giờ ròng, FTE (C3) & xuất tệp v2<br/>3. Hoàn thiện dự báo 5 năm (2027-2031) tại DU_BAO_5_NAM & D2"]
     G5["GIAI ĐOẠN 5: RÀ SOÁT CHÉO 9 BIỂU & TRÌNH KÝ (/ra-soat)<br/>1. Kéo tệp v2 vào trang /ra-soat để kiểm tra 6/6 chỉ tiêu K_KiemTra<br/>2. Xử lý dứt điểm lỗi ĐỎ (Phải sửa) & VÀNG (Bổ sung căn cứ)<br/>3. Xuất dự thảo Tờ trình & gửi hồ sơ về Phòng TCNS"]
@@ -38,7 +38,7 @@ sequenceDiagram
     actor TCNS as Phòng Tổ chức - Nhân sự (TCNS)
 
     TK->>GVU: Duyệt danh sách nhiệm vụ (A1), danh mục VTVL (C1) & nhân sự chốt 30/9/2026 (D1)
-    GVU->>SYS: Mở /tao-tep, chọn mã đơn vị (VD: FME), tách tệp gốc v1 (.xlsx) & gói phiếu (.zip)
+    GVU->>SYS: Mở /tao-tep, chọn mã đơn vị (VD: CK), tách tệp gốc v1 (.xlsx) & gói phiếu (.zip)
     SYS-->>GVU: Trả về [MÃ_ĐV]_K2526_v1.xlsx + Phieu_TungViTri_.zip
     GVU->>BM: Phát tệp phiếu riêng (.xlsx) cho từng vị trí (GVCC, GVC, GV, Kỹ sư PTN, Giáo vụ)
     BM->>SYS: Mở /bam-gio đo thời gian thực tế, điền sản lượng B1 & số hóa B2_CT
@@ -58,7 +58,7 @@ sequenceDiagram
 
 ---
 
-## 3. Hướng dẫn chi tiết 5 bước thao tác thực tế (Ví dụ minh họa: Khoa Cơ khí Chế tạo máy — `FME`)
+## 3. Hướng dẫn chi tiết 5 bước thao tác thực tế (Ví dụ minh họa: Khoa Cơ khí — `CK`)
 
 ### Bước 1: Chuẩn bị số liệu đầu vào tại Khoa / Đơn vị (Trước khi mở phần mềm)
 Tổ thư ký đơn vị chuẩn bị sẵn **3 thông tin gốc**:
@@ -77,27 +77,27 @@ Tổ thư ký đơn vị chuẩn bị sẵn **3 thông tin gốc**:
 
 ### Bước 2: Khởi tạo bộ biểu 21 sheet của Đơn vị và tách gói phiếu `.zip`
 1. Mở trình duyệt truy cập **`http://localhost:3360/tao-tep`**.
-2. **Tại Mục 1 (Chọn mẫu khối đơn vị):** Chọn khối phù hợp (ví dụ: **Khối Khoa, Viện đào tạo** đối với `FME`, `FIT`, `FEEE`... hoặc **Khối Phòng, Ban chức năng** đối với `TCNS`, `AAO`, `FPO`...).
+2. **Tại Mục 1 (Chọn mẫu khối đơn vị):** Chọn khối phù hợp (ví dụ: **Khối Khoa, Viện đào tạo** đối với `CK`, `CNTT`, `DDT`... hoặc **Khối Phòng, Ban chức năng** đối với `TCNS`, `DT`, `KHTC`...).
 3. **Tại Mục 2 (Chọn đơn vị & Cấu hình nhân lực D1):**
-   - Chọn đơn vị từ danh sách 51 đơn vị (ví dụ: `[FME] Khoa Cơ khí Chế tạo máy`).
+   - Chọn đơn vị từ danh sách 48 đơn vị (ví dụ: `[CK] Khoa Cơ khí`).
    - Nhập số lượng nhân sự thực tế chốt tại `30/9/2026` vào cột **Số người (D1)** cho từng nhóm vị trí.
 4. **Tại Mục 3 (Tách bộ biểu chuẩn 21 sheet):**
    - Đánh dấu chọn **"Thêm gói phiếu riêng từng vị trí (.zip)"**.
-   - Bấm nút **"Tạo bộ biểu cho FME"**.
+   - Bấm nút **"Tạo bộ biểu cho CK"**.
    - Tải về 3 tệp:
-     - `FME_K2526_v1_YYYYMMDD.xlsx`: **Tệp đơn vị gốc (21 sheet)** do Giáo vụ / Tổ thư ký giữ.
-     - `Phieu_KhaoSat_B1_B2_FME_K2526_YYYYMMDD.xlsx`: Phiếu khảo sát tổng hợp của đơn vị.
-     - `Phieu_TungViTri_FME_K2526_YYYYMMDD.zip`: Gói chứa các tệp `.xlsx` tách riêng cho từng vị trí việc làm (`FME-QL-01`, `FME-CM-01`, `FME-CM-02`, `FME-CM-03`, `FME-KT-01`, `FME-HC-01`) để gửi cho các Bộ môn / Cá nhân.
+     - `CK_K2526_v1_YYYYMMDD.xlsx`: **Tệp đơn vị gốc (21 sheet)** do Giáo vụ / Tổ thư ký giữ.
+     - `Phieu_KhaoSat_B1_B2_CK_K2526_YYYYMMDD.xlsx`: Phiếu khảo sát tổng hợp của đơn vị.
+     - `Phieu_TungViTri_CK_K2526_YYYYMMDD.zip`: Gói chứa các tệp `.xlsx` tách riêng cho từng vị trí việc làm (`CK-QL-01`, `CK-CM-01`, `CK-CM-02`, `CK-CM-03`, `CK-KT-01`, `CK-HC-01`) để gửi cho các Bộ môn / Cá nhân.
 
 ---
 
 ### Bước 3: Bấm giờ đo định mức thực tế và điền Phiếu khảo sát theo thứ tự chuẩn
 - **Đối với Giảng viên / Kỹ sư PTN / Giáo vụ:**
-  1. Mở **`http://localhost:3360/bam-gio`**, chọn đơn vị (`FME`) và vị trí của mình để bấm đồng hồ đo thời gian thực hiện công việc thực tế hoặc nhập các phiên đo, sau đó bấm **"Xuất phiếu cá nhân (.xlsx)"**.
+  1. Mở **`http://localhost:3360/bam-gio`**, chọn đơn vị (`CK`) và vị trí của mình để bấm đồng hồ đo thời gian thực hiện công việc thực tế hoặc nhập các phiên đo, sau đó bấm **"Xuất phiếu cá nhân (.xlsx)"**.
   2. Hoặc mở trực tiếp tệp phiếu của vị trí mình trong gói `.zip`, cập nhật tại sheet **`3. B1_KhoiLuong`**:
      - **Cột C (`Số SP/năm`):** Nhập sản lượng thực tế kỳ `01/10/2025–30/9/2026`.
      - **Cột D (`Trung bình phút/SP`):** Nhập số phút thực tế thực hiện 1 sản phẩm.
-     - **Cột H (`Nguồn SL`) & Cột I (`Nguồn thời gian`):** Ghi rõ nguồn xác thực (ví dụ: *"Bảng phân công giảng dạy NH 2025–2026"*, *"Thống kê E-Office FME"*, *"Biên bản bấm giờ thực tế ngày 07/11/2026"*). **Lưu ý:** Không để nguyên dòng chữ gợi ý mẫu `(gợi ý – chưa đo)`.
+     - **Cột H (`Nguồn SL`) & Cột I (`Nguồn thời gian`):** Ghi rõ nguồn xác thực (ví dụ: *"Bảng phân công giảng dạy NH 2025–2026"*, *"Thống kê E-Office CK"*, *"Biên bản bấm giờ thực tế ngày 07/11/2026"*). **Lưu ý:** Không để nguyên dòng chữ gợi ý mẫu `(gợi ý – chưa đo)`.
      - **Cột S (`Giải trình khác chuẩn`):** Nếu `Phút/SP thực tế` (Cột D) chênh lệch quá `30%` so với `Phút/SP chuẩn` (Cột N), bắt buộc ghi rõ lý do đặc thù tại Cột S (ví dụ: *"Học phần thí nghiệm tích hợp dự án xưởng cơ khí chính xác"*).
   3. Tại sheet **`4. B2_CT_TacDong`**, kiểm tra hoặc bổ sung các công đoạn đã số hóa (Phút trước → Phút sau) để làm căn cứ tính giờ giảm chuyển đổi số.
 
@@ -105,20 +105,20 @@ Tổ thư ký đơn vị chuẩn bị sẵn **3 thông tin gốc**:
 
 ### Bước 4: Nạp gộp các phiếu vào Tệp đơn vị và kiểm tra 12 bước công thức
 1. Sau khi thu lại các phiếu `.xlsx` từ các Bộ môn / Cá nhân, Giáo vụ khoa mở **`http://localhost:3360/tao-tep#buoc-4`** (Mục **Bước 4: Nạp và gộp phiếu khảo sát vào tệp đơn vị**):
-   - **Ô 1:** Chọn tệp gốc `FME_K2526_v1_YYYYMMDD.xlsx`.
+   - **Ô 1:** Chọn tệp gốc `CK_K2526_v1_YYYYMMDD.xlsx`.
    - **Ô 2:** Chọn tất cả các tệp phiếu khảo sát / phiếu bấm giờ đã thu về.
    - Bấm **"Nạp & Gộp phiếu vào tệp đơn vị"**.
 2. Hệ thống tự động:
    - Đối chiếu xung đột, cập nhật `Số SP/năm`, `Phút/SP`, tính lại `Giờ SP (tính)` và `Giờ tổng (tính)` tại `3. B1_KhoiLuong`.
    - Kết chuyển giờ ròng sang `8. C3_NhuCau` để tính **Người quy đổi PP2** (`Giờ ròng / 1.904` hoặc `Giờ ròng / 1.760`).
-   - Ghi nhận toàn bộ lịch sử thay đổi (Giá trị cũ → Giá trị mới) vào sheet **`15. S_NhatKy`** và nâng tên tệp lên phiên bản **`v2`** (`FME_K2526_v2_YYYYMMDD.xlsx`).
+   - Ghi nhận toàn bộ lịch sử thay đổi (Giá trị cũ → Giá trị mới) vào sheet **`15. S_NhatKy`** và nâng tên tệp lên phiên bản **`v2`** (`CK_K2526_v2_YYYYMMDD.xlsx`).
 3. Bấm **"Tải dự thảo Tờ trình"** ngay phía trên để lấy mẫu Tờ trình thẩm định Đề án VTVL đã điền sẵn số liệu của đơn vị.
 
 ---
 
 ### Bước 5: Rà soát chéo 9 biểu trên hệ thống trước khi trình ký nộp Phòng TCNS
 1. Mở trang **`http://localhost:3360/ra-soat`**.
-2. Kéo tệp `FME_K2526_v2_YYYYMMDD.xlsx` vào khung kiểm tra và bấm **"Chạy rà soát 9 biểu"**.
+2. Kéo tệp `CK_K2526_v2_YYYYMMDD.xlsx` vào khung kiểm tra và bấm **"Chạy rà soát 9 biểu"**.
 3. Đối chiếu bảng kết quả 3 cấp độ cảnh báo:
    - **Mức 1 — Phải sửa ngay (Màu đỏ):** Ví dụ thiếu sản lượng (`Cột C <= 0`), thiếu thời gian (`Cột D <= 0`), trùng mã nhân sự tại `D1_NhanLuc`, tổng giờ cá nhân vượt quỹ giờ năm, hoặc còn dẫn chiếu `Thông tư 40/2020/TT-BGDĐT` đã hết hiệu lực. **Bắt buộc phải sửa về `0 lỗi` trước khi nộp.**
    - **Mức 2 — Cần bổ sung căn cứ (Màu vàng):** Ví dụ Cột H/I của `B1_KhoiLuong` vẫn để dòng chữ `(gợi ý – chưa đo)` mà chưa ghi tên văn bản/hệ thống xác thực.

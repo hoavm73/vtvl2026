@@ -58,7 +58,7 @@ export function useOperatorSession() {
       const saved = getSessionByEmail(cur.email);
       if (saved?.touchedCells) setTouchedCells(new Set(saved.touchedCells));
       if (!cur.hasSelectedUnit && cur.role !== 'admin') return;
-      const targetUnitCode = cur.unitCode || 'FIT';
+      const targetUnitCode = cur.unitCode || 'CNTT';
       try {
         const res = await fetch(`/api/workbooks/wb_${targetUnitCode}_2026`);
         if (res.ok && isMounted) {

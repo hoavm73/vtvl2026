@@ -25,9 +25,24 @@ import {
 import { migrateWorkbookSheets } from '@/services/units/unit-synchronizer';
 import { migrateTicketsForUnit } from '@/services/storage/server-ticket-store';
 
+function handleUnitsError(err: unknown, fallbackMessage: string) {
+  const errObj = err as { code?: string; status?: number };
+  if (errObj?.code === 'DB_SERVICE_UNAVAILABLE' || errObj?.status === 503) {
+    return NextResponse.json(
+      { error: 'Dịch vụ cơ sở dữ liệu tạm thời chưa sẵn sàng.', code: 'DB_SERVICE_UNAVAILABLE' },
+      { status: 503 }
+    );
+  }
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+}
+
 export async function GET() {
-  const units = await syncUnitsFromSupabase();
-  return NextResponse.json({ units });
+  try {
+    const units = await syncUnitsFromSupabase();
+    return NextResponse.json({ units });
+  } catch (err: unknown) {
+    return handleUnitsError(err, 'Lỗi máy chủ khi tải danh mục đơn vị.');
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -113,8 +128,8 @@ export async function POST(req: NextRequest) {
         tickets: migratedTickets
       }
     });
-  } catch {
-    return NextResponse.json({ error: 'Lỗi máy chủ khi cập nhật đơn vị.' }, { status: 500 });
+  } catch (err: unknown) {
+    return handleUnitsError(err, 'Lỗi máy chủ khi cập nhật đơn vị.');
   }
 }
 
@@ -131,8 +146,8 @@ export async function DELETE(req: NextRequest) {
     }
     const units = await deleteServerUnit(code);
     return NextResponse.json({ success: true, units });
-  } catch {
-    return NextResponse.json({ error: 'Lỗi máy chủ khi xóa đơn vị.' }, { status: 500 });
+  } catch (err: unknown) {
+    return handleUnitsError(err, 'Lỗi máy chủ khi xóa đơn vị.');
   }
 }
 
@@ -145,7 +160,7 @@ export async function PUT(req: NextRequest) {
     }
     const units = await resetServerUnits();
     return NextResponse.json({ success: true, units });
-  } catch {
-    return NextResponse.json({ error: 'Lỗi máy chủ khi khôi phục danh mục.' }, { status: 500 });
+  } catch (err: unknown) {
+    return handleUnitsError(err, 'Lỗi máy chủ khi khôi phục danh mục.');
   }
 }

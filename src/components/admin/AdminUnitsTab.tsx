@@ -83,7 +83,7 @@ export function AdminUnitsTab() {
   };
 
   const handleResetToDefault = () => {
-    if (confirm('Khôi phục danh mục về 51 đơn vị chuẩn gốc của HCM-UTE? Các đơn vị thêm mới hoặc sửa đổi sẽ bị hoàn tác.')) {
+    if (confirm('Khôi phục danh mục về 48 đơn vị chuẩn gốc của HCM-UTE? Các đơn vị thêm mới hoặc sửa đổi sẽ bị hoàn tác.')) {
       resetAdminUnitsToDefault();
       loadUnits();
     }
@@ -126,10 +126,10 @@ export function AdminUnitsTab() {
             type="button"
             onClick={handleResetToDefault}
             className="h-10 inline-flex items-center justify-center gap-1.5 px-3 text-xs font-semibold text-[#64748b] hover:text-[#004776] hover:bg-[#f1f5f9] border border-[#cbd5e1] rounded-xl transition-colors cursor-pointer"
-            title="Khôi phục danh mục về 51 đơn vị chuẩn gốc của HCM-UTE"
+            title="Khôi phục danh mục về 48 đơn vị chuẩn gốc của HCM-UTE"
           >
             <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-            <span>Khôi phục 51 đơn vị chuẩn</span>
+            <span>Khôi phục 48 đơn vị chuẩn</span>
           </button>
 
           <button

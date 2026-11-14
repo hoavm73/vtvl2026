@@ -182,12 +182,21 @@ export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: 
   }
 }
 
+export interface PostServerRestResult {
+  ok: boolean;
+  status: number;
+  table: string;
+  error?: string;
+}
+
 export async function postServerRest(
   table: string,
   payload: unknown,
   upsertConflictCol?: string
-): Promise<boolean> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+): Promise<PostServerRestResult> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return { ok: false, status: 503, table, error: 'Chưa cấu hình Supabase URL/KEY' };
+  }
   const query = upsertConflictCol ? `?on_conflict=${encodeURIComponent(upsertConflictCol)}` : '';
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   try {
@@ -199,10 +208,28 @@ export async function postServerRest(
       },
       body: JSON.stringify(payload)
     });
-    return res.ok;
+    if (!res.ok) {
+      return { ok: false, status: res.status, table, error: `Lỗi ghi dữ liệu bảng ${table} (HTTP ${res.status})` };
+    }
+    return { ok: true, status: res.status, table };
   } catch {
-    return false;
+    return { ok: false, status: 502, table, error: `Không thể kết nối máy chủ dữ liệu (${table})` };
   }
+}
+
+export async function postServerRestRequired(
+  table: string,
+  payload: unknown,
+  upsertConflictCol?: string
+): Promise<PostServerRestResult> {
+  const result = await postServerRest(table, payload, upsertConflictCol);
+  if (!result.ok) {
+    const err = new Error(result.error || `Lỗi ghi bảng ${table}`);
+    (err as unknown as { table: string; status: number }).table = table;
+    (err as unknown as { table: string; status: number }).status = result.status;
+    throw err;
+  }
+  return result;
 }
 
 export async function deleteWorkbookFromSupabase(unitId: string): Promise<boolean> {

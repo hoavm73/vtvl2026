@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import { MISSIONS_BY_GROUP } from '@/configs/hcmute-hd07-catalog';
-import { postServerRest } from '@/services/storage/server-supabase-store';
+import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       findHcmuteUnit(summary.unitCode);
     } catch {
       return NextResponse.json(
-        { error: 'Đơn vị không tồn tại trong danh mục 51 đơn vị HCM-UTE.' },
+        { error: 'Đơn vị không tồn tại trong danh mục 48 đơn vị HCM-UTE.' },
         { status: 400 }
       );
     }
@@ -85,13 +85,13 @@ export async function POST(req: Request) {
       nguoi_can_bo_tri: p.recommendedFte
     }));
 
-    await postServerRest('c1_vtvl', c1Rows, 'ma_vtvl');
-    await postServerRest('a1_nhiem_vu', a1Rows, 'ma_nhiem_vu');
-    await postServerRest('c3_nhu_cau', c3Rows, 'ma_vtvl');
+    await postServerRestRequired('c1_vtvl', c1Rows, 'ma_vtvl');
+    await postServerRestRequired('a1_nhiem_vu', a1Rows, 'ma_nhiem_vu');
+    await postServerRestRequired('c3_nhu_cau', c3Rows, 'ma_vtvl');
 
     if (extra?.scaleMetrics) {
       const sm = extra.scaleMetrics;
-      await postServerRest(
+      await postServerRestRequired(
         'sldv_quy_mo_don_vi',
         {
           ma_don_vi: summary.unitCode,
@@ -122,11 +122,11 @@ export async function POST(req: Request) {
         }))
         .filter((r) => c1Rows.some((c) => c.ma_vtvl === r.ma_vtvl_xep_vao));
       if (ngachRows.length > 0) {
-        await postServerRest('sldv_phan_bo_ngach', ngachRows, 'id');
+        await postServerRestRequired('sldv_phan_bo_ngach', ngachRows, 'id');
       }
     }
 
-    await postServerRest(
+    await postServerRestRequired(
       't_tien_do',
       {
         ma_don_vi: summary.unitCode,
@@ -150,9 +150,18 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({ success: true, message: 'Đồng bộ hồ sơ máy chủ thành công.' });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi đồng bộ hồ sơ máy chủ.';
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error: unknown) {
+    const errObj = error as { table?: string; status?: number; message?: string };
+    const failedTable = errObj?.table || 'unknown';
+    const status = errObj?.status && errObj.status >= 500 && errObj.status < 600 ? 502 : 500;
+    return NextResponse.json(
+      {
+        error: `Lỗi đồng bộ hồ sơ máy chủ tại bảng [${failedTable}].`,
+        code: 'PERSISTENCE_FAILED',
+        table: failedTable
+      },
+      { status }
+    );
   }
 }
 

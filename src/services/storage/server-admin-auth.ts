@@ -1,11 +1,10 @@
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 import { getUserAccountByEmail, syncAccountsFromSupabase } from './server-account-store';
+import { verifyPasswordHash, getAuthSecret, safeCompareSignature } from './account-crypto';
 import { normalizeEmail } from './server-workbook-store';
 
 const ADMIN_COOKIE_NAME = 'hcmute_vtvl_admin_token_v2';
-const ADMIN_PASSWORD_HASH = '0a5de87db3d6c7d52645c1581269a880b1bbc613abc8e4c8e0f51c99753f8909'; // SHA-256 của Hcmute@2026*#
-const SERVER_AUTH_SECRET = process.env.ADMIN_SERVER_SECRET || 'hcmute_vtvl_admin_jwt_secret_2026_super_secure';
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
 const SUPABASE_PUBLIC_KEY = (
@@ -28,22 +27,17 @@ export function hashStringSha256(val: string): string {
 export function verifyAdminPassword(password: string): boolean {
   if (!password) return false;
   const trimmed = password.trim();
-  const hash = hashStringSha256(trimmed);
-  if (
-    hash === ADMIN_PASSWORD_HASH ||
-    hash === hashStringSha256('Hcmute@2026') ||
-    trimmed === 'Hcmute@2026' ||
-    trimmed === 'Hcmute@2026*#' ||
-    trimmed === 'hcmute@2026' ||
-    trimmed === 'tcns@2026' ||
-    trimmed === 'Tcns@2026' ||
-    trimmed === 'admin'
-  ) {
+
+  // 1. Kiểm tra mật khẩu quản trị từ biến môi trường (nếu có)
+  const envAdminPassword = (process.env.ADMIN_DEFAULT_PASSWORD || '').trim();
+  if (envAdminPassword && trimmed === envAdminPassword) {
     return true;
   }
+
+  // 2. Đối soát an toàn với tài khoản tcns@hcmute.edu.vn từ bảng user_accounts
   try {
     const acc = getUserAccountByEmail('tcns@hcmute.edu.vn');
-    if (acc?.passwordHash && acc.passwordHash === hashStringSha256(`hcmute_vtvl_${trimmed}`)) {
+    if (acc?.passwordHash && verifyPasswordHash(trimmed, acc.passwordHash)) {
       return true;
     }
   } catch {
@@ -53,21 +47,23 @@ export function verifyAdminPassword(password: string): boolean {
 }
 
 export function generateAdminToken(): string {
+  const secret = getAuthSecret();
   const payload: AdminSessionPayload = {
     role: 'admin',
     authenticatedAt: new Date().toISOString(),
     expiresAt: Date.now() + 24 * 60 * 60 * 1000
   };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', SERVER_AUTH_SECRET).update(body).digest('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(body).digest('base64url');
   return `${body}.${signature}`;
 }
 
 export function verifyAdminToken(token: string): AdminSessionPayload | null {
   if (!token || !token.includes('.')) return null;
+  const secret = getAuthSecret();
   const [body, signature] = token.split('.');
-  const expectedSig = crypto.createHmac('sha256', SERVER_AUTH_SECRET).update(body).digest('base64url');
-  if (signature !== expectedSig) return null;
+  const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  if (!safeCompareSignature(signature, expectedSig)) return null;
 
   try {
     const payload: AdminSessionPayload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));

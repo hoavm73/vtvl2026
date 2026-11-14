@@ -132,7 +132,7 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
                 onValueChange={setSelectedUnit}
                 options={unitOptions}
                 searchable={true}
-                placeholder="-- Tìm và chọn 1 trong 51 đơn vị HCM-UTE --"
+                placeholder="-- Tìm và chọn 1 trong 48 đơn vị HCM-UTE --"
                 size="md"
               />
             </div>

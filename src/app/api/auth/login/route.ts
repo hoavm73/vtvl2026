@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const verified = verifyUserPassword(email, password);
+    const verified = await verifyUserPassword(email, password);
     if (!verified) {
       return NextResponse.json(
         { error: 'Mật khẩu không chính xác. Nếu dùng Google Workspace HCM-UTE, vui lòng chọn nút Đăng nhập bằng Google.' },
@@ -81,7 +81,20 @@ export async function POST(req: NextRequest) {
     }
 
     return res;
-  } catch {
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string; status?: number };
+    if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {
+      return NextResponse.json(
+        { error: 'Dịch vụ xác thực CSDL chưa được cấu hình. Vui lòng liên hệ Quản trị viên.', code: 'SUPABASE_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+    if (errorObj?.code === 'DB_ERROR' || errorObj?.code === 'PERSISTENCE_FAILED') {
+      return NextResponse.json(
+        { error: 'Lỗi kết nối CSDL xác thực người dùng. Vui lòng thử lại sau.', code: 'PERSISTENCE_FAILED' },
+        { status: 502 }
+      );
+    }
     return NextResponse.json({ error: 'Không thể xử lý yêu cầu đăng nhập.' }, { status: 500 });
   }
 }

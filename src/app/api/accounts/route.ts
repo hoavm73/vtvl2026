@@ -92,9 +92,9 @@ export async function POST(req: NextRequest) {
       existing?.hasSelectedUnit ||
       existing?.role === 'unit_leader' ||
       existing?.role === 'admin' ||
-      (Boolean(existing?.unitCode) && existing?.unitCode !== 'FIT')
+      (Boolean(existing?.unitCode) && existing?.unitCode !== 'CNTT' && existing?.unitCode !== 'FIT')
     );
-    const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'FIT');
+    const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'CNTT');
     const targetTitle = hasExistingAssignment ? existing!.title : (body.title || existing?.title);
     const targetRole = hasExistingAssignment ? existing!.role : undefined;
     const targetHasSelectedUnit = hasExistingAssignment
@@ -118,7 +118,20 @@ export async function POST(req: NextRequest) {
 
     const account = sanitizeClientAccount(rawAccount, isAdmin);
     return NextResponse.json({ account, isAdmin });
-  } catch {
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string; status?: number };
+    if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {
+      return NextResponse.json(
+        { error: 'Dịch vụ CSDL máy chủ chưa được cấu hình.', code: 'SUPABASE_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+    if (errorObj?.code === 'DB_ERROR' || errorObj?.code === 'PERSISTENCE_FAILED') {
+      return NextResponse.json(
+        { error: 'Không thể đồng bộ tài khoản lên CSDL máy chủ.', code: 'PERSISTENCE_FAILED' },
+        { status: 502 }
+      );
+    }
     return NextResponse.json({ error: 'Không thể đồng bộ tài khoản người dùng.' }, { status: 400 });
   }
 }
@@ -191,7 +204,20 @@ export async function PATCH(req: NextRequest) {
 
     const account = sanitizeClientAccount(rawAccount, isAdmin);
     return NextResponse.json({ account, isAdmin });
-  } catch {
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string; status?: number };
+    if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {
+      return NextResponse.json(
+        { error: 'Dịch vụ CSDL máy chủ chưa được cấu hình.', code: 'SUPABASE_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+    if (errorObj?.code === 'DB_ERROR' || errorObj?.code === 'PERSISTENCE_FAILED') {
+      return NextResponse.json(
+        { error: 'Lỗi cập nhật CSDL máy chủ.', code: 'PERSISTENCE_FAILED' },
+        { status: 502 }
+      );
+    }
     return NextResponse.json({ error: 'Không thể cập nhật thông tin tài khoản.' }, { status: 400 });
   }
 }

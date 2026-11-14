@@ -23,7 +23,7 @@ export interface UserAccountRecord {
 }
 
 export const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = [
-  { value: 'admin', label: 'Phòng Tổ chức – Nhân sự', description: 'Toàn quyền quản trị tất cả 51 đơn vị, mở khóa C1 và phân quyền tài khoản' },
+  { value: 'admin', label: 'Phòng Tổ chức – Nhân sự', description: 'Toàn quyền quản trị tất cả 48 đơn vị, mở khóa C1 và phân quyền tài khoản' },
   { value: 'unit_leader', label: 'Lãnh đạo đơn vị', description: 'Xem toàn bộ dữ liệu, phiếu công việc và toàn quyền chỉnh sửa trong đơn vị mình' },
   { value: 'staff', label: 'Cán bộ – Giảng viên', description: 'Tạo, quản lý Phiếu công việc cá nhân và xem bảng dữ liệu của đơn vị (chỉ đọc)' }
 ];

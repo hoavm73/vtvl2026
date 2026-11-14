@@ -1,7 +1,7 @@
 # Đặc tả yêu cầu nghiệp vụ: Hệ thống Vị trí việc làm 360 & S-Link HCM-UTE
 
 ## 1. Mục tiêu dự án
-Xây dựng nền tảng số hóa quy trình xây dựng, đo lường định mức và rà soát **Đề án Vị trí việc làm (VTVL) 360** kết hợp công cụ **S-Link & QR Code** dành cho **51 đơn vị thuộc/trực thuộc Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)**.
+Xây dựng nền tảng số hóa quy trình xây dựng, đo lường định mức và rà soát **Đề án Vị trí việc làm (VTVL) 360** kết hợp công cụ **S-Link & QR Code** dành cho **48 đơn vị thuộc/trực thuộc Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)**.
 
 ## 2. Năm bước nghiệp vụ VTVL 360
 1. **Bước 1 — Tạo tệp đơn vị và phiếu khảo sát (`/tao-tep`):**
@@ -10,8 +10,8 @@ Xây dựng nền tảng số hóa quy trình xây dựng, đo lường định 
      - Khối Phòng ban chức năng (`phong-ban`)
      - Khối Trung tâm & Đơn vị phục vụ (`trung-tam`)
      - Khối Quản trị & Đảng - Đoàn thể (`dang-doanthe`)
-   - Chọn đơn vị cụ thể (ví dụ `FME` — Khoa Cơ khí, `BMC` — Phòng Quản trị thương hiệu và Truyền thông, `TCNS` — Phòng Tổ chức - Nhân sự...).
-   - Tự động ánh xạ mã đơn vị vào 9 biểu (`XXX-GV-CM-01` → `FME-GV-CM-01`), điền sẵn danh mục công việc, sản phẩm, ĐVT và định mức gợi ý.
+   - Chọn đơn vị cụ thể (ví dụ `CK` — Khoa Cơ khí, `QTTHTT` — Phòng Quản trị thương hiệu và Truyền thông, `TCNS` — Phòng Tổ chức - Nhân sự...).
+   - Tự động ánh xạ mã đơn vị vào 9 biểu (`XXX-GV-CM-01` → `CK-GV-CM-01`), điền sẵn danh mục công việc, sản phẩm, ĐVT và định mức gợi ý.
    - Tải về tệp đơn vị gốc (`[MA]_K2526_v1_YYYYMMDD.xlsx`), phiếu khảo sát đầy đủ (`Phieu_B2_...xlsx`) và gói `.zip` tách riêng từng vị trí việc làm.
 2. **Bước 2 — Phát phiếu từng vị trí & Chia sẻ qua S-Link / QR Code (`/s-link`):**
    - Tạo liên kết ngắn kèm mã QR gắn logo chuẩn HCM-UTE, hỗ trợ đặt mật khẩu bảo vệ, hẹn giờ hết hạn và gắn thẻ phân loại theo đơn vị để gửi cho viên chức, người lao động.

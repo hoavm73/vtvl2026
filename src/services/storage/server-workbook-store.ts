@@ -171,15 +171,10 @@ export function findWorkbooksByEmail(email: string): ServerWorkbook[] {
 
 export function getWorkbookById(id: string): ServerWorkbook | null {
   const store = loadStore();
-  let wb = store.get(id);
+  const wb = store.get(id);
   if (wb && !wb.isDeleted) return wb;
-  const unitMatch = id.match(/^wb_([A-Za-z0-9]+)/);
-  if (unitMatch) {
-    const unitCode = unitMatch[1];
-    wb = Array.from(store.values()).find((w) => !w.isDeleted && (w.unitId === unitCode || w.id === id));
-    if (wb) return wb;
-  }
-  return null;
+  const m = id.match(/^wb_([A-Za-z0-9]+)/);
+  return m ? Array.from(store.values()).find((w) => !w.isDeleted && (w.unitId === m[1] || w.id === id)) || null : null;
 }
 export function parseDateToTimestamp(raw?: string): number {
   if (!raw) return 0;
@@ -187,9 +182,7 @@ export function parseDateToTimestamp(raw?: string): number {
   return m ? new Date(Number(m[6]), Number(m[5]) - 1, Number(m[4]), Number(m[1]), Number(m[2]), Number(m[3])).getTime() : (Date.parse(raw) || 0);
 }
 export function getAllActiveServerWorkbooks(): ServerWorkbook[] {
-  return Array.from(loadStore().values())
-    .filter((w) => !w.isDeleted)
-    .sort((a, b) => parseDateToTimestamp(b.updatedAt) - parseDateToTimestamp(a.updatedAt));
+  return Array.from(loadStore().values()).filter((w) => !w.isDeleted).sort((a, b) => parseDateToTimestamp(b.updatedAt) - parseDateToTimestamp(a.updatedAt));
 }
 
 export function saveServerWorkbook(params: {
@@ -199,13 +192,18 @@ export function saveServerWorkbook(params: {
   const store = loadStore();
   let wb = store.get(params.workbookId) || getWorkbookById(params.workbookId);
   if (!wb || wb.isDeleted) {
-    const unitCode = params.unitCode || (params.workbookId.startsWith('wb_') ? params.workbookId.split('_')[1] : 'FIT');
+    const unitCode = params.unitCode || (params.workbookId.startsWith('wb_') ? params.workbookId.split('_')[1] : 'CNTT');
     wb = getOrCreateWorkbook(unitCode, '01/10/2025–30/9/2026', params.actorEmail, params.actorTitle || 'Chuyên viên');
+  }
+
+  // Conflict check: baseRevision must match currentRevision (unless baseRevision <= 0)
+  if (typeof params.baseRevision === 'number' && params.baseRevision > 0 && params.baseRevision !== wb.currentRevision) {
+    return { success: false, conflict: true, currentRevision: wb.currentRevision, serverWorkbook: wb };
   }
 
   const now = new Date().toLocaleString('vi-VN');
   const normEmail = normalizeEmail(params.actorEmail);
-  const nextRev = Math.max(wb.currentRevision, params.baseRevision || 0) + 1;
+  const nextRev = wb.currentRevision + 1;
   wb.currentRevision = nextRev;
   wb.data = params.data;
   wb.updatedAt = now;

@@ -20,7 +20,7 @@ export function AdminAccountCreateForm({
 }: AdminAccountCreateFormProps) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [unitCode, setUnitCode] = useState('FIT');
+  const [unitCode, setUnitCode] = useState('CNTT');
   const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
 

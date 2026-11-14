@@ -7,7 +7,7 @@ export const UNITS_UPDATED_EVENT = 'vtvl-units-updated';
 
 /**
  * Lấy danh sách toàn bộ đơn vị hiện hành trong hệ thống.
- * Ưu tiên danh sách đã chỉnh sửa trong localStorage, fallback về 51 đơn vị chuẩn HCM-UTE.
+ * Ưu tiên danh sách đã chỉnh sửa trong localStorage, fallback về 48 đơn vị chuẩn HCM-UTE.
  */
 export function getAdminUnits(): HcmuteUnit[] {
   if (typeof window === 'undefined') return [...HCMUTE_UNITS];
@@ -111,7 +111,7 @@ export function deleteAdminUnit(code: string): boolean {
 }
 
 /**
- * Khôi phục danh mục về 51 đơn vị chuẩn gốc của HCM-UTE.
+ * Khôi phục danh mục về 48 đơn vị chuẩn gốc của HCM-UTE.
  */
 export function resetAdminUnitsToDefault(): void {
   if (typeof window === 'undefined') return;

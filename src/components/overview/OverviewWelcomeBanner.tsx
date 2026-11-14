@@ -155,7 +155,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                   </div>
                   <p className="text-xs text-white/85 leading-relaxed pt-0.5 line-clamp-2">
                     {role === 'admin'
-                      ? 'Quyền Quản trị viên — Điều hành danh mục 51 đơn vị, phân quyền & thẩm định đề án toàn trường.'
+                      ? 'Quyền Quản trị viên — Điều hành danh mục 48 đơn vị, phân quyền & thẩm định đề án toàn trường.'
                       : role === 'unit_leader'
                       ? 'Quyền Lãnh đạo đơn vị — Quản lý hồ sơ VTVL đơn vị, phát phiếu khảo sát và tổng hợp 15 biểu.'
                       : 'Quyền Cán bộ – Giảng viên — Kê khai phiếu mô tả công việc, đo định mức giờ và nộp hồ sơ cá nhân.'}

@@ -61,7 +61,7 @@ erDiagram
 ## 2. Phân nhóm 22 bảng dữ liệu quan hệ
 
 ### Nhóm I — 04 bảng danh mục chuẩn cấp Trường & Bộ (`Master Catalogs`)
-1. **`public.dm_don_vi`** (PK: `ma_don_vi`): Lưu trữ danh mục 51 đơn vị thuộc/trực thuộc HCM-UTE thuộc 04 khối (`khoa-vien`, `phong-ban`, `trung-tam`, `dang-doanthe`).
+1. **`public.dm_don_vi`** (PK: `ma_don_vi`): Lưu trữ danh mục 48 đơn vị thuộc/trực thuộc HCM-UTE thuộc 04 khối (`khoa-vien`, `phong-ban`, `trung-tam`, `dang-doanthe`).
 2. **`public.dm_chuc_danh_tt31`** (PK: `ma_so_chuc_danh`): Lưu trữ 28 mã số chức danh nghề nghiệp và hệ số lương nhà giáo theo Thông tư `31/2026/TT-BGDĐT` (gồm cả mã chuyển tiếp Trợ giảng `V.07.01.23` tại khoản 5 Điều 15).
 3. **`public.dm_vtvl_khung_truong`** (PK: `ma_danh_muc_nd232`): Lưu trữ Khung 38 vị trí việc làm của Trường theo 04 nhóm (`I. Quản lý`, `II. Chuyên môn, nghiệp vụ`, `III. Hỗ trợ`, `IV. Phục vụ`), giới hạn bậc nghề nghiệp (`gioi_han_bac_nghe_nghiep`), mảng bậc cho phép (`ds_bac_cho_phep` kiểu `jsonb`) và công thức đặt Tên VTVL cụ thể (`cong_thuc_ten_cu_the`) theo Phụ lục I văn bản `1907/HD-ĐHCNKT`.
 4. **`public.dm_san_pham`** (PK: `ma_sp_chuan`): Danh mục sản phẩm chuẩn 06 nhóm La Mã (`I`–`VI`, Biểu `11. DM_SAN_PHAM`) và định mức phút/sản phẩm chuẩn.
@@ -110,7 +110,7 @@ erDiagram
   - Các bảng cấp đầu việc (`b1_khoi_luong`, `b2_ct_tac_dong`, `b2_thay_doi`, `can_cu_goi_y`) tham chiếu kép tới cả `public.a2_cong_viec(ma_cong_viec)` và `public.c1_vtvl(ma_vtvl) ON DELETE CASCADE`.
 - **Trigger `trg_validate_c1_career_level` (`public.fn_validate_c1_career_level()`):** Tự động đối chiếu giá trị `bac_nghe_nghiep_su_dung` trong bảng `public.c1_vtvl` với mảng `ds_bac_cho_phep` của vị trí khung tương ứng trong `public.dm_vtvl_khung_truong`.
 - **Trigger `trg_enforce_unit_consistency` (`public.fn_enforce_unit_consistency()`):** Gắn trên các bảng phụ thuộc, bắt buộc `ma_don_vi` của dòng con phải khớp tuyệt đối với `ma_don_vi` của đơn vị cha.
-- **View `public.v_tong_hop_vtvl_toan_truong`:** Kết nối `dm_don_vi` và `t_tien_do` để tổng hợp trạng thái nộp hồ sơ, quy mô đơn vị và tổng nhu cầu FTE của toàn bộ 51 đơn vị thuộc HCM-UTE.
+- **View `public.v_tong_hop_vtvl_toan_truong`:** Kết nối `dm_don_vi` và `t_tien_do` để tổng hợp trạng thái nộp hồ sơ, quy mô đơn vị và tổng nhu cầu FTE của toàn bộ 48 đơn vị thuộc HCM-UTE.
 
 ---
 
@@ -118,7 +118,7 @@ erDiagram
 
 | Giai đoạn | Tác vụ chính | Dữ liệu đầu vào liên thông | Dữ liệu đầu ra (Session + Excel + Supabase) |
 | :--- | :--- | :--- | :--- |
-| **Giai đoạn 1**<br>Đề xuất VTVL (Chặng 1–5) | Chọn đơn vị, khai báo người thực hiện, chọn VTVL từ khung 38 vị trí, chỉnh mã VTVL/bậc/mã ngạch/PP/FTE, đối chiếu bảng lương. | Danh mục 51 đơn vị (`dm_don_vi`), Khung 38 vị trí (`dm_vtvl_khung_truong`), 28 mã chức danh (`dm_chuc_danh_tt31`). | Lưu `ActiveUnitSession` (`localStorage` + `BroadcastChannel('hcmute_vtvl_realtime')`): `unitCode`, `actorEmail`, `actorTitle`, `positions`, `scaleMetrics`, `gradeAllocations`, `wizardStage`. |
+| **Giai đoạn 1**<br>Đề xuất VTVL (Chặng 1–5) | Chọn đơn vị, khai báo người thực hiện, chọn VTVL từ khung 38 vị trí, chỉnh mã VTVL/bậc/mã ngạch/PP/FTE, đối chiếu bảng lương. | Danh mục 48 đơn vị (`dm_don_vi`), Khung 38 vị trí (`dm_vtvl_khung_truong`), 28 mã chức danh (`dm_chuc_danh_tt31`). | Lưu `ActiveUnitSession` (`localStorage` + `BroadcastChannel('hcmute_vtvl_realtime')`): `unitCode`, `actorEmail`, `actorTitle`, `positions`, `scaleMetrics`, `gradeAllocations`, `wizardStage`. |
 | **Giai đoạn 2**<br>Xuất bộ biểu gốc | Sinh bộ biểu đơn vị 21 trang tính (`.xlsx`) và gói phiếu khảo sát cá nhân (`.zip`). | Đọc trực tiếp `positions`, `scaleMetrics`, `gradeAllocations`, `actorEmail`, `actorTitle` từ Giai đoạn 1. | Ghi `cachedRootWorkbookFile` + `lastExportedFileName`; đồng bộ 16 bảng Supabase (`c1_vtvl`, `a1_nhiem_vu`, `a2_cong_viec`, `b1_khoi_luong`, `b2_ct_tac_dong`, `b2_thay_doi`, `c2_nang_luc`, `c3_nhu_cau`, `d1_nhan_luc`, `du_bao_5_nam`, `d2_phuong_an`, `k_kiem_tra`, `t_tien_do`, `s_nhat_ky`, `sldv_quy_mo_don_vi`, `sldv_phan_bo_ngach`, `can_cu_goi_y`). |
 | **Giai đoạn 3**<br>Đo định mức thời gian | Bấm giờ trực tiếp hoặc nhập thời lượng thực tế cho từng đầu việc A2/B1 của các VTVL đã chọn. | Đọc danh sách `positions` của đơn vị từ Giai đoạn 1 (khớp `selectedVtvlSuffix` thực tế) + `timeSessions` đã lưu. | Lưu bền vững `timeSessions` vào `ActiveUnitSession`, tự động đóng gói tệp `PhieuBamGio_...xlsx` (`buildPersonalTimerWorkbookFile`) chuyển thẳng sang Giai đoạn 4. |
 | **Giai đoạn 4**<br>Gộp phiếu khảo sát | Nạp bộ biểu gốc + các phiếu khảo sát cá nhân/bấm giờ để cập nhật cột `Phút/SP đo thực tế` (`B1`) và nâng phiên bản `v1 -> v2`. | Tự động nhận `rootFile` (hoặc tái tạo từ cấu hình Giai đoạn 1) và `formFiles` (tự động khôi phục từ `session.timeSessions` của Giai đoạn 3 kể cả khi F5). | Lưu `cachedMergedWorkbookFile`, `lastMergedFileName`, `lastMergedVersion`; đồng bộ phiên bản mới lên `t_tien_do` và `s_nhat_ky`. |
@@ -130,7 +130,7 @@ erDiagram
 
 | Bảng dữ liệu / Tính năng | Phòng Tổ chức – Nhân sự (`admin`) | Lãnh đạo đơn vị (`unit_leader`) | Cán bộ – Giảng viên (`staff`) |
 | :--- | :---: | :---: | :---: |
-| **Phạm vi hiển thị dữ liệu** | Toàn bộ 51 đơn vị trường | Chỉ trong đơn vị mình (`unitCode`) | Chỉ trong đơn vị mình (`unitCode`) |
+| **Phạm vi hiển thị dữ liệu** | Toàn bộ 48 đơn vị trường | Chỉ trong đơn vị mình (`unitCode`) | Chỉ trong đơn vị mình (`unitCode`) |
 | **Bảng tính 15 biểu (`A1`–`D2`)** | Toàn quyền Xem / Chỉnh sửa | Toàn quyền Xem / Chỉnh sửa | **Chỉ xem (Read-only)** |
 | **Mở khóa chỉnh sửa Biểu C1** | Toàn quyền Mở khóa / Khóa | Không có quyền (chỉ đọc C1) | Không có quyền (chỉ đọc C1) |
 | **Phiếu công việc cá nhân** | Xem toàn bộ phiếu toàn trường | Xem tất cả phiếu trong đơn vị | Kê khai, Lưu nháp, Gửi đơn vị, In PDF A4 |

@@ -58,7 +58,7 @@ erDiagram
     DU_BAO_5_NAM ||--|| D2_PHUONG_AN : "dieu_chinh_nhu_cau_theo_nam"
 
     DON_VI {
-        string ma_don_vi PK "VD: FME, FIT, TCNS, TPC (51 don vi)"
+        string ma_don_vi PK "VD: CK, CNTT, TCNS, THKTTH (48 don vi)"
         string ten_don_vi_vi "Ten tieng Viet chuan HCM-UTE"
         string ten_don_vi_en "Ten tieng Anh chuan HCM-UTE"
         string khoi_don_vi "khoa-vien | phong-ban | trung-tam | dang-doanthe"
@@ -289,7 +289,7 @@ erDiagram
 | `USER_ACCOUNTS` | `Tài khoản & Phân quyền` | `PK`: `email` · `FK`: `ma_don_vi` | Cổng thông tin HCM-UTE, Google Workspace, Phân quyền 3 nhóm (`admin`, `unit_leader`, `staff`) |
 | `STAFF_WORK_TICKETS` | `Phiếu công việc cá nhân` | `PK`: `id` · `FK`: `ma_don_vi`, `owner_email`, `ma_nhiem_vu`, `ma_cong_viec`, `ma_vtvl` | Kê khai công việc cá nhân, liên thông A1/A2/B1/C1, xuất PDF A4 |
 | `COORDINATED_TASKS` | `Công việc phối hợp liên đơn vị` | `PK`: `id` · `FK`: `ticket_id`, `ma_don_vi`, `target_unit_code` | Danh mục nhiệm vụ/công việc phối hợp toàn trường HCM-UTE |
-| `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`FME`, `FIT`, `TCNS`, `TPC`...) | Danh mục 51 đơn vị thuộc/trực thuộc **HCM-UTE** |
+| `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`CK`, `CNTT`, `TCNS`, `THKTTH`...) | Danh mục 48 đơn vị thuộc/trực thuộc **HCM-UTE** |
 | `DM_VTVL_ND232` | `12. CHIA_VUNG_CAP_XA` (Bảng 1), `DM_THAM_SO` | `PK`: `ma_danh_muc_nd232` (`ND232-PL1-01`..`ND232-PL3-10`) · `FK`: `ma_so_chuc_danh` | **Nghị định 232/2026/NĐ-CP** (Phụ lục I, II, III — Bậc nghề nghiệp `Bậc 1–5`) |
 | `DM_CHUC_DANH_TT31` | `12. CHIA_VUNG_CAP_XA` (Bảng 2), `QUY_TAC_MA` | `PK`: `ma_so_chuc_danh` (28 mã: `V.07.01.01..V.09.02.11` + `V.07.01.23`) | **Thông tư 31/2026/TT-BGDĐT ngày 14/4/2026** (Điều 2, Điều 6–14, Khoản 5 Điều 15) |
 | `DM_SAN_PHAM` | `11. DM_SAN_PHAM`, `DM_06_NHOM` | `PK`: `ma_sp_chuan` (`SP-I-01`..`SP-VI-01`) | **Hướng dẫn 07-HD/BTCTW** (6 nhóm sản phẩm chuẩn La Mã `I–VI`) |

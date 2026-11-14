@@ -109,7 +109,7 @@ export function CoordinatedTaskModal({ ticket, onClose, onSaved }: CoordinatedTa
         <div className="p-6 space-y-4 text-sm text-[#004776]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold mb-1">Đơn vị phối hợp (51 đơn vị)</label>
+              <label className="block text-xs font-semibold mb-1">Đơn vị phối hợp (48 đơn vị)</label>
               <ShadcnSelect value={targetUnitCode} options={unitOptions} onChange={setTargetUnitCode} />
             </div>
             <div>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
-import { postServerRest } from '@/services/storage/server-supabase-store';
+import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { AuditReportResult } from '@/types/vtvl';
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       findHcmuteUnit(unitCode);
     } catch {
       return NextResponse.json(
-        { error: 'Đơn vị không tồn tại trong danh mục 51 đơn vị HCM-UTE.' },
+        { error: 'Đơn vị không tồn tại trong danh mục 48 đơn vị HCM-UTE.' },
         { status: 400 }
       );
     }
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         ket_luan: errCount === 0 ? 'ĐẠT' : 'CẦN RÀ SOÁT'
       };
     });
-    await postServerRest('k_kiem_tra', kRows, 'ma_don_vi,stt_chi_tieu');
+    await postServerRestRequired('k_kiem_tra', kRows, 'ma_don_vi,stt_chi_tieu');
 
     const evidenceRows = (report?.evidenceItems || []).slice(0, 50).map((ev) => ({
       ma_don_vi: unitCode,
@@ -69,13 +69,22 @@ export async function POST(req: Request) {
     }));
 
     if (evidenceRows.length > 0) {
-      await postServerRest('ra_soat_chua_du_can_cu', evidenceRows);
+      await postServerRestRequired('ra_soat_chua_du_can_cu', evidenceRows);
     }
 
     return NextResponse.json({ success: true, message: 'Đồng bộ kết quả rà soát thành công.' });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi đồng bộ kết quả rà soát.';
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error: unknown) {
+    const errObj = error as { table?: string; status?: number; message?: string };
+    const failedTable = errObj?.table || 'unknown';
+    const status = errObj?.status && errObj.status >= 500 && errObj.status < 600 ? 502 : 500;
+    return NextResponse.json(
+      {
+        error: `Lỗi đồng bộ kết quả rà soát tại bảng [${failedTable}].`,
+        code: 'PERSISTENCE_FAILED',
+        table: failedTable
+      },
+      { status }
+    );
   }
 }
 

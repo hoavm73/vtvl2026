@@ -52,7 +52,7 @@ export async function startGoogleOAuthLogin(redirectPath = '/bang-tinh'): Promis
 /**
  * Xử lý token trả về từ Supabase (#access_token=...) hoặc Google OAuth (#id_token=...)
  */
-export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSession | null {
+export function consumeGoogleOAuthCallback(defaultUnitCode = 'CNTT'): OperatorSession | null {
   if (typeof window === 'undefined') return null;
   const rawHash = window.location.hash;
   if (!rawHash || (!rawHash.includes('access_token=') && !rawHash.includes('id_token='))) {

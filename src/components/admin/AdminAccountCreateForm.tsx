@@ -5,13 +5,9 @@ import { UserPlus } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
-import { UserRole, ROLE_OPTIONS, getRoleLabel } from '@/services/auth/account-client';
+import { UserRole, ROLE_OPTIONS, ADMIN_USER_TITLES, getRoleLabel } from '@/services/auth/account-client';
 
-const TITLE_PRESETS = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Trưởng bộ môn / Giám đốc trung tâm', 'Chuyên viên', 'Giảng viên',
-  'Thư ký khoa / Trợ lý đào tạo', 'Nhân viên'
-];
+const TITLE_PRESETS = ADMIN_USER_TITLES;
 
 interface AdminAccountCreateFormProps {
   unitOptions: { value: string; label: string }[];
@@ -27,7 +23,7 @@ export function AdminAccountCreateForm({
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [unitCode, setUnitCode] = useState('FIT');
-  const [title, setTitle] = useState('Chuyên viên');
+  const [title, setTitle] = useState('Cán bộ – Giảng viên');
   const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
 

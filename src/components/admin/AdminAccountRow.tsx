@@ -11,11 +11,9 @@ import {
   getRoleBadgeVariant
 } from '@/services/auth/account-client';
 
-const TITLE_OPTIONS = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Trưởng bộ môn / Giám đốc trung tâm', 'Chuyên viên', 'Giảng viên',
-  'Thư ký khoa / Trợ lý đào tạo', 'Nhân viên'
-];
+import { ADMIN_USER_TITLES } from '@/services/auth/account-client';
+
+const TITLE_OPTIONS = ADMIN_USER_TITLES;
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Đang hoạt động' },

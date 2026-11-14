@@ -8,12 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { signOutGoogleSession } from '@/services/auth/google-auth';
+import { STANDARD_USER_TITLES } from '@/services/auth/account-client';
 
-const POSITION_OPTIONS = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Trưởng bộ môn / Giám đốc trung tâm', 'Chuyên viên', 'Giảng viên',
-  'Thư ký khoa / Trợ lý đào tạo', 'Nhân viên'
-];
+const POSITION_OPTIONS = STANDARD_USER_TITLES;
 
 interface UnitSelectionModalProps {
   isOpen: boolean;
@@ -23,7 +20,7 @@ interface UnitSelectionModalProps {
 
 export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelectionModalProps) {
   const [selectedUnit, setSelectedUnit] = useState<string>('');
-  const [selectedTitle, setSelectedTitle] = useState<string>('Chuyên viên');
+  const [selectedTitle, setSelectedTitle] = useState<string>('Cán bộ – Giảng viên');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 

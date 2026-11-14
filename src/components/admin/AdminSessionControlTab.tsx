@@ -19,13 +19,11 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import {
   UserRole,
   ROLE_OPTIONS,
+  ADMIN_USER_TITLES,
   adminUpdateUserRoleOnServer
 } from '@/services/auth/account-client';
 
-const PRESET_TITLES = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Chuyên viên Tổ chức cán bộ', 'Chuyên viên Kế hoạch', 'Giảng viên', 'Nhân viên'
-];
+const PRESET_TITLES = ADMIN_USER_TITLES;
 
 export function AdminSessionControlTab() {
   const router = useRouter();
@@ -35,7 +33,7 @@ export function AdminSessionControlTab() {
 
   const [newEmail, setNewEmail] = useState('tcns@hcmute.edu.vn');
   const [newUnitCode, setNewUnitCode] = useState('TCNS');
-  const [newTitle, setNewTitle] = useState('Chuyên viên Tổ chức cán bộ');
+  const [newTitle, setNewTitle] = useState('Cán bộ – Giảng viên');
   const [newRole, setNewRole] = useState<UserRole>('staff');
 
   const refreshState = () => {

@@ -18,11 +18,9 @@ import {
   ServerLookupItem
 } from './OperatorServerWorkbookPicker';
 
-const COMMON_TITLES = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Trưởng bộ môn / Giám đốc trung tâm', 'Chuyên viên', 'Giảng viên',
-  'Thư ký khoa / Trợ lý đào tạo', 'Nhân viên', 'Khác (tự nhập)'
-];
+import { ADMIN_USER_TITLES } from '@/services/auth/account-client';
+
+const COMMON_TITLES = ADMIN_USER_TITLES;
 
 interface OperatorSessionModalProps {
   isOpen: boolean;

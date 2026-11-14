@@ -28,6 +28,9 @@ export const ROLE_OPTIONS: { value: UserRole; label: string; description: string
   { value: 'staff', label: 'Cán bộ – Giảng viên', description: 'Tạo, quản lý Phiếu công việc cá nhân và xem bảng dữ liệu của đơn vị (chỉ đọc)' }
 ];
 
+export const STANDARD_USER_TITLES = ['Lãnh đạo đơn vị', 'Cán bộ – Giảng viên'];
+export const ADMIN_USER_TITLES = ['Phòng Tổ chức – Nhân sự', 'Lãnh đạo đơn vị', 'Cán bộ – Giảng viên'];
+
 export function getRoleLabel(role?: UserRole): string {
   const found = ROLE_OPTIONS.find((item) => item.value === role);
   return found ? found.label : 'Cán bộ – Giảng viên';

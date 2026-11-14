@@ -14,16 +14,13 @@ import { OperatorSession } from '@/services/telemetry/operator-session';
 import {
   UserRole,
   ROLE_OPTIONS,
+  ADMIN_USER_TITLES,
   getRoleLabel,
   getRoleBadgeVariant,
   updateMyAccountOnServer
 } from '@/services/auth/account-client';
 
-const TITLE_OPTIONS = [
-  'Trưởng phòng', 'Phó Trưởng phòng', 'Trưởng khoa', 'Phó Trưởng khoa',
-  'Trưởng bộ môn / Giám đốc trung tâm', 'Chuyên viên', 'Giảng viên',
-  'Thư ký khoa / Trợ lý đào tạo', 'Nhân viên'
-];
+const TITLE_OPTIONS = ADMIN_USER_TITLES;
 
 interface AccountProfileModalProps {
   isOpen: boolean;

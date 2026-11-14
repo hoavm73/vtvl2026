@@ -54,14 +54,35 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     setActiveSheet('A1');
   }, []);
 
+  useEffect(() => {
+    const handleGridSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      const { oldCode, newCode, updatedData } = detail;
+      if (unitCode.toUpperCase() === String(oldCode).toUpperCase()) {
+        setUnitCode(newCode);
+        if (updatedData) setData(updatedData);
+        else handleUnitChange(newCode);
+      }
+    };
+    const handleUnitsUpdated = () => {
+      const updatedUnit = findHcmuteUnit(unitCode);
+      setData((prev) => recalculateGridFormulas(prev, updatedUnit.code, updatedUnit.nameVi));
+    };
+    window.addEventListener('vtvl-grid-sync', handleGridSync);
+    window.addEventListener('vtvl-units-updated', handleUnitsUpdated);
+    return () => {
+      window.removeEventListener('vtvl-grid-sync', handleGridSync);
+      window.removeEventListener('vtvl-units-updated', handleUnitsUpdated);
+    };
+  }, [unitCode, handleUnitChange]);
+
   const handleLoadTcnsData = useCallback(() => {
     setUnitCode('TCNS');
     const tcnsData = buildDefaultGridWorkbook('TCNS');
     setData(tcnsData);
     setActiveSheet('A1');
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('hcmute_vtvl_grid_TCNS', JSON.stringify(tcnsData));
-    }
+    if (typeof window !== 'undefined') localStorage.setItem('hcmute_vtvl_grid_TCNS', JSON.stringify(tcnsData));
   }, []);
 
   const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string) => {
@@ -241,35 +262,21 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     missionList: Array.from(new Set((data.A1 || []).map((r) => String(r.maNhiemVu || '')).filter(Boolean))),
     taskList: Array.from(new Set((data.A2 || []).map((r) => String(r.maCongViec || '')).filter(Boolean))),
     productList: Array.from(new Set((data.DM_SP || []).map((r) => String(r.maSpChuan || '')).filter(Boolean))),
-    pl1VtvlList: PL1_VTVL_CATALOG.map((item) => ({
-      value: item.pl1Code,
-      label: `${item.pl1Code} – ${item.positionName}`
-    }))
+    pl1VtvlList: PL1_VTVL_CATALOG.map((item) => ({ value: item.pl1Code, label: `${item.pl1Code} – ${item.positionName}` }))
   }), [data.C1, data.A1, data.A2, data.DM_SP]);
 
   const loadFullPl1Catalog = useCallback(() => {
-    setData((prev) => {
-      const fullC1 = buildFullPl1C1Rows(currentUnit.code);
-      return recalculateGridFormulas({ ...prev, C1: fullC1, C2: buildFullPl1C2Rows(fullC1) }, currentUnit.code, currentUnit.nameVi);
-    });
+    setData((prev) => recalculateGridFormulas({ ...prev, C1: buildFullPl1C1Rows(currentUnit.code), C2: buildFullPl1C2Rows(buildFullPl1C1Rows(currentUnit.code)) }, currentUnit.code, currentUnit.nameVi));
   }, [currentUnit.code, currentUnit.nameVi]);
 
   const loadRecommendedVtvls = useCallback(() => {
-    setData((prev) => {
-      const recC1 = buildRecommendedC1Rows(currentUnit.code, currentUnit.group);
-      return recalculateGridFormulas({ ...prev, C1: recC1, C2: buildFullPl1C2Rows(recC1) }, currentUnit.code, currentUnit.nameVi);
-    });
+    setData((prev) => recalculateGridFormulas({ ...prev, C1: buildRecommendedC1Rows(currentUnit.code, currentUnit.group), C2: buildFullPl1C2Rows(buildRecommendedC1Rows(currentUnit.code, currentUnit.group)) }, currentUnit.code, currentUnit.nameVi));
   }, [currentUnit.code, currentUnit.nameVi, currentUnit.group]);
 
   const exportFullWorkbook = useCallback(async () => {
     setIsExporting(true);
     try {
-      exportUserWorkbookToExcel({
-        unitCode: currentUnit.code,
-        unitNameVi: currentUnit.nameVi,
-        reportingPeriod: '01/10/2025–30/9/2026',
-        data
-      });
+      exportUserWorkbookToExcel({ unitCode: currentUnit.code, unitNameVi: currentUnit.nameVi, reportingPeriod: '01/10/2025–30/9/2026', data });
     } catch {
       alert('Không thể tạo file Excel từ dữ liệu đang điền, vui lòng thử lại.');
     } finally {

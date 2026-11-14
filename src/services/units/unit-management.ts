@@ -1,5 +1,6 @@
 import { HcmuteUnit } from '@/types/vtvl';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { syncUnitCodeAndNameInBrowser } from './unit-synchronizer';
 
 export const CUSTOM_UNITS_STORAGE_KEY = 'hcmute_vtvl_custom_units_v1';
 export const UNITS_UPDATED_EVENT = 'vtvl-units-updated';
@@ -44,6 +45,7 @@ export function saveAdminUnit(unit: HcmuteUnit, originalCode?: string): void {
 
   const lookupCode = (originalCode || normCode).toUpperCase();
   const existingIndex = currentUnits.findIndex((u) => u.code.toUpperCase() === lookupCode);
+  const oldUnit = existingIndex >= 0 ? currentUnits[existingIndex] : null;
 
   let updatedList: HcmuteUnit[];
   if (existingIndex >= 0) {
@@ -56,6 +58,9 @@ export function saveAdminUnit(unit: HcmuteUnit, originalCode?: string): void {
   try {
     localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(updatedList));
     window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: updatedList }));
+    if (oldUnit && (oldUnit.code.toUpperCase() !== normCode || oldUnit.nameVi !== cleanUnit.nameVi)) {
+      syncUnitCodeAndNameInBrowser(oldUnit.code, normCode, oldUnit.nameVi, cleanUnit.nameVi);
+    }
   } catch {
     /* ignore localStorage errors */
   }

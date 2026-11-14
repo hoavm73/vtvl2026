@@ -118,6 +118,12 @@ export function AdminUnitEditModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {isEditing && (
+            <div className="p-2.5 bg-[#f0f7fd] border border-[#d0e4f5] rounded-xl text-xs text-[#004776] leading-relaxed">
+              <span className="font-bold text-[#0072BC]">Đồng bộ tự động:</span> Khi thay đổi mã hoặc tên đơn vị, hệ thống sẽ tự động cập nhật toàn bộ mã nhiệm vụ ([MÃ_ĐV].NVxx), mã công việc ([Mã NV].CVxx), mã VTVL, công thức tính toán và dữ liệu trên 15 biểu.
+            </div>
+          )}
+
           {error && (
             <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />

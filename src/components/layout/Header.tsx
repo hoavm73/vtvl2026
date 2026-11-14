@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
 const NAV_ITEMS = [
   { href: '/phieu-cong-viec', label: 'Phiếu công việc', icon: FileText },
@@ -35,6 +36,25 @@ const MOBILE_NAV_ITEMS = [
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkRole = () => {
+      const cur = getCurrentOperatorSession();
+      setIsAdmin(Boolean(cur?.role === 'admin' || cur?.email === 'tcns@hcmute.edu.vn'));
+    };
+    checkRole();
+    window.addEventListener('vtvl-operator-changed', checkRole);
+    return () => window.removeEventListener('vtvl-operator-changed', checkRole);
+  }, []);
+
+  const navItems = isAdmin
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.href !== '/admin');
+
+  const mobileNavItems = isAdmin
+    ? MOBILE_NAV_ITEMS
+    : MOBILE_NAV_ITEMS.filter((item) => item.href !== '/admin');
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');
@@ -91,7 +111,7 @@ export function Header() {
 
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <nav aria-label="Điều hướng quy trình nghiệp vụ" className="hidden lg:flex items-center gap-1.5">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const active = item.href === '/bang-tinh'
                 ? pathname === '/bang-tinh' || pathname === '/tao-tep'
@@ -169,7 +189,7 @@ export function Header() {
                 </button>
               </div>
               <nav aria-label="Menu di động" className="space-y-1.5">
-                {MOBILE_NAV_ITEMS.map((item) => {
+                {mobileNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = item.href === '/bang-tinh'
                     ? pathname === '/bang-tinh' || pathname === '/tao-tep'

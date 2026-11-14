@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { KeyRound, ArrowLeft, Unlock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
 
 interface AdminAuthGateProps {
   onSuccess: () => void;
@@ -33,6 +34,7 @@ export function AdminAuthGate({ onSuccess }: AdminAuthGateProps) {
       });
 
       if (res.ok) {
+        loginAsAdminSession();
         onSuccess();
       } else {
         const data = await res.json().catch(() => ({}));

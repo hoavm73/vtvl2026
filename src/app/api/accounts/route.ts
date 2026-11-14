@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
     await setServerAdminCookie(generateAdminToken());
   }
 
-  const isAdmin = cookieAdmin || verifiedGoogleAdmin;
+  const isExplicitAdmin = email === 'tcns@hcmute.edu.vn' || rawAccount?.role === 'admin';
+  const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin);
   const account = rawAccount ? sanitizeClientAccount(rawAccount, isAdmin) : null;
   return NextResponse.json({ account, isAdmin });
 }
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
     const cookieAdmin = await getServerAdminAuth();
     const bearer = extractBearer(req);
     const verifiedGoogleAdmin = bearer ? await isVerifiedAdminAccount(email, bearer) : false;
-    const isAdmin = cookieAdmin || verifiedGoogleAdmin;
+    const isExplicitAdmin = email === 'tcns@hcmute.edu.vn' || existing?.role === 'admin' || body.role === 'admin';
+    const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin);
 
     const hasExistingAssignment = Boolean(existing?.hasSelectedUnit);
     const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'FIT');

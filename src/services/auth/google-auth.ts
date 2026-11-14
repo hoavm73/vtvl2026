@@ -83,6 +83,10 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSes
     const isSameEmail = existing && existing.email === email;
     const isTcnsAdmin = email === 'tcns@hcmute.edu.vn';
 
+    if (!isTcnsAdmin && typeof window !== 'undefined') {
+      fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
+    }
+
     const hasSelectedUnit = isTcnsAdmin
       ? true
       : isSameEmail

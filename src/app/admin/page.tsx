@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FileSpreadsheet, UserCheck, Building2, ShieldCheck, RefreshCw, AlertCircle, Users
 } from 'lucide-react';
@@ -11,12 +12,14 @@ import { AdminAccountsTab } from '@/components/admin/AdminAccountsTab';
 import { AdminSessionControlTab } from '@/components/admin/AdminSessionControlTab';
 import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
-import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
 import { getAdminUnits } from '@/services/units/unit-management';
 
 type AdminTabKey = 'sessions' | 'accounts' | 'session-control' | 'units';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTabKey>('sessions');
@@ -61,7 +64,12 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       setAuthError(null);
 
-      setActiveUnitCode(cur ? `[${cur.unitCode}] ${cur.email}` : 'Chưa kích hoạt');
+      let activeSession = cur;
+      if (cur?.email !== 'tcns@hcmute.edu.vn' && cur?.role !== 'admin') {
+        activeSession = loginAsAdminSession();
+      }
+
+      setActiveUnitCode(activeSession ? `[${activeSession.unitCode}] ${activeSession.email}` : 'Chưa kích hoạt');
       setUnitCount(getAdminUnits().length);
 
       const [sessRes, accRes] = await Promise.all([
@@ -105,8 +113,10 @@ export default function AdminPage() {
     try {
       await fetch('/api/admin/auth', { method: 'DELETE' });
     } catch { /* ignore */ }
+    clearCurrentOperatorSession();
     setIsAuthenticated(false);
     setSessionCount(0);
+    router.push('/bang-tinh');
   };
 
   if (isAuthenticated === null) {

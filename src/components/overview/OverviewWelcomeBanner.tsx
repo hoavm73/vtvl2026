@@ -25,6 +25,17 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
   const unitCode = unitDef?.code || session?.unitCode || 'TCNS';
   const unitNameVi = unitDef?.nameVi || session?.unitNameVi || 'Trường Đại học Công nghệ Kỹ thuật TP.HCM';
 
+  const isDuplicateOfUnit =
+    label.toLowerCase().trim() === unitNameVi.toLowerCase().trim() ||
+    label.toLowerCase().trim().includes('phòng tổ chức') ||
+    label.toLowerCase().trim() === unitCode.toLowerCase().trim();
+
+  const greetingName = isDuplicateOfUnit
+    ? (role === 'admin' ? 'Quản trị viên hệ thống' : `đơn vị ${unitCode}`)
+    : label;
+
+  const roleBadgeLabel = role === 'admin' ? 'Quản trị viên' : getRoleLabel(role);
+
   return (
     <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#073B63] via-[#094875] to-[#075985] text-white shadow-xl shadow-[#073B63]/25 border border-white/20 select-none">
       {/* 1. Điểm nhấn orbital line & cyan ambient glow nhẹ nhàng đồng bộ với trang /login */}
@@ -116,25 +127,31 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                     {initials}
                   </div>
                 )}
-                <div className="space-y-1 min-w-0 flex-1">
+                <div className="space-y-1.5 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base sm:text-lg font-bold text-white truncate max-w-xs sm:max-w-md">
-                      Xin chào, {label}!
+                      Xin chào, {greetingName}!
                     </span>
                     <Badge variant={getRoleBadgeVariant(role)} className="text-[11px] px-2 py-0.5 shrink-0 shadow-2xs font-bold">
-                      {getRoleLabel(role)}
+                      {roleBadgeLabel}
                     </Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-white/90">
-                    <span className="inline-flex items-center gap-1 font-semibold truncate max-w-sm">
-                      <Building2 className="w-3.5 h-3.5 text-[#5ED4F4] shrink-0" />
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-bold text-[#bef264] truncate max-w-sm drop-shadow-xs">
+                      <Building2 className="w-3.5 h-3.5 text-[#bef264] shrink-0" />
                       <span className="truncate">[{unitCode}] {unitNameVi}</span>
                     </span>
-                    <span className="text-white/40">·</span>
-                    <span className="inline-flex items-center gap-1 shrink-0">
-                      <User className="w-3.5 h-3.5 text-[#5ED4F4] shrink-0" />
-                      <span>{session.title || 'Chuyên viên'}</span>
-                    </span>
+                    {session.title &&
+                      session.title.toLowerCase().trim() !== unitNameVi.toLowerCase().trim() &&
+                      session.title.toLowerCase().trim() !== label.toLowerCase().trim() && (
+                        <>
+                          <span className="text-white/40">·</span>
+                          <span className="inline-flex items-center gap-1 text-white/90 shrink-0 font-medium">
+                            <User className="w-3.5 h-3.5 text-[#5ED4F4] shrink-0" />
+                            <span>{session.title}</span>
+                          </span>
+                        </>
+                    )}
                   </div>
                   <p className="text-xs text-white/85 leading-relaxed pt-0.5 line-clamp-2">
                     {role === 'admin'

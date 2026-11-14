@@ -39,7 +39,8 @@ export function recalculateGridFormulas(
       ppThucTe: existing?.ppThucTe ?? '',
       phutApDung: mins !== '' ? mins : 0,
       canhBao: b1Alert,
-      giaiTrinhKhacChuan: rawGiaiTrinh
+      giaiTrinhKhacChuan: rawGiaiTrinh,
+      trangThaiPhieu: t.trangThaiPhieu || existing?.trangThaiPhieu || 'Đã nộp'
     };
   });
   next.B1 = updatedB1;

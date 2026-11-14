@@ -10,6 +10,8 @@ import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { HD07_12_STEP_ORDER, HD07_CONSTANTS } from '@/configs/hcmute-hd07-catalog';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
 import { ActiveUnitSession, ActivityLogEntry, getActiveUnitDefinition, getActiveUnitSession, getActivityLogs } from '@/services/telemetry/activity-log';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 
 export default function HomePage() {
   const router = useRouter();
@@ -22,7 +24,15 @@ export default function HomePage() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('view') !== 'overview') {
         setShouldRedirect(true);
-        router.replace('/bang-tinh');
+        const oauth = consumeGoogleOAuthCallback();
+        const op = oauth || getCurrentOperatorSession();
+        if (!op) {
+          router.replace('/login');
+        } else if (op.role === 'staff') {
+          router.replace('/phieu-cong-viec');
+        } else {
+          router.replace('/bang-tinh');
+        }
       }
     }
   }, [router]);

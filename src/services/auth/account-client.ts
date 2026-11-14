@@ -5,7 +5,7 @@ import {
   saveCurrentOperatorSession
 } from '@/services/telemetry/operator-session';
 
-export type UserRole = 'admin' | 'unit_leader' | 'editor' | 'viewer';
+export type UserRole = 'admin' | 'unit_leader' | 'staff' | 'editor' | 'viewer';
 
 export interface UserAccountRecord {
   email: string;
@@ -23,9 +23,10 @@ export interface UserAccountRecord {
 }
 
 export const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = [
-  { value: 'admin', label: 'Quản trị viên hệ thống', description: 'Toàn quyền quản trị, mở khóa C1 và phân quyền tài khoản' },
-  { value: 'unit_leader', label: 'Trưởng đơn vị / Duyệt hồ sơ', description: 'Rà soát, phê duyệt bảng tính và xuất báo cáo đơn vị' },
-  { value: 'editor', label: 'Chuyên viên biên tập', description: 'Nhập liệu 15 sheet, đo định mức và đồng bộ hồ sơ' },
+  { value: 'admin', label: 'Phòng Tổ chức – Nhân sự', description: 'Toàn quyền quản trị tất cả 51 đơn vị, mở khóa C1 và phân quyền tài khoản' },
+  { value: 'unit_leader', label: 'Lãnh đạo đơn vị', description: 'Xem toàn bộ dữ liệu, phiếu công việc và toàn quyền chỉnh sửa trong đơn vị mình' },
+  { value: 'staff', label: 'Cán bộ – Giảng viên', description: 'Tạo, quản lý Phiếu công việc cá nhân và xem bảng dữ liệu của đơn vị (chỉ đọc)' },
+  { value: 'editor', label: 'Chuyên viên biên tập', description: 'Nhập liệu 15 sheet, đo định mức và đồng bộ hồ sơ đơn vị' },
   { value: 'viewer', label: 'Người xem / Tra cứu', description: 'Chỉ xem số liệu, không chỉnh sửa dữ liệu đơn vị' }
 ];
 

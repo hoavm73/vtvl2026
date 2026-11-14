@@ -3,6 +3,7 @@ import {
   syncAccountsFromSupabase,
   getUserAccountByEmail,
   upsertUserAccount,
+  stripAccountSensitiveFields,
   UserAccountRecord,
   UserRole
 } from '@/services/storage/server-account-store';
@@ -20,10 +21,11 @@ function extractBearer(req: NextRequest): string | null {
 }
 
 function sanitizeClientAccount(account: UserAccountRecord, isAdmin: boolean): UserAccountRecord {
-  if (account.role === 'admin' && !isAdmin) {
-    return { ...account, role: 'editor' };
+  const clean = stripAccountSensitiveFields(account);
+  if (clean.role === 'admin' && !isAdmin) {
+    return { ...clean, role: 'staff' };
   }
-  return account;
+  return clean;
 }
 
 export async function GET(req: NextRequest) {

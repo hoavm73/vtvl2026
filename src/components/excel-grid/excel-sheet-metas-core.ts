@@ -40,7 +40,9 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'E', field: 'sanPham', headerName: 'Sản phẩm đầu ra', width: '250px' },
       { colLetter: 'F', field: 'dvt', headerName: 'Đơn vị tính', width: '130px' },
       { colLetter: 'G', field: 'chatLuong', headerName: 'Yêu cầu chất lượng', width: '250px' },
-      { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px' }
+      { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px' },
+      { colLetter: 'I', field: 'maVtvlPhoiHop', headerName: 'Mã VTVL phối hợp', width: '150px', type: 'select', dynamicOptionsKey: 'vtvlList' },
+      { colLetter: 'J', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', selectOptions: ['Đã nộp', 'Nháp'] }
     ]
   },
   C1: {
@@ -87,7 +89,8 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'I', field: 'ppThucTe', headerName: 'PP đo thực tế', width: '120px', type: 'select', selectOptions: ['bấm giờ', 'nhật ký công việc', 'ước lượng chuyên gia'] },
       { colLetter: 'P', field: 'phutApDung', headerName: 'Phút/SP áp dụng', width: '120px', isFormula: true, formulaHint: '=IF(D>0,D,INDEX(DM_SP!E,...))' },
       { colLetter: 'R', field: 'canhBao', headerName: 'Cảnh báo dữ liệu', width: '160px', type: 'status', isFormula: true, formulaHint: '=IF(AND(S<>"",LEFT(S,12)<>"Đã xác nhận:"),"CHỜ XÁC NHẬN KHÁC CHUẨN",IF(G>0,"ĐẠT","CHƯA ĐẠT"))' },
-      { colLetter: 'S', field: 'giaiTrinhKhacChuan', headerName: 'Giải trình khác chuẩn (Cột S)', width: '260px' }
+      { colLetter: 'S', field: 'giaiTrinhKhacChuan', headerName: 'Giải trình khác chuẩn (Cột S)', width: '260px' },
+      { colLetter: 'T', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', selectOptions: ['Đã nộp', 'Nháp'] }
     ]
   },
   B2_CT: {

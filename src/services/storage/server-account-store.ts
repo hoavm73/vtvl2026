@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import {
   getAllActiveServerWorkbooks,
@@ -7,7 +8,7 @@ import {
   syncServerWorkbooksFromSupabase
 } from './server-workbook-store';
 
-export type UserRole = 'admin' | 'unit_leader' | 'editor' | 'viewer';
+export type UserRole = 'admin' | 'unit_leader' | 'staff' | 'editor' | 'viewer';
 
 export interface UserAccountRecord {
   email: string;
@@ -20,11 +21,21 @@ export interface UserAccountRecord {
   avatarUrl?: string;
   status: 'active' | 'suspended';
   hasSelectedUnit?: boolean;
+  passwordHash?: string;
   createdAt: string;
   lastActiveAt: string;
 }
 
-const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'editor', 'viewer'];
+const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'staff', 'editor', 'viewer'];
+
+export function hashAccountPassword(password: string): string {
+  return crypto.createHash('sha256').update(`hcmute_vtvl_${password}`).digest('hex');
+}
+
+export function stripAccountSensitiveFields(acc: UserAccountRecord): UserAccountRecord {
+  const { passwordHash: _ignored, ...safe } = acc;
+  return safe;
+}
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const ACCOUNTS_FILE = path.join(DATA_DIR, 'server_accounts.json');
 
@@ -63,6 +74,7 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
     avatarUrl: item.avatarUrl,
     status: item.status === 'suspended' ? 'suspended' : 'active',
     hasSelectedUnit: item.hasSelectedUnit !== undefined ? Boolean(item.hasSelectedUnit) : isTcns,
+    passwordHash: item.passwordHash,
     createdAt: item.createdAt || now,
     lastActiveAt: item.lastActiveAt || now
   };
@@ -74,11 +86,40 @@ function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
   if (!store.has('tcns@hcmute.edu.vn')) {
     store.set('tcns@hcmute.edu.vn', normalizeRecord({
       email: 'tcns@hcmute.edu.vn',
-      displayName: 'Quản trị Phòng Tổ chức – Nhân sự',
+      displayName: 'Phòng Tổ chức – Nhân sự',
       unitCode: 'TCNS',
       title: 'Trưởng phòng',
       role: 'admin',
       hasSelectedUnit: true,
+      passwordHash: hashAccountPassword('Hcmute@2026'),
+      createdAt: now,
+      lastActiveAt: now
+    }));
+    changed = true;
+  }
+  if (!store.has('lanhdao@hcmute.edu.vn')) {
+    store.set('lanhdao@hcmute.edu.vn', normalizeRecord({
+      email: 'lanhdao@hcmute.edu.vn',
+      displayName: 'Lãnh đạo Đơn vị (FIT)',
+      unitCode: 'FIT',
+      title: 'Trưởng khoa',
+      role: 'unit_leader',
+      hasSelectedUnit: true,
+      passwordHash: hashAccountPassword('123456'),
+      createdAt: now,
+      lastActiveAt: now
+    }));
+    changed = true;
+  }
+  if (!store.has('giangvien@hcmute.edu.vn')) {
+    store.set('giangvien@hcmute.edu.vn', normalizeRecord({
+      email: 'giangvien@hcmute.edu.vn',
+      displayName: 'Cán bộ – Giảng viên (FIT)',
+      unitCode: 'FIT',
+      title: 'Giảng viên',
+      role: 'staff',
+      hasSelectedUnit: true,
+      passwordHash: hashAccountPassword('123456'),
       createdAt: now,
       lastActiveAt: now
     }));
@@ -194,8 +235,15 @@ export async function syncAccountsFromSupabase(force = false): Promise<void> {
 }
 
 export function getAllUserAccounts(): UserAccountRecord[] {
-  const roleWeight: Record<UserRole, number> = { admin: 0, unit_leader: 1, editor: 2, viewer: 3 };
+  const roleWeight: Record<UserRole, number> = { admin: 0, unit_leader: 1, staff: 2, editor: 3, viewer: 4 };
   return Array.from(loadStore().values()).sort((a, b) => roleWeight[a.role] - roleWeight[b.role] || a.email.localeCompare(b.email));
+}
+
+export function verifyUserPassword(email: string, password: string): UserAccountRecord | null {
+  const acc = getUserAccountByEmail(email);
+  if (!acc || acc.status === 'suspended') return null;
+  if (!acc.passwordHash) return null;
+  return acc.passwordHash === hashAccountPassword(password) ? acc : null;
 }
 
 export function getUserAccountByEmail(email: string): UserAccountRecord | null {

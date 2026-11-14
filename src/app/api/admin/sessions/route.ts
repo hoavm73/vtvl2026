@@ -80,7 +80,7 @@ export async function DELETE(req: Request) {
     if (!workbookId) {
       return NextResponse.json({ error: 'Thiếu mã workbook.' }, { status: 400 });
     }
-    const ok = deleteServerWorkbook(workbookId);
+    const ok = await deleteServerWorkbook(workbookId);
     return NextResponse.json({ success: ok });
   } catch {
     return NextResponse.json({ error: 'Lỗi khi xóa hồ sơ.' }, { status: 500 });

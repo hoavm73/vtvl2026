@@ -123,7 +123,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Không thể xóa tài khoản quản trị gốc TCNS.' }, { status: 400 });
   }
 
-  const ok = deleteUserAccount(email);
+  const ok = await deleteUserAccount(email);
   return NextResponse.json({ success: ok });
 }
 

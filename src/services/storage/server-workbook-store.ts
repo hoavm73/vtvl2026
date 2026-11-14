@@ -71,7 +71,7 @@ function loadStore(): Map<string, ServerWorkbook> {
       });
     }
   } catch { /* ignore */ }
-  if (memoryWorkbooks.size === 0) {
+  if (memoryWorkbooks.size === 0 && !process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
     try {
       const seeds = getInitialSeedWorkbooks();
       seeds.forEach((wb) => {
@@ -261,7 +261,7 @@ export function rollbackServerWorkbookRevision(
   return { success: true, currentRevision: nextRev };
 }
 
-export function deleteServerWorkbook(workbookId: string): boolean {
+export async function deleteServerWorkbook(workbookId: string): Promise<boolean> {
   const store = loadStore();
   const wb = store.get(workbookId) || Array.from(store.values()).find((w) => w.id === workbookId || w.unitId === workbookId);
   if (!wb) return false;
@@ -272,7 +272,7 @@ export function deleteServerWorkbook(workbookId: string): boolean {
   deleted.add(workbookId);
   persistDeletedWbIds();
   persistStore();
-  deleteWorkbookFromSupabase(wb.unitId).catch(() => {});
+  await deleteWorkbookFromSupabase(wb.unitId);
   return true;
 }
 

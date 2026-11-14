@@ -170,7 +170,7 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    const ok = deleteServerWorkbook(id);
+    const ok = await deleteServerWorkbook(id);
     return NextResponse.json({ success: ok });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';

@@ -3,7 +3,6 @@ import path from 'path';
 import crypto from 'crypto';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import {
-  getAllActiveServerWorkbooks,
   normalizeEmail,
   syncServerWorkbooksFromSupabase,
   removeParticipantFromAllWorkbooks
@@ -92,33 +91,16 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
 }
 
 function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
-  let changed = false;
   const now = new Date().toLocaleString('vi-VN');
   const deleted = loadDeletedAccountEmails();
-  const defaultSeeds: (Partial<UserAccountRecord> & { email: string; pass: string })[] = [
-    { email: 'tcns@hcmute.edu.vn', displayName: 'Phòng Tổ chức – Nhân sự', unitCode: 'TCNS', role: 'admin', pass: 'Hcmute@2026' },
-    { email: 'lanhdao@hcmute.edu.vn', displayName: 'Lãnh đạo Đơn vị (FIT)', unitCode: 'FIT', role: 'unit_leader', pass: '123456' },
-    { email: 'giangvien@hcmute.edu.vn', displayName: 'Cán bộ – Giảng viên (FIT)', unitCode: 'FIT', role: 'staff', pass: '123456' }
-  ];
-  for (const s of defaultSeeds) {
-    if (deleted.has(s.email) || store.has(s.email)) continue;
-    store.set(s.email, normalizeRecord({
-      ...s, hasSelectedUnit: true, passwordHash: hashAccountPassword(s.pass), createdAt: now, lastActiveAt: now
+  if (!store.has('tcns@hcmute.edu.vn') && !deleted.has('tcns@hcmute.edu.vn')) {
+    store.set('tcns@hcmute.edu.vn', normalizeRecord({
+      email: 'tcns@hcmute.edu.vn', displayName: 'Phòng Tổ chức – Nhân sự', unitCode: 'TCNS', role: 'admin',
+      hasSelectedUnit: true, passwordHash: hashAccountPassword('Hcmute@2026'), createdAt: now, lastActiveAt: now
     }));
-    changed = true;
+    return true;
   }
-  for (const wb of getAllActiveServerWorkbooks()) {
-    for (const p of wb.participants || []) {
-      const email = normalizeEmail(p.emailNormalized || p.email);
-      if (!email || deleted.has(email) || store.has(email)) continue;
-      store.set(email, normalizeRecord({
-        email, displayName: p.displayName || email.split('@')[0], unitCode: wb.unitId || 'FIT',
-        title: p.roleLabel || 'Chuyên viên', createdAt: p.startedAt || now, lastActiveAt: p.updatedAt || now
-      }));
-      changed = true;
-    }
-  }
-  return changed;
+  return false;
 }
 
 function loadStore(): Map<string, UserAccountRecord> {
@@ -149,8 +131,8 @@ function persistLocalStore(): void {
   } catch { /* ignore */ }
 }
 
-async function persistAccountsToSupabase(accounts: UserAccountRecord[]): Promise<void> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+async function persistAccountsToSupabase(accounts: UserAccountRecord[]): Promise<boolean> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
   try {
     const existingRes = await fetch(
       `${SUPABASE_URL}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json,phien_ban,so_nhiem_vu_a1,so_cong_viec_a2,so_vtvl_c1,tong_fte_c3`,
@@ -159,7 +141,7 @@ async function persistAccountsToSupabase(accounts: UserAccountRecord[]): Promise
     const existingRows = existingRes.ok ? await existingRes.json() : [];
     const existingRow = Array.isArray(existingRows) && existingRows[0] ? existingRows[0] : null;
     const tcns = findHcmuteUnit('TCNS');
-    await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
       method: 'POST',
       headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({
@@ -174,17 +156,21 @@ async function persistAccountsToSupabase(accounts: UserAccountRecord[]): Promise
         du_lieu_ho_so_json: {
           ...(existingRow?.du_lieu_ho_so_json || {}),
           userAccounts: accounts,
+          deletedAccountEmails: Array.from(loadDeletedAccountEmails()),
           accountsUpdatedAt: new Date().toISOString()
         }
       })
     });
-  } catch { /* ignore */ }
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function syncAccountsFromSupabase(force = false): Promise<void> {
   const store = loadStore();
   const now = Date.now();
-  if (!force && now - lastSupabaseSyncAt < 5000) return;
+  if (!force && now - lastSupabaseSyncAt < 2000) return;
   lastSupabaseSyncAt = now;
   try {
     await syncServerWorkbooksFromSupabase();
@@ -198,18 +184,30 @@ export async function syncAccountsFromSupabase(force = false): Promise<void> {
     });
     if (!res.ok) return;
     const rows = await res.json();
-    const remoteList = rows?.[0]?.du_lieu_ho_so_json?.userAccounts;
-    if (!Array.isArray(remoteList)) return;
+    const duLieu = rows?.[0]?.du_lieu_ho_so_json;
     const deleted = loadDeletedAccountEmails();
-    let merged = false;
-    for (const item of remoteList) {
-      const email = normalizeEmail(item?.email || '');
-      if (email && !deleted.has(email) && !store.has(email)) {
-        store.set(email, normalizeRecord({ ...item, email }));
-        merged = true;
-      }
+    if (Array.isArray(duLieu?.deletedAccountEmails)) {
+      duLieu.deletedAccountEmails.forEach((e: string) => {
+        const norm = normalizeEmail(e);
+        if (norm) deleted.add(norm);
+      });
+      persistDeletedAccountEmails();
     }
-    if (merged) persistLocalStore();
+    for (const d of deleted) {
+      if (store.has(d)) store.delete(d);
+    }
+    const remoteList = duLieu?.userAccounts;
+    if (Array.isArray(remoteList)) {
+      let merged = false;
+      for (const item of remoteList) {
+        const email = normalizeEmail(item?.email || '');
+        if (email && !deleted.has(email) && !store.has(email)) {
+          store.set(email, normalizeRecord({ ...item, email }));
+          merged = true;
+        }
+      }
+      if (merged) persistLocalStore();
+    }
   } catch { /* ignore */ }
 }
 
@@ -267,7 +265,7 @@ export function updateUserAccountRole(
   return !isValidRole(role) || !norm ? null : upsertUserAccount({ email: norm, role, hasSelectedUnit: true, ...updates }, true);
 }
 
-export function deleteUserAccount(email: string): boolean {
+export async function deleteUserAccount(email: string): Promise<boolean> {
   const store = loadStore();
   const norm = normalizeEmail(email);
   if (!norm || norm === 'tcns@hcmute.edu.vn') return false;
@@ -277,6 +275,6 @@ export function deleteUserAccount(email: string): boolean {
   const removed = store.delete(norm);
   removeParticipantFromAllWorkbooks(norm);
   persistLocalStore();
-  persistAccountsToSupabase(getAllUserAccounts()).catch(() => {});
+  await persistAccountsToSupabase(getAllUserAccounts());
   return removed;
 }

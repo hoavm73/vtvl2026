@@ -1,4 +1,15 @@
 erDiagram
+    DON_VI ||--o{ USER_ACCOUNTS : "quan_ly_can_bo"
+    USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "lap_phieu_cong_viec"
+    DON_VI ||--o{ STAFF_WORK_TICKETS : "luu_tru_phieu_don_vi"
+    STAFF_WORK_TICKETS ||--o{ COORDINATED_TASKS : "chua_cong_viec_phoi_hop"
+    DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
+
+    A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
+    STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
+    STAFF_WORK_TICKETS ||--|| B1_KHOI_LUONG : "lien_thong_dinh_muc"
+    C1_VTVL ||--o{ STAFF_WORK_TICKETS : "gan_vtvl_chu_tri_va_phoi_hop"
+
     DON_VI ||--o{ A1_NHIEM_VU : "thuc_hien"
     DON_VI ||--o{ C1_VTVL : "quan_ly"
     DON_VI ||--o{ D1_NHAN_LUC : "chot_nhan_su_30_09_2026"
@@ -208,4 +219,38 @@ erDiagram
         string gia_tri_moi "Gia tri sau khi gop phieu"
         string nguoi_xac_nhan "Thu truong don vi / Nguoi do"
         string phien_ban "v1, v2..."
+    }
+
+    USER_ACCOUNTS {
+        string email PK "Email cong vu @hcmute.edu.vn"
+        string ma_don_vi FK "Lien ket DON_VI"
+        string display_name "Ho va ten can bo"
+        string role "admin | unit_leader | staff"
+        string title "Dong bo 1-1 voi role"
+        string auth_provider "google | email"
+        string status "active | suspended"
+    }
+
+    STAFF_WORK_TICKETS {
+        string id PK "Ma phieu - tkt-[MA_DV]-..."
+        string ma_don_vi FK "Lien ket DON_VI"
+        string owner_email FK "Lien ket USER_ACCOUNTS"
+        string status "Nhap | Da nop"
+        string ma_nhiem_vu FK "Lien ket A1_NHIEM_VU"
+        string ma_cong_viec FK "Lien ket A2_CONG_VIEC"
+        string ma_vtvl FK "Lien ket C1_VTVL"
+        string ten_cong_viec "Ten dau viec cu the"
+        int so_sp_nam "So SP tao ra trong nam"
+        float phut_thuc_te "TB phut/SP do thuc te"
+        float gio_bo_sung "Gio bo sung lien quan"
+    }
+
+    COORDINATED_TASKS {
+        string id PK "Ma cong viec phoi hop"
+        string ticket_id FK "Lien ket STAFF_WORK_TICKETS"
+        string ma_don_vi FK "Don vi chu tri"
+        string target_unit_code FK "Don vi phoi hop"
+        string target_task_code "Ma cong viec ben don vi phoi hop"
+        string role_in_task "Vai tro phoi hop"
+        float estimated_hours "So gio dong gop"
     }

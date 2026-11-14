@@ -11,6 +11,17 @@ Tài liệu này mô tả thiết kế Cơ sở dữ liệu quan hệ (Entity-Re
 
 ```mermaid
 erDiagram
+    DON_VI ||--o{ USER_ACCOUNTS : "quan_ly_can_bo"
+    USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "lap_phieu_cong_viec"
+    DON_VI ||--o{ STAFF_WORK_TICKETS : "luu_tru_phieu_don_vi"
+    STAFF_WORK_TICKETS ||--o{ COORDINATED_TASKS : "chua_cong_viec_phoi_hop"
+    DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
+
+    A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
+    STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
+    STAFF_WORK_TICKETS ||--|| B1_KHOI_LUONG : "lien_thong_dinh_muc"
+    C1_VTVL ||--o{ STAFF_WORK_TICKETS : "gan_vtvl_chu_tri_va_phoi_hop"
+
     DON_VI ||--o{ A1_NHIEM_VU : "thuc_hien"
     DON_VI ||--o{ C1_VTVL : "quan_ly"
     DON_VI ||--o{ D1_NHAN_LUC : "chot_nhan_su_30_09_2026"
@@ -233,8 +244,41 @@ erDiagram
         string nguoi_xac_nhan "Thu truong don vi / Nguoi do"
         string phien_ban "v1, v2..."
     }
-```
 
+    USER_ACCOUNTS {
+        string email PK "Email cong vu @hcmute.edu.vn"
+        string ma_don_vi FK "Lien ket DON_VI"
+        string display_name "Ho va ten can bo"
+        string role "admin | unit_leader | staff"
+        string title "Dong bo 1-1 voi role"
+        string auth_provider "google | email"
+        string status "active | suspended"
+    }
+
+    STAFF_WORK_TICKETS {
+        string id PK "Ma phieu - tkt-[MA_DV]-..."
+        string ma_don_vi FK "Lien ket DON_VI"
+        string owner_email FK "Lien ket USER_ACCOUNTS"
+        string status "Nhap | Da nop"
+        string ma_nhiem_vu FK "Lien ket A1_NHIEM_VU"
+        string ma_cong_viec FK "Lien ket A2_CONG_VIEC"
+        string ma_vtvl FK "Lien ket C1_VTVL"
+        string ten_cong_viec "Ten dau viec cu the"
+        int so_sp_nam "So SP tao ra trong nam"
+        float phut_thuc_te "TB phut/SP do thuc te"
+        float gio_bo_sung "Gio bo sung lien quan"
+    }
+
+    COORDINATED_TASKS {
+        string id PK "Ma cong viec phoi hop"
+        string ticket_id FK "Lien ket STAFF_WORK_TICKETS"
+        string ma_don_vi FK "Don vi chu tri"
+        string target_unit_code FK "Don vi phoi hop"
+        string target_task_code "Ma cong viec ben don vi phoi hop"
+        string role_in_task "Vai tro phoi hop"
+        float estimated_hours "So gio dong gop"
+    }
+```
 
 ---
 
@@ -242,6 +286,9 @@ erDiagram
 
 | Thực thể trong ERD | Trang tính tương ứng trong Workbook `.xlsx` | Khóa chính (`PK`) & Khóa ngoại (`FK`) | Nguồn dữ liệu & Căn cứ pháp lý |
 | :--- | :--- | :--- | :--- |
+| `USER_ACCOUNTS` | `Tài khoản & Phân quyền` | `PK`: `email` · `FK`: `ma_don_vi` | Cổng thông tin HCM-UTE, Google Workspace, Phân quyền 3 nhóm (`admin`, `unit_leader`, `staff`) |
+| `STAFF_WORK_TICKETS` | `Phiếu công việc cá nhân` | `PK`: `id` · `FK`: `ma_don_vi`, `owner_email`, `ma_nhiem_vu`, `ma_cong_viec`, `ma_vtvl` | Kê khai công việc cá nhân, liên thông A1/A2/B1/C1, xuất PDF A4 |
+| `COORDINATED_TASKS` | `Công việc phối hợp liên đơn vị` | `PK`: `id` · `FK`: `ticket_id`, `ma_don_vi`, `target_unit_code` | Danh mục nhiệm vụ/công việc phối hợp toàn trường HCM-UTE |
 | `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`FME`, `FIT`, `TCNS`, `TPC`...) | Danh mục 51 đơn vị thuộc/trực thuộc **HCM-UTE** |
 | `DM_VTVL_ND232` | `12. CHIA_VUNG_CAP_XA` (Bảng 1), `DM_THAM_SO` | `PK`: `ma_danh_muc_nd232` (`ND232-PL1-01`..`ND232-PL3-10`) · `FK`: `ma_so_chuc_danh` | **Nghị định 232/2026/NĐ-CP** (Phụ lục I, II, III — Bậc nghề nghiệp `Bậc 1–5`) |
 | `DM_CHUC_DANH_TT31` | `12. CHIA_VUNG_CAP_XA` (Bảng 2), `QUY_TAC_MA` | `PK`: `ma_so_chuc_danh` (28 mã: `V.07.01.01..V.09.02.11` + `V.07.01.23`) | **Thông tư 31/2026/TT-BGDĐT ngày 14/4/2026** (Điều 2, Điều 6–14, Khoản 5 Điều 15) |

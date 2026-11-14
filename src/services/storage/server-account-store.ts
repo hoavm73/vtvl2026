@@ -34,6 +34,13 @@ export function getRoleTitle(role: UserRole): string {
   return 'Cán bộ – Giảng viên';
 }
 
+export function getRoleFromTitle(title?: string): UserRole {
+  const t = (title || '').trim().toLowerCase();
+  if (t.includes('tổ chức') || t.includes('nhân sự') || t === 'admin') return 'admin';
+  if (t.includes('lãnh đạo') || t.includes('trưởng') || t.includes('phó') || t === 'unit_leader') return 'unit_leader';
+  return 'staff';
+}
+
 export function hashAccountPassword(password: string): string {
   return crypto.createHash('sha256').update(`hcmute_vtvl_${password}`).digest('hex');
 }
@@ -69,7 +76,8 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
   const unit = findHcmuteUnit(item.unitCode || 'FIT');
   const now = new Date().toLocaleString('vi-VN');
   const isTcns = email === 'tcns@hcmute.edu.vn';
-  const role: UserRole = isValidRole(item.role) ? item.role : isTcns ? 'admin' : 'staff';
+  const inferredRole = item.title ? getRoleFromTitle(item.title) : undefined;
+  const role: UserRole = isValidRole(item.role) ? item.role : inferredRole || (isTcns ? 'admin' : 'staff');
   const title = getRoleTitle(role);
   return {
     email,
@@ -237,10 +245,14 @@ export function upsertUserAccount(
   const store = loadStore();
   const norm = normalizeEmail(input.email);
   const existing = store.get(norm);
+  const inferredRole = input.title ? getRoleFromTitle(input.title) : undefined;
+  const targetRole = isValidRole(input.role) ? input.role : inferredRole;
+  const isFirstTime = !existing || !existing.hasSelectedUnit;
+
   const resolvedRole: UserRole =
-    allowRoleOverride && isValidRole(input.role)
-      ? input.role
-      : existing?.role || (norm === 'tcns@hcmute.edu.vn' ? 'admin' : isValidRole(input.role) ? input.role : 'staff');
+    (allowRoleOverride || isFirstTime) && targetRole
+      ? targetRole
+      : existing?.role || (norm === 'tcns@hcmute.edu.vn' ? 'admin' : targetRole || 'staff');
 
   const record = normalizeRecord({
     ...existing,

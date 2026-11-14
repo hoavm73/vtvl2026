@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Building2, ChevronDown, LogOut, RefreshCw, CheckCircle2, UserCog, ShieldCheck
 } from 'lucide-react';
@@ -24,11 +25,13 @@ import {
   ROLE_OPTIONS,
   getRoleLabel,
   getRoleBadgeVariant,
+  getRoleFromTitle,
   syncOperatorAccountWithServer,
   updateMyAccountOnServer
 } from '@/services/auth/account-client';
 
 export function UserProfilePopover() {
+  const router = useRouter();
   const [session, setSession] = useState<OperatorSession | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -50,10 +53,7 @@ export function UserProfilePopover() {
     const callbackSession = consumeGoogleOAuthCallback();
     loadAndSync(callbackSession);
 
-    const handleSessionChange = () => {
-      loadAndSync();
-    };
-
+    const handleSessionChange = () => loadAndSync();
     window.addEventListener('vtvl-operator-changed', handleSessionChange);
     return () => window.removeEventListener('vtvl-operator-changed', handleSessionChange);
   }, []);
@@ -83,8 +83,10 @@ export function UserProfilePopover() {
 
   const handleUnitConfirmed = async (unitCode: string, title: string) => {
     if (!session) return;
-    await updateMyAccountOnServer(session, { unitCode, title, hasSelectedUnit: true });
+    const mappedRole = getRoleFromTitle(title);
+    await updateMyAccountOnServer(session, { unitCode, title, role: mappedRole, hasSelectedUnit: true });
     await loadAndSync();
+    router.push(mappedRole === 'unit_leader' ? '/bang-tinh' : '/phieu-cong-viec');
   };
 
   const needsUnitSelection = Boolean(session && !session.hasSelectedUnit && session.role !== 'admin');
@@ -98,7 +100,6 @@ export function UserProfilePopover() {
             <span className="hidden sm:inline">Đăng nhập Google</span>
           </span>
         </PopoverTrigger>
-
         <PopoverContent align="end" className="w-80 p-4 space-y-3">
           <div className="space-y-1">
             <h4 className="text-sm font-bold text-[#0072BC]">Đăng nhập tài khoản HCM-UTE</h4>
@@ -106,7 +107,6 @@ export function UserProfilePopover() {
               Sử dụng tài khoản Google công vụ @hcmute.edu.vn để đồng bộ hồ sơ an toàn và tự động lưu phiên làm việc.
             </p>
           </div>
-
           <GoogleOAuthButton
             label="Tiếp tục với Google"
             loadingLabel="Đang kết nối Google…"
@@ -114,7 +114,6 @@ export function UserProfilePopover() {
             size="default"
             className="w-full justify-center font-bold border-[#cbd5e1] hover:border-[#004776]"
           />
-
           <div className="pt-2 border-t border-[#e8eff7]">
             <PopoverClose onClick={handleOpenSwitchModal}>
               <span className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-[#e1edf8] hover:bg-[#d0e4f5] text-xs font-bold text-[#004776] transition-colors">

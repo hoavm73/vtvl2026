@@ -36,6 +36,13 @@ export function getRoleLabel(role?: UserRole): string {
   return found ? found.label : 'Cán bộ – Giảng viên';
 }
 
+export function getRoleFromTitle(title?: string): UserRole {
+  const t = (title || '').trim().toLowerCase();
+  if (t.includes('tổ chức') || t.includes('nhân sự') || t === 'admin') return 'admin';
+  if (t.includes('lãnh đạo') || t.includes('trưởng') || t.includes('phó') || t === 'unit_leader') return 'unit_leader';
+  return 'staff';
+}
+
 export function getRoleBadgeVariant(role?: UserRole): 'default' | 'secondary' | 'success' | 'warning' {
   if (role === 'admin') return 'warning';
   if (role === 'unit_leader') return 'success';
@@ -106,7 +113,8 @@ export async function updateMyAccountOnServer(
   }
 ): Promise<{ ok: boolean; account?: UserAccountRecord; error?: string }> {
   try {
-    const resolvedTitle = updates.title || (updates.role ? getRoleLabel(updates.role) : undefined);
+    const resolvedRole = updates.role || (updates.title ? getRoleFromTitle(updates.title) : undefined);
+    const resolvedTitle = updates.title || (resolvedRole ? getRoleLabel(resolvedRole) : undefined);
     const res = await fetch('/api/accounts', {
       method: 'PATCH',
       headers: buildAuthHeaders(session),
@@ -115,7 +123,7 @@ export async function updateMyAccountOnServer(
         displayName: updates.displayName,
         unitCode: updates.unitCode,
         title: resolvedTitle,
-        role: updates.role,
+        role: resolvedRole,
         hasSelectedUnit: updates.hasSelectedUnit
       })
     });

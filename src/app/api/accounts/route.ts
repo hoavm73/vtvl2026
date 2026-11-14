@@ -115,10 +115,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const isFirstTimeOnboarding = !existing || !existing.hasSelectedUnit;
     const requestedRole = body.role as UserRole | undefined;
-    if (requestedRole && !isAdmin) {
+
+    if (requestedRole === 'admin' && !isAdmin && email !== 'tcns@hcmute.edu.vn') {
       return NextResponse.json(
-        { error: 'Chỉ Quản trị viên hệ thống mới có quyền thay đổi vai trò.' },
+        { error: 'Chỉ Quản trị viên hệ thống mới có quyền thiết lập vai trò Quản trị.' },
+        { status: 403 }
+      );
+    }
+
+    if (requestedRole && !isAdmin && !isFirstTimeOnboarding && requestedRole !== existing?.role) {
+      return NextResponse.json(
+        { error: 'Chỉ Quản trị viên hệ thống mới có quyền thay đổi vai trò sau khi đã xác nhận.' },
         { status: 403 }
       );
     }
@@ -128,6 +137,9 @@ export async function PATCH(req: NextRequest) {
       ? Boolean(body.hasSelectedUnit)
       : (Boolean(body.unitCode) || Boolean(existing?.hasSelectedUnit));
 
+    const canChangeRole = isAdmin || isFirstTimeOnboarding || email === 'tcns@hcmute.edu.vn';
+    const effectiveRole = canChangeRole && requestedRole ? requestedRole : existing?.role;
+
     const rawAccount = upsertUserAccount(
       {
         email,
@@ -135,10 +147,10 @@ export async function PATCH(req: NextRequest) {
         unitCode: targetUnitCode,
         title: body.title || existing?.title,
         avatarUrl: body.avatarUrl || existing?.avatarUrl,
-        role: isAdmin ? requestedRole : undefined,
+        role: effectiveRole,
         hasSelectedUnit: targetHasSelectedUnit
       },
-      isAdmin && Boolean(requestedRole)
+      canChangeRole && Boolean(requestedRole)
     );
 
     const account = sanitizeClientAccount(rawAccount, isAdmin);

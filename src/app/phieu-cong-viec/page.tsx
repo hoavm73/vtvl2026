@@ -152,7 +152,9 @@ export default function StaffWorkTicketsPage() {
               Chào mừng {session.displayName || session.email} đến với Hệ thống Vị trí việc làm HCM-UTE
             </h1>
             <p className="text-xs sm:text-sm text-[#475569]">
-              Không gian Cán bộ – Giảng viên • Kê khai trực tiếp phiếu công việc cá nhân và đối chiếu danh sách công việc chung của đơn vị.
+              {session.role === 'unit_leader'
+                ? 'Không gian Lãnh đạo đơn vị • Rà soát, duyệt phiếu công việc và quản trị toàn bộ dữ liệu đơn vị.'
+                : 'Không gian Cán bộ – Giảng viên • Kê khai trực tiếp phiếu công việc cá nhân và đối chiếu danh sách công việc chung của đơn vị.'}
             </p>
           </div>
 
@@ -162,7 +164,7 @@ export default function StaffWorkTicketsPage() {
               className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5"
             >
               <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
-              Xem bảng biểu đơn vị (Chỉ đọc)
+              {session.role === 'unit_leader' ? 'Vào bảng tính đơn vị (Toàn quyền chỉnh sửa)' : 'Xem bảng biểu đơn vị (Chỉ đọc)'}
             </Link>
             <button
               type="button"

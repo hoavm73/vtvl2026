@@ -53,9 +53,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const userAccount = ownerEmail ? getUserAccountByEmail(ownerEmail) : null;
+    const resolvedUnitCode = (body.unitCode || userAccount?.unitCode || 'FIT').toUpperCase();
+
     const result = await upsertTicketAndSyncUnit({
       id: body.id,
-      unitCode: body.unitCode || 'FIT',
+      unitCode: resolvedUnitCode,
       ownerEmail,
       ownerName: body.ownerName || ownerEmail.split('@')[0],
       ownerTitle: body.ownerTitle || 'Cán bộ – Giảng viên',

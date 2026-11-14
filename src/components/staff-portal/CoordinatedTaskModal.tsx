@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Link2, Plus, Trash2 } from 'lucide-react';
 import { StaffWorkTicket, CoordinatedTaskLink } from '@/types/staff-ticket';
-import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 interface CoordinatedTaskModalProps {
@@ -54,7 +54,7 @@ export function CoordinatedTaskModal({ ticket, onClose, onSaved }: CoordinatedTa
 
   const handleAddLink = () => {
     if (!selectedTaskCode) return;
-    const foundUnit = HCMUTE_UNITS.find((u) => u.code === targetUnitCode);
+    const foundUnit = findHcmuteUnit(targetUnitCode);
     const foundTask = targetTasks.find((t) => t.maCongViec === selectedTaskCode);
     if (!foundTask) return;
     const nextLink: CoordinatedTaskLink = {

@@ -6,7 +6,7 @@
 
 import qd2266DataRaw from './hcmute-qd2266-missions.json';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
-import { HCMUTE_UNITS } from './hcmute-units';
+import { HCMUTE_UNITS, findHcmuteUnit } from './hcmute-units';
 
 export interface Qd2266MissionRecord {
   maNhiemVu: string;
@@ -49,7 +49,7 @@ export const QD2266_GROUPED_UNITS_CATALOG: UnitGroupCategory[] = [
   {
     groupLabel: 'Khối Đơn vị đào tạo (14 Khoa & Viện đào tạo)',
     units: [
-      { code: 'FME', nameVi: 'Khoa Cơ khí Chế tạo máy', plNum: 1, plLabel: 'PL01' },
+      { code: 'CK', nameVi: 'Khoa Cơ khí', plNum: 1, plLabel: 'PL01' },
       { code: 'FEET', nameVi: 'Khoa Cơ khí Động lực', plNum: 1, plLabel: 'PL01' },
       { code: 'FEEE', nameVi: 'Khoa Điện - Điện tử', plNum: 1, plLabel: 'PL01' },
       { code: 'FIT', nameVi: 'Khoa Công nghệ Thông tin', plNum: 1, plLabel: 'PL01' },
@@ -179,7 +179,7 @@ export const UNIT_ALIAS_TO_QD2266: Record<string, string> = {
   SDH: 'VSDH', VSDH: 'VSDH',
   FAE: 'KDTTT', KDTTT: 'KDTTT', FHQ: 'KDTTT',
   // Khối Khoa chung (PL1)
-  FME: 'KHOA', FEET: 'KHOA', FVE: 'KHOA', FEEE: 'KHOA', FIT: 'KHOA', FCFT: 'KHOA',
+  CK: 'KHOA', FME: 'KHOA', FEET: 'KHOA', FVE: 'KHOA', FEEE: 'KHOA', FIT: 'KHOA', FCFT: 'KHOA',
   FCE: 'KHOA', FE: 'KHOA', FGAM: 'KHOA', FGA: 'KHOA', FPI: 'KHOA', FPT: 'KHOA',
   FLLCT: 'KHOA', FAS: 'KHOA', FFL: 'KHOA', FFT: 'KHOA', FFD: 'KHOA', FTT: 'KHOA', ITE: 'KHOA', TPC: 'KHOA',
   KHOA: 'KHOA'
@@ -191,7 +191,7 @@ export function getQd2266A1RowsForUnit(unitCode: string, unitNameVi?: string): G
   const unitRecord = QD2266_UNITS_DATA[targetPlKey] || QD2266_UNITS_DATA['KHOA'];
   if (!unitRecord) return [];
 
-  const actualUnitDef = HCMUTE_UNITS.find((u) => u.code.toUpperCase() === normCode);
+  const actualUnitDef = findHcmuteUnit(normCode);
   const agencyName = unitNameVi || actualUnitDef?.nameVi || unitRecord.unitName;
 
   if (normCode === 'TCNS' || targetPlKey === 'TCNS') {

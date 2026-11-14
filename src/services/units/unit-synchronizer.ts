@@ -146,6 +146,24 @@ export function syncUnitCodeAndNameInBrowser(
   } catch { /* ignore */ }
 
   try {
+    const raw = localStorage.getItem('hcmute_vtvl_unit_session');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.unitCode && s.unitCode.toUpperCase() === cOld) {
+        s.unitCode = cNew;
+        if (s.proposedPositions && Array.isArray(s.proposedPositions)) {
+          s.proposedPositions = s.proposedPositions.map((pos: { vtvlSuffix?: string }) => ({
+            ...pos,
+            vtvlSuffix: pos.vtvlSuffix?.replace(new RegExp(`^${cOld}-`, 'i'), '')
+          }));
+        }
+        localStorage.setItem('hcmute_vtvl_unit_session', JSON.stringify(s));
+        window.dispatchEvent(new CustomEvent('vtvl-unit-session-updated', { detail: s }));
+      }
+    }
+  } catch { /* ignore */ }
+
+  try {
     const all = getAllEmailSessions();
     const updated = all.map((s) => {
       if (s.unitCode.toUpperCase() === cOld) {

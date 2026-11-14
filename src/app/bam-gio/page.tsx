@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Timer, Play, Pause, Plus, Download, CheckCircle2, Trash2, ArrowRight, UserCheck, ClipboardList, Edit3 } from 'lucide-react';
 import { WorkflowSidebar, InfoTip } from '@/components/layout/MilestonesBar';
-import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { NGACH_LIST_BY_GROUP, TASK_TEMPLATES_BY_GROUP } from '@/configs/hcmute-quotas';
 import { buildDefaultSpecificVtvlName } from '@/configs/hcmute-nd232-catalog';
 import { TimeSessionRow, ProposedVtvlRow } from '@/types/vtvl';
@@ -14,7 +14,13 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 export default function BamGioPage() {
   const [stepMode, setStepMode] = useState<3 | 4>(3);
-  const [unitCode, setUnitCode] = useState<string>('FME');
+  const [unitCode, setUnitCode] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const s = getActiveUnitSession();
+      if (s?.unitCode) return findHcmuteUnit(s.unitCode).code;
+    }
+    return 'CK';
+  });
   const [proposedPositions, setProposedPositions] = useState<ProposedVtvlRow[]>([]);
   const [customPositionNames, setCustomPositionNames] = useState<Record<string, string>>({});
   const [customCareerLevels, setCustomCareerLevels] = useState<Record<string, string>>({});
@@ -33,16 +39,16 @@ export default function BamGioPage() {
   const [manualProducts, setManualProducts] = useState<number>(1);
   const [b2Impacts, setB2Impacts] = useState<Record<string, { factor: string; digitalLevel: string; adjustPct: number; note: string }>>({});
 
-  const unit = useMemo(() => HCMUTE_UNITS.find((u) => u.code === unitCode) || HCMUTE_UNITS[0], [unitCode]);
+  const unit = useMemo(() => findHcmuteUnit(unitCode), [unitCode]);
 
   const syncFromSession = () => {
     const saved = getActiveUnitSession();
-    const matched = HCMUTE_UNITS.find((u) => u.code === saved.unitCode) || HCMUTE_UNITS[0];
+    const matched = findHcmuteUnit(saved.unitCode);
     setUnitCode(matched.code); setProposedPositions(saved.proposedPositions || []); setCustomPositionNames(saved.customPositionNames || {});
     setCustomCareerLevels(saved.customCareerLevels || {}); setManualDate(saved.customDate || getRealtimeDateYYYYMMDD()); setSessions(saved.timeSessions || []);
     if (saved.proposedPositions && saved.proposedPositions.length > 0) {
       setSelectedVtvlSuffix((cur) => (saved.proposedPositions.some((p) => p.vtvlSuffix === cur) ? cur : saved.proposedPositions[0].vtvlSuffix));
-    } else if (TASK_TEMPLATES_BY_GROUP[matched.group].length > 0) setSelectedVtvlSuffix(TASK_TEMPLATES_BY_GROUP[matched.group][0].vtvlSuffix);
+    } else if (TASK_TEMPLATES_BY_GROUP[matched.group]?.length > 0) setSelectedVtvlSuffix(TASK_TEMPLATES_BY_GROUP[matched.group][0].vtvlSuffix);
   };
 
   useEffect(() => {
@@ -65,20 +71,28 @@ export default function BamGioPage() {
     setStepMode(next); if (typeof window !== 'undefined') window.history.replaceState(null, '', `/bam-gio?step=${next}`);
   };
 
-  const tasksOfUnit = useMemo(() => TASK_TEMPLATES_BY_GROUP[unit.group].map((t) => ({ ...t, fullVtvlCode: `${unit.code}-${t.vtvlSuffix}`, fullTaskCode: `${unit.code}-${t.taskSuffix}` })), [unit]);
+  const tasksOfUnit = useMemo(() => TASK_TEMPLATES_BY_GROUP[unit.group].map((t) => {
+    const cleanSuffix = t.taskSuffix.replace(/^[A-Za-z0-9_]+-/, '');
+    const cleanVtvl = t.vtvlSuffix.replace(/^[A-Za-z0-9_]+-/, '');
+    return { ...t, fullVtvlCode: `${unit.code}-${cleanVtvl}`, fullTaskCode: `${unit.code}-${cleanSuffix}` };
+  }), [unit]);
 
   const vtvlOptions = useMemo(() => {
-    if (proposedPositions.length > 0) return proposedPositions.map((p) => ({ suffix: p.vtvlSuffix, code: `${unit.code}-${p.vtvlSuffix}`, name: p.specificName, level: p.careerLevel, ngachCode: p.ngachCode }));
+    if (proposedPositions.length > 0) return proposedPositions.map((p) => {
+      const cleanSuffix = p.vtvlSuffix.replace(/^[A-Za-z0-9_]+-/, '');
+      return { suffix: p.vtvlSuffix, code: `${unit.code}-${cleanSuffix}`, name: p.specificName, level: p.careerLevel, ngachCode: p.ngachCode };
+    });
     const ngachList = NGACH_LIST_BY_GROUP[unit.group];
     const map = new Map<string, { suffix: string; code: string; name: string; level: string; ngachCode: string }>();
     tasksOfUnit.forEach((t) => {
       if (!map.has(t.vtvlSuffix)) {
+        const cleanSuffix = t.vtvlSuffix.replace(/^[A-Za-z0-9_]+-/, '');
         const ngach = ngachList.find((n) => n.code === t.ngachCode);
         const fwTitle = ngach?.frameworkTitle || ngach?.name || t.vtvlName;
         const defaultName = ngach ? buildDefaultSpecificVtvlName(fwTitle, unit.nameVi, ngach.specificNameSuffix, unit.group) : t.vtvlName;
         const specificName = ngach ? customPositionNames[ngach.code] ?? defaultName : t.vtvlName;
         const careerLevel = ngach ? customCareerLevels[ngach.code] ?? ngach.defaultCareerLevel ?? 'Bậc 3' : 'Bậc 3';
-        map.set(t.vtvlSuffix, { suffix: t.vtvlSuffix, code: t.fullVtvlCode, name: specificName, level: careerLevel, ngachCode: t.ngachCode });
+        map.set(t.vtvlSuffix, { suffix: t.vtvlSuffix, code: `${unit.code}-${cleanSuffix}`, name: specificName, level: careerLevel, ngachCode: t.ngachCode });
       }
     });
     return Array.from(map.values());
@@ -89,7 +103,8 @@ export default function BamGioPage() {
     const selectedOpt = vtvlOptions.find((v) => v.suffix === selectedVtvlSuffix);
     const byNgach = selectedOpt ? tasksOfUnit.filter((t) => t.ngachCode === selectedOpt.ngachCode) : [];
     const base = direct.length > 0 ? direct : byNgach.length > 0 ? byNgach : tasksOfUnit.slice(0, 2);
-    return base.map((t) => ({ ...t, fullVtvlCode: `${unit.code}-${selectedVtvlSuffix}` }));
+    const clean = selectedVtvlSuffix.replace(/^[A-Za-z0-9_]+-/, '');
+    return base.map((t) => ({ ...t, fullVtvlCode: `${unit.code}-${clean}` }));
   }, [tasksOfUnit, selectedVtvlSuffix, vtvlOptions, unit.code]);
 
   useEffect(() => {

@@ -13,7 +13,7 @@ interface SeedUnitConfig {
 const SEED_CONFIGS: SeedUnitConfig[] = [
   { unitCode: 'FIT', email: 'fit@hcmute.edu.vn', roleLabel: 'Thư ký khoa / Trợ lý đào tạo', revision: 1, minutesAgo: 2 },
   { unitCode: 'TCNS', email: 'tcns@hcmute.edu.vn', roleLabel: 'Chuyên viên Phòng TCNS', revision: 1, minutesAgo: 35 },
-  { unitCode: 'FME', email: 'fme@hcmute.edu.vn', roleLabel: 'Phó Trưởng khoa Cơ khí Chế tạo máy', revision: 1, minutesAgo: 90 },
+  { unitCode: 'CK', email: 'ck@hcmute.edu.vn', roleLabel: 'Phó Trưởng khoa Cơ khí', revision: 1, minutesAgo: 90 },
   { unitCode: 'FEET', email: 'feet@hcmute.edu.vn', roleLabel: 'Trưởng khoa Cơ khí Động lực', revision: 1, minutesAgo: 180 },
   { unitCode: 'FEEE', email: 'feee@hcmute.edu.vn', roleLabel: 'Giảng viên chính Khoa Điện - Điện tử', revision: 1, minutesAgo: 320 },
   { unitCode: 'GDQPAN', email: 'dfdfff@hcmute.edu.vn', roleLabel: 'Cán bộ quản lý GDQP&AN', revision: 1, minutesAgo: 480 },

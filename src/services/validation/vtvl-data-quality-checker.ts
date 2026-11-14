@@ -8,14 +8,14 @@ import {
   validateD1Sheet,
   validateD2Sheet
 } from './vtvl-eval-validators';
-import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 
 export function validateWorkbookData(
   data: Record<ExcelSheetKey, GenericGridRow[]>,
   unitCode: string,
   unitNameVi?: string
 ): ValidationReport {
-  const unitInfo = HCMUTE_UNITS.find((u) => u.code === unitCode);
+  const unitInfo = findHcmuteUnit(unitCode);
   const resolvedUnitName = unitNameVi || unitInfo?.nameVi || `Đơn vị ${unitCode}`;
   const issues: ValidationIssue[] = [];
 

@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ArrowLeft, BookOpenCheck } from 'lucide-react';
 import { WorkflowSidebar, focusTaskTarget } from '@/components/layout/MilestonesBar';
-import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
+import { HCMUTE_UNITS, UNIT_GROUPS, findHcmuteUnit, getActiveHcmuteUnits } from '@/configs/hcmute-units';
 import { HD07_CONSTANTS } from '@/configs/hcmute-hd07-catalog';
 import { buildDefaultProposedPositionsForUnit, buildProposedPositionFromFramework } from '@/configs/hcmute-nd232-catalog';
 import { NgachAllocationRow, ProposedVtvlRow, SplitResultSummary, UnitGroupKind, UnitScaleMetrics } from '@/types/vtvl';
@@ -113,14 +113,14 @@ export default function TaoTepPage() {
   };
 
   const handleGroupChange = (newKind: UnitGroupKind) => {
-    setKind(newKind); const first = HCMUTE_UNITS.find((u) => u.group === newKind) || HCMUTE_UNITS[0];
+    setKind(newKind); const first = getActiveHcmuteUnits().find((u) => u.group === newKind) || HCMUTE_UNITS[0];
     const nextPos = buildDefaultProposedPositionsForUnit(first.nameVi, newKind); const nextScale = buildDefaultScaleMetrics(newKind); const nextNgach = buildDefaultNgachAllocations(nextPos);
     setSelectedUnitCode(first.code); setScaleMetrics(nextScale); setNgachAllocations(nextNgach); setPositions(nextPos);
     persistState({ unitCode: first.code, kind: newKind, proposedPositions: nextPos, scaleMetrics: nextScale, ngachAllocations: nextNgach }, 'unit');
   };
 
   const handleUnitChange = (newCode: string) => {
-    setSelectedUnitCode(newCode); const u = HCMUTE_UNITS.find((x) => x.code === newCode) || HCMUTE_UNITS[0];
+    setSelectedUnitCode(newCode); const u = findHcmuteUnit(newCode);
     const nextPos = buildDefaultProposedPositionsForUnit(u.nameVi, u.group); const nextNgach = buildDefaultNgachAllocations(nextPos);
     setNgachAllocations(nextNgach); syncPositions(nextPos, u.code, u.group); persistState({ ngachAllocations: nextNgach }, 'unit');
   };

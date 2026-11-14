@@ -14,7 +14,7 @@ export const UNIT_GROUPS: {
     label: 'Khối Đơn vị đào tạo (Khoa & Viện)',
     shortDesc: '14 Khoa, Viện chuyên ngành và các đơn vị đào tạo trực thuộc HCM-UTE',
     sampleFrom: 'XXX-DT-GV-01',
-    sampleTo: 'FME-DT-GV-01',
+    sampleTo: 'CK-DT-GV-01',
     factsText: '18 nhiệm vụ · 52 công việc · 14 VTVL chuẩn giảng dạy & nghiên cứu',
     sourceRule: 'Quy chế Tổ chức và Hoạt động Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)'
   },
@@ -49,7 +49,7 @@ export const UNIT_GROUPS: {
 
 export const HCMUTE_UNITS: HcmuteUnit[] = [
   // 1. Khối Khoa & Viện đào tạo (16 đơn vị)
-  { code: 'FME', nameVi: 'Khoa Cơ khí Chế tạo máy', nameEn: 'Faculty of Mechanical Engineering', group: 'khoa-vien', domain: 'fme.hcmute.edu.vn', headTitleVi: 'Trưởng khoa', headTitleEn: 'Dean of the Faculty of Mechanical Engineering', defaultStaffCount: 78 },
+  { code: 'CK', nameVi: 'Khoa Cơ khí', nameEn: 'Faculty of Mechanical Engineering', group: 'khoa-vien', domain: 'fme.hcmute.edu.vn', headTitleVi: 'Trưởng khoa', headTitleEn: 'Dean of the Faculty of Mechanical Engineering', defaultStaffCount: 78 },
   { code: 'FEET', nameVi: 'Khoa Cơ khí Động lực', nameEn: 'Faculty of Vehicle and Energy Engineering', group: 'khoa-vien', domain: 'feet.hcmute.edu.vn', headTitleVi: 'Trưởng khoa', headTitleEn: 'Dean of the Faculty of Vehicle and Energy Engineering', defaultStaffCount: 64 },
   { code: 'FEEE', nameVi: 'Khoa Điện - Điện tử', nameEn: 'Faculty of Electrical and Electronics Engineering', group: 'khoa-vien', domain: 'feee.hcmute.edu.vn', headTitleVi: 'Trưởng khoa', headTitleEn: 'Dean of the Faculty of Electrical and Electronics Engineering', defaultStaffCount: 82 },
   { code: 'FIT', nameVi: 'Khoa Công nghệ Thông tin', nameEn: 'Faculty of Information Technology', group: 'khoa-vien', domain: 'fit.hcmute.edu.vn', headTitleVi: 'Trưởng khoa', headTitleEn: 'Dean of the Faculty of Information Technology', defaultStaffCount: 68 },
@@ -116,10 +116,12 @@ export const UNIT_CODE_ALIASES: Record<string, string> = {
   PHBP: 'PHBP', TCKHGDKT: 'TCKHGDKT', TTHLDHS: 'HLDHS',
   TTSTKN: 'CISAT', 'TTSTKN&CGCN': 'CISAT', TTTTMT: 'INC',
   TTCNPM: 'STC', TTGDQPAN: 'GDQPAN', TTGDTC: 'GDTC', BANTT: 'KTX',
-  VDTQT: 'IIE', VSDH: 'SDH', KDTTT: 'FAE', FHQ: 'FAE', KHOA: 'FME', CK: 'FME'
+  VDTQT: 'IIE', VSDH: 'SDH', KDTTT: 'FAE', FHQ: 'FAE', KHOA: 'CK', FME: 'CK', CK: 'CK'
 };
 
 export const QD2266_UNIT_NAMES: Record<string, string> = {
+  CK: 'Khoa Cơ khí',
+  FME: 'Khoa Cơ khí',
   PKHTC: 'Phòng Kế hoạch - Tài chính',
   PDT: 'Phòng Đào tạo',
   PHCTH: 'Phòng Hành chính - Tổng hợp',
@@ -189,7 +191,7 @@ export function findHcmuteUnit(codeOrName?: string): HcmuteUnit {
     const matched = units.find((u) => u.code.toUpperCase() === aliased);
     if (matched) {
       const customName = QD2266_UNIT_NAMES[query] || matched.nameVi;
-      return Object.assign({}, matched, { code: query, nameVi: customName });
+      return Object.assign({}, matched, { code: matched.code, nameVi: customName });
     }
   }
   if (QD2266_UNIT_NAMES[query]) {

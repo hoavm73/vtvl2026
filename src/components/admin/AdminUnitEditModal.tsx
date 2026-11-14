@@ -139,7 +139,7 @@ export function AdminUnitEditModal({
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="VD: TCNS, FME, KHTN"
+                placeholder="VD: TCNS, CK, KHTN"
                 className="w-full px-3 py-2 text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#004776] font-bold focus:ring-2 focus:ring-[#004776] focus:outline-none uppercase"
               />
             </div>

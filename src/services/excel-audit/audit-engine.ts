@@ -8,7 +8,7 @@ import {
   AuditTemplateFeedbackItem,
   AuditVtvlRecalcRow
 } from '@/types/vtvl';
-import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 
 export const AUDIT_RULES_CATALOG: { code: string; sheet: string; level: string; desc: string }[] = [
   { code: 'R-TEP-*', sheet: 'Toàn bộ tệp', level: 'Phải sửa', desc: 'Kiểm tra đủ 10 trang tính bắt buộc (A1, A2, B1, B2_CT, B2, C1, C2, C3, D1, D2) và cấu trúc cột chuẩn Hướng dẫn 07-HD/BTCTW.' },
@@ -35,7 +35,7 @@ export async function auditUnitWorkbooks(files: File[], isSampleDemo = false): P
     const nameMatch = /^([A-Za-z0-9-]+)_K2526_(?:DuThao_GoiY_)?(v\d+)_(\d{8})\.xlsx$/i.exec(file.name);
     const unitCode = nameMatch ? nameMatch[1].toUpperCase() : file.name.split('_')[0].toUpperCase();
     const version = nameMatch ? nameMatch[2] : 'v1';
-    const unitInfo = HCMUTE_UNITS.find((u) => u.code === unitCode);
+    const unitInfo = findHcmuteUnit(unitCode);
     const unitName = unitInfo ? unitInfo.nameVi : `Đơn vị giả định ${unitCode}`;
 
     let fileFix = 0; let fileEvidence = 0; let fileReview = 0;

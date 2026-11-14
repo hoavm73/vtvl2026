@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ShieldCheck, Building2, User, FileSpreadsheet, FileText,
-  Clock, CheckSquare, ArrowRight, Sparkles, LogIn
+  Clock, ArrowRight, Sparkles, LogIn
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { OperatorSession } from '@/services/telemetry/operator-session';
@@ -201,16 +201,6 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5 text-sky-200 shrink-0" />
                     <span>Bảng tính 15 biểu</span>
-                  </Link>
-                )}
-
-                {role !== 'staff' && (
-                  <Link
-                    href="/ra-soat"
-                    className="inline-flex items-center gap-1.5 h-9 sm:h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/25 backdrop-blur-xs transition-colors whitespace-nowrap"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5 text-sky-200 shrink-0" />
-                    <span>Rà soát</span>
                   </Link>
                 )}
               </div>

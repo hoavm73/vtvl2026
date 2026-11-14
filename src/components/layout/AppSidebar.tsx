@@ -6,8 +6,6 @@ import { usePathname } from 'next/navigation';
 import {
   FileText,
   FileSpreadsheet,
-  CheckSquare,
-  FolderTree,
   Clock,
   ShieldCheck,
   BookOpen,
@@ -75,18 +73,6 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         label: 'Bảng tính 15 biểu',
         subLabel: 'A1–A2–C1–B1–B2–C2–C3–D1–D2',
         icon: FileSpreadsheet
-      },
-      {
-        href: '/ra-soat',
-        label: 'Rà soát & Thẩm định',
-        subLabel: 'Kiểm tra chéo 6 chỉ tiêu K_KiemTra',
-        icon: CheckSquare
-      },
-      {
-        href: '/tao-tep',
-        label: 'Khởi tạo & Tách tệp',
-        subLabel: 'Sinh bộ biểu .xlsx & gói phiếu .zip',
-        icon: FolderTree
       }
     ]
   },

@@ -17,7 +17,6 @@ const MOBILE_NAV_ITEMS = [
   { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText },
   { href: '/bam-gio', label: 'Đo định mức thời gian', icon: Clock },
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
-  { href: '/ra-soat', label: 'Rà soát & Thẩm định', icon: CheckSquare },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];
 

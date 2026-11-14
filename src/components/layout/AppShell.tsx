@@ -104,8 +104,10 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen flex flex-col overflow-x-clip relative">
-      <Header />
-      {isLoginPage || !isLoggedIn ? (
+      {!isLoginPage && <Header />}
+      {isLoginPage ? (
+        <main className="flex-1 flex flex-col min-h-screen">{children}</main>
+      ) : !isLoggedIn ? (
         <main className="flex-1 flex flex-col">{children}</main>
       ) : (
         <div className="flex-1 flex w-full">
@@ -119,7 +121,7 @@ export function AppShell({ children }: AppShellProps) {
           </main>
         </div>
       )}
-      <Footer />
+      {!isLoginPage && <Footer />}
     </div>
   );
 }

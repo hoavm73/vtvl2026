@@ -85,7 +85,9 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
     email, displayName: (item.displayName || email.split('@')[0]).trim(), unitCode: unit.code, unitNameVi: unit.nameVi,
     title: getRoleTitle(role), role, authProvider: item.authProvider === 'google' ? 'google' : 'email',
     avatarUrl: item.avatarUrl, status: item.status === 'suspended' ? 'suspended' : 'active',
-    hasSelectedUnit: item.hasSelectedUnit !== undefined ? Boolean(item.hasSelectedUnit) : isTcns,
+    hasSelectedUnit: item.hasSelectedUnit !== undefined
+      ? Boolean(item.hasSelectedUnit)
+      : (isTcns || role === 'admin' || role === 'unit_leader' || (Boolean(item.unitCode) && item.unitCode !== 'FIT')),
     passwordHash: item.passwordHash, createdAt: item.createdAt || now, lastActiveAt: item.lastActiveAt || now
   };
 }

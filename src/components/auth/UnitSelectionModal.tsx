@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { signOutGoogleSession } from '@/services/auth/google-auth';
-import { STANDARD_USER_TITLES } from '@/services/auth/account-client';
+import { STANDARD_USER_TITLES, isEmailAlreadyOnboarded } from '@/services/auth/account-client';
 
 const POSITION_OPTIONS = STANDARD_USER_TITLES;
 
@@ -24,7 +24,17 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen || !session) return null;
+  if (
+    !isOpen ||
+    !session ||
+    session.hasSelectedUnit ||
+    session.role === 'admin' ||
+    session.role === 'unit_leader' ||
+    session.email === 'tcns@hcmute.edu.vn' ||
+    isEmailAlreadyOnboarded(session.email)
+  ) {
+    return null;
+  }
 
   const unitOptions = getFlatHcmuteUnitOptions();
 

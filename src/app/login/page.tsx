@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Lock, Mail, LogIn, Building2, UserCheck, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { startGoogleOAuthLogin, consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
-import { syncOperatorAccountWithServer, UserRole } from '@/services/auth/account-client';
+import { syncOperatorAccountWithServer, UserRole, markEmailAsOnboarded } from '@/services/auth/account-client';
 import { saveCurrentOperatorSession, getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
 function getLandingRouteByRole(_role?: UserRole): string {
@@ -47,6 +47,7 @@ export default function LoginPortalPage() {
       }
 
       const acc = json.account;
+      markEmailAsOnboarded(acc.email);
       saveCurrentOperatorSession(acc.email, acc.unitCode, acc.title, {
         displayName: acc.displayName,
         role: acc.role,

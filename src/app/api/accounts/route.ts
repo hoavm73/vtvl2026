@@ -67,11 +67,18 @@ export async function POST(req: NextRequest) {
     const isExplicitAdmin = email === 'tcns@hcmute.edu.vn' || existing?.role === 'admin' || body.role === 'admin';
     const isAdmin = isExplicitAdmin && (cookieAdmin || verifiedGoogleAdmin);
 
-    const hasExistingAssignment = Boolean(existing?.hasSelectedUnit);
+    const hasExistingAssignment = Boolean(
+      existing?.hasSelectedUnit ||
+      existing?.role === 'unit_leader' ||
+      existing?.role === 'admin' ||
+      (Boolean(existing?.unitCode) && existing?.unitCode !== 'FIT')
+    );
     const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'FIT');
     const targetTitle = hasExistingAssignment ? existing!.title : (body.title || existing?.title);
     const targetRole = hasExistingAssignment ? existing!.role : undefined;
-    const targetHasSelectedUnit = hasExistingAssignment ? true : (body.hasSelectedUnit !== undefined ? Boolean(body.hasSelectedUnit) : false);
+    const targetHasSelectedUnit = hasExistingAssignment
+      ? true
+      : (body.hasSelectedUnit !== undefined ? Boolean(body.hasSelectedUnit) : false);
 
     const rawAccount = await upsertUserAccount({
       email,

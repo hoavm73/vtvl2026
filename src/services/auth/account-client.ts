@@ -49,6 +49,35 @@ export function getRoleBadgeVariant(role?: UserRole): 'default' | 'secondary' | 
   return 'default';
 }
 
+const ONBOARDED_EMAILS_KEY = 'vtvl_onboarded_emails_v1';
+
+export function isEmailAlreadyOnboarded(email: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const norm = (email || '').trim().toLowerCase();
+  if (!norm) return false;
+  if (norm === 'tcns@hcmute.edu.vn') return true;
+  try {
+    const raw = localStorage.getItem(ONBOARDED_EMAILS_KEY);
+    const list: string[] = raw ? JSON.parse(raw) : [];
+    if (list.includes(norm)) return true;
+  } catch { /* ignore */ }
+  return false;
+}
+
+export function markEmailAsOnboarded(email: string): void {
+  if (typeof window === 'undefined') return;
+  const norm = (email || '').trim().toLowerCase();
+  if (!norm) return;
+  try {
+    const raw = localStorage.getItem(ONBOARDED_EMAILS_KEY);
+    const list: string[] = raw ? JSON.parse(raw) : [];
+    if (!list.includes(norm)) {
+      list.push(norm);
+      localStorage.setItem(ONBOARDED_EMAILS_KEY, JSON.stringify(list));
+    }
+  } catch { /* ignore */ }
+}
+
 function buildAuthHeaders(session?: OperatorSession | null): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (session?.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
@@ -78,6 +107,9 @@ export async function syncOperatorAccountWithServer(
     const json = await res.json();
     const account = json.account as UserAccountRecord | undefined;
     if (account) {
+      if (account.hasSelectedUnit || account.role === 'unit_leader' || account.role === 'admin') {
+        markEmailAsOnboarded(account.email);
+      }
       const changed =
         account.role !== session.role ||
         (account.displayName && account.displayName !== session.displayName) ||
@@ -91,7 +123,7 @@ export async function syncOperatorAccountWithServer(
           authProvider: session.authProvider,
           accessToken: session.accessToken,
           role: account.role,
-          hasSelectedUnit: account.hasSelectedUnit
+          hasSelectedUnit: account.hasSelectedUnit ?? true
         });
       }
       return { account, isAdmin: Boolean(json.isAdmin) };
@@ -132,13 +164,14 @@ export async function updateMyAccountOnServer(
       return { ok: false, error: json.error || 'Không thể cập nhật thông tin tài khoản.' };
     }
     const account = json.account as UserAccountRecord;
+    markEmailAsOnboarded(account.email);
     saveCurrentOperatorSession(account.email, account.unitCode, account.title, {
       displayName: account.displayName,
       avatarUrl: account.avatarUrl || session.avatarUrl,
       authProvider: session.authProvider,
       accessToken: session.accessToken,
       role: account.role,
-      hasSelectedUnit: account.hasSelectedUnit
+      hasSelectedUnit: true
     });
     return { ok: true, account };
   } catch {

@@ -18,7 +18,8 @@ import { OperatorSession, getCurrentOperatorSession } from '@/services/telemetry
 import { consumeGoogleOAuthCallback, signOutGoogleSession } from '@/services/auth/google-auth';
 import {
   UserRole, ROLE_OPTIONS, getRoleLabel, getRoleBadgeVariant,
-  getRoleFromTitle, syncOperatorAccountWithServer, updateMyAccountOnServer
+  getRoleFromTitle, syncOperatorAccountWithServer, updateMyAccountOnServer,
+  isEmailAlreadyOnboarded, markEmailAsOnboarded
 } from '@/services/auth/account-client';
 
 export function UserProfilePopover() {
@@ -42,6 +43,9 @@ export function UserProfilePopover() {
     }
     const isExplicitAdmin = active.email === 'tcns@hcmute.edu.vn';
     const synced = await syncOperatorAccountWithServer(active);
+    if (synced.account?.hasSelectedUnit || synced.account?.role === 'unit_leader' || synced.account?.role === 'admin') {
+      markEmailAsOnboarded(active.email);
+    }
     setIsAdmin(isExplicitAdmin && synced.isAdmin);
     setSession(getCurrentOperatorSession() || active);
     setIsSyncing(false);
@@ -75,13 +79,26 @@ export function UserProfilePopover() {
 
   const handleUnitConfirmed = async (unitCode: string, title: string) => {
     if (!session) return;
+    markEmailAsOnboarded(session.email);
     const mappedRole = getRoleFromTitle(title);
     await updateMyAccountOnServer(session, { unitCode, title, role: mappedRole, hasSelectedUnit: true });
     await loadAndSync();
     router.push('/');
   };
 
-  const needsUnitSelection = Boolean(!isSyncing && session && !session.hasSelectedUnit && session.email !== 'tcns@hcmute.edu.vn');
+  const isAlreadyOnboarded = Boolean(
+    session?.hasSelectedUnit ||
+    isEmailAlreadyOnboarded(session?.email || '') ||
+    session?.role === 'admin' ||
+    session?.role === 'unit_leader' ||
+    session?.email === 'tcns@hcmute.edu.vn'
+  );
+
+  const needsUnitSelection = Boolean(
+    !isSyncing &&
+    session &&
+    !isAlreadyOnboarded
+  );
 
   if (!session) {
     return (

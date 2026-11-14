@@ -8,7 +8,7 @@ import {
   getCurrentOperatorSession,
   getAllEmailSessions
 } from '@/services/telemetry/operator-session';
-import { getRoleFromTitle } from '@/services/auth/account-client';
+import { getRoleFromTitle, isEmailAlreadyOnboarded, markEmailAsOnboarded } from '@/services/auth/account-client';
 
 export interface GoogleLoginCheckResult {
   ok: boolean;
@@ -88,21 +88,26 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSes
       fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
     }
 
-    const hasSelectedUnit = isTcnsAdmin
-      ? true
-      : isSameEmail
-      ? Boolean(existing.hasSelectedUnit)
-      : Boolean(prevRecord);
+    const alreadyOnboarded =
+      isTcnsAdmin ||
+      isEmailAlreadyOnboarded(email) ||
+      Boolean(prevRecord) ||
+      Boolean(existing?.hasSelectedUnit) ||
+      existing?.role === 'unit_leader' ||
+      existing?.role === 'admin' ||
+      (Boolean(existing?.unitCode) && existing?.unitCode !== defaultUnitCode);
+
+    const hasSelectedUnit = alreadyOnboarded;
     const unitCode = isTcnsAdmin
       ? 'TCNS'
-      : isSameEmail && existing.hasSelectedUnit
-      ? existing.unitCode
-      : (prevRecord?.unitCode || defaultUnitCode);
+      : (isSameEmail && existing?.unitCode) || prevRecord?.unitCode || defaultUnitCode;
     const title = isTcnsAdmin
       ? 'Trưởng phòng'
-      : isSameEmail
-      ? existing.title
-      : (prevRecord?.title || 'Chuyên viên');
+      : (isSameEmail && existing?.title) || prevRecord?.title || 'Chuyên viên';
+
+    if (hasSelectedUnit) {
+      markEmailAsOnboarded(email);
+    }
 
     const displayName =
       payload.user_metadata?.full_name ||

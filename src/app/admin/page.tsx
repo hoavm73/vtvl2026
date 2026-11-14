@@ -12,6 +12,7 @@ import { AdminAccountsTab } from '@/components/admin/AdminAccountsTab';
 import { AdminSessionControlTab } from '@/components/admin/AdminSessionControlTab';
 import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
+import { AdminSkeletonLoading } from '@/components/admin/AdminSkeletonLoading';
 import { getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
 import { getAdminUnits } from '@/services/units/unit-management';
@@ -132,14 +133,7 @@ export default function AdminPage() {
   };
 
   if (isAuthenticated === null) {
-    return (
-      <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[#004776]">
-          <ShieldCheck className="w-5 h-5 animate-spin text-[#004776]" />
-          <span>Đang xác minh quyền Quản trị viên máy chủ...</span>
-        </div>
-      </main>
-    );
+    return <AdminSkeletonLoading />;
   }
 
   if (authError) {
@@ -215,56 +209,56 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="px-3.5 sm:px-5 border-b border-[#e2e8f0] flex items-center gap-2 sm:gap-6 bg-white overflow-x-auto no-scrollbar">
+          <div className="px-3 sm:px-6 border-b border-[#e2e8f0] flex items-center gap-1 sm:gap-2 bg-white overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setActiveTab('sessions')}
-              className={`h-[48px] inline-flex items-center gap-2 text-xs font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2 whitespace-nowrap ${
+              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
                 activeTab === 'sessions'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/30'
+                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
                   : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
               }`}
             >
-              <FileSpreadsheet className="w-4 h-4" />
+              <FileSpreadsheet className="w-4 h-4 shrink-0" />
               <span>1. Phiên &amp; Bảng biểu kết quả ({sessionCount})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('accounts')}
-              className={`h-[48px] inline-flex items-center gap-2 text-xs font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2 whitespace-nowrap ${
+              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
                 activeTab === 'accounts'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/30'
+                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
                   : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
               }`}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 shrink-0" />
               <span>2. Tài khoản &amp; Phân quyền ({accountCount})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('session-control')}
-              className={`h-[48px] inline-flex items-center gap-2 text-xs font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2 whitespace-nowrap ${
+              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
                 activeTab === 'session-control'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/30'
+                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
                   : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
               }`}
             >
-              <UserCheck className="w-4 h-4" />
+              <UserCheck className="w-4 h-4 shrink-0" />
               <span>3. Quản trị phiên làm việc</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('units')}
-              className={`h-[48px] inline-flex items-center gap-2 text-xs font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2 whitespace-nowrap ${
+              className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
                 activeTab === 'units'
-                  ? 'text-[#004776] border-[#004776] bg-blue-50/30'
+                  ? 'text-[#004776] border-[#004776] bg-blue-50/40'
                   : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
               }`}
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className="w-4 h-4 shrink-0" />
               <span>4. Quản trị đơn vị &amp; Mã đơn vị ({unitCount})</span>
             </button>
           </div>

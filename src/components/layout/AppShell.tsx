@@ -85,7 +85,7 @@ export function AppShell({ children }: AppShellProps) {
         channel.close();
       }
     };
-  }, [refreshSession]);
+  }, [refreshSession, pathname, router]);
 
   const handleToggleSidebar = () => {
     setCollapsed((prev) => {
@@ -103,12 +103,24 @@ export function AppShell({ children }: AppShellProps) {
   const isLoggedIn = Boolean(session);
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-clip relative">
-      {!isLoginPage && <Header />}
+    <div className="min-h-screen flex flex-col overflow-x-clip relative bg-[#f8fbff]">
+      {!isLoginPage && isLoggedIn && <Header />}
+
       {isLoginPage ? (
         <main className="flex-1 flex flex-col min-h-screen">{children}</main>
       ) : !isLoggedIn ? (
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="flex-1 flex flex-col items-center justify-center min-h-screen p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-[#d8e3ef] flex items-center justify-center mb-4">
+            <img src="/ute_logo.png" alt="HCM-UTE Logo" className="w-10 h-10 object-contain" />
+          </div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-[#004776] mb-1">
+            <span className="w-4 h-4 border-2 border-[#0072BC] border-t-transparent rounded-full animate-spin" />
+            <span>Đang chuyển hướng đến Cổng đăng nhập...</span>
+          </div>
+          <p className="text-xs text-[#64748b]">
+            Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)
+          </p>
+        </main>
       ) : (
         <div className="flex-1 flex w-full">
           <AppSidebar
@@ -121,7 +133,8 @@ export function AppShell({ children }: AppShellProps) {
           </main>
         </div>
       )}
-      {!isLoginPage && <Footer />}
+
+      {!isLoginPage && isLoggedIn && <Footer />}
     </div>
   );
 }

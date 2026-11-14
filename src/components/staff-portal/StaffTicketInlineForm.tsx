@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { LayoutList, Printer } from 'lucide-react';
 import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
-import { StaffTicketCoreFields } from './StaffTicketCoreFields';
-import { StaffTicketVolumeFields } from './StaffTicketVolumeFields';
+import { StaffTicketModernForm } from './StaffTicketModernForm';
+import { StaffTicketA4Preview } from './StaffTicketA4Preview';
 import { StaffTicketToolbar } from './StaffTicketToolbar';
-import { StaffTicketSignatureBlock } from './StaffTicketSignatureBlock';
 
 interface StaffTicketInlineFormProps {
   unitCode: string;
@@ -33,6 +33,7 @@ export function StaffTicketInlineForm({
   onCancelEdit,
   onSaved
 }: StaffTicketInlineFormProps) {
+  const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
   const [maNhiemVu, setMaNhiemVu] = useState('');
   const [maCongViec, setMaCongViec] = useState('');
   const [tenCongViec, setTenCongViec] = useState('');
@@ -176,94 +177,76 @@ export function StaffTicketInlineForm({
     label: `${v.maVtvl} — ${String(v.tenVtvl || '')}`
   }));
 
+  const formProps = {
+    maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
+    sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung,
+    missionOptions, vtvlOptions,
+    onChangeMission: handleMissionChange,
+    onChangeTenCongViec: setTenCongViec,
+    onChangeVtvl: setMaVtvl,
+    onChangeVtvlPhoiHop: setMaVtvlPhoiHop,
+    onChangeSanPham: setSanPham,
+    onChangeChatLuong: setChatLuong,
+    onChangeCanCu: setCanCu,
+    onChangeSoSp: setSoSpNam,
+    onChangeNguon: setNguonSoLieu,
+    onChangePhut: setPhutThucTe,
+    onChangeGioBoSung: setGioBoSung
+  };
+
   return (
     <div id="staff-ticket-form-card" className="space-y-3">
-      <StaffTicketToolbar
-        isEditing={Boolean(editingTicket)}
-        editingTaskCode={editingTicket?.maCongViec}
-        saving={saving}
-        onCancelEdit={onCancelEdit}
-        onPrint={() => window.print()}
-        onSave={handleSave}
-      />
+      {/* Thanh công cụ và chuyển đổi chế độ xem */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#cbd5e1] shadow-2xs">
+        <div className="inline-flex p-1 bg-[#f1f5f9] rounded-xl border border-[#e2e8f0]">
+          <button
+            type="button"
+            onClick={() => setViewMode('form')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'form' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#64748b] hover:text-[#004776]'
+            }`}
+          >
+            <LayoutList className="w-3.5 h-3.5" />
+            <span>Kê khai nhập liệu</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('preview')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'preview' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#64748b] hover:text-[#004776]'
+            }`}
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Xem trước bản in A4</span>
+          </button>
+        </div>
+
+        <StaffTicketToolbar
+          isEditing={Boolean(editingTicket)}
+          editingTaskCode={editingTicket?.maCongViec}
+          saving={saving}
+          onCancelEdit={onCancelEdit}
+          onPrint={() => window.print()}
+          onSave={handleSave}
+        />
+      </div>
 
       {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
       {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
 
-      <div
-        className="bg-white rounded-2xl border-2 border-[#cbd5e1] shadow-2xl p-4 sm:p-8 md:p-10 text-[#004776] print:border-none print:shadow-none print:p-0"
-        style={{ fontFamily: '"Times New Roman", Times, serif' }}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-12 print:grid-cols-12 gap-3 sm:gap-2 text-center mb-5">
-          <div className="sm:col-span-5 print:col-span-5">
-            <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
-            <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
-            <div className="text-[11px] font-bold uppercase mt-0.5">{unit.nameVi}</div>
-            <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
-          </div>
-          <div className="sm:col-span-7 print:col-span-7">
-            <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-            <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
-            <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
-          </div>
-        </div>
-
-        <div className="text-center mb-6">
-          <h2 className="text-[16px] sm:text-[18px] font-bold uppercase tracking-tight text-[#004776]">
-            PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
-          </h2>
-          <div className="text-[12px] italic text-[#475569] mt-0.5">
-            (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026 • Theo Hướng dẫn số 07-HD/BTCTW)
-          </div>
-        </div>
-
-        <div className="space-y-1.5 mb-5 text-[13px] border-b border-[#e2e8f0] pb-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div><strong>Họ và tên người lập phiếu:</strong> {ownerName} ({ownerEmail})</div>
-            <div><strong>Trạng thái phiếu:</strong> <span className="font-bold text-[#0072BC]">{editingTicket?.status || 'Đang tạo mới'}</span></div>
-          </div>
-          <div><strong>Chức danh / Chức vụ:</strong> {ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp; <strong>Đơn vị:</strong> {unit.nameVi} ({unit.code})</div>
-        </div>
-
-        <div className="overflow-x-auto -mx-1 sm:mx-0">
-          <table className="w-full min-w-[500px] sm:min-w-0 border-collapse border border-[#004776] text-[12.5px] mb-5">
-            <tbody>
-              <StaffTicketCoreFields
-                maNhiemVu={maNhiemVu}
-                maCongViec={maCongViec}
-                tenCongViec={tenCongViec}
-                maVtvl={maVtvl}
-                maVtvlPhoiHop={maVtvlPhoiHop}
-                sanPham={sanPham}
-                chatLuong={chatLuong}
-                canCu={canCu}
-                missionOptions={missionOptions}
-                vtvlOptions={vtvlOptions}
-                onChangeMission={handleMissionChange}
-                onChangeTenCongViec={setTenCongViec}
-                onChangeVtvl={setMaVtvl}
-                onChangeVtvlPhoiHop={setMaVtvlPhoiHop}
-                onChangeSanPham={setSanPham}
-                onChangeChatLuong={setChatLuong}
-                onChangeCanCu={setCanCu}
-              />
-
-              <StaffTicketVolumeFields
-                soSpNam={soSpNam}
-                phutThucTe={phutThucTe}
-                gioBoSung={gioBoSung}
-                nguonSoLieu={nguonSoLieu}
-                onChangeSoSp={setSoSpNam}
-                onChangePhut={setPhutThucTe}
-                onChangeGioBoSung={setGioBoSung}
-                onChangeNguon={setNguonSoLieu}
-              />
-            </tbody>
-          </table>
-        </div>
-
-        <StaffTicketSignatureBlock ownerName={ownerName} />
-      </div>
+      {viewMode === 'form' ? (
+        <StaffTicketModernForm {...formProps} />
+      ) : (
+        <StaffTicketA4Preview
+          {...formProps}
+          unitNameVi={unit.nameVi}
+          unitCode={unit.code}
+          ownerName={ownerName}
+          ownerEmail={ownerEmail}
+          ownerTitle={ownerTitle}
+          editingTicket={editingTicket}
+        />
+      )}
     </div>
   );
 }

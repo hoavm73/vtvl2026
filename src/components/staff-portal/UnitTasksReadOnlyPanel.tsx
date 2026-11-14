@@ -31,7 +31,7 @@ export function UnitTasksReadOnlyPanel({
   }, [unitA2Tasks, searchQuery]);
 
   return (
-    <div className="xl:col-span-5 bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden">
+    <div className="xl:col-span-5 bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden xl:sticky xl:top-20 max-h-[calc(100vh-6rem)] flex flex-col">
       <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5">
         <div>
           <h2 className="text-base font-bold text-[#004776]">
@@ -64,7 +64,7 @@ export function UnitTasksReadOnlyPanel({
         </div>
       </div>
 
-      <div className="max-h-[640px] overflow-y-auto divide-y divide-[#f1f5f9]">
+      <div className="overflow-y-auto flex-1 divide-y divide-[#f1f5f9]">
         {unitA2Tasks.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#64748b]">Đơn vị chưa có danh sách công việc.</div>
         ) : filteredTasks.length === 0 ? (

@@ -73,7 +73,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
       {
         href: '/bang-tinh',
         label: 'Bảng tính 15 biểu',
-        subLabel: 'A1–A2–C1–B1–B2–C2–C3–D1–DU_BAO–D2',
+        subLabel: 'A1–A2–C1–B1–B2–C2–C3–D1–D2',
         icon: FileSpreadsheet
       },
       {
@@ -129,23 +129,28 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
     return pathname.startsWith(href);
   };
 
+  const unitDef = session?.unitCode ? findHcmuteUnit(session.unitCode) : null;
+
   return (
     <aside
-      aria-label="Thanh điều hướng nghiệp vụ"
+      aria-label="Thanh điều hướng nghiệp vụ chính"
       className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-[#d8e3ef] shadow-[2px_0_12px_-4px_rgba(0,71,118,0.04)] transition-all duration-300 z-20 ${
-        collapsed ? 'w-18' : 'w-64'
+        collapsed ? 'w-[72px]' : 'w-[272px]'
       }`}
     >
-      {/* Header Sidebar: Thông tin tài khoản & đơn vị */}
-      <div className="p-3.5 border-b border-[#e2ecf7] flex items-center justify-between gap-2">
+      {/* Header Sidebar: Thông tin tài khoản & đơn vị công tác */}
+      <div className="p-3 border-b border-[#e2ecf7] flex items-center justify-between gap-2 min-h-[58px]">
         {!collapsed ? (
-          <div className="min-w-0 flex items-center gap-2.5">
+          <div className="min-w-0 flex items-center gap-2.5 flex-1">
             <div className="w-8 h-8 rounded-xl bg-[#eef5ff] border border-[#dbeafe] flex items-center justify-center text-[#0072BC] shrink-0 font-bold text-xs">
               <Building2 className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-[#004776] truncate">
-                {session?.unitCode ? `[${findHcmuteUnit(session.unitCode).code}] ${findHcmuteUnit(session.unitCode).nameVi}` : 'Trường ĐH CNKT TP.HCM'}
+            <div className="min-w-0 flex-1">
+              <div
+                className="text-xs font-bold text-[#004776] truncate"
+                title={unitDef ? `[${unitDef.code}] ${unitDef.nameVi}` : 'Trường ĐH CNKT TP.HCM'}
+              >
+                {unitDef ? `[${unitDef.code}] ${unitDef.nameVi}` : 'Trường ĐH CNKT TP.HCM'}
               </div>
               <div className="text-[11px] font-semibold text-[#0072BC] flex items-center gap-1">
                 <UserCheck className="w-3 h-3 shrink-0" />
@@ -154,22 +159,25 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
             </div>
           </div>
         ) : (
-          <div className="mx-auto w-8 h-8 rounded-xl bg-[#eef5ff] border border-[#dbeafe] flex items-center justify-center text-[#0072BC] font-bold text-xs" title={`[${session?.unitCode || 'HCM-UTE'}] ${getRoleLabel(currentRole)}`}>
-            {session?.unitCode?.slice(0, 3) || 'UTE'}
+          <div
+            className="mx-auto w-8 h-8 rounded-xl bg-[#eef5ff] border border-[#dbeafe] flex items-center justify-center text-[#0072BC] font-bold text-xs shrink-0 cursor-default"
+            title={unitDef ? `[${unitDef.code}] ${unitDef.nameVi} · ${getRoleLabel(currentRole)}` : `HCM-UTE · ${getRoleLabel(currentRole)}`}
+          >
+            {unitDef?.code?.slice(0, 3) || 'UTE'}
           </div>
         )}
 
         <button
           type="button"
           onClick={onToggle}
-          title={collapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
+          title={collapsed ? 'Mở rộng menu điều hướng' : 'Thu gọn menu điều hướng'}
           className="p-1.5 rounded-lg border border-[#e2ecf7] text-[#476885] hover:text-[#004776] hover:bg-[#f4f7fb] cursor-pointer shrink-0 transition-colors"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Danh sách các nhóm nghiệp vụ */}
+      {/* Danh sách các nhóm nghiệp vụ chính */}
       <div className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
         {SIDEBAR_GROUPS.map((group) => {
           const visibleItems = group.items.filter(
@@ -193,7 +201,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    title={collapsed ? `${item.label} — ${item.subLabel || ''}` : undefined}
+                    title={`${item.label}${item.subLabel ? ` — ${item.subLabel}` : ''}`}
                     className={`flex items-center gap-2.5 rounded-xl transition-all group ${
                       collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'
                     } ${
@@ -229,6 +237,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                             className={`text-[11px] truncate leading-tight mt-0.5 ${
                               active ? 'text-white/90 font-medium' : 'text-[#20446c]'
                             }`}
+                            title={item.subLabel}
                           >
                             {item.subLabel}
                           </div>

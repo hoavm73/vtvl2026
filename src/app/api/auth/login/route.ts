@@ -57,15 +57,30 @@ export async function POST(req: NextRequest) {
     });
     await setUserSessionCookie(sessionToken);
 
+    let adminToken: string | undefined;
     if (verified.role === 'admin') {
-      await setServerAdminCookie(generateAdminToken());
+      adminToken = generateAdminToken();
+      await setServerAdminCookie(adminToken);
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
       account: stripAccountSensitiveFields(verified),
-      sessionToken
+      sessionToken,
+      adminToken
     });
+
+    if (adminToken) {
+      res.cookies.set('hcmute_vtvl_admin_token_v2', adminToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60
+      });
+    }
+
+    return res;
   } catch {
     return NextResponse.json({ error: 'Không thể xử lý yêu cầu đăng nhập.' }, { status: 500 });
   }

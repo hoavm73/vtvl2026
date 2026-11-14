@@ -196,11 +196,14 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
               {visibleItems.map((item) => {
                 const Icon = item.icon;
                 const active = isItemActive(item.href);
+                const targetHref = item.href === '/admin' && currentRole !== 'admin'
+                  ? '/login?redirect=/admin&admin=true'
+                  : item.href;
 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={targetHref}
                     title={`${item.label}${item.subLabel ? ` — ${item.subLabel}` : ''}`}
                     className={`flex items-center gap-2.5 rounded-xl transition-all group ${
                       collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'

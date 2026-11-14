@@ -9,7 +9,6 @@ import {
 import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBanner';
 import { OverviewProcessAndLegal } from '@/components/overview/OverviewProcessAndLegal';
 import { OverviewRoleActionCards } from '@/components/overview/OverviewRoleActionCards';
-import { AdminLoginModal } from '@/components/auth/AdminLoginModal';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
 import {
@@ -29,7 +28,6 @@ export default function HomePage() {
   });
   const [session, setSession] = useState<ActiveUnitSession>(() => getActiveUnitSession());
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const syncState = () => {
     const oauth = consumeGoogleOAuthCallback();
@@ -91,10 +89,7 @@ export default function HomePage() {
   return (
     <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-5 space-y-6">
       {/* 1. Banner chào mừng cá nhân hóa */}
-      <OverviewWelcomeBanner
-        session={operator}
-        onOpenAdminLogin={() => setIsAdminModalOpen(true)}
-      />
+      <OverviewWelcomeBanner session={operator} />
 
       {/* 2. Danh mục việc cần làm theo từng nhóm quyền */}
       <OverviewRoleActionCards currentRole={operator?.role || 'staff'} />
@@ -195,12 +190,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <AdminLoginModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        onSuccess={() => syncState()}
-      />
     </div>
   );
 }

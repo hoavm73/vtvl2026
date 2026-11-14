@@ -13,10 +13,9 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 interface OverviewWelcomeBannerProps {
   session: OperatorSession | null;
-  onOpenAdminLogin?: () => void;
 }
 
-export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWelcomeBannerProps) {
+export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
   const isGuest = !session;
   const role = session?.role || 'staff';
   const label = session?.displayName || (session?.email ? session.email.split('@')[0] : 'Cán bộ HCM-UTE');
@@ -77,16 +76,13 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
                 <LogIn className="w-4 h-4" />
                 <span>Đăng nhập ngay</span>
               </Link>
-              {onOpenAdminLogin && (
-                <button
-                  type="button"
-                  onClick={onOpenAdminLogin}
-                  className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  <span>Quản trị viên</span>
-                </button>
-              )}
+              <Link
+                href="/login?redirect=/admin&admin=true"
+                className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <span>Quản trị viên</span>
+              </Link>
             </div>
           </div>
         ) : (

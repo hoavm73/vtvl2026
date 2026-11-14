@@ -12,7 +12,6 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { GoogleLogoSvg, GoogleOAuthButton } from '@/components/auth/GoogleOAuthButton';
 import { AccountProfileModal } from '@/components/auth/AccountProfileModal';
 import { UnitSelectionModal } from '@/components/auth/UnitSelectionModal';
-import { AdminLoginModal } from '@/components/auth/AdminLoginModal';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { OperatorSession, getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback, signOutGoogleSession } from '@/services/auth/google-auth';
@@ -28,7 +27,6 @@ export function UserProfilePopover() {
   const [session, setSession] = useState<OperatorSession | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [roleUpdating, setRoleUpdating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
 
@@ -118,11 +116,14 @@ export function UserProfilePopover() {
             </div>
             <GoogleOAuthButton label="Tiếp tục với Google" loadingLabel="Đang kết nối…" redirectPath={currentPath} className="w-full justify-center font-bold" />
             <div className="pt-2 border-t border-[#e8eff7] space-y-1.5">
-              <PopoverClose onClick={() => setIsAdminModalOpen(true)}>
-                <span className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[#004776] bg-[#f0f7fd] hover:bg-[#e1effa] text-xs font-bold text-[#004776] transition-colors cursor-pointer">
+              <PopoverClose>
+                <Link
+                  href="/login?redirect=/admin&admin=true"
+                  className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[#004776] bg-[#f0f7fd] hover:bg-[#e1effa] text-xs font-bold text-[#004776] transition-colors cursor-pointer"
+                >
                   <ShieldCheck className="w-3.5 h-3.5 text-[#004776]" />
                   <span>Đăng nhập Quản trị hệ thống</span>
-                </span>
+                </Link>
               </PopoverClose>
               <PopoverClose onClick={() => window.dispatchEvent(new CustomEvent('vtvl-open-session-modal'))}>
                 <span className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-[#e1edf8] hover:bg-[#d0e4f5] text-xs font-bold text-[#004776] transition-colors cursor-pointer">
@@ -133,7 +134,6 @@ export function UserProfilePopover() {
             </div>
           </PopoverContent>
         </Popover>
-        <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} onSuccess={() => loadAndSync()} />
       </>
     );
   }
@@ -209,11 +209,14 @@ export function UserProfilePopover() {
             </PopoverClose>
 
             {!isAdmin && (
-              <PopoverClose onClick={() => setIsAdminModalOpen(true)}>
-                <span className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-[#0072BC]/40 bg-[#f0f7fd] hover:bg-[#e1effa] text-xs font-bold text-[#0072BC] transition-colors cursor-pointer">
+              <PopoverClose>
+                <Link
+                  href="/login?redirect=/admin&admin=true"
+                  className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-[#0072BC]/40 bg-[#f0f7fd] hover:bg-[#e1effa] text-xs font-bold text-[#0072BC] transition-colors cursor-pointer"
+                >
                   <ShieldCheck className="w-3.5 h-3.5 text-[#0072BC]" />
                   <span>Đăng nhập Quản trị hệ thống</span>
-                </span>
+                </Link>
               </PopoverClose>
             )}
 
@@ -247,7 +250,6 @@ export function UserProfilePopover() {
         </PopoverContent>
       </Popover>
 
-      <AdminLoginModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} onSuccess={() => loadAndSync()} />
       <AccountProfileModal isOpen={isProfileOpen} session={session} isAdmin={isAdmin} onClose={() => setIsProfileOpen(false)} onUpdated={() => loadAndSync()} />
       <UnitSelectionModal isOpen={needsUnitSelection} session={session} onConfirmed={handleUnitConfirmed} />
     </>

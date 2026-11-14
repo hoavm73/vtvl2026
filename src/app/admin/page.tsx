@@ -116,6 +116,12 @@ export default function AdminPage() {
     };
   }, [checkAuthAndLoadStats]);
 
+  useEffect(() => {
+    if (isAuthenticated === false) {
+      router.replace('/login?redirect=/admin&admin=true');
+    }
+  }, [isAuthenticated, router]);
+
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     await checkAuthAndLoadStats();
@@ -129,7 +135,7 @@ export default function AdminPage() {
     clearCurrentOperatorSession();
     setIsAuthenticated(false);
     setSessionCount(0);
-    router.push('/bang-tinh');
+    router.push('/login?redirect=/admin&admin=true');
   };
 
   if (isAuthenticated === null) {
@@ -161,8 +167,8 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <main className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-10 px-4">
-        <AdminAuthGate onSuccess={() => checkAuthAndLoadStats()} />
+      <main className="min-h-screen bg-[#f8fafc] py-10 px-4">
+        <AdminAuthGate />
       </main>
     );
   }

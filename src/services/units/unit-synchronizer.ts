@@ -167,9 +167,32 @@ export function syncUnitCodeAndNameInBrowser(
     })
   );
 
+  try {
+    const channel = new BroadcastChannel('hcmute_vtvl_realtime');
+    channel.postMessage({
+      type: 'UNIT_SYNC',
+      oldCode: cOld,
+      newCode: cNew,
+      oldNameVi: oldName,
+      newNameVi: newName
+    });
+    channel.close();
+  } catch {
+    // ignore
+  }
+
+  const syncHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const adminToken = sessionStorage.getItem('hcmute_vtvl_admin_token');
+    if (adminToken) syncHeaders.Authorization = `Bearer ${adminToken}`;
+  } catch {
+    // ignore
+  }
+
   fetch('/api/admin/units/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: syncHeaders,
+    credentials: 'include',
     body: JSON.stringify({ oldCode: cOld, newCode: cNew, oldNameVi: oldName, newNameVi: newName })
   }).catch(() => {});
 }

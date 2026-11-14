@@ -24,9 +24,20 @@ export function getAdminUnits(): HcmuteUnit[] {
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const adminToken = sessionStorage.getItem('hcmute_vtvl_admin_token');
+    if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
+  } catch {
+    // ignore
+  }
+  return headers;
+}
+
 /**
  * Lưu hoặc cập nhật một đơn vị vào danh mục đồng bộ.
- * Phát sự kiện để tất cả bảng biểu cập nhật thời gian thực.
+ * Phát sự kiện để tất cả bảng biểu cập nhật thời gian thực và đồng bộ máy chủ.
  */
 export function saveAdminUnit(unit: HcmuteUnit, originalCode?: string): void {
   if (typeof window === 'undefined') return;
@@ -61,6 +72,12 @@ export function saveAdminUnit(unit: HcmuteUnit, originalCode?: string): void {
     if (oldUnit && (oldUnit.code.toUpperCase() !== normCode || oldUnit.nameVi !== cleanUnit.nameVi)) {
       syncUnitCodeAndNameInBrowser(oldUnit.code, normCode, oldUnit.nameVi, cleanUnit.nameVi);
     }
+    fetch('/api/admin/units', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ unit: cleanUnit, originalCode })
+    }).catch(() => {});
   } catch {
     /* ignore localStorage errors */
   }
@@ -82,6 +99,11 @@ export function deleteAdminUnit(code: string): boolean {
   try {
     localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(filtered));
     window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: filtered }));
+    fetch(`/api/admin/units?code=${encodeURIComponent(normCode)}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    }).catch(() => {});
     return true;
   } catch {
     return false;
@@ -96,9 +118,32 @@ export function resetAdminUnitsToDefault(): void {
   try {
     localStorage.removeItem(CUSTOM_UNITS_STORAGE_KEY);
     window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: [...HCMUTE_UNITS] }));
+    fetch('/api/admin/units', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    }).catch(() => {});
   } catch {
     /* ignore localStorage errors */
   }
+}
+
+export async function syncUnitsWithServer(): Promise<HcmuteUnit[]> {
+  if (typeof window === 'undefined') return [...HCMUTE_UNITS];
+  try {
+    const res = await fetch('/api/admin/units', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.units) && data.units.length > 0) {
+        localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(data.units));
+        window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: data.units }));
+        return data.units;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return getAdminUnits();
 }
 
 /**

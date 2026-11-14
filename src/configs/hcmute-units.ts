@@ -162,6 +162,15 @@ export function getActiveHcmuteUnits(): HcmuteUnit[] {
     } catch {
       /* fallback */
     }
+  } else {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { getServerUnits } = require('@/services/storage/server-unit-store');
+      const sUnits = getServerUnits();
+      if (Array.isArray(sUnits) && sUnits.length > 0) return sUnits;
+    } catch {
+      /* fallback */
+    }
   }
   return HCMUTE_UNITS;
 }

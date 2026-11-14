@@ -10,7 +10,8 @@ import {
   getAdminUnits,
   deleteAdminUnit,
   resetAdminUnitsToDefault,
-  subscribeToUnitsChange
+  subscribeToUnitsChange,
+  syncUnitsWithServer
 } from '@/services/units/unit-management';
 import { AdminUnitEditModal } from './AdminUnitEditModal';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
@@ -34,6 +35,9 @@ export function AdminUnitsTab() {
 
   useEffect(() => {
     loadUnits();
+    syncUnitsWithServer().then((remoteUnits) => {
+      if (Array.isArray(remoteUnits) && remoteUnits.length > 0) setUnits(remoteUnits);
+    });
     const unsubscribe = subscribeToUnitsChange((updated) => {
       setUnits(updated);
     });

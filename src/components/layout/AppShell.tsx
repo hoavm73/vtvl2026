@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
+import { syncUnitsWithServer } from '@/services/units/unit-management';
 
 const SIDEBAR_STORAGE_KEY = 'vtvl_sidebar_collapsed';
 
@@ -46,6 +47,7 @@ export function AppShell({ children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
+    syncUnitsWithServer();
     const cur = refreshSession();
     const hasHashAuth = typeof window !== 'undefined' && window.location.hash.includes('access_token=');
     if (!cur && !hasHashAuth && pathname !== '/login') {
@@ -67,7 +69,7 @@ export function AppShell({ children }: AppShellProps) {
       try {
         channel = new BroadcastChannel('hcmute_vtvl_realtime');
         channel.onmessage = (event) => {
-          if (event.data?.type === 'OPERATOR_CHANGED') {
+          if (event.data?.type === 'OPERATOR_CHANGED' || event.data?.type === 'UNIT_SYNC') {
             refreshSession();
           }
         };

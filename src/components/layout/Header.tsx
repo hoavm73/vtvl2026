@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileSpreadsheet,
+  FileText,
+  Clock,
+  CheckSquare,
   Home,
   Menu,
   X,
@@ -14,11 +17,19 @@ import { InfoTip } from './MilestonesBar';
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 
 const NAV_ITEMS = [
+  { href: '/phieu-cong-viec', label: 'Phiếu công việc', icon: FileText },
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
-  { href: '/?view=overview', label: 'Tổng quan 08 bước', icon: Home },
-  // Tạm ẩn theo yêu cầu:
-  // { href: '/huong-dan', label: 'Phụ lục HD 07', icon: BookOpenCheck },
+  { href: '/?view=overview', label: 'Tổng quan', icon: Home },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
+];
+
+const MOBILE_NAV_ITEMS = [
+  { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText },
+  { href: '/bam-gio', label: 'Đo định mức thời gian', icon: Clock },
+  { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
+  { href: '/ra-soat', label: 'Rà soát & Thẩm định', icon: CheckSquare },
+  { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck },
+  { href: '/?view=overview', label: 'Tổng quan lộ trình', icon: Home }
 ];
 
 export function Header() {
@@ -158,13 +169,15 @@ export function Header() {
                 </button>
               </div>
               <nav aria-label="Menu di động" className="space-y-1.5">
-                {NAV_ITEMS.map((item) => {
+                {MOBILE_NAV_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const active = item.href === '/bang-tinh'
                     ? pathname === '/bang-tinh' || pathname === '/tao-tep'
-                    : item.href.startsWith('/?view=overview')
-                      ? pathname === '/'
-                      : pathname.startsWith(item.href);
+                    : item.href === '/phieu-cong-viec'
+                      ? pathname === '/phieu-cong-viec'
+                      : item.href.startsWith('/?view=overview')
+                        ? pathname === '/'
+                        : pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}

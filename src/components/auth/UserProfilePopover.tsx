@@ -141,6 +141,7 @@ export function UserProfilePopover() {
   const label = session.displayName || session.email.split('@')[0];
   const initials = label.slice(0, 2).toUpperCase();
   const activeRole = session.role || 'staff';
+  const roleTitle = activeRole === 'admin' ? 'Quản trị viên' : getRoleLabel(activeRole);
   const activeUnit = findHcmuteUnit(session.unitCode);
   const unitCode = activeUnit?.code || session.unitCode;
   const unitNameVi = activeUnit?.nameVi || session.unitNameVi;
@@ -156,8 +157,12 @@ export function UserProfilePopover() {
               <span className="w-7 h-7 rounded-full bg-[#004776] text-white text-xs font-bold inline-flex items-center justify-center shrink-0">{initials}</span>
             )}
             <span className="hidden md:flex flex-col text-left leading-tight">
-              <span className="text-[13px] font-bold text-[#004776] max-w-[130px] truncate">{label}</span>
-              <span className="text-[11px] font-semibold text-[#476885]">[{unitCode}] · {getRoleLabel(activeRole)}</span>
+              <span className="text-[13px] font-bold text-[#004776] max-w-[180px] lg:max-w-[220px] truncate" title={label}>
+                {label}
+              </span>
+              <span className="text-[11px] font-semibold text-[#476885]">
+                [{unitCode}] · {roleTitle}
+              </span>
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-[#476885] shrink-0" />
           </span>
@@ -174,7 +179,7 @@ export function UserProfilePopover() {
               <div className="text-sm font-bold text-[#004776] truncate">{label}</div>
               <div className="text-xs font-medium text-[#476885] truncate">{session.email}</div>
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <Badge variant={getRoleBadgeVariant(activeRole)} className="text-[11px] px-2 py-0.5">{getRoleLabel(activeRole)}</Badge>
+                <Badge variant={getRoleBadgeVariant(activeRole)} className="text-[11px] px-2 py-0.5">{roleTitle}</Badge>
                 {session.authProvider === 'google' && (
                   <Badge variant="success" className="text-[11px] px-2 py-0.5"><CheckCircle2 className="w-3 h-3" /><span>Google</span></Badge>
                 )}

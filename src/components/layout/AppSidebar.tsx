@@ -11,13 +11,9 @@ import {
   BookOpen,
   Home,
   ChevronLeft,
-  ChevronRight,
-  Building2,
-  UserCheck
+  ChevronRight
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
-import { getRoleLabel } from '@/services/auth/account-client';
-import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 interface NavItemDef {
   href: string;
@@ -115,8 +111,6 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
     return pathname.startsWith(href);
   };
 
-  const unitDef = session?.unitCode ? findHcmuteUnit(session.unitCode) : null;
-
   return (
     <aside
       aria-label="Thanh điều hướng nghiệp vụ chính"
@@ -124,32 +118,14 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
         collapsed ? 'w-[72px]' : 'w-[272px]'
       }`}
     >
-      {/* Header Sidebar: Thông tin tài khoản & đơn vị công tác */}
-      <div className="p-3 border-b border-[#e2ecf7] flex items-center justify-between gap-2 min-h-[58px]">
-        {!collapsed ? (
-          <div className="min-w-0 flex items-center gap-2.5 flex-1">
-            <div className="w-8 h-8 rounded-xl bg-[#eef5ff] border border-[#dbeafe] flex items-center justify-center text-[#0072BC] shrink-0 font-bold text-xs">
-              <Building2 className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div
-                className="text-xs font-bold text-[#004776] truncate"
-                title={unitDef ? `[${unitDef.code}] ${unitDef.nameVi}` : 'Trường ĐH CNKT TP.HCM'}
-              >
-                {unitDef ? `[${unitDef.code}] ${unitDef.nameVi}` : 'Trường ĐH CNKT TP.HCM'}
-              </div>
-              <div className="text-[11px] font-semibold text-[#0072BC] flex items-center gap-1">
-                <UserCheck className="w-3 h-3 shrink-0" />
-                <span className="truncate">{getRoleLabel(currentRole)}</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="mx-auto w-8 h-8 rounded-xl bg-[#eef5ff] border border-[#dbeafe] flex items-center justify-center text-[#0072BC] font-bold text-xs shrink-0 cursor-default"
-            title={unitDef ? `[${unitDef.code}] ${unitDef.nameVi} · ${getRoleLabel(currentRole)}` : `HCM-UTE · ${getRoleLabel(currentRole)}`}
-          >
-            {unitDef?.code?.slice(0, 3) || 'UTE'}
+      {/* Header Sidebar: Tiêu đề & Nút thu gọn/mở rộng menu */}
+      <div className={`p-3 border-b border-[#e2ecf7] flex items-center min-h-[54px] ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        {!collapsed && (
+          <div className="flex items-center gap-2 pl-1">
+            <span className="w-2 h-2 rounded-full bg-[#006cee]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[#004776]">
+              Menu Nghiệp vụ
+            </span>
           </div>
         )}
 

@@ -4,13 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileSpreadsheet, FileText, Clock, CheckSquare, Home,
-  Menu, X, ShieldCheck, Building2
+  FileSpreadsheet, FileText, Clock, Home,
+  Menu, X, ShieldCheck
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
-import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 const MOBILE_NAV_ITEMS = [
   { href: '/', label: 'Tổng quan hệ thống', icon: Home },
@@ -36,7 +35,6 @@ export function Header() {
 
   const isLoggedIn = Boolean(session);
   const isAdmin = Boolean(session?.role === 'admin' || session?.email === 'tcns@hcmute.edu.vn');
-  const unitDef = session?.unitCode ? findHcmuteUnit(session.unitCode) : null;
 
   const mobileNavItems = !isLoggedIn
     ? []
@@ -95,19 +93,8 @@ export function Header() {
           </InfoTip>
         </div>
 
-        {/* Tiện ích và Tài khoản bên phải (Sidebar là điều hướng chính trên desktop) */}
+        {/* Tiện ích và Tài khoản bên phải (Cụm điều khiển tài khoản duy nhất) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Huy hiệu đơn vị công tác hiện tại (chỉ hiển thị khi đã đăng nhập) */}
-          {unitDef && (
-            <div
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f6ff] border border-[#dbeafe] text-xs font-semibold text-[#004776] max-w-xs truncate"
-              title={`[${unitDef.code}] ${unitDef.nameVi}`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-              <span className="truncate">[{unitDef.code}] {unitDef.nameVi}</span>
-            </div>
-          )}
-
           {/* Popover Hồ sơ người dùng */}
           <UserProfilePopover />
 

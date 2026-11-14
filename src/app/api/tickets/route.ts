@@ -4,7 +4,8 @@ import {
   getTicketsByUnit,
   upsertTicketAndSyncUnit,
   deleteTicketAndSyncUnit,
-  allocateNextTaskCode
+  allocateNextTaskCode,
+  syncTicketsFromWorkbook
 } from '@/services/storage/server-ticket-store';
 import {
   getOrCreateWorkbook,
@@ -18,11 +19,12 @@ export async function GET(req: NextRequest) {
   const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
   const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
   const userAccount = email ? getUserAccountByEmail(email) : null;
-  const resolvedUnitCode = (unitCodeParam || userAccount?.unitCode || 'FIT').toUpperCase();
+  const resolvedUnitCode = (userAccount?.unitCode || unitCodeParam || 'FIT').toUpperCase();
   const unit = findHcmuteUnit(resolvedUnitCode);
 
   await syncServerWorkbooksFromSupabase();
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', email || 'guest@hcmute.edu.vn', 'Cán bộ – Giảng viên');
+  syncTicketsFromWorkbook(wb.data, unit.code);
 
   const myTickets = email ? getTicketsByOwner(email, unit.code) : [];
   const unitTickets = getTicketsByUnit(unit.code);

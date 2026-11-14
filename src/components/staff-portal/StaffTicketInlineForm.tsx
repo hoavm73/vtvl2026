@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
 import { StaffTicketCoreFields } from './StaffTicketCoreFields';
 import { StaffTicketVolumeFields } from './StaffTicketVolumeFields';
 import { StaffTicketToolbar } from './StaffTicketToolbar';
@@ -69,12 +70,18 @@ export function StaffTicketInlineForm({
     setErr('');
     setSuccessMsg('');
     const t = editingTicket;
-    if (t && t.unitCode === unitCode) {
-      setMaNhiemVu(t.maNhiemVu || '');
-      setMaCongViec(t.maCongViec || '');
+    if (t) {
+      const cleanUnit = unitCode.toUpperCase();
+      const updatedMission = replaceUnitCodePrefix(t.maNhiemVu, t.unitCode, cleanUnit);
+      const updatedTask = replaceUnitCodePrefix(t.maCongViec, t.unitCode, cleanUnit);
+      const updatedVtvl = replaceUnitCodePrefix(t.maVtvl, t.unitCode, cleanUnit);
+      const updatedVtvlPhoiHop = t.maVtvlPhoiHop ? replaceUnitCodePrefix(t.maVtvlPhoiHop, t.unitCode, cleanUnit) : '';
+
+      setMaNhiemVu(updatedMission || '');
+      setMaCongViec(updatedTask || '');
       setTenCongViec(t.tenCongViec || '');
-      setMaVtvl(t.maVtvl || '');
-      setMaVtvlPhoiHop(t.maVtvlPhoiHop || '');
+      setMaVtvl(updatedVtvl || '');
+      setMaVtvlPhoiHop(updatedVtvlPhoiHop || '');
       setSanPham(t.sanPham || '');
       setChatLuong(t.chatLuong || '');
       setCanCu(t.canCu || '');

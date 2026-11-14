@@ -14,6 +14,7 @@ import {
   deleteWorkbookFromSupabase
 } from '@/services/storage/server-supabase-store';
 import { migrateWorkbookSheets } from '@/services/units/unit-synchronizer';
+import { migrateTicketsForUnit } from '@/services/storage/server-ticket-store';
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,11 +69,15 @@ export async function POST(req: NextRequest) {
       updatedWorkbook = true;
     }
 
+    // 3. Đồng bộ toàn bộ phiếu công việc cá nhân của đơn vị sang mã mới
+    const updatedTicketsCount = migrateTicketsForUnit(oldCode, newCode);
+
     return NextResponse.json({
       success: true,
       message: `Đã đồng bộ mã ${oldCode} ➔ ${newCode} và tên đơn vị ${newNameVi}`,
       updatedAccountsCount,
-      updatedWorkbook
+      updatedWorkbook,
+      updatedTicketsCount
     });
   } catch {
     return NextResponse.json({ error: 'Lỗi hệ thống khi đồng bộ mã và tên đơn vị.' }, { status: 500 });

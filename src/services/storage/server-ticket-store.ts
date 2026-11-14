@@ -10,6 +10,7 @@ import {
   normalizeEmail,
   syncServerWorkbooksFromSupabase
 } from './server-workbook-store';
+import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const TICKETS_FILE = path.join(DATA_DIR, 'staff_tickets.json');
@@ -71,9 +72,30 @@ export function allocateNextTaskCode(
 export function getTicketsByOwner(email: string, unitCode?: string): StaffWorkTicket[] {
   const norm = normalizeEmail(email);
   const targetUnit = unitCode ? unitCode.trim().toUpperCase() : undefined;
-  return Array.from(loadTickets().values())
-    .filter((t) => normalizeEmail(t.ownerEmail) === norm && (!targetUnit || t.unitCode === targetUnit))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const store = loadTickets();
+  let modified = false;
+
+  const tickets = Array.from(store.values()).filter((t) => normalizeEmail(t.ownerEmail) === norm);
+
+  if (targetUnit) {
+    for (const t of tickets) {
+      if (t.unitCode.toUpperCase() !== targetUnit) {
+        const oldC = t.unitCode.toUpperCase();
+        t.unitCode = targetUnit;
+        t.maNhiemVu = replaceUnitCodePrefix(t.maNhiemVu, oldC, targetUnit);
+        t.maCongViec = replaceUnitCodePrefix(t.maCongViec, oldC, targetUnit);
+        t.maVtvl = replaceUnitCodePrefix(t.maVtvl, oldC, targetUnit);
+        if (t.maVtvlPhoiHop) {
+          t.maVtvlPhoiHop = replaceUnitCodePrefix(t.maVtvlPhoiHop, oldC, targetUnit);
+        }
+        t.updatedAt = new Date().toISOString();
+        modified = true;
+      }
+    }
+    if (modified) persistTickets();
+  }
+
+  return tickets.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export function getTicketsByUnit(unitCode: string): StaffWorkTicket[] {
@@ -206,4 +228,72 @@ export async function deleteTicketAndSyncUnit(ticketId: string, actorEmail: stri
     unitCode: unit.code
   });
   return true;
+}
+
+export function migrateTicketsForUnit(oldCode: string, newCode: string): number {
+  const store = loadTickets();
+  const cOld = oldCode.trim().toUpperCase();
+  const cNew = newCode.trim().toUpperCase();
+  let count = 0;
+
+  for (const ticket of store.values()) {
+    if (ticket.unitCode.toUpperCase() === cOld) {
+      ticket.unitCode = cNew;
+      ticket.maNhiemVu = replaceUnitCodePrefix(ticket.maNhiemVu, cOld, cNew);
+      ticket.maCongViec = replaceUnitCodePrefix(ticket.maCongViec, cOld, cNew);
+      ticket.maVtvl = replaceUnitCodePrefix(ticket.maVtvl, cOld, cNew);
+      if (ticket.maVtvlPhoiHop) {
+        ticket.maVtvlPhoiHop = replaceUnitCodePrefix(ticket.maVtvlPhoiHop, cOld, cNew);
+      }
+      if (Array.isArray(ticket.coordinatedTasks)) {
+        ticket.coordinatedTasks = ticket.coordinatedTasks.map((c) => ({
+          ...c,
+          targetUnitCode: c.targetUnitCode.toUpperCase() === cOld ? cNew : c.targetUnitCode,
+          targetTaskCode: replaceUnitCodePrefix(c.targetTaskCode, cOld, cNew)
+        }));
+      }
+      ticket.updatedAt = new Date().toISOString();
+      count++;
+    }
+  }
+
+  if (count > 0) persistTickets();
+  return count;
+}
+
+export function syncTicketsFromWorkbook(wbData: Record<string, GenericGridRow[]>, unitCode: string): void {
+  const store = loadTickets();
+  const a2Rows = wbData.A2 || [];
+  const b1Rows = wbData.B1 || [];
+  const b1Map = new Map<string, GenericGridRow>();
+  for (const b of b1Rows) {
+    if (b.maCongViec) b1Map.set(String(b.maCongViec).trim(), b);
+  }
+
+  let modified = false;
+  for (const a of a2Rows) {
+    if (!a.maCongViec) continue;
+    const taskCode = String(a.maCongViec).trim();
+    const ticketId = a.id?.startsWith('a2-') ? a.id.slice(3) : undefined;
+    if (ticketId && !store.has(ticketId)) {
+      const b1 = b1Map.get(taskCode);
+      const newTicket: StaffWorkTicket = {
+        id: ticketId, unitCode,
+        ownerEmail: normalizeEmail(String(a.nguoiLapPhieu || 'staff@hcmute.edu.vn')),
+        ownerName: String(a.nguoiLapPhieu || 'Cán bộ – Giảng viên'),
+        ownerTitle: 'Cán bộ – Giảng viên',
+        status: (a.trangThaiPhieu === 'Đã nộp' ? 'Đã nộp' : 'Nháp') as TicketStatus,
+        maNhiemVu: String(a.maNhiemVu || ''), maCongViec: taskCode,
+        tenCongViec: String(a.tenCongViec || ''), maVtvl: String(a.maVtvl || ''),
+        maVtvlPhoiHop: String(a.maVtvlPhoiHop || ''), sanPham: String(a.sanPham || ''),
+        chatLuong: String(a.chatLuong || ''), canCu: String(a.canCu || ''),
+        soSpNam: Number(b1?.soSpNam) || 0, nguonSoLieu: String(b1?.nguon || ''),
+        phutThucTe: Number(b1?.phutThucTe) || 0, gioBoSung: Number(b1?.gioBoSung) || 0,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      store.set(newTicket.id, newTicket);
+      modified = true;
+    }
+  }
+  if (modified) persistTickets();
 }

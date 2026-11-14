@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, LogOut, FileSpreadsheet, Building2 } from 'lucide-react';
 import {
   getCurrentOperatorSession,
+  saveCurrentOperatorSession,
   clearCurrentOperatorSession,
   OperatorSession
 } from '@/services/telemetry/operator-session';
@@ -41,8 +42,25 @@ export default function StaffWorkTicketsPage() {
       );
       if (res.ok) {
         const json = await res.json();
+        const incomingUnitCode = (json.unitCode || op.unitCode).toUpperCase();
+        const incomingUnitName = json.unitNameVi || op.unitNameVi;
+
+        if (incomingUnitCode && incomingUnitCode !== op.unitCode.toUpperCase()) {
+          const updated = saveCurrentOperatorSession(op.email, incomingUnitCode, op.title, {
+            displayName: op.displayName,
+            avatarUrl: op.avatarUrl,
+            authProvider: op.authProvider,
+            accessToken: op.accessToken,
+            role: op.role,
+            hasSelectedUnit: true
+          });
+          setSession(updated);
+          setUnitNameVi(incomingUnitName);
+        } else {
+          setUnitNameVi(incomingUnitName);
+        }
+
         setMyTickets(json.myTickets || []);
-        setUnitNameVi(json.unitNameVi || op.unitNameVi);
         setA1Missions(json.a1Missions || []);
         setC1Vtvls(json.c1Vtvls || []);
         setUnitA2Tasks(json.unitA2Tasks || []);
@@ -76,6 +94,25 @@ export default function StaffWorkTicketsPage() {
       syncWithActiveSession(getCurrentOperatorSession());
     };
 
+    const handleGridSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ oldCode: string; newCode: string; newNameVi?: string }>;
+      const cur = getCurrentOperatorSession();
+      if (cur && customEvent.detail?.oldCode && cur.unitCode.toUpperCase() === customEvent.detail.oldCode.toUpperCase()) {
+        const nextCode = customEvent.detail.newCode.toUpperCase();
+        const updated = saveCurrentOperatorSession(cur.email, nextCode, cur.title, {
+          displayName: cur.displayName,
+          avatarUrl: cur.avatarUrl,
+          authProvider: cur.authProvider,
+          accessToken: cur.accessToken,
+          role: cur.role,
+          hasSelectedUnit: true
+        });
+        syncWithActiveSession(updated);
+      } else {
+        syncWithActiveSession(getCurrentOperatorSession());
+      }
+    };
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'hcmute_vtvl_current_operator_v1' || e.key === 'vtvl_operator_session') {
         syncWithActiveSession(getCurrentOperatorSession());
@@ -83,6 +120,7 @@ export default function StaffWorkTicketsPage() {
     };
 
     window.addEventListener('vtvl-operator-changed', handleSessionChange);
+    window.addEventListener('vtvl-grid-sync', handleGridSync);
     window.addEventListener('storage', handleStorageChange);
 
     let channel: BroadcastChannel | null = null;
@@ -99,6 +137,7 @@ export default function StaffWorkTicketsPage() {
 
     return () => {
       window.removeEventListener('vtvl-operator-changed', handleSessionChange);
+      window.removeEventListener('vtvl-grid-sync', handleGridSync);
       window.removeEventListener('storage', handleStorageChange);
       if (channel) channel.close();
     };

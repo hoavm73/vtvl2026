@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, LogOut, FileSpreadsheet, Building2 } from 'lucide-react';
@@ -33,6 +33,7 @@ export default function StaffWorkTicketsPage() {
   const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null);
   const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
   const [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
+  const lastLoadedKeyRef = useRef<string>('');
 
   const loadData = useCallback(async (op: OperatorSession) => {
     setLoading(true);
@@ -42,24 +43,7 @@ export default function StaffWorkTicketsPage() {
       );
       if (res.ok) {
         const json = await res.json();
-        const incomingUnitCode = (json.unitCode || op.unitCode).toUpperCase();
-        const incomingUnitName = json.unitNameVi || op.unitNameVi;
-
-        if (incomingUnitCode && incomingUnitCode !== op.unitCode.toUpperCase()) {
-          const updated = saveCurrentOperatorSession(op.email, incomingUnitCode, op.title, {
-            displayName: op.displayName,
-            avatarUrl: op.avatarUrl,
-            authProvider: op.authProvider,
-            accessToken: op.accessToken,
-            role: op.role,
-            hasSelectedUnit: true
-          });
-          setSession(updated);
-          setUnitNameVi(incomingUnitName);
-        } else {
-          setUnitNameVi(incomingUnitName);
-        }
-
+        setUnitNameVi(json.unitNameVi || op.unitNameVi);
         setMyTickets(json.myTickets || []);
         setA1Missions(json.a1Missions || []);
         setC1Vtvls(json.c1Vtvls || []);
@@ -83,7 +67,12 @@ export default function StaffWorkTicketsPage() {
       return op;
     });
     setUnitNameVi(op.unitNameVi);
-    loadData(op);
+
+    const sessionKey = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
+    if (lastLoadedKeyRef.current !== sessionKey) {
+      lastLoadedKeyRef.current = sessionKey;
+      loadData(op);
+    }
   }, [router, loadData]);
 
   useEffect(() => {
@@ -99,6 +88,7 @@ export default function StaffWorkTicketsPage() {
       const cur = getCurrentOperatorSession();
       if (cur && customEvent.detail?.oldCode && cur.unitCode.toUpperCase() === customEvent.detail.oldCode.toUpperCase()) {
         const nextCode = customEvent.detail.newCode.toUpperCase();
+        lastLoadedKeyRef.current = '';
         const updated = saveCurrentOperatorSession(cur.email, nextCode, cur.title, {
           displayName: cur.displayName,
           avatarUrl: cur.avatarUrl,
@@ -109,12 +99,14 @@ export default function StaffWorkTicketsPage() {
         });
         syncWithActiveSession(updated);
       } else {
+        lastLoadedKeyRef.current = '';
         syncWithActiveSession(getCurrentOperatorSession());
       }
     };
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'hcmute_vtvl_current_operator_v1' || e.key === 'vtvl_operator_session') {
+        lastLoadedKeyRef.current = '';
         syncWithActiveSession(getCurrentOperatorSession());
       }
     };

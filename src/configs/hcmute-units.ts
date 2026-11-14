@@ -116,7 +116,7 @@ export const UNIT_CODE_ALIASES: Record<string, string> = {
   PHBP: 'PHBP', TCKHGDKT: 'TCKHGDKT', TTHLDHS: 'HLDHS',
   TTSTKN: 'CISAT', 'TTSTKN&CGCN': 'CISAT', TTTTMT: 'INC',
   TTCNPM: 'STC', TTGDQPAN: 'GDQPAN', TTGDTC: 'GDTC', BANTT: 'KTX',
-  VDTQT: 'IIE', VSDH: 'SDH', KDTTT: 'FAE', FHQ: 'FAE', KHOA: 'FME'
+  VDTQT: 'IIE', VSDH: 'SDH', KDTTT: 'FAE', FHQ: 'FAE', KHOA: 'FME', CK: 'FME'
 };
 
 export const QD2266_UNIT_NAMES: Record<string, string> = {

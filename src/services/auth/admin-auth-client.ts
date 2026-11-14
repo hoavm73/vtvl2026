@@ -7,6 +7,12 @@ export const TCNS_ADMIN_UNIT = 'TCNS';
 export const TCNS_ADMIN_TITLE = 'Quản trị viên hệ thống';
 
 export function loginAsAdminSession(): OperatorSession {
+  try {
+    signOutGoogleSession();
+    clearCurrentOperatorSession();
+  } catch {
+    // ignore
+  }
   return saveCurrentOperatorSession(
     TCNS_ADMIN_EMAIL,
     TCNS_ADMIN_UNIT,

@@ -28,6 +28,12 @@ export interface UserAccountRecord {
 
 const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'staff'];
 
+export function getRoleTitle(role: UserRole): string {
+  if (role === 'admin') return 'Phòng Tổ chức – Nhân sự';
+  if (role === 'unit_leader') return 'Lãnh đạo đơn vị';
+  return 'Cán bộ – Giảng viên';
+}
+
 export function hashAccountPassword(password: string): string {
   return crypto.createHash('sha256').update(`hcmute_vtvl_${password}`).digest('hex');
 }
@@ -63,13 +69,15 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
   const unit = findHcmuteUnit(item.unitCode || 'FIT');
   const now = new Date().toLocaleString('vi-VN');
   const isTcns = email === 'tcns@hcmute.edu.vn';
+  const role: UserRole = isValidRole(item.role) ? item.role : isTcns ? 'admin' : 'staff';
+  const title = getRoleTitle(role);
   return {
     email,
     displayName: (item.displayName || email.split('@')[0]).trim(),
     unitCode: unit.code,
     unitNameVi: unit.nameVi,
-    title: (item.title || (isTcns ? 'Trưởng phòng' : 'Chuyên viên')).trim(),
-    role: isValidRole(item.role) ? item.role : isTcns ? 'admin' : 'staff',
+    title,
+    role,
     authProvider: item.authProvider === 'google' ? 'google' : 'email',
     avatarUrl: item.avatarUrl,
     status: item.status === 'suspended' ? 'suspended' : 'active',
@@ -83,47 +91,18 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
 function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
   let changed = false;
   const now = new Date().toLocaleString('vi-VN');
-  if (!store.has('tcns@hcmute.edu.vn')) {
-    store.set('tcns@hcmute.edu.vn', normalizeRecord({
-      email: 'tcns@hcmute.edu.vn',
-      displayName: 'Phòng Tổ chức – Nhân sự',
-      unitCode: 'TCNS',
-      title: 'Trưởng phòng',
-      role: 'admin',
-      hasSelectedUnit: true,
-      passwordHash: hashAccountPassword('Hcmute@2026'),
-      createdAt: now,
-      lastActiveAt: now
-    }));
-    changed = true;
-  }
-  if (!store.has('lanhdao@hcmute.edu.vn')) {
-    store.set('lanhdao@hcmute.edu.vn', normalizeRecord({
-      email: 'lanhdao@hcmute.edu.vn',
-      displayName: 'Lãnh đạo Đơn vị (FIT)',
-      unitCode: 'FIT',
-      title: 'Trưởng khoa',
-      role: 'unit_leader',
-      hasSelectedUnit: true,
-      passwordHash: hashAccountPassword('123456'),
-      createdAt: now,
-      lastActiveAt: now
-    }));
-    changed = true;
-  }
-  if (!store.has('giangvien@hcmute.edu.vn')) {
-    store.set('giangvien@hcmute.edu.vn', normalizeRecord({
-      email: 'giangvien@hcmute.edu.vn',
-      displayName: 'Cán bộ – Giảng viên (FIT)',
-      unitCode: 'FIT',
-      title: 'Giảng viên',
-      role: 'staff',
-      hasSelectedUnit: true,
-      passwordHash: hashAccountPassword('123456'),
-      createdAt: now,
-      lastActiveAt: now
-    }));
-    changed = true;
+  const defaultSeeds: (Partial<UserAccountRecord> & { email: string; pass: string })[] = [
+    { email: 'tcns@hcmute.edu.vn', displayName: 'Phòng Tổ chức – Nhân sự', unitCode: 'TCNS', role: 'admin', pass: 'Hcmute@2026' },
+    { email: 'lanhdao@hcmute.edu.vn', displayName: 'Lãnh đạo Đơn vị (FIT)', unitCode: 'FIT', role: 'unit_leader', pass: '123456' },
+    { email: 'giangvien@hcmute.edu.vn', displayName: 'Cán bộ – Giảng viên (FIT)', unitCode: 'FIT', role: 'staff', pass: '123456' }
+  ];
+  for (const s of defaultSeeds) {
+    if (!store.has(s.email)) {
+      store.set(s.email, normalizeRecord({
+        ...s, hasSelectedUnit: true, passwordHash: hashAccountPassword(s.pass), createdAt: now, lastActiveAt: now
+      }));
+      changed = true;
+    }
   }
   for (const wb of getAllActiveServerWorkbooks()) {
     for (const p of wb.participants || []) {

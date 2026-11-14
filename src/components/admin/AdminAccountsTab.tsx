@@ -215,11 +215,10 @@ export function AdminAccountsTab() {
                 <th className="p-3 font-bold w-12 text-center border-r border-[#e2e8f0]">STT</th>
                 <th className="p-3 font-bold border-r border-[#e2e8f0]">Tài khoản cán bộ</th>
                 <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[200px]">Đơn vị công tác</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[170px]">Chức danh</th>
                 <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[220px]">
                   <span className="inline-flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Cập nhật vai trò</span>
+                    <span>Vai trò / Chức danh</span>
                   </span>
                 </th>
                 <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[140px]">Trạng thái</th>

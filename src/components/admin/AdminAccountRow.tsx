@@ -8,12 +8,9 @@ import {
   UserRole,
   UserAccountRecord,
   ROLE_OPTIONS,
+  getRoleLabel,
   getRoleBadgeVariant
 } from '@/services/auth/account-client';
-
-import { ADMIN_USER_TITLES } from '@/services/auth/account-client';
-
-const TITLE_OPTIONS = ADMIN_USER_TITLES;
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Đang hoạt động' },
@@ -41,9 +38,6 @@ export function AdminAccountRow({
   onDelete
 }: AdminAccountRowProps) {
   const isRootAdmin = acc.email === 'tcns@hcmute.edu.vn';
-  const titleChoices = TITLE_OPTIONS.includes(acc.title)
-    ? TITLE_OPTIONS
-    : [acc.title, ...TITLE_OPTIONS].filter(Boolean);
 
   return (
     <tr className="border-b border-[#e2e8f0] hover:bg-[#f5f9ff]/60 transition-colors">
@@ -80,17 +74,11 @@ export function AdminAccountRow({
       </td>
       <td className="p-2.5 border-r border-[#e2e8f0]">
         <ShadcnSelect
-          value={acc.title || 'Chuyên viên'}
-          onValueChange={(val) => onUpdate(acc, { title: val })}
-          options={titleChoices.map((t) => ({ value: t, label: t }))}
-          size="sm"
-          disabled={isUpdating}
-        />
-      </td>
-      <td className="p-2.5 border-r border-[#e2e8f0]">
-        <ShadcnSelect
           value={acc.role}
-          onValueChange={(val) => onUpdate(acc, { role: val as UserRole })}
+          onValueChange={(val) => {
+            const nextRole = val as UserRole;
+            onUpdate(acc, { role: nextRole, title: getRoleLabel(nextRole) });
+          }}
           options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
           size="sm"
           disabled={isUpdating || isRootAdmin}

@@ -14,13 +14,10 @@ import { OperatorSession } from '@/services/telemetry/operator-session';
 import {
   UserRole,
   ROLE_OPTIONS,
-  ADMIN_USER_TITLES,
   getRoleLabel,
   getRoleBadgeVariant,
   updateMyAccountOnServer
 } from '@/services/auth/account-client';
-
-const TITLE_OPTIONS = ADMIN_USER_TITLES;
 
 interface AccountProfileModalProps {
   isOpen: boolean;
@@ -196,51 +193,31 @@ export function AccountProfileModal({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#004776]">Chức danh công tác</label>
-                <ShadcnSelect
-                  value={title}
-                  onValueChange={setTitle}
-                  options={TITLE_OPTIONS.map((t) => ({ value: t, label: t }))}
-                  size="md"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
                 <label className="flex items-center gap-1.5 text-xs font-bold text-[#004776]">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Vai trò trên hệ thống</span>
+                  <span>Vai trò / Chức danh</span>
                 </label>
-                {canChangeRole && (
-                  <Link
-                    href="/admin?tab=accounts"
-                    onClick={onClose}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#004776] hover:underline"
-                  >
-                    <span>Phân quyền toàn trường</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
+                {canChangeRole ? (
+                  <ShadcnSelect
+                    value={role}
+                    onValueChange={(val) => {
+                      const nextRole = val as UserRole;
+                      setRole(nextRole);
+                      setTitle(getRoleLabel(nextRole));
+                    }}
+                    options={ROLE_OPTIONS.map((r) => ({
+                      value: r.value,
+                      label: r.label,
+                      description: r.description
+                    }))}
+                    size="md"
+                  />
+                ) : (
+                  <div className="w-full h-11 px-3.5 flex items-center bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-xs font-bold text-[#004776]">
+                    {getRoleLabel(role)}
+                  </div>
                 )}
               </div>
-
-              {canChangeRole ? (
-                <ShadcnSelect
-                  value={role}
-                  onValueChange={(val) => setRole(val as UserRole)}
-                  options={ROLE_OPTIONS.map((r) => ({
-                    value: r.value,
-                    label: r.label,
-                    description: r.description
-                  }))}
-                  size="md"
-                />
-              ) : (
-                <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs text-[#476885] space-y-1">
-                  <div className="font-bold text-[#004776]">{getRoleLabel(role)}</div>
-                  <p>Việc nâng cấp hoặc điều chỉnh vai trò hệ thống được thực hiện bởi Quản trị viên tại Phòng Tổ chức – Nhân sự.</p>
-                </div>
-              )}
             </div>
 
             {feedback && (

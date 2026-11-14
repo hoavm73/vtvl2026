@@ -106,6 +106,7 @@ export async function updateMyAccountOnServer(
   }
 ): Promise<{ ok: boolean; account?: UserAccountRecord; error?: string }> {
   try {
+    const resolvedTitle = updates.title || (updates.role ? getRoleLabel(updates.role) : undefined);
     const res = await fetch('/api/accounts', {
       method: 'PATCH',
       headers: buildAuthHeaders(session),
@@ -113,7 +114,7 @@ export async function updateMyAccountOnServer(
         email: session.email,
         displayName: updates.displayName,
         unitCode: updates.unitCode,
-        title: updates.title,
+        title: resolvedTitle,
         role: updates.role,
         hasSelectedUnit: updates.hasSelectedUnit
       })

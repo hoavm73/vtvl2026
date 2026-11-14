@@ -136,7 +136,7 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
             {/* Position Select */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-[#004776]">
-                Chức vụ / Vị trí công tác <span className="text-red-500">*</span>
+                Vai trò / Chức danh <span className="text-red-500">*</span>
               </label>
               <ShadcnSelect
                 value={selectedTitle}

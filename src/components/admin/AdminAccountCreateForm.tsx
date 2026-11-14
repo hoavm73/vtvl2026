@@ -5,9 +5,7 @@ import { UserPlus } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
-import { UserRole, ROLE_OPTIONS, ADMIN_USER_TITLES, getRoleLabel } from '@/services/auth/account-client';
-
-const TITLE_PRESETS = ADMIN_USER_TITLES;
+import { UserRole, ROLE_OPTIONS, getRoleLabel } from '@/services/auth/account-client';
 
 interface AdminAccountCreateFormProps {
   unitOptions: { value: string; label: string }[];
@@ -23,7 +21,6 @@ export function AdminAccountCreateForm({
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [unitCode, setUnitCode] = useState('FIT');
-  const [title, setTitle] = useState('Cán bộ – Giảng viên');
   const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
 
@@ -44,7 +41,7 @@ export function AdminAccountCreateForm({
           email: email.trim(),
           displayName: displayName.trim() || undefined,
           unitCode,
-          title,
+          title: getRoleLabel(role),
           role
         })
       });
@@ -80,7 +77,7 @@ export function AdminAccountCreateForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <input
           type="email"
           required
@@ -101,12 +98,6 @@ export function AdminAccountCreateForm({
           onValueChange={setUnitCode}
           options={unitOptions}
           searchable={true}
-          size="md"
-        />
-        <ShadcnSelect
-          value={title}
-          onValueChange={setTitle}
-          options={TITLE_PRESETS.map((t) => ({ value: t, label: t }))}
           size="md"
         />
         <div className="flex gap-2">

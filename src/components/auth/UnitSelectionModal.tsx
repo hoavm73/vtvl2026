@@ -64,10 +64,10 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
             </div>
             <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-bold text-[#004776] truncate">
-                Chọn đơn vị công tác của bạn
+                Chọn đơn vị công tác &amp; Vai trò làm việc
               </h2>
               <p className="text-xs font-medium text-[#476885] truncate">
-                Hoàn tất liên kết tài khoản Google với đơn vị tại HCM-UTE
+                Thiết lập lần đầu cho tài khoản HCM-UTE. Hệ thống sẽ tự động ghi nhớ cho các lần đăng nhập sau.
               </p>
             </div>
           </div>

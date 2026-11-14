@@ -261,10 +261,10 @@ export function upsertUserAccount(
 }
 
 export function updateUserAccountRole(
-  email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status'>>
+  email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status' | 'hasSelectedUnit'>>
 ): UserAccountRecord | null {
   const norm = normalizeEmail(email);
-  return !isValidRole(role) || !norm ? null : upsertUserAccount({ email: norm, role, ...updates }, true);
+  return !isValidRole(role) || !norm ? null : upsertUserAccount({ email: norm, role, hasSelectedUnit: true, ...updates }, true);
 }
 
 export function deleteUserAccount(email: string): boolean {

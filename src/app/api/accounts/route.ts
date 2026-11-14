@@ -65,22 +65,20 @@ export async function POST(req: NextRequest) {
     const verifiedGoogleAdmin = bearer ? await isVerifiedAdminAccount(email, bearer) : false;
     const isAdmin = cookieAdmin || verifiedGoogleAdmin;
 
-    let targetUnitCode = body.unitCode || existing?.unitCode;
-    let targetHasSelectedUnit = typeof body.hasSelectedUnit === 'boolean'
-      ? body.hasSelectedUnit
-      : Boolean(existing?.hasSelectedUnit);
-
-    if (body.unitCode) {
-      targetUnitCode = body.unitCode;
-    }
+    const hasExistingAssignment = Boolean(existing?.hasSelectedUnit);
+    const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'FIT');
+    const targetTitle = hasExistingAssignment ? existing!.title : (body.title || existing?.title);
+    const targetRole = hasExistingAssignment ? existing!.role : undefined;
+    const targetHasSelectedUnit = hasExistingAssignment ? true : (body.hasSelectedUnit !== undefined ? Boolean(body.hasSelectedUnit) : false);
 
     const rawAccount = upsertUserAccount({
       email,
       displayName: body.displayName || existing?.displayName,
-      unitCode: targetUnitCode || existing?.unitCode,
-      title: body.title || existing?.title,
+      unitCode: targetUnitCode,
+      title: targetTitle,
       avatarUrl: body.avatarUrl || existing?.avatarUrl,
       authProvider: body.authProvider === 'google' ? 'google' : (existing?.authProvider || 'email'),
+      role: targetRole,
       hasSelectedUnit: targetHasSelectedUnit
     });
 

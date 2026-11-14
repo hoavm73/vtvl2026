@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
         title: body.title,
         role: body.role as UserRole,
         authProvider: body.authProvider === 'google' ? 'google' : 'email',
-        status: body.status === 'suspended' ? 'suspended' : 'active'
+        status: body.status === 'suspended' ? 'suspended' : 'active',
+        hasSelectedUnit: true
       },
       true
     );
@@ -90,7 +91,8 @@ export async function PATCH(req: NextRequest) {
       unitCode: body.unitCode,
       title: body.title,
       displayName: body.displayName,
-      status: body.status
+      status: body.status,
+      hasSelectedUnit: true
     });
 
     if (!updated) {

@@ -57,7 +57,7 @@ export function AdminAccountsTab() {
   useEffect(() => { loadAccounts(); }, [loadAccounts]);
 
   const roleCounts = useMemo(() => {
-    const counts: Record<UserRole, number> = { admin: 0, unit_leader: 0, staff: 0, editor: 0, viewer: 0 };
+    const counts: Record<UserRole, number> = { admin: 0, unit_leader: 0, staff: 0 };
     accounts.forEach((a) => { counts[a.role] = (counts[a.role] || 0) + 1; });
     return counts;
   }, [accounts]);

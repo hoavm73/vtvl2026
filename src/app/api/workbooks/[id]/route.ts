@@ -97,7 +97,7 @@ export async function PUT(req: Request, context: RouteContext) {
       );
     }
 
-    if (actorAccount?.role === 'viewer') {
+    if (actorAccount?.role === 'staff') {
       return NextResponse.json(
         { error: 'Vai trò Người xem chỉ có quyền tra cứu, không được phép chỉnh sửa dữ liệu.', code: 'FORBIDDEN_VIEWER_WRITE' },
         { status: 403 }

@@ -43,7 +43,7 @@ export function AccountProfileModal({
   const [displayName, setDisplayName] = useState(session.displayName || session.email.split('@')[0]);
   const [unitCode, setUnitCode] = useState(session.unitCode);
   const [title, setTitle] = useState(session.title || 'Chuyên viên');
-  const [role, setRole] = useState<UserRole>(session.role || 'editor');
+  const [role, setRole] = useState<UserRole>(session.role || 'staff');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -52,7 +52,7 @@ export function AccountProfileModal({
     setDisplayName(session.displayName || session.email.split('@')[0]);
     setUnitCode(session.unitCode);
     setTitle(session.title || 'Chuyên viên');
-    setRole(session.role || 'editor');
+    setRole(session.role || 'staff');
     setFeedback(null);
   }, [isOpen, session]);
 

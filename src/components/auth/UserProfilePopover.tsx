@@ -130,7 +130,7 @@ export function UserProfilePopover() {
 
   const label = session.displayName || session.email.split('@')[0];
   const initials = label.slice(0, 2).toUpperCase();
-  const activeRole = session.role || 'editor';
+  const activeRole = session.role || 'staff';
   const canManageAdminRoles = isAdmin;
 
   return (

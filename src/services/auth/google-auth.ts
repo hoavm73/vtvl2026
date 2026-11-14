@@ -101,7 +101,7 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSes
       avatarUrl,
       authProvider: 'google',
       accessToken: token,
-      role: isTcnsAdmin ? 'admin' : (existing?.role || 'editor'),
+      role: isTcnsAdmin ? 'admin' : (existing?.role || 'staff'),
       hasSelectedUnit
     });
 

@@ -28,7 +28,7 @@ export function AdminAccountCreateForm({
   const [displayName, setDisplayName] = useState('');
   const [unitCode, setUnitCode] = useState('FIT');
   const [title, setTitle] = useState('Chuyên viên');
-  const [role, setRole] = useState<UserRole>('editor');
+  const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {

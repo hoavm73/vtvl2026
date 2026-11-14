@@ -90,7 +90,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
 
   const activeMeta = EXCEL_SHEET_METAS[activeSheet];
   const activeRows = data[activeSheet] || [];
-  const isReadOnlyViewer = session?.role === 'viewer' || session?.role === 'staff';
+  const isReadOnlyViewer = session?.role === 'staff';
   const effectiveC1Unlocked = isC1Unlocked || session?.role === 'unit_leader';
 
   const handleSave = useCallback(() => {

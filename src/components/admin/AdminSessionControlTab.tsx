@@ -36,7 +36,7 @@ export function AdminSessionControlTab() {
   const [newEmail, setNewEmail] = useState('tcns@hcmute.edu.vn');
   const [newUnitCode, setNewUnitCode] = useState('TCNS');
   const [newTitle, setNewTitle] = useState('Chuyên viên Tổ chức cán bộ');
-  const [newRole, setNewRole] = useState<UserRole>('editor');
+  const [newRole, setNewRole] = useState<UserRole>('staff');
 
   const refreshState = () => {
     setCurrentSession(getCurrentOperatorSession());

@@ -13,7 +13,7 @@ export interface OperatorSession {
   avatarUrl?: string;
   authProvider?: 'google' | 'email';
   accessToken?: string;
-  role?: 'admin' | 'unit_leader' | 'staff' | 'editor' | 'viewer';
+  role?: 'admin' | 'unit_leader' | 'staff';
   hasSelectedUnit?: boolean;
 }
 
@@ -109,7 +109,7 @@ export function saveCurrentOperatorSession(
     avatarUrl?: string;
     authProvider?: 'google' | 'email';
     accessToken?: string;
-    role?: 'admin' | 'unit_leader' | 'staff' | 'editor' | 'viewer';
+    role?: 'admin' | 'unit_leader' | 'staff';
     hasSelectedUnit?: boolean;
   }
 ): OperatorSession {

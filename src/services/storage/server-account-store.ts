@@ -8,7 +8,7 @@ import {
   syncServerWorkbooksFromSupabase
 } from './server-workbook-store';
 
-export type UserRole = 'admin' | 'unit_leader' | 'staff' | 'editor' | 'viewer';
+export type UserRole = 'admin' | 'unit_leader' | 'staff';
 
 export interface UserAccountRecord {
   email: string;
@@ -26,7 +26,7 @@ export interface UserAccountRecord {
   lastActiveAt: string;
 }
 
-const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'staff', 'editor', 'viewer'];
+const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'staff'];
 
 export function hashAccountPassword(password: string): string {
   return crypto.createHash('sha256').update(`hcmute_vtvl_${password}`).digest('hex');
@@ -69,7 +69,7 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
     unitCode: unit.code,
     unitNameVi: unit.nameVi,
     title: (item.title || (isTcns ? 'Trưởng phòng' : 'Chuyên viên')).trim(),
-    role: isValidRole(item.role) ? item.role : isTcns ? 'admin' : 'editor',
+    role: isValidRole(item.role) ? item.role : isTcns ? 'admin' : 'staff',
     authProvider: item.authProvider === 'google' ? 'google' : 'email',
     avatarUrl: item.avatarUrl,
     status: item.status === 'suspended' ? 'suspended' : 'active',
@@ -235,7 +235,7 @@ export async function syncAccountsFromSupabase(force = false): Promise<void> {
 }
 
 export function getAllUserAccounts(): UserAccountRecord[] {
-  const roleWeight: Record<UserRole, number> = { admin: 0, unit_leader: 1, staff: 2, editor: 3, viewer: 4 };
+  const roleWeight: Record<UserRole, number> = { admin: 0, unit_leader: 1, staff: 2 };
   return Array.from(loadStore().values()).sort((a, b) => roleWeight[a.role] - roleWeight[b.role] || a.email.localeCompare(b.email));
 }
 
@@ -261,7 +261,7 @@ export function upsertUserAccount(
   const resolvedRole: UserRole =
     allowRoleOverride && isValidRole(input.role)
       ? input.role
-      : existing?.role || (norm === 'tcns@hcmute.edu.vn' ? 'admin' : isValidRole(input.role) ? input.role : 'editor');
+      : existing?.role || (norm === 'tcns@hcmute.edu.vn' ? 'admin' : isValidRole(input.role) ? input.role : 'staff');
 
   const record = normalizeRecord({
     ...existing,

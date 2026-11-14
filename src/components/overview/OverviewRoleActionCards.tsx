@@ -88,12 +88,12 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
         tag: 'Chuẩn hóa công việc'
       },
       {
-        id: 'lead-slink',
-        title: 'Phát hành phiếu khảo sát & Mã QR S-Link',
-        target: 'Phiếu công việc cá nhân · Chia sẻ S-Link',
+        id: 'lead-share-form',
+        title: 'Phát hành phiếu khảo sát & Mã QR',
+        target: 'Phiếu công việc cá nhân · Chia sẻ mã QR',
         desc: 'Tạo mã QR và sao chép liên kết phát cho cán bộ, giảng viên, nhân viên trong đơn vị tự kê khai khối lượng công việc.',
         href: '/phieu-cong-viec',
-        btnLabel: 'Phát hành S-Link',
+        btnLabel: 'Phát hành phiếu',
         icon: Share2,
         tag: 'Khảo sát định mức'
       },

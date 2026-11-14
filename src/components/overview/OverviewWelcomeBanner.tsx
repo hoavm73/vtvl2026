@@ -46,7 +46,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
                 <span>Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)</span>
               </div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white leading-tight">
-                Hệ thống Vị trí việc làm 360 &amp; S-Link
+                Hệ thống Vị trí việc làm 360
               </h1>
               <p className="text-xs sm:text-sm text-sky-100 font-medium mt-1">
                 Chuẩn hóa danh mục, định mức giờ công việc và lập đề án giai đoạn 2026–2030 theo Hướng dẫn 07-HD/BTCTW
@@ -66,7 +66,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
                 Chào mừng bạn đến với Cổng thông tin Vị trí việc làm HCM-UTE
               </p>
               <p className="text-xs text-sky-100/90 leading-relaxed max-w-xl">
-                Đăng nhập tài khoản công vụ @hcmute.edu.vn hoặc đăng nhập Quản trị viên để bắt đầu kê khai công việc, phát phiếu S-Link hoặc thẩm định đề án.
+                Đăng nhập tài khoản công vụ @hcmute.edu.vn hoặc đăng nhập Quản trị viên để bắt đầu kê khai công việc, phát phiếu khảo sát hoặc thẩm định đề án.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -127,7 +127,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
                   {role === 'admin'
                     ? 'Quyền Quản trị viên hệ thống — Điều hành danh mục 51 đơn vị, tài khoản & thẩm định đề án.'
                     : role === 'unit_leader'
-                    ? 'Quyền Lãnh đạo đơn vị — Quản lý hồ sơ VTVL đơn vị, phát phiếu S-Link và tổng hợp 15 biểu.'
+                    ? 'Quyền Lãnh đạo đơn vị — Quản lý hồ sơ VTVL đơn vị, phát phiếu khảo sát và tổng hợp 15 biểu.'
                     : 'Quyền Cán bộ – Giảng viên — Kê khai phiếu mô tả công việc, đo định mức giờ và nộp hồ sơ.'}
                 </p>
               </div>

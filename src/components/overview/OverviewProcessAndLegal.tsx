@@ -20,10 +20,10 @@ const VTVL_FIVE_STEPS = [
   },
   {
     step: 2,
-    title: 'Phát phiếu khảo sát & QR S-Link',
-    sheets: '5. B2_CT_TacDong · S-Link QR',
+    title: 'Phát phiếu khảo sát & Mã QR',
+    sheets: '5. B2_CT_TacDong · Mã QR',
     icon: QrCode,
-    desc: 'Tạo mã QR và liên kết S-Link cho từng vị trí việc làm. Cán bộ – giảng viên quét mã để mở phiếu cá nhân trên điện thoại hoặc máy tính.',
+    desc: 'Tạo mã QR và liên kết trực tuyến cho từng vị trí việc làm. Cán bộ – giảng viên quét mã để mở phiếu cá nhân trên điện thoại hoặc máy tính.',
     href: '/phieu-cong-viec',
     color: 'from-sky-600 to-cyan-600'
   },

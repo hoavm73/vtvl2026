@@ -188,7 +188,7 @@ runTest('7. Kiểm tra 5 Thẻ Rà soát, Xuất Excel Chua_du_can_cu, Ví dụ 
 });
 
 // 8. Kiểm tra Hệ thống trạng thái biểu mẫu thống nhất (Dirty/Saving/Saved/Error, Blur Validation, Selected State, Toast, Kết quả dự kiến)
-runTest('8. Kiểm tra hệ thống phản hồi tương tác & trạng thái biểu mẫu (FormField, SaveStatus, Blur Validation, S-Link Preview)', () => {
+runTest('8. Kiểm tra hệ thống phản hồi tương tác & trạng thái biểu mẫu (FormField, SaveStatus, Blur Validation, Preview)', () => {
   const primitives = fs.readFileSync(path.join(root, 'src/components/ui/FormFeedbackPrimitives.tsx'), 'utf8');
   const inputs = fs.readFileSync(path.join(root, 'src/components/ui/FormInputs.tsx'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');

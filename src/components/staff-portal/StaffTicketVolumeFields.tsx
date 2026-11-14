@@ -50,7 +50,7 @@ export function StaffTicketVolumeFields({
             type="text"
             value={nguonSoLieu}
             onChange={(e) => onChangeNguon(e.target.value)}
-            placeholder="Nguồn số liệu sản lượng (Cột H Biểu B1, vd: Hệ thống S-Link, Sổ theo dõi...)"
+            placeholder="Nguồn số liệu sản lượng (Cột H Biểu B1, vd: Hệ thống thông tin nội bộ, Sổ theo dõi...)"
             className="w-full h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white text-[11px] text-[#004776] focus:border-[#0072BC] outline-hidden"
           />
         </td>

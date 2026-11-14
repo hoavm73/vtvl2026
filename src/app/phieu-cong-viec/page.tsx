@@ -179,10 +179,10 @@ export default function StaffWorkTicketsPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-4 sm:p-6">
-      <div className="max-w-[1440px] mx-auto space-y-5">
+    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6">
+      <div className="max-w-[1440px] mx-auto space-y-4 sm:space-y-5">
         {/* Banner chào mừng */}
-        <div className="bg-white rounded-2xl border border-[#dbeafe] shadow-xs p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-[#dbeafe] shadow-xs p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
               <Building2 className="w-3.5 h-3.5" />
@@ -198,29 +198,30 @@ export default function StaffWorkTicketsPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <Link
               href="/bang-tinh"
-              className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial justify-center h-10 px-3.5 sm:px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5 whitespace-nowrap"
             >
               <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
-              {session.role === 'unit_leader' ? 'Vào bảng tính đơn vị (Toàn quyền chỉnh sửa)' : 'Xem bảng biểu đơn vị (Chỉ đọc)'}
+              <span>{session.role === 'unit_leader' ? 'Vào bảng tính đơn vị' : 'Xem bảng biểu đơn vị'}</span>
             </Link>
             <button
               type="button"
               onClick={handleCreateNewClick}
-              className="h-10 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="flex-1 sm:flex-initial justify-center h-10 px-3.5 sm:px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              Tạo phiếu công việc mới
+              <span>Tạo phiếu mới</span>
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="h-10 px-3.5 rounded-xl border border-[#e2e8f0] hover:bg-red-50 text-xs font-medium text-[#64748b] hover:text-red-600 flex items-center gap-1.5 cursor-pointer"
+              className="h-10 px-3 rounded-xl border border-[#e2e8f0] hover:bg-red-50 text-xs font-medium text-[#64748b] hover:text-red-600 flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              title="Đăng xuất"
             >
               <LogOut className="w-4 h-4" />
-              Đăng xuất
+              <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </div>
         </div>

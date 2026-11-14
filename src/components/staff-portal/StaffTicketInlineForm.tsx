@@ -191,17 +191,17 @@ export function StaffTicketInlineForm({
       {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
 
       <div
-        className="bg-white rounded-2xl border-2 border-[#cbd5e1] shadow-2xl p-6 sm:p-10 text-[#004776] print:border-none print:shadow-none print:p-0"
+        className="bg-white rounded-2xl border-2 border-[#cbd5e1] shadow-2xl p-4 sm:p-8 md:p-10 text-[#004776] print:border-none print:shadow-none print:p-0"
         style={{ fontFamily: '"Times New Roman", Times, serif' }}
       >
-        <div className="grid grid-cols-12 gap-2 text-center mb-5">
-          <div className="col-span-5">
+        <div className="grid grid-cols-1 sm:grid-cols-12 print:grid-cols-12 gap-3 sm:gap-2 text-center mb-5">
+          <div className="sm:col-span-5 print:col-span-5">
             <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
             <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
             <div className="text-[11px] font-bold uppercase mt-0.5">{unit.nameVi}</div>
             <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
           </div>
-          <div className="col-span-7">
+          <div className="sm:col-span-7 print:col-span-7">
             <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
             <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
             <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
@@ -225,40 +225,42 @@ export function StaffTicketInlineForm({
           <div><strong>Chức danh / Chức vụ:</strong> {ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp; <strong>Đơn vị:</strong> {unit.nameVi} ({unit.code})</div>
         </div>
 
-        <table className="w-full border-collapse border border-[#004776] text-[12.5px] mb-5">
-          <tbody>
-            <StaffTicketCoreFields
-              maNhiemVu={maNhiemVu}
-              maCongViec={maCongViec}
-              tenCongViec={tenCongViec}
-              maVtvl={maVtvl}
-              maVtvlPhoiHop={maVtvlPhoiHop}
-              sanPham={sanPham}
-              chatLuong={chatLuong}
-              canCu={canCu}
-              missionOptions={missionOptions}
-              vtvlOptions={vtvlOptions}
-              onChangeMission={handleMissionChange}
-              onChangeTenCongViec={setTenCongViec}
-              onChangeVtvl={setMaVtvl}
-              onChangeVtvlPhoiHop={setMaVtvlPhoiHop}
-              onChangeSanPham={setSanPham}
-              onChangeChatLuong={setChatLuong}
-              onChangeCanCu={setCanCu}
-            />
+        <div className="overflow-x-auto -mx-1 sm:mx-0">
+          <table className="w-full min-w-[500px] sm:min-w-0 border-collapse border border-[#004776] text-[12.5px] mb-5">
+            <tbody>
+              <StaffTicketCoreFields
+                maNhiemVu={maNhiemVu}
+                maCongViec={maCongViec}
+                tenCongViec={tenCongViec}
+                maVtvl={maVtvl}
+                maVtvlPhoiHop={maVtvlPhoiHop}
+                sanPham={sanPham}
+                chatLuong={chatLuong}
+                canCu={canCu}
+                missionOptions={missionOptions}
+                vtvlOptions={vtvlOptions}
+                onChangeMission={handleMissionChange}
+                onChangeTenCongViec={setTenCongViec}
+                onChangeVtvl={setMaVtvl}
+                onChangeVtvlPhoiHop={setMaVtvlPhoiHop}
+                onChangeSanPham={setSanPham}
+                onChangeChatLuong={setChatLuong}
+                onChangeCanCu={setCanCu}
+              />
 
-            <StaffTicketVolumeFields
-              soSpNam={soSpNam}
-              phutThucTe={phutThucTe}
-              gioBoSung={gioBoSung}
-              nguonSoLieu={nguonSoLieu}
-              onChangeSoSp={setSoSpNam}
-              onChangePhut={setPhutThucTe}
-              onChangeGioBoSung={setGioBoSung}
-              onChangeNguon={setNguonSoLieu}
-            />
-          </tbody>
-        </table>
+              <StaffTicketVolumeFields
+                soSpNam={soSpNam}
+                phutThucTe={phutThucTe}
+                gioBoSung={gioBoSung}
+                nguonSoLieu={nguonSoLieu}
+                onChangeSoSp={setSoSpNam}
+                onChangePhut={setPhutThucTe}
+                onChangeGioBoSung={setGioBoSung}
+                onChangeNguon={setNguonSoLieu}
+              />
+            </tbody>
+          </table>
+        </div>
 
         <StaffTicketSignatureBlock ownerName={ownerName} />
       </div>

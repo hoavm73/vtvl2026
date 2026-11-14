@@ -100,7 +100,7 @@ export function OverviewProcessAndLegal() {
   return (
     <div className="space-y-6">
       {/* 1. Giới thiệu quy trình 5 bước */}
-      <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
+      <section className="bg-white rounded-3xl border border-[#d8e3ef] p-4 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ecf7] pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export function OverviewProcessAndLegal() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
           {VTVL_FIVE_STEPS.map((s) => {
             const Icon = s.icon;
             return (
@@ -164,7 +164,7 @@ export function OverviewProcessAndLegal() {
       </section>
 
       {/* 2. Căn cứ pháp lý & Văn bản hướng dẫn */}
-      <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-4">
+      <section className="bg-white rounded-3xl border border-[#d8e3ef] p-4 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#eef6ff] text-[#004776] flex items-center justify-center">

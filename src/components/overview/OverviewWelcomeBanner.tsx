@@ -34,11 +34,11 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
       <div className="relative p-6 sm:p-8 space-y-6">
         {/* Header title row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/15 pb-5">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <img
               src="/ute_logo.png"
               alt="HCM-UTE Logo"
-              className="w-14 h-14 object-contain shrink-0 bg-white/10 p-1.5 rounded-2xl backdrop-blur-xs border border-white/20"
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 bg-white/10 p-1.5 rounded-2xl backdrop-blur-xs border border-white/20"
             />
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-semibold text-sky-200 mb-1.5">

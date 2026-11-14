@@ -183,7 +183,7 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
   const activeData = ROLE_ACTIONS[selectedRole] || ROLE_ACTIONS.staff;
 
   return (
-    <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
+    <section className="bg-white rounded-3xl border border-[#d8e3ef] p-4 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-4 sm:space-y-5">
       {/* Title & Role Tabs */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#e2ecf7] pb-4">
         <div>
@@ -243,7 +243,7 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
           return (
             <div
               key={act.id}
-              className="p-5 rounded-2xl border border-[#d8e3ef] bg-white hover:border-[#004776]/40 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+              className="p-4 sm:p-5 rounded-2xl border border-[#d8e3ef] bg-white hover:border-[#004776]/40 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
             >
               <div className="space-y-2.5">
                 <div className="flex items-start justify-between gap-2">

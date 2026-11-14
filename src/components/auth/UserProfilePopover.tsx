@@ -93,7 +93,7 @@ export function UserProfilePopover() {
               <span className="hidden sm:inline">Đăng nhập</span>
             </span>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-4 space-y-3">
+          <PopoverContent align="end" className="w-[min(320px,calc(100vw-24px))] p-4 space-y-3">
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-[#0072BC]">Đăng nhập tài khoản HCM-UTE</h4>
               <p className="text-xs font-medium text-[#476885] leading-relaxed">Đăng nhập Google công vụ hoặc phiên Quản trị hệ thống.</p>
@@ -145,7 +145,7 @@ export function UserProfilePopover() {
           </span>
         </PopoverTrigger>
 
-        <PopoverContent align="end" className="w-[330px] p-4 space-y-3">
+        <PopoverContent align="end" className="w-[min(330px,calc(100vw-24px))] p-4 space-y-3">
           <div className="flex items-center gap-3 pb-3 border-b border-[#e8eff7]">
             {session.avatarUrl ? (
               <img src={session.avatarUrl} alt={label} className="w-11 h-11 rounded-full object-cover shrink-0 border border-[#d8e3ef]" />

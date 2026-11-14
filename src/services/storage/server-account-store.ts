@@ -5,40 +5,28 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 import {
   getAllActiveServerWorkbooks,
   normalizeEmail,
-  syncServerWorkbooksFromSupabase
+  syncServerWorkbooksFromSupabase,
+  removeParticipantFromAllWorkbooks
 } from './server-workbook-store';
 
 export type UserRole = 'admin' | 'unit_leader' | 'staff';
 
 export interface UserAccountRecord {
-  email: string;
-  displayName: string;
-  unitCode: string;
-  unitNameVi: string;
-  title: string;
-  role: UserRole;
-  authProvider: 'google' | 'email';
-  avatarUrl?: string;
-  status: 'active' | 'suspended';
-  hasSelectedUnit?: boolean;
-  passwordHash?: string;
-  createdAt: string;
-  lastActiveAt: string;
+  email: string; displayName: string; unitCode: string; unitNameVi: string; title: string;
+  role: UserRole; authProvider: 'google' | 'email'; avatarUrl?: string; status: 'active' | 'suspended';
+  hasSelectedUnit?: boolean; passwordHash?: string; createdAt: string; lastActiveAt: string;
 }
 
 const VALID_ROLES: UserRole[] = ['admin', 'unit_leader', 'staff'];
 
 export function getRoleTitle(role: UserRole): string {
-  if (role === 'admin') return 'Phòng Tổ chức – Nhân sự';
-  if (role === 'unit_leader') return 'Lãnh đạo đơn vị';
-  return 'Cán bộ – Giảng viên';
+  return role === 'admin' ? 'Phòng Tổ chức – Nhân sự' : role === 'unit_leader' ? 'Lãnh đạo đơn vị' : 'Cán bộ – Giảng viên';
 }
 
 export function getRoleFromTitle(title?: string): UserRole {
   const t = (title || '').trim().toLowerCase();
   if (t.includes('tổ chức') || t.includes('nhân sự') || t === 'admin') return 'admin';
-  if (t.includes('lãnh đạo') || t.includes('trưởng') || t.includes('phó') || t === 'unit_leader') return 'unit_leader';
-  return 'staff';
+  return (t.includes('lãnh đạo') || t.includes('trưởng') || t.includes('phó') || t === 'unit_leader') ? 'unit_leader' : 'staff';
 }
 
 export function hashAccountPassword(password: string): string {
@@ -49,18 +37,15 @@ export function stripAccountSensitiveFields(acc: UserAccountRecord): UserAccount
   const { passwordHash: _ignored, ...safe } = acc;
   return safe;
 }
+
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const ACCOUNTS_FILE = path.join(DATA_DIR, 'server_accounts.json');
-
+const DELETED_ACCOUNTS_FILE = path.join(DATA_DIR, 'deleted_accounts.json');
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SUPABASE_KEY = (
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  ''
-).trim();
+const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
 let memoryAccounts: Map<string, UserAccountRecord> | null = null;
+let deletedAccountEmails: Set<string> | null = null;
 let lastSupabaseSyncAt = 0;
 
 function getSupabaseHeaders(): Record<string, string> {
@@ -71,58 +56,64 @@ function isValidRole(role: unknown): role is UserRole {
   return typeof role === 'string' && VALID_ROLES.includes(role as UserRole);
 }
 
+function loadDeletedAccountEmails(): Set<string> {
+  if (deletedAccountEmails) return deletedAccountEmails;
+  deletedAccountEmails = new Set();
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (fs.existsSync(DELETED_ACCOUNTS_FILE)) {
+      const list = JSON.parse(fs.readFileSync(DELETED_ACCOUNTS_FILE, 'utf8'));
+      if (Array.isArray(list)) list.forEach((e) => deletedAccountEmails!.add(normalizeEmail(e)));
+    }
+  } catch { /* ignore */ }
+  return deletedAccountEmails;
+}
+
+function persistDeletedAccountEmails(): void {
+  if (!deletedAccountEmails) return;
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(DELETED_ACCOUNTS_FILE, JSON.stringify(Array.from(deletedAccountEmails)), 'utf8');
+  } catch { /* ignore */ }
+}
+
 function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): UserAccountRecord {
-  const email = normalizeEmail(item.email);
-  const unit = findHcmuteUnit(item.unitCode || 'FIT');
-  const now = new Date().toLocaleString('vi-VN');
+  const email = normalizeEmail(item.email), unit = findHcmuteUnit(item.unitCode || 'FIT'), now = new Date().toLocaleString('vi-VN');
   const isTcns = email === 'tcns@hcmute.edu.vn';
   const inferredRole = item.title ? getRoleFromTitle(item.title) : undefined;
   const role: UserRole = isValidRole(item.role) ? item.role : inferredRole || (isTcns ? 'admin' : 'staff');
-  const title = getRoleTitle(role);
   return {
-    email,
-    displayName: (item.displayName || email.split('@')[0]).trim(),
-    unitCode: unit.code,
-    unitNameVi: unit.nameVi,
-    title,
-    role,
-    authProvider: item.authProvider === 'google' ? 'google' : 'email',
-    avatarUrl: item.avatarUrl,
-    status: item.status === 'suspended' ? 'suspended' : 'active',
+    email, displayName: (item.displayName || email.split('@')[0]).trim(), unitCode: unit.code, unitNameVi: unit.nameVi,
+    title: getRoleTitle(role), role, authProvider: item.authProvider === 'google' ? 'google' : 'email',
+    avatarUrl: item.avatarUrl, status: item.status === 'suspended' ? 'suspended' : 'active',
     hasSelectedUnit: item.hasSelectedUnit !== undefined ? Boolean(item.hasSelectedUnit) : isTcns,
-    passwordHash: item.passwordHash,
-    createdAt: item.createdAt || now,
-    lastActiveAt: item.lastActiveAt || now
+    passwordHash: item.passwordHash, createdAt: item.createdAt || now, lastActiveAt: item.lastActiveAt || now
   };
 }
 
 function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
   let changed = false;
   const now = new Date().toLocaleString('vi-VN');
+  const deleted = loadDeletedAccountEmails();
   const defaultSeeds: (Partial<UserAccountRecord> & { email: string; pass: string })[] = [
     { email: 'tcns@hcmute.edu.vn', displayName: 'Phòng Tổ chức – Nhân sự', unitCode: 'TCNS', role: 'admin', pass: 'Hcmute@2026' },
     { email: 'lanhdao@hcmute.edu.vn', displayName: 'Lãnh đạo Đơn vị (FIT)', unitCode: 'FIT', role: 'unit_leader', pass: '123456' },
     { email: 'giangvien@hcmute.edu.vn', displayName: 'Cán bộ – Giảng viên (FIT)', unitCode: 'FIT', role: 'staff', pass: '123456' }
   ];
   for (const s of defaultSeeds) {
-    if (!store.has(s.email)) {
-      store.set(s.email, normalizeRecord({
-        ...s, hasSelectedUnit: true, passwordHash: hashAccountPassword(s.pass), createdAt: now, lastActiveAt: now
-      }));
-      changed = true;
-    }
+    if (deleted.has(s.email) || store.has(s.email)) continue;
+    store.set(s.email, normalizeRecord({
+      ...s, hasSelectedUnit: true, passwordHash: hashAccountPassword(s.pass), createdAt: now, lastActiveAt: now
+    }));
+    changed = true;
   }
   for (const wb of getAllActiveServerWorkbooks()) {
     for (const p of wb.participants || []) {
       const email = normalizeEmail(p.emailNormalized || p.email);
-      if (!email || store.has(email)) continue;
+      if (!email || deleted.has(email) || store.has(email)) continue;
       store.set(email, normalizeRecord({
-        email,
-        displayName: p.displayName || email.split('@')[0],
-        unitCode: wb.unitId || 'FIT',
-        title: p.roleLabel || 'Chuyên viên',
-        createdAt: p.startedAt || now,
-        lastActiveAt: p.updatedAt || now
+        email, displayName: p.displayName || email.split('@')[0], unitCode: wb.unitId || 'FIT',
+        title: p.roleLabel || 'Chuyên viên', createdAt: p.startedAt || now, lastActiveAt: p.updatedAt || now
       }));
       changed = true;
     }
@@ -133,6 +124,7 @@ function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
 function loadStore(): Map<string, UserAccountRecord> {
   if (memoryAccounts) return memoryAccounts;
   memoryAccounts = new Map();
+  const deleted = loadDeletedAccountEmails();
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(ACCOUNTS_FILE)) {
@@ -140,7 +132,7 @@ function loadStore(): Map<string, UserAccountRecord> {
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
           const email = normalizeEmail(item?.email || '');
-          if (email) memoryAccounts.set(email, normalizeRecord({ ...item, email }));
+          if (email && !deleted.has(email)) memoryAccounts.set(email, normalizeRecord({ ...item, email }));
         }
       }
     }
@@ -202,17 +194,17 @@ export async function syncAccountsFromSupabase(force = false): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json`, {
-      headers: getSupabaseHeaders(),
-      cache: 'no-store'
+      headers: getSupabaseHeaders(), cache: 'no-store'
     });
     if (!res.ok) return;
     const rows = await res.json();
     const remoteList = rows?.[0]?.du_lieu_ho_so_json?.userAccounts;
     if (!Array.isArray(remoteList)) return;
+    const deleted = loadDeletedAccountEmails();
     let merged = false;
     for (const item of remoteList) {
       const email = normalizeEmail(item?.email || '');
-      if (email && !store.has(email)) {
+      if (email && !deleted.has(email) && !store.has(email)) {
         store.set(email, normalizeRecord({ ...item, email }));
         merged = true;
       }
@@ -228,9 +220,7 @@ export function getAllUserAccounts(): UserAccountRecord[] {
 
 export function verifyUserPassword(email: string, password: string): UserAccountRecord | null {
   const acc = getUserAccountByEmail(email);
-  if (!acc || acc.status === 'suspended') return null;
-  if (!acc.passwordHash) return null;
-  return acc.passwordHash === hashAccountPassword(password) ? acc : null;
+  return acc && acc.status !== 'suspended' && acc.passwordHash === hashAccountPassword(password) ? acc : null;
 }
 
 export function getUserAccountByEmail(email: string): UserAccountRecord | null {
@@ -244,21 +234,22 @@ export function upsertUserAccount(
 ): UserAccountRecord {
   const store = loadStore();
   const norm = normalizeEmail(input.email);
+  const deleted = loadDeletedAccountEmails();
+  if (deleted.has(norm)) {
+    deleted.delete(norm);
+    persistDeletedAccountEmails();
+  }
   const existing = store.get(norm);
   const inferredRole = input.title ? getRoleFromTitle(input.title) : undefined;
   const targetRole = isValidRole(input.role) ? input.role : inferredRole;
   const isFirstTime = !existing || !existing.hasSelectedUnit;
-
   const resolvedRole: UserRole =
     (allowRoleOverride || isFirstTime) && targetRole
       ? targetRole
       : existing?.role || (norm === 'tcns@hcmute.edu.vn' ? 'admin' : targetRole || 'staff');
 
   const record = normalizeRecord({
-    ...existing,
-    ...input,
-    email: norm,
-    role: resolvedRole,
+    ...existing, ...input, email: norm, role: resolvedRole,
     createdAt: existing?.createdAt || new Date().toLocaleString('vi-VN'),
     lastActiveAt: new Date().toLocaleString('vi-VN')
   });
@@ -270,9 +261,7 @@ export function upsertUserAccount(
 }
 
 export function updateUserAccountRole(
-  email: string,
-  role: UserRole,
-  updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status'>>
+  email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status'>>
 ): UserAccountRecord | null {
   const norm = normalizeEmail(email);
   return !isValidRole(role) || !norm ? null : upsertUserAccount({ email: norm, role, ...updates }, true);
@@ -281,8 +270,13 @@ export function updateUserAccountRole(
 export function deleteUserAccount(email: string): boolean {
   const store = loadStore();
   const norm = normalizeEmail(email);
-  if (!norm || !store.delete(norm)) return false;
+  if (!norm || norm === 'tcns@hcmute.edu.vn') return false;
+  const deleted = loadDeletedAccountEmails();
+  deleted.add(norm);
+  persistDeletedAccountEmails();
+  const removed = store.delete(norm);
+  removeParticipantFromAllWorkbooks(norm);
   persistLocalStore();
   persistAccountsToSupabase(getAllUserAccounts()).catch(() => {});
-  return true;
+  return removed;
 }

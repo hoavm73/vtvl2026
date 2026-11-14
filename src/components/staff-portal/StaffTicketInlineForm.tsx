@@ -65,7 +65,7 @@ export function StaffTicketInlineForm({
     setErr('');
     setSuccessMsg('');
     const t = editingTicket;
-    if (t) {
+    if (t && t.unitCode === unitCode) {
       setMaNhiemVu(t.maNhiemVu || '');
       setMaCongViec(t.maCongViec || '');
       setTenCongViec(t.tenCongViec || '');
@@ -81,7 +81,7 @@ export function StaffTicketInlineForm({
     } else {
       resetForm();
     }
-  }, [editingTicket]);
+  }, [editingTicket, unitCode]);
 
   const handleMissionChange = async (nextMission: string) => {
     setMaNhiemVu(nextMission);

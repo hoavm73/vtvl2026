@@ -52,16 +52,56 @@ export default function StaffWorkTicketsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const op = getCurrentOperatorSession();
+  const syncWithActiveSession = useCallback((op: OperatorSession | null) => {
     if (!op) {
       router.replace('/login');
       return;
     }
-    setSession(op);
+    setSession((prev) => {
+      if (prev && prev.unitCode !== op.unitCode) {
+        setEditingTicket(null);
+      }
+      return op;
+    });
     setUnitNameVi(op.unitNameVi);
     loadData(op);
   }, [router, loadData]);
+
+  useEffect(() => {
+    const op = getCurrentOperatorSession();
+    syncWithActiveSession(op);
+
+    const handleSessionChange = () => {
+      syncWithActiveSession(getCurrentOperatorSession());
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'hcmute_vtvl_current_operator_v1' || e.key === 'vtvl_operator_session') {
+        syncWithActiveSession(getCurrentOperatorSession());
+      }
+    };
+
+    window.addEventListener('vtvl-operator-changed', handleSessionChange);
+    window.addEventListener('storage', handleStorageChange);
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        channel = new BroadcastChannel('hcmute_vtvl_realtime');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'OPERATOR_CHANGED') {
+            syncWithActiveSession(getCurrentOperatorSession());
+          }
+        };
+      } catch { /* ignore */ }
+    }
+
+    return () => {
+      window.removeEventListener('vtvl-operator-changed', handleSessionChange);
+      window.removeEventListener('storage', handleStorageChange);
+      if (channel) channel.close();
+    };
+  }, [syncWithActiveSession]);
 
   const handleDelete = async (ticket: StaffWorkTicket) => {
     if (!session) return;
@@ -79,6 +119,7 @@ export default function StaffWorkTicketsPage() {
   };
 
   const handleEditClick = (ticket: StaffWorkTicket) => {
+    if (ticket.unitCode !== session?.unitCode) return;
     setEditingTicket(ticket);
     const el = document.getElementById('staff-ticket-form-card');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -152,7 +193,7 @@ export default function StaffWorkTicketsPage() {
               ownerEmail={session.email}
               ownerName={session.displayName || session.email.split('@')[0]}
               ownerTitle={session.title}
-              editingTicket={editingTicket}
+              editingTicket={editingTicket?.unitCode === session.unitCode ? editingTicket : null}
               a1Missions={a1Missions}
               c1Vtvls={c1Vtvls}
               onCancelEdit={() => setEditingTicket(null)}

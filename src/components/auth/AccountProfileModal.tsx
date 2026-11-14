@@ -56,7 +56,7 @@ export function AccountProfileModal({
   if (!isOpen) return null;
 
   const canChangeRole = isAdmin || session.role === 'admin';
-  const canChangeUnit = canChangeRole;
+  const canChangeUnit = true;
   const unitOptions = QD2266_GROUPED_UNITS_CATALOG.flatMap((group) =>
     group.units.map((u) => ({
       value: u.code,

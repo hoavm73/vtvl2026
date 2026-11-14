@@ -65,12 +65,13 @@ export async function POST(req: NextRequest) {
     const verifiedGoogleAdmin = bearer ? await isVerifiedAdminAccount(email, bearer) : false;
     const isAdmin = cookieAdmin || verifiedGoogleAdmin;
 
-    let targetUnitCode = body.unitCode;
-    let targetHasSelectedUnit = body.hasSelectedUnit ?? Boolean(body.unitCode);
+    let targetUnitCode = body.unitCode || existing?.unitCode;
+    let targetHasSelectedUnit = typeof body.hasSelectedUnit === 'boolean'
+      ? body.hasSelectedUnit
+      : Boolean(existing?.hasSelectedUnit);
 
-    if (existing?.hasSelectedUnit && !isAdmin) {
-      targetUnitCode = existing.unitCode;
-      targetHasSelectedUnit = true;
+    if (body.unitCode) {
+      targetUnitCode = body.unitCode;
     }
 
     const rawAccount = upsertUserAccount({
@@ -122,22 +123,20 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (!isAdmin && existing?.hasSelectedUnit && body.unitCode && body.unitCode !== existing.unitCode) {
-      return NextResponse.json(
-        { error: 'Chỉ Quản trị viên hệ thống mới có quyền thay đổi đơn vị công tác.' },
-        { status: 403 }
-      );
-    }
+    const targetUnitCode = body.unitCode || existing?.unitCode;
+    const targetHasSelectedUnit = body.hasSelectedUnit !== undefined
+      ? Boolean(body.hasSelectedUnit)
+      : (Boolean(body.unitCode) || Boolean(existing?.hasSelectedUnit));
 
     const rawAccount = upsertUserAccount(
       {
         email,
-        displayName: body.displayName,
-        unitCode: (!isAdmin && existing?.hasSelectedUnit) ? existing.unitCode : body.unitCode,
-        title: body.title,
-        avatarUrl: body.avatarUrl,
+        displayName: body.displayName || existing?.displayName,
+        unitCode: targetUnitCode,
+        title: body.title || existing?.title,
+        avatarUrl: body.avatarUrl || existing?.avatarUrl,
         role: isAdmin ? requestedRole : undefined,
-        hasSelectedUnit: existing?.hasSelectedUnit || body.hasSelectedUnit || Boolean(body.unitCode)
+        hasSelectedUnit: targetHasSelectedUnit
       },
       isAdmin && Boolean(requestedRole)
     );

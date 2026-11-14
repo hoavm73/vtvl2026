@@ -141,20 +141,23 @@ export function saveCurrentOperatorSession(
   return session;
 }
 
-export function updateOperatorSessionUnit(unitCode: string, forceAdmin = false): OperatorSession | null {
+export function updateOperatorSessionUnit(unitCode: string): OperatorSession | null {
   const cur = getCurrentOperatorSession();
   if (!cur) return null;
-  if (!forceAdmin && cur.hasSelectedUnit && cur.role !== 'admin' && cur.unitCode !== unitCode) {
-    return cur;
-  }
   const unit = findHcmuteUnit(unitCode);
-  const updated: OperatorSession = { ...cur, unitCode, unitNameVi: unit.nameVi, lastActiveAt: new Date().toLocaleString('vi-VN') };
+  const updated: OperatorSession = {
+    ...cur,
+    unitCode: unit.code,
+    unitNameVi: unit.nameVi,
+    hasSelectedUnit: true,
+    lastActiveAt: new Date().toLocaleString('vi-VN')
+  };
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: updated }));
     } catch { /* ignore */ }
-    registerOperatorSession(updated.email, unitCode, updated.title);
+    registerOperatorSession(updated.email, unit.code, updated.title);
   }
   return updated;
 }

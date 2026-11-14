@@ -11,17 +11,20 @@ import {
   normalizeEmail,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
+import { getUserAccountByEmail } from '@/services/storage/server-account-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 export async function GET(req: NextRequest) {
   const email = normalizeEmail(req.nextUrl.searchParams.get('email') || '');
-  const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || 'FIT').trim().toUpperCase();
-  const unit = findHcmuteUnit(unitCodeParam);
+  const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
+  const userAccount = email ? getUserAccountByEmail(email) : null;
+  const resolvedUnitCode = (unitCodeParam || userAccount?.unitCode || 'FIT').toUpperCase();
+  const unit = findHcmuteUnit(resolvedUnitCode);
 
   await syncServerWorkbooksFromSupabase();
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', email || 'guest@hcmute.edu.vn', 'Cán bộ – Giảng viên');
 
-  const myTickets = email ? getTicketsByOwner(email) : [];
+  const myTickets = email ? getTicketsByOwner(email, unit.code) : [];
   const unitTickets = getTicketsByUnit(unit.code);
 
   return NextResponse.json({
@@ -108,5 +111,5 @@ export async function PUT(req: NextRequest) {
   const wb = getOrCreateWorkbook(unitCode, '01/10/2025–30/9/2026', 'system@hcmute.edu.vn', 'System');
   const unitTickets = getTicketsByUnit(unitCode);
   const nextTaskCode = allocateNextTaskCode(unitCode, maNhiemVu, wb.data.A2 || [], unitTickets, body.excludeTicketId);
-  return NextResponse.json({ nextTaskCode });
+  return NextResponse.json({ nextTaskCode, maCongViec: nextTaskCode });
 }

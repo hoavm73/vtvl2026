@@ -68,10 +68,11 @@ export function allocateNextTaskCode(
   return `${cleanMission}.CV${String(maxNum + 1).padStart(2, '0')}`;
 }
 
-export function getTicketsByOwner(email: string): StaffWorkTicket[] {
+export function getTicketsByOwner(email: string, unitCode?: string): StaffWorkTicket[] {
   const norm = normalizeEmail(email);
+  const targetUnit = unitCode ? unitCode.trim().toUpperCase() : undefined;
   return Array.from(loadTickets().values())
-    .filter((t) => normalizeEmail(t.ownerEmail) === norm)
+    .filter((t) => normalizeEmail(t.ownerEmail) === norm && (!targetUnit || t.unitCode === targetUnit))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 

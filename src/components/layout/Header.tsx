@@ -36,11 +36,13 @@ const MOBILE_NAV_ITEMS = [
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkRole = () => {
       const cur = getCurrentOperatorSession();
+      setIsLoggedIn(Boolean(cur));
       setIsAdmin(Boolean(cur?.email === 'tcns@hcmute.edu.vn' && cur?.role === 'admin'));
     };
     checkRole();
@@ -48,11 +50,15 @@ export function Header() {
     return () => window.removeEventListener('vtvl-operator-changed', checkRole);
   }, []);
 
-  const navItems = isAdmin
+  const navItems = !isLoggedIn
+    ? []
+    : isAdmin
     ? NAV_ITEMS
     : NAV_ITEMS.filter((item) => item.href !== '/admin');
 
-  const mobileNavItems = isAdmin
+  const mobileNavItems = !isLoggedIn
+    ? []
+    : isAdmin
     ? MOBILE_NAV_ITEMS
     : MOBILE_NAV_ITEMS.filter((item) => item.href !== '/admin');
 
@@ -146,15 +152,17 @@ export function Header() {
 
           <UserProfilePopover />
 
-          <button
-            type="button"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? 'Đóng danh mục điều hướng' : 'Mở danh mục điều hướng'}
-            className="lg:hidden h-10 w-10 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {mobileNavItems.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-expanded={mobileOpen}
+              aria-label={mobileOpen ? 'Đóng danh mục điều hướng' : 'Mở danh mục điều hướng'}
+              className="lg:hidden h-10 w-10 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
         </div>
       </div>
 

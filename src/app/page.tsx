@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Building2, CheckCircle2, History, Clock, AlertTriangle, FileSpreadsheet, ArrowRight
 } from 'lucide-react';
@@ -19,7 +20,13 @@ import { OperatorSession, getCurrentOperatorSession } from '@/services/telemetry
 import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 
 export default function HomePage() {
-  const [operator, setOperator] = useState<OperatorSession | null>(null);
+  const router = useRouter();
+  const [operator, setOperator] = useState<OperatorSession | null>(() => {
+    if (typeof window !== 'undefined') {
+      return getCurrentOperatorSession();
+    }
+    return null;
+  });
   const [session, setSession] = useState<ActiveUnitSession>(() => getActiveUnitSession());
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -30,10 +37,15 @@ export default function HomePage() {
     setOperator(cur);
     setSession(getActiveUnitSession());
     setLogs(getActivityLogs());
+    return cur;
   };
 
   useEffect(() => {
-    syncState();
+    const cur = syncState();
+    const hasHash = typeof window !== 'undefined' && window.location.hash.includes('access_token=');
+    if (!cur && !hasHash) {
+      router.replace('/login');
+    }
     window.addEventListener('vtvl-operator-changed', syncState);
     window.addEventListener('vtvl-unit-session-updated', syncState);
     window.addEventListener('vtvl-activity-updated', syncState);
@@ -66,6 +78,15 @@ export default function HomePage() {
     operator?.title || session.actorTitle,
     session.proposedPositions
   );
+
+  if (!operator) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-3">
+        <div className="w-10 h-10 border-3 border-[#006cee] border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-semibold text-[#004776]">Đang chuyển hướng tới cổng đăng nhập HCM-UTE…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-5 space-y-6">

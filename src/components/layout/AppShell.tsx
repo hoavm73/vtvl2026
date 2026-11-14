@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
+import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 
 const SIDEBAR_STORAGE_KEY = 'vtvl_sidebar_collapsed';
 
@@ -14,9 +15,15 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [session, setSession] = useState<OperatorSession | null>(null);
+  const [session, setSession] = useState<OperatorSession | null>(() => {
+    if (typeof window !== 'undefined') {
+      return getCurrentOperatorSession();
+    }
+    return null;
+  });
 
   // Khôi phục trạng thái thu gọn sidebar từ localStorage
   useEffect(() => {
@@ -32,11 +39,18 @@ export function AppShell({ children }: AppShellProps) {
 
   // Lấy và theo dõi phiên đăng nhập của người dùng
   const refreshSession = useCallback(() => {
-    setSession(getCurrentOperatorSession());
+    const oauth = consumeGoogleOAuthCallback();
+    const cur = oauth || getCurrentOperatorSession();
+    setSession(cur);
+    return cur;
   }, []);
 
   useEffect(() => {
-    refreshSession();
+    const cur = refreshSession();
+    const hasHashAuth = typeof window !== 'undefined' && window.location.hash.includes('access_token=');
+    if (!cur && !hasHashAuth && pathname !== '/login') {
+      router.replace('/login');
+    }
 
     const handleCustomChange = () => refreshSession();
     const handleStorageChange = (e: StorageEvent) => {
@@ -84,11 +98,12 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   const isLoginPage = pathname === '/login';
+  const isLoggedIn = Boolean(session);
 
   return (
     <div className="min-h-screen flex flex-col overflow-x-clip relative">
       <Header />
-      {isLoginPage ? (
+      {isLoginPage || !isLoggedIn ? (
         <main className="flex-1 flex flex-col">{children}</main>
       ) : (
         <div className="flex-1 flex w-full">

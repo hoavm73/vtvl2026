@@ -14,7 +14,7 @@ import { AccountProfileModal } from '@/components/auth/AccountProfileModal';
 import { UnitSelectionModal } from '@/components/auth/UnitSelectionModal';
 import { AdminLoginModal } from '@/components/auth/AdminLoginModal';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
-import { OperatorSession, getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { OperatorSession, getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback, signOutGoogleSession } from '@/services/auth/google-auth';
 import {
   UserRole, ROLE_OPTIONS, getRoleLabel, getRoleBadgeVariant,
@@ -65,8 +65,9 @@ export function UserProfilePopover() {
     setIsProfileOpen(false);
     setIsAdmin(false);
     setSession(null);
+    clearCurrentOperatorSession();
     signOutGoogleSession();
-    if (pathname.startsWith('/admin')) router.push('/bang-tinh');
+    router.replace('/login');
   };
 
   const handleQuickRoleUpdate = async (newRole: string) => {

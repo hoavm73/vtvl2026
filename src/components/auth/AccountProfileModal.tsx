@@ -9,7 +9,7 @@ import { ModalPortal } from '@/components/ui/ModalPortal';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import {
   UserRole,
@@ -54,13 +54,7 @@ export function AccountProfileModal({
 
   const canChangeRole = isAdmin || session.role === 'admin';
   const canChangeUnit = true;
-  const unitOptions = QD2266_GROUPED_UNITS_CATALOG.flatMap((group) =>
-    group.units.map((u) => ({
-      value: u.code,
-      label: `[${u.code}] ${u.nameVi}`,
-      description: group.groupLabel
-    }))
-  );
+  const unitOptions = getFlatHcmuteUnitOptions();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -119,7 +119,7 @@ export function saveCurrentOperatorSession(
   const existing = getCurrentOperatorSession();
   const session: OperatorSession = {
     email: normEmail,
-    unitCode,
+    unitCode: unit.code,
     unitNameVi: unit.nameVi,
     title: title.trim(),
     startedAt: now,
@@ -136,7 +136,7 @@ export function saveCurrentOperatorSession(
       localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(session));
       window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: session }));
     } catch { /* ignore */ }
-    registerOperatorSession(normEmail, unitCode, title);
+    registerOperatorSession(normEmail, unit.code, title);
   }
   return session;
 }

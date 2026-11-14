@@ -12,6 +12,7 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { GoogleLogoSvg, GoogleOAuthButton } from '@/components/auth/GoogleOAuthButton';
 import { AccountProfileModal } from '@/components/auth/AccountProfileModal';
 import { UnitSelectionModal } from '@/components/auth/UnitSelectionModal';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 import {
   OperatorSession,
   getCurrentOperatorSession
@@ -131,6 +132,9 @@ export function UserProfilePopover() {
   const initials = label.slice(0, 2).toUpperCase();
   const activeRole = session.role || 'staff';
   const canManageAdminRoles = isAdmin;
+  const activeUnit = session ? findHcmuteUnit(session.unitCode) : null;
+  const unitCode = activeUnit?.code || session.unitCode;
+  const unitNameVi = activeUnit?.nameVi || session.unitNameVi;
 
   return (
     <>
@@ -153,7 +157,7 @@ export function UserProfilePopover() {
                 {label}
               </span>
               <span className="text-[11px] font-semibold text-[#476885]">
-                [{session.unitCode}] · {getRoleLabel(activeRole)}
+                [{unitCode}] · {getRoleLabel(activeRole)}
               </span>
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-[#476885] shrink-0" />
@@ -194,14 +198,14 @@ export function UserProfilePopover() {
             <div className="flex items-center justify-between gap-2 text-xs font-bold text-[#004776]">
               <span className="inline-flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-[#004776]" />
-                <span>Đơn vị [{session.unitCode}]</span>
+                <span>Đơn vị [{unitCode}]</span>
               </span>
               <span className="text-[11px] font-semibold text-[#476885] truncate max-w-[140px]">
                 {session.title || 'Chuyên viên'}
               </span>
             </div>
             <p className="text-xs font-medium text-[#20446c] leading-snug pl-5">
-              {session.unitNameVi}
+              {unitNameVi}
             </p>
           </div>
 

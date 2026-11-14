@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Network, Maximize2, Minimize2, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 import { buildUnitOrgTree } from '@/services/org-chart/unit-org-tree-builder';
@@ -154,13 +154,7 @@ export function UnitOrgTreeModal({
                 <ShadcnSelect
                   value={selectedUnitCode}
                   onValueChange={setSelectedUnitCode}
-                  options={QD2266_GROUPED_UNITS_CATALOG.flatMap((grp) =>
-                    grp.units.map((u) => ({
-                      value: u.code,
-                      label: `[${u.code}] ${u.nameVi}`,
-                      group: grp.groupLabel
-                    }))
-                  )}
+                  options={getFlatHcmuteUnitOptions()}
                   searchable={true}
                   size="sm"
                 />

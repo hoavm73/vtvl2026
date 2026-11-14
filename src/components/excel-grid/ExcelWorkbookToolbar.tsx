@@ -5,7 +5,7 @@ import { ExcelSheetKey, ExcelSheetMeta } from './excel-grid-types';
 import { HcmuteUnit } from '@/types/vtvl';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { ValidationReport } from '@/services/validation/vtvl-validation-types';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import {
   Download, Building2, ShieldCheck, CheckCircle2, RefreshCw,
   UserCheck, Briefcase, ArrowLeftRight, MoreHorizontal, ArrowRight, Save
@@ -71,13 +71,7 @@ export function ExcelWorkbookToolbar({
             <ShadcnSelect
               value={unitCode}
               onValueChange={onUnitChange}
-              options={QD2266_GROUPED_UNITS_CATALOG.flatMap((group) =>
-                group.units.map((u) => ({
-                  value: u.code,
-                  label: `[${u.code}] ${u.nameVi}${u.plLabel ? ` (${u.plLabel})` : ''}`,
-                  group: group.groupLabel
-                }))
-              )}
+              options={getFlatHcmuteUnitOptions()}
               searchable={true}
               size="sm"
             />

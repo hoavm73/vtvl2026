@@ -6,7 +6,7 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
 import { AdminAccountCreateForm } from '@/components/admin/AdminAccountCreateForm';
 import { AdminAccountRow } from '@/components/admin/AdminAccountRow';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { getCurrentOperatorSession, saveCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import {
   UserRole,
@@ -25,10 +25,7 @@ export function AdminAccountsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
-  const unitOptions = useMemo(
-    () => QD2266_GROUPED_UNITS_CATALOG.flatMap((g) => g.units.map((u) => ({ value: u.code, label: `[${u.code}] ${u.nameVi}` }))),
-    []
-  );
+  const unitOptions = useMemo(() => getFlatHcmuteUnitOptions(), []);
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);

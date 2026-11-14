@@ -5,7 +5,7 @@ import { Building2, ShieldAlert, CheckCircle2, LogOut, ArrowRight, Loader2 } fro
 import { ModalPortal } from '@/components/ui/ModalPortal';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { signOutGoogleSession } from '@/services/auth/google-auth';
 import { STANDARD_USER_TITLES } from '@/services/auth/account-client';
@@ -26,13 +26,7 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
 
   if (!isOpen || !session) return null;
 
-  const unitOptions = QD2266_GROUPED_UNITS_CATALOG.flatMap((group) =>
-    group.units.map((u) => ({
-      value: u.code,
-      label: `[${u.code}] ${u.nameVi}`,
-      description: group.groupLabel
-    }))
-  );
+  const unitOptions = getFlatHcmuteUnitOptions();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

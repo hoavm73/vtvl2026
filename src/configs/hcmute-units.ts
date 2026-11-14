@@ -197,3 +197,32 @@ export function findHcmuteUnit(codeOrName?: string): HcmuteUnit {
   return byName || units[0] || HCMUTE_UNITS[0];
 }
 
+export interface GroupedUnitCategory {
+  groupLabel: string;
+  units: HcmuteUnit[];
+}
+
+export function getGroupedHcmuteUnits(): GroupedUnitCategory[] {
+  const units = getActiveHcmuteUnits();
+  const groupMeta: { id: UnitGroupKind; label: string }[] = [
+    { id: 'khoa-vien', label: 'Khối Đơn vị đào tạo (16 Khoa & Viện)' },
+    { id: 'phong-ban', label: 'Khối Đơn vị quản lý hành chính (14 Phòng ban)' },
+    { id: 'trung-tam', label: 'Khối Trung tâm chức năng & Phân hiệu (16 đơn vị)' },
+    { id: 'dang-doanthe', label: 'Khối Quản trị & Đảng – Đoàn thể (5 đơn vị)' }
+  ];
+  return groupMeta.map((g) => ({
+    groupLabel: g.label,
+    units: units.filter((u) => u.group === g.id)
+  }));
+}
+
+export function getFlatHcmuteUnitOptions(): { value: string; label: string; description?: string }[] {
+  return getGroupedHcmuteUnits().flatMap((g) =>
+    g.units.map((u) => ({
+      value: u.code,
+      label: `[${u.code}] ${u.nameVi}`,
+      description: g.groupLabel
+    }))
+  );
+}
+

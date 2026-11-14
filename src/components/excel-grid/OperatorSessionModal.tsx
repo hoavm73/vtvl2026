@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { QD2266_GROUPED_UNITS_CATALOG } from '@/configs/hcmute-qd2266-missions';
+import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import {
   OperatorSession,
   EmailSessionRecord,
@@ -238,9 +238,7 @@ export function OperatorSessionModal({
                 <ShadcnSelect
                   value={unitCode}
                   ariaLabel="Đơn vị công tác"
-                  options={QD2266_GROUPED_UNITS_CATALOG.flatMap((group) =>
-                    group.units.map((u) => ({ value: u.code, label: `[${u.code}] ${u.nameVi}` }))
-                  )}
+                  options={getFlatHcmuteUnitOptions()}
                   onChange={(val) => { setUnitCode(val); setSelectedWorkbookId(undefined); }}
                 />
               </div>

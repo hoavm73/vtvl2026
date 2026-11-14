@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { getRoleLabel } from '@/services/auth/account-client';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 interface NavItemDef {
   href: string;
@@ -139,7 +140,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-[#004776] truncate">
-                {session?.unitCode ? `[${session.unitCode}] ${session.unitNameVi}` : 'Trường ĐH CNKT TP.HCM'}
+                {session?.unitCode ? `[${findHcmuteUnit(session.unitCode).code}] ${findHcmuteUnit(session.unitCode).nameVi}` : 'Trường ĐH CNKT TP.HCM'}
               </div>
               <div className="text-[11px] font-semibold text-[#0072BC] flex items-center gap-1">
                 <UserCheck className="w-3 h-3 shrink-0" />

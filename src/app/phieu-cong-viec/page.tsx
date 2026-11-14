@@ -16,6 +16,7 @@ import { StaffMyTicketsList } from '@/components/staff-portal/StaffMyTicketsList
 import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrintModal';
 import { CoordinatedTaskModal } from '@/components/staff-portal/CoordinatedTaskModal';
 import { UnitTasksReadOnlyPanel } from '@/components/staff-portal/UnitTasksReadOnlyPanel';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 export default function StaffWorkTicketsPage() {
   const router = useRouter();
@@ -146,7 +147,7 @@ export default function StaffWorkTicketsPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
               <Building2 className="w-3.5 h-3.5" />
-              {unitNameVi} ({session.unitCode})
+              {unitNameVi || findHcmuteUnit(session.unitCode).nameVi} ({findHcmuteUnit(session.unitCode).code})
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-[#004776]">
               Chào mừng {session.displayName || session.email} đến với Hệ thống Vị trí việc làm HCM-UTE

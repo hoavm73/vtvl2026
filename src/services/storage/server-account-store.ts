@@ -201,8 +201,10 @@ export async function syncAccountsFromSupabase(force = false): Promise<void> {
       let merged = false;
       for (const item of remoteList) {
         const email = normalizeEmail(item?.email || '');
-        if (email && !deleted.has(email) && !store.has(email)) {
-          store.set(email, normalizeRecord({ ...item, email }));
+        if (!email || deleted.has(email)) continue;
+        const cur = store.get(email);
+        if (!cur || (!cur.hasSelectedUnit && item.hasSelectedUnit)) {
+          store.set(email, normalizeRecord({ ...cur, ...item, email }));
           merged = true;
         }
       }

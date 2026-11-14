@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email công vụ không hợp lệ.' }, { status: 400 });
     }
 
-    await syncAccountsFromSupabase();
+    await syncAccountsFromSupabase(true);
     const existing = getUserAccountByEmail(email);
     const cookieAdmin = await getServerAdminAuth();
     const bearer = extractBearer(req);
@@ -101,7 +101,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Email công vụ không hợp lệ.' }, { status: 400 });
     }
 
-    await syncAccountsFromSupabase();
+    await syncAccountsFromSupabase(true);
     const existing = getUserAccountByEmail(email);
     const bearer = extractBearer(req);
     const isAdmin = await getServerAdminAuth(email, bearer);

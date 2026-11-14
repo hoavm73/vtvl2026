@@ -37,17 +37,21 @@ export function UserProfilePopover() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [roleUpdating, setRoleUpdating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
 
   const loadAndSync = async (overrideSession?: OperatorSession | null) => {
+    setIsSyncing(true);
     const active = overrideSession ?? getCurrentOperatorSession();
     setSession(active);
     if (!active) {
       setIsAdmin(false);
+      setIsSyncing(false);
       return;
     }
     const synced = await syncOperatorAccountWithServer(active);
     setIsAdmin(synced.isAdmin);
     setSession(getCurrentOperatorSession() || active);
+    setIsSyncing(false);
   };
 
   useEffect(() => {
@@ -90,7 +94,7 @@ export function UserProfilePopover() {
     router.push(mappedRole === 'unit_leader' ? '/bang-tinh' : '/phieu-cong-viec');
   };
 
-  const needsUnitSelection = Boolean(session && !session.hasSelectedUnit && session.role !== 'admin');
+  const needsUnitSelection = Boolean(!isSyncing && session && !session.hasSelectedUnit && session.role !== 'admin');
 
   if (!session) {
     return (

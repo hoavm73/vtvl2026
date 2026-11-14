@@ -5,7 +5,8 @@ import {
   normalizeEmail,
   saveCurrentOperatorSession,
   clearCurrentOperatorSession,
-  getCurrentOperatorSession
+  getCurrentOperatorSession,
+  getAllEmailSessions
 } from '@/services/telemetry/operator-session';
 
 export interface GoogleLoginCheckResult {
@@ -78,12 +79,25 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSes
     if (!email) return null;
 
     const existing = getCurrentOperatorSession();
+    const prevRecord = getAllEmailSessions().find((s) => s.email === email);
     const isSameEmail = existing && existing.email === email;
     const isTcnsAdmin = email === 'tcns@hcmute.edu.vn';
 
-    const hasSelectedUnit = isTcnsAdmin ? true : (isSameEmail ? Boolean(existing.hasSelectedUnit) : false);
-    const unitCode = isTcnsAdmin ? 'TCNS' : (isSameEmail && existing.hasSelectedUnit ? existing.unitCode : defaultUnitCode);
-    const title = isTcnsAdmin ? 'Trưởng phòng' : (isSameEmail ? existing.title : 'Chuyên viên');
+    const hasSelectedUnit = isTcnsAdmin
+      ? true
+      : isSameEmail
+      ? Boolean(existing.hasSelectedUnit)
+      : Boolean(prevRecord);
+    const unitCode = isTcnsAdmin
+      ? 'TCNS'
+      : isSameEmail && existing.hasSelectedUnit
+      ? existing.unitCode
+      : (prevRecord?.unitCode || defaultUnitCode);
+    const title = isTcnsAdmin
+      ? 'Trưởng phòng'
+      : isSameEmail
+      ? existing.title
+      : (prevRecord?.title || 'Chuyên viên');
 
     const displayName =
       payload.user_metadata?.full_name ||

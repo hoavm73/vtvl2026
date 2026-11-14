@@ -38,6 +38,17 @@ interface NavGroupDef {
 
 const SIDEBAR_GROUPS: NavGroupDef[] = [
   {
+    groupTitle: 'Tổng quan hệ thống',
+    items: [
+      {
+        href: '/',
+        label: 'Trang chủ tổng quan',
+        subLabel: 'Lộ trình 5 bước & Việc cần làm',
+        icon: Home
+      }
+    ]
+  },
+  {
     groupTitle: 'Nghiệp vụ Cá nhân',
     items: [
       {
@@ -96,12 +107,6 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         label: 'Hướng dẫn nghiệp vụ',
         subLabel: 'Văn bản pháp lý, định mức chuẩn',
         icon: BookOpen
-      },
-      {
-        href: '/?view=overview',
-        label: 'Tổng quan lộ trình',
-        subLabel: 'Quy trình 5 bước VTVL 360',
-        icon: Home
       }
     ]
   }
@@ -118,9 +123,9 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const currentRole = session?.role || 'staff';
 
   const isItemActive = (href: string) => {
+    if (href === '/') return pathname === '/';
     if (href === '/bang-tinh') return pathname === '/bang-tinh';
     if (href === '/phieu-cong-viec') return pathname === '/phieu-cong-viec';
-    if (href.startsWith('/?view=overview')) return pathname === '/';
     return pathname.startsWith(href);
   };
 
@@ -175,7 +180,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
           return (
             <div key={group.groupTitle} className="space-y-1">
               {!collapsed && (
-                <div className="px-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#64748b]">
+                <div className="px-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#20446c]/80">
                   {group.groupTitle}
                 </div>
               )}
@@ -193,13 +198,13 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                       collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'
                     } ${
                       active
-                        ? 'bg-[#0072BC] text-white font-semibold shadow-xs'
-                        : 'text-[#004776] hover:bg-[#f1f6fb] hover:text-[#004776]'
+                        ? 'bg-[#006cee] text-white font-bold shadow-xs'
+                        : 'text-[#004776] hover:bg-[#e1edf8] hover:text-[#004776]'
                     }`}
                   >
                     <Icon
                       className={`w-4 h-4 shrink-0 transition-transform ${
-                        active ? 'text-white' : 'text-[#0072BC] group-hover:scale-105'
+                        active ? 'text-white' : 'text-[#006cee] group-hover:scale-105'
                       }`}
                     />
 
@@ -212,7 +217,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                           {item.badge && (
                             <span
                               className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
-                                active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#0072BC] border-blue-200'
+                                active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#006cee] border-blue-200'
                               }`}
                             >
                               {item.badge}
@@ -222,7 +227,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                         {item.subLabel && (
                           <div
                             className={`text-[11px] truncate leading-tight mt-0.5 ${
-                              active ? 'text-white/85' : 'text-[#64748b]'
+                              active ? 'text-white/90 font-medium' : 'text-[#20446c]'
                             }`}
                           >
                             {item.subLabel}
@@ -240,9 +245,9 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
 
       {/* Footer nhỏ dưới đáy sidebar */}
       {!collapsed && (
-        <div className="p-3 border-t border-[#e2ecf7] text-[11px] text-[#64748b] text-center bg-[#fafcff]">
-          <div>HCM-UTE VTVL 360</div>
-          <div className="text-[10px] text-[#94a3b8]">Chuẩn Hướng dẫn số 07-HD/BTCTW</div>
+        <div className="p-3 border-t border-[#e2ecf7] text-[11px] text-[#20446c] text-center bg-[#fafcff]">
+          <div className="font-semibold text-[#004776]">HCM-UTE VTVL 360</div>
+          <div className="text-[10px] text-[#476885]">Chuẩn Hướng dẫn số 07-HD/BTCTW</div>
         </div>
       )}
     </aside>

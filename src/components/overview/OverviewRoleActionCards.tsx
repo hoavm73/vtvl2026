@@ -207,13 +207,13 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
                 onClick={() => setSelectedRole(r)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-[#004776] text-white shadow-xs'
-                    : 'text-[#476885] hover:text-[#004776] hover:bg-white/80'
+                    ? 'bg-[#006cee] text-white shadow-xs'
+                    : 'text-[#20446c] hover:text-[#004776] hover:bg-white/80'
                 }`}
               >
                 <span>{ROLE_ACTIONS[r].label.split('(')[0].trim()}</span>
                 {isUserOwnRole && (
-                  <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-300' : 'bg-[#0072BC]'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-300' : 'bg-[#006cee]'}`} />
                 )}
               </button>
             );
@@ -248,26 +248,26 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
               <div className="space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#eef6ff] text-[#004776] flex items-center justify-center shrink-0 border border-[#d0e4f5]">
-                      <Icon className="w-5 h-5 text-[#004776]" />
+                    <div className="w-9 h-9 rounded-xl bg-[#e1edf8] text-[#006cee] flex items-center justify-center shrink-0 border border-[#cbd5e1]/60">
+                      <Icon className="w-5 h-5 text-[#006cee]" />
                     </div>
                     <div>
-                      <span className="text-[11px] font-bold text-[#0072BC]">Việc {idx + 1}</span>
+                      <span className="text-[11px] font-bold text-[#006cee]">Việc {idx + 1}</span>
                       <h3 className="text-sm font-bold text-[#004776] leading-snug">
                         {act.title}
                       </h3>
                     </div>
                   </div>
-                  <span className="text-[10.5px] font-semibold text-[#476885] bg-[#f4f7fb] px-2 py-0.5 rounded-md border border-[#e2ecf7] shrink-0">
+                  <span className="text-[10.5px] font-semibold text-[#20446c] bg-[#e1edf8] px-2 py-0.5 rounded-md border border-[#cbd5e1]/60 shrink-0">
                     {act.tag}
                   </span>
                 </div>
 
-                <div className="text-[11.5px] font-semibold text-[#0072BC] bg-[#f0f7fd] px-2.5 py-1 rounded-lg border border-[#e0effa]">
+                <div className="text-[11.5px] font-semibold text-[#004776] bg-[#e1edf8] px-2.5 py-1 rounded-lg border border-[#cbd5e1]/60">
                   Phạm vi: {act.target}
                 </div>
 
-                <p className="text-xs text-[#476885] leading-relaxed">
+                <p className="text-xs text-[#20446c] leading-relaxed">
                   {act.desc}
                 </p>
               </div>
@@ -275,7 +275,7 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
               <div className="pt-2 border-t border-[#f0f4f9] flex items-center justify-end">
                 <Link
                   href={act.href}
-                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#004776] hover:bg-[#00365c] text-white text-xs font-bold transition-colors shadow-2xs"
+                  className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
                 >
                   <span>{act.btnLabel}</span>
                   <ArrowRight className="w-3.5 h-3.5" />

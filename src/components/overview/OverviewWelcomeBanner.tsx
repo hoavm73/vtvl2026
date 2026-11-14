@@ -72,7 +72,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white text-[#004776] text-xs font-bold hover:bg-sky-50 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Đăng nhập ngay</span>
@@ -81,7 +81,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
                 <button
                   type="button"
                   onClick={onOpenAdminLogin}
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#002f50] border border-white/25 text-white text-xs font-bold hover:bg-[#002540] transition-colors"
+                  className="inline-flex items-center gap-2 h-11 px-4 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <ShieldCheck className="w-4 h-4 text-emerald-300" />
                   <span>Quản trị viên</span>
@@ -138,9 +138,9 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
               {role === 'admin' && (
                 <Link
                   href="/admin"
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white text-[#004776] text-xs font-bold hover:bg-sky-50 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                 >
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
                   <span>Trang Quản trị</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
@@ -148,7 +148,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
               {role !== 'staff' && (
                 <Link
                   href="/bang-tinh"
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
+                  className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold border border-white/30 transition-colors"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Bảng tính 15 biểu</span>
@@ -156,14 +156,14 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
               )}
               <Link
                 href="/phieu-cong-viec"
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold border border-white/30 transition-colors"
               >
                 <FileText className="w-4 h-4" />
                 <span>Phiếu công việc</span>
               </Link>
               <Link
                 href="/bam-gio"
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold border border-white/30 transition-colors"
               >
                 <Clock className="w-4 h-4" />
                 <span>Bấm giờ định mức</span>
@@ -171,7 +171,7 @@ export function OverviewWelcomeBanner({ session, onOpenAdminLogin }: OverviewWel
               {role !== 'staff' && (
                 <Link
                   href="/ra-soat"
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
+                  className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold border border-white/30 transition-colors"
                 >
                   <CheckSquare className="w-4 h-4" />
                   <span>Rà soát đề án</span>

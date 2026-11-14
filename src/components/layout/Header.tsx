@@ -18,19 +18,19 @@ import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
 const NAV_ITEMS = [
+  { href: '/', label: 'Tổng quan', icon: Home },
   { href: '/phieu-cong-viec', label: 'Phiếu công việc', icon: FileText },
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
-  { href: '/', label: 'Tổng quan', icon: Home },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];
 
 const MOBILE_NAV_ITEMS = [
+  { href: '/', label: 'Tổng quan', icon: Home },
   { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText },
   { href: '/bam-gio', label: 'Đo định mức thời gian', icon: Clock },
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
   { href: '/ra-soat', label: 'Rà soát & Thẩm định', icon: CheckSquare },
-  { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck },
-  { href: '/', label: 'Tổng quan lộ trình', icon: Home }
+  { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];
 
 export function Header() {
@@ -85,8 +85,8 @@ export function Header() {
       <div className="w-full max-w-none px-3 sm:px-5 lg:px-7 flex h-16 items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 shrink-0">
           <Link
-            href="/bang-tinh"
-            aria-label="Bảng tính 15 biểu Vị trí việc làm HCM-UTE"
+            href="/"
+            aria-label="Trang chủ tổng quan Vị trí việc làm HCM-UTE"
             className="flex items-center gap-2.5 py-1 min-w-0 cursor-pointer"
           >
             <img

@@ -85,14 +85,14 @@ export default function HomePage() {
       <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e2ecf7] pb-4">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-[#0072BC] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[#006cee] uppercase tracking-wider">
               Hồ sơ đề án đang thực hiện
             </span>
             <div className="text-lg font-bold text-[#004776] flex items-center gap-2">
               <Building2 className="w-5 h-5 text-[#004776]" />
               <span>[{activeUnit.code}] {activeUnit.nameVi}</span>
             </div>
-            <p className="text-xs text-[#476885]">
+            <p className="text-xs text-[#20446c]">
               {hasOperator
                 ? `Nhân sự phụ trách: ${operator?.displayName || session.actorTitle || 'Chuyên viên'} (${operator?.email || session.actorEmail})`
                 : 'Chưa kích hoạt phiên nhân sự'}
@@ -102,14 +102,14 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
               href="/bang-tinh"
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white hover:bg-[#eef5fc] text-[#004776] border border-[#cbd5e1] text-xs font-bold transition-colors"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-[#e1edf8] hover:bg-[#e3ecf6] text-[#004776] border border-[#d8e3ef] text-xs font-semibold transition-colors cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4 text-[#004776]" />
               <span>Bảng tính 15 biểu</span>
             </Link>
             <Link
               href="/bang-tinh"
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#004776] hover:bg-[#00365c] text-white text-xs font-bold shadow-xs transition-colors"
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
             >
               <span>Mở hồ sơ đơn vị</span>
               <ArrowRight className="w-4 h-4" />
@@ -120,12 +120,12 @@ export default function HomePage() {
         {/* Tiến độ chi tiết */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
           <div className="space-y-2 p-4 rounded-2xl bg-[#f8fbff] border border-[#dbe8f5]">
-            <div className="flex items-center justify-between text-xs font-semibold text-[#476885]">
+            <div className="flex items-center justify-between text-xs font-semibold text-[#20446c]">
               <span className="inline-flex items-center gap-1.5 font-bold text-[#004776]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Tiến độ thực hiện ({progressPercent}%)</span>
               </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-[#476885]">
+              <span className="inline-flex items-center gap-1 text-[11px] text-[#20446c]">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{session.lastSavedAt || 'Vừa cập nhật'}</span>
               </span>
@@ -133,10 +133,10 @@ export default function HomePage() {
             <div className="text-sm font-bold text-[#004776]">
               Bước {currentStepNum}/8 — {currentStepInfo.shortTitle}
             </div>
-            <div className="w-full h-2 rounded-full bg-[#e2e8f0] overflow-hidden">
-              <div className="h-full bg-[#004776] rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
+            <div className="w-full h-2.5 rounded-full bg-[#e2e8f0] overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#006cee] to-[#00b87a] rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
             </div>
-            <div className="flex items-center justify-between text-[11.5px] text-[#476885] pt-1">
+            <div className="flex items-center justify-between text-[11.5px] text-[#20446c] pt-1">
               <span>{session.proposedPositions.length} vị trí việc làm</span>
               {validationErrors.length > 0 ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-amber-700">

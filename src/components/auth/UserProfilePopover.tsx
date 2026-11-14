@@ -78,7 +78,7 @@ export function UserProfilePopover() {
     const mappedRole = getRoleFromTitle(title);
     await updateMyAccountOnServer(session, { unitCode, title, role: mappedRole, hasSelectedUnit: true });
     await loadAndSync();
-    router.push(mappedRole === 'unit_leader' ? '/bang-tinh' : '/phieu-cong-viec');
+    router.push('/');
   };
 
   const needsUnitSelection = Boolean(!isSyncing && session && !session.hasSelectedUnit && session.role !== 'admin');

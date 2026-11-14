@@ -7,9 +7,8 @@ import { startGoogleOAuthLogin, consumeGoogleOAuthCallback } from '@/services/au
 import { syncOperatorAccountWithServer, UserRole } from '@/services/auth/account-client';
 import { saveCurrentOperatorSession, getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
-function getLandingRouteByRole(role?: UserRole): string {
-  if (role === 'staff') return '/phieu-cong-viec';
-  return '/bang-tinh';
+function getLandingRouteByRole(_role?: UserRole): string {
+  return '/';
 }
 
 export default function LoginPortalPage() {

@@ -20,7 +20,7 @@ import { getCurrentOperatorSession } from '@/services/telemetry/operator-session
 const NAV_ITEMS = [
   { href: '/phieu-cong-viec', label: 'Phiếu công việc', icon: FileText },
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
-  { href: '/?view=overview', label: 'Tổng quan', icon: Home },
+  { href: '/', label: 'Tổng quan', icon: Home },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];
 
@@ -30,7 +30,7 @@ const MOBILE_NAV_ITEMS = [
   { href: '/bang-tinh', label: 'Bảng tính 15 biểu', icon: FileSpreadsheet },
   { href: '/ra-soat', label: 'Rà soát & Thẩm định', icon: CheckSquare },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck },
-  { href: '/?view=overview', label: 'Tổng quan lộ trình', icon: Home }
+  { href: '/', label: 'Tổng quan lộ trình', icon: Home }
 ];
 
 export function Header() {
@@ -115,7 +115,7 @@ export function Header() {
               const Icon = item.icon;
               const active = item.href === '/bang-tinh'
                 ? pathname === '/bang-tinh' || pathname === '/tao-tep'
-                : item.href.startsWith('/?view=overview')
+                : item.href === '/'
                   ? pathname === '/'
                   : pathname.startsWith(item.href);
               return (
@@ -195,7 +195,7 @@ export function Header() {
                     ? pathname === '/bang-tinh' || pathname === '/tao-tep'
                     : item.href === '/phieu-cong-viec'
                       ? pathname === '/phieu-cong-viec'
-                      : item.href.startsWith('/?view=overview')
+                      : item.href === '/'
                         ? pathname === '/'
                         : pathname.startsWith(item.href);
                   return (

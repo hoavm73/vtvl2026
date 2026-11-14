@@ -40,7 +40,7 @@ export function UserProfilePopover() {
       setIsSyncing(false);
       return;
     }
-    const isExplicitAdmin = active.role === 'admin' || active.email === 'tcns@hcmute.edu.vn';
+    const isExplicitAdmin = active.email === 'tcns@hcmute.edu.vn';
     const synced = await syncOperatorAccountWithServer(active);
     setIsAdmin(isExplicitAdmin && synced.isAdmin);
     setSession(getCurrentOperatorSession() || active);
@@ -81,7 +81,7 @@ export function UserProfilePopover() {
     router.push('/');
   };
 
-  const needsUnitSelection = Boolean(!isSyncing && session && !session.hasSelectedUnit && session.role !== 'admin');
+  const needsUnitSelection = Boolean(!isSyncing && session && !session.hasSelectedUnit && session.email !== 'tcns@hcmute.edu.vn');
 
   if (!session) {
     return (

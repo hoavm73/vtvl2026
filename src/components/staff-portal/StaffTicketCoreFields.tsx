@@ -45,90 +45,119 @@ export function StaffTicketCoreFields({
 }: StaffTicketCoreFieldsProps) {
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold mb-1">1. Mã nhiệm vụ (chọn từ Biểu A1) *</label>
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 w-1/3 align-middle text-xs uppercase text-[#004776]">
+          1. Mã nhiệm vụ (Biểu A1) *
+        </td>
+        <td className="border border-[#004776] p-2">
           <ShadcnSelect
             value={maNhiemVu}
             options={missionOptions}
-            placeholder="Chọn nhiệm vụ..."
+            placeholder="-- Chọn nhiệm vụ theo Biểu A1 --"
             onChange={onChangeMission}
           />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">2. Mã công việc (tự sinh chống trùng)</label>
-          <div className="h-10 px-3 rounded-lg border border-[#cbd5e1] bg-[#f8fafc] flex items-center justify-between text-sm font-mono font-bold text-[#0072BC]">
-            <span>{maCongViec || 'Chọn nhiệm vụ để tự sinh mã...'}</span>
-            <Sparkles className="w-4 h-4 text-[#0072BC]" />
+        </td>
+      </tr>
+
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          2. Mã công việc (tự sinh)
+        </td>
+        <td className="border border-[#004776] p-2">
+          <div className="h-9 px-3 rounded-lg border border-[#cbd5e1] bg-[#f1f5f9] flex items-center justify-between text-xs font-mono font-bold text-[#0072BC]">
+            <span>{maCongViec || 'Chọn nhiệm vụ để tự sinh mã theo chuẩn...'}</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#0072BC]" />
           </div>
-        </div>
-      </div>
+        </td>
+      </tr>
 
-      <div>
-        <label className="block text-xs font-semibold mb-1">3. Tên công việc cụ thể (Biểu A2) *</label>
-        <input
-          type="text"
-          value={tenCongViec}
-          onChange={(e) => onChangeTenCongViec(e.target.value)}
-          placeholder="Nhập tên công việc cụ thể đang đảm nhận..."
-          className="w-full h-10 px-3 rounded-lg border border-[#cbd5e1] text-sm text-[#004776] focus:border-[#0072BC] outline-hidden"
-        />
-      </div>
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          3. Tên công việc cụ thể *
+        </td>
+        <td className="border border-[#004776] p-2">
+          <input
+            type="text"
+            value={tenCongViec}
+            onChange={(e) => onChangeTenCongViec(e.target.value)}
+            placeholder="Nhập tên công việc cụ thể đang đảm nhận (Biểu A2)..."
+            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+          />
+        </td>
+      </tr>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold mb-1">3a. Mã vị trí việc làm chính (từ Biểu C1) *</label>
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          3a. Mã VTVL chính *
+        </td>
+        <td className="border border-[#004776] p-2">
           <ShadcnSelect
             value={maVtvl}
             options={vtvlOptions}
-            placeholder="Chọn VTVL chính..."
+            placeholder="-- Chọn vị trí việc làm chính (Biểu C1) --"
             onChange={onChangeVtvl}
           />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">3b. Mã vị trí việc làm phối hợp (nếu có)</label>
+        </td>
+      </tr>
+
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          3b. VTVL phối hợp (nếu có)
+        </td>
+        <td className="border border-[#004776] p-2">
           <ShadcnSelect
             value={maVtvlPhoiHop}
-            options={[{ value: '', label: 'Không có' }, ...vtvlOptions]}
-            placeholder="Chọn VTVL phối hợp..."
+            options={[{ value: '', label: 'Không có phối hợp' }, ...vtvlOptions]}
+            placeholder="-- Chọn VTVL phối hợp (nếu có) --"
             onChange={onChangeVtvlPhoiHop}
           />
-        </div>
-      </div>
+        </td>
+      </tr>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold mb-1">4. Sản phẩm đầu ra (Biểu A2)</label>
-          <textarea
-            rows={2}
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          4. Sản phẩm đầu ra
+        </td>
+        <td className="border border-[#004776] p-2">
+          <input
+            type="text"
             value={sanPham}
             onChange={(e) => onChangeSanPham(e.target.value)}
-            placeholder="Mô tả sản phẩm đầu ra cụ thể..."
-            className="w-full p-2.5 rounded-lg border border-[#cbd5e1] text-sm text-[#004776] focus:border-[#0072BC] outline-hidden"
+            placeholder="Ví dụ: Báo cáo, Quyết định, Đề thi, Giáo trình..."
+            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
           />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">5. Yêu cầu chất lượng (Biểu A2)</label>
-          <textarea
-            rows={2}
+        </td>
+      </tr>
+
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          5. Yêu cầu chất lượng
+        </td>
+        <td className="border border-[#004776] p-2">
+          <input
+            type="text"
             value={chatLuong}
             onChange={(e) => onChangeChatLuong(e.target.value)}
-            placeholder="Tiêu chuẩn, chất lượng, tiến độ yêu cầu..."
-            className="w-full p-2.5 rounded-lg border border-[#cbd5e1] text-sm text-[#004776] focus:border-[#0072BC] outline-hidden"
+            placeholder="Ví dụ: Đúng tiến độ, đạt chuẩn ISO, đúng quy định..."
+            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
           />
-        </div>
-      </div>
+        </td>
+      </tr>
 
-      <div>
-        <label className="block text-xs font-semibold mb-1">6. Giải trình / Căn cứ nguồn tài liệu (Biểu A2)</label>
-        <input
-          type="text"
-          value={canCu}
-          onChange={(e) => onChangeCanCu(e.target.value)}
-          placeholder="Ví dụ: Quy chế đào tạo, QĐ 2266/QĐ-ĐHCNKT, phân công công tác..."
-          className="w-full h-10 px-3 rounded-lg border border-[#cbd5e1] text-sm text-[#004776] focus:border-[#0072BC] outline-hidden"
-        />
-      </div>
+      <tr>
+        <td className="border border-[#004776] bg-[#f8fbff] font-bold p-2.5 align-middle text-xs uppercase text-[#004776]">
+          6. Căn cứ / Tài liệu giải trình
+        </td>
+        <td className="border border-[#004776] p-2">
+          <input
+            type="text"
+            value={canCu}
+            onChange={(e) => onChangeCanCu(e.target.value)}
+            placeholder="Ví dụ: Quyết định phân công, Quy chế làm việc..."
+            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+          />
+        </td>
+      </tr>
     </>
   );
 }

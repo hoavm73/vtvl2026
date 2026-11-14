@@ -41,7 +41,7 @@ export function Header() {
   useEffect(() => {
     const checkRole = () => {
       const cur = getCurrentOperatorSession();
-      setIsAdmin(Boolean(cur?.role === 'admin' || cur?.email === 'tcns@hcmute.edu.vn'));
+      setIsAdmin(Boolean(cur?.email === 'tcns@hcmute.edu.vn' && cur?.role === 'admin'));
     };
     checkRole();
     window.addEventListener('vtvl-operator-changed', checkRole);

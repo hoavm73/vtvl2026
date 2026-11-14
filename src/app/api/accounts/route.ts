@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const targetRole = hasExistingAssignment ? existing!.role : undefined;
     const targetHasSelectedUnit = hasExistingAssignment ? true : (body.hasSelectedUnit !== undefined ? Boolean(body.hasSelectedUnit) : false);
 
-    const rawAccount = upsertUserAccount({
+    const rawAccount = await upsertUserAccount({
       email,
       displayName: body.displayName || existing?.displayName,
       unitCode: targetUnitCode,
@@ -140,7 +140,7 @@ export async function PATCH(req: NextRequest) {
     const canChangeRole = isAdmin || isFirstTimeOnboarding || email === 'tcns@hcmute.edu.vn';
     const effectiveRole = canChangeRole && requestedRole ? requestedRole : existing?.role;
 
-    const rawAccount = upsertUserAccount(
+    const rawAccount = await upsertUserAccount(
       {
         email,
         displayName: body.displayName || existing?.displayName,

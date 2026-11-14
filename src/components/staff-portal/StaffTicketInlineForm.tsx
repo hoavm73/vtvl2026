@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, Send, RotateCcw } from 'lucide-react';
 import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffTicketCoreFields } from './StaffTicketCoreFields';
 import { StaffTicketVolumeFields } from './StaffTicketVolumeFields';
+import { StaffTicketToolbar } from './StaffTicketToolbar';
+import { StaffTicketSignatureBlock } from './StaffTicketSignatureBlock';
 
 interface StaffTicketInlineFormProps {
   unitCode: string;
@@ -45,6 +47,8 @@ export function StaffTicketInlineForm({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const unit = findHcmuteUnit(unitCode);
 
   const resetForm = () => {
     setMaNhiemVu('');
@@ -166,90 +170,90 @@ export function StaffTicketInlineForm({
   }));
 
   return (
-    <div id="staff-ticket-form-card" className="bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden">
-      <div className="px-5 py-4 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-[#004776]">
-              {editingTicket ? `Chỉnh sửa Phiếu công việc [${editingTicket.maCongViec}]` : 'Kê khai Phiếu công việc cá nhân'}
-            </h2>
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-              editingTicket ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-[#0072BC] border border-blue-200'
-            }`}>
-              {editingTicket ? 'Chế độ chỉnh sửa' : 'Tạo mới'}
-            </span>
+    <div id="staff-ticket-form-card" className="space-y-3">
+      <StaffTicketToolbar
+        isEditing={Boolean(editingTicket)}
+        editingTaskCode={editingTicket?.maCongViec}
+        saving={saving}
+        onCancelEdit={onCancelEdit}
+        onPrint={() => window.print()}
+        onSave={handleSave}
+      />
+
+      {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
+      {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
+
+      <div
+        className="bg-white rounded-2xl border-2 border-[#cbd5e1] shadow-2xl p-6 sm:p-10 text-[#004776] print:border-none print:shadow-none print:p-0"
+        style={{ fontFamily: '"Times New Roman", Times, serif' }}
+      >
+        <div className="grid grid-cols-12 gap-2 text-center mb-5">
+          <div className="col-span-5">
+            <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
+            <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+            <div className="text-[11px] font-bold uppercase mt-0.5">{unit.nameVi}</div>
+            <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
           </div>
-          <p className="text-xs text-[#64748b] mt-0.5">
-            Điền trực tiếp các mục bên dưới. Dữ liệu sẽ tự động liên thông vào Biểu A2 và Biểu B1 của [{unitCode}].
-          </p>
+          <div className="col-span-7">
+            <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+            <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
+            <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
+          </div>
         </div>
 
-        {editingTicket && (
-          <button
-            type="button"
-            onClick={onCancelEdit}
-            className="h-8 px-3 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-xs font-medium text-[#004776] inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Chuyển sang tạo mới
-          </button>
-        )}
-      </div>
+        <div className="text-center mb-6">
+          <h2 className="text-[16px] sm:text-[18px] font-bold uppercase tracking-tight text-[#004776]">
+            PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
+          </h2>
+          <div className="text-[12px] italic text-[#475569] mt-0.5">
+            (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026 • Theo Hướng dẫn số 07-HD/BTCTW)
+          </div>
+        </div>
 
-      <div className="p-5 sm:p-6 space-y-4 text-sm text-[#004776]">
-        {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">{err}</div>}
-        {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">{successMsg}</div>}
+        <div className="space-y-1.5 mb-5 text-[13px] border-b border-[#e2e8f0] pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><strong>Họ và tên người lập phiếu:</strong> {ownerName} ({ownerEmail})</div>
+            <div><strong>Trạng thái phiếu:</strong> <span className="font-bold text-[#0072BC]">{editingTicket?.status || 'Đang tạo mới'}</span></div>
+          </div>
+          <div><strong>Chức danh / Chức vụ:</strong> {ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp; <strong>Đơn vị:</strong> {unit.nameVi} ({unit.code})</div>
+        </div>
 
-        <StaffTicketCoreFields
-          maNhiemVu={maNhiemVu}
-          maCongViec={maCongViec}
-          tenCongViec={tenCongViec}
-          maVtvl={maVtvl}
-          maVtvlPhoiHop={maVtvlPhoiHop}
-          sanPham={sanPham}
-          chatLuong={chatLuong}
-          canCu={canCu}
-          missionOptions={missionOptions}
-          vtvlOptions={vtvlOptions}
-          onChangeMission={handleMissionChange}
-          onChangeTenCongViec={setTenCongViec}
-          onChangeVtvl={setMaVtvl}
-          onChangeVtvlPhoiHop={setMaVtvlPhoiHop}
-          onChangeSanPham={setSanPham}
-          onChangeChatLuong={setChatLuong}
-          onChangeCanCu={setCanCu}
-        />
+        <table className="w-full border-collapse border border-[#004776] text-[12.5px] mb-5">
+          <tbody>
+            <StaffTicketCoreFields
+              maNhiemVu={maNhiemVu}
+              maCongViec={maCongViec}
+              tenCongViec={tenCongViec}
+              maVtvl={maVtvl}
+              maVtvlPhoiHop={maVtvlPhoiHop}
+              sanPham={sanPham}
+              chatLuong={chatLuong}
+              canCu={canCu}
+              missionOptions={missionOptions}
+              vtvlOptions={vtvlOptions}
+              onChangeMission={handleMissionChange}
+              onChangeTenCongViec={setTenCongViec}
+              onChangeVtvl={setMaVtvl}
+              onChangeVtvlPhoiHop={setMaVtvlPhoiHop}
+              onChangeSanPham={setSanPham}
+              onChangeChatLuong={setChatLuong}
+              onChangeCanCu={setCanCu}
+            />
 
-        <StaffTicketVolumeFields
-          soSpNam={soSpNam}
-          phutThucTe={phutThucTe}
-          gioBoSung={gioBoSung}
-          nguonSoLieu={nguonSoLieu}
-          onChangeSoSp={setSoSpNam}
-          onChangePhut={setPhutThucTe}
-          onChangeGioBoSung={setGioBoSung}
-          onChangeNguon={setNguonSoLieu}
-        />
-      </div>
+            <StaffTicketVolumeFields
+              soSpNam={soSpNam}
+              phutThucTe={phutThucTe}
+              gioBoSung={gioBoSung}
+              nguonSoLieu={nguonSoLieu}
+              onChangeSoSp={setSoSpNam}
+              onChangePhut={setPhutThucTe}
+              onChangeGioBoSung={setGioBoSung}
+              onChangeNguon={setNguonSoLieu}
+            />
+          </tbody>
+        </table>
 
-      <div className="px-5 py-4 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-wrap items-center justify-end gap-3">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => handleSave('Nháp')}
-          className="h-10 px-4 rounded-xl border border-[#0072BC] bg-white text-sm font-semibold text-[#0072BC] hover:bg-[#eef5ff] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          Lưu nháp (giữ mã ở đơn vị)
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => handleSave('Đã nộp')}
-          className="h-10 px-5 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
-        >
-          <Send className="w-4 h-4" />
-          {saving ? 'Đang lưu...' : 'Lưu và gửi (Đã nộp)'}
-        </button>
+        <StaffTicketSignatureBlock ownerName={ownerName} />
       </div>
     </div>
   );

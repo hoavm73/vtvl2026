@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     for (const acc of accounts) {
       if (acc.unitCode.toUpperCase() === oldCode) {
-        upsertUserAccount({
+        await upsertUserAccount({
           ...acc,
           unitCode: newCode,
           unitNameVi: newNameVi || acc.unitNameVi

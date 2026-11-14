@@ -228,10 +228,10 @@ export function getUserAccountByEmail(email: string): UserAccountRecord | null {
   return norm ? loadStore().get(norm) || null : null;
 }
 
-export function upsertUserAccount(
+export async function upsertUserAccount(
   input: Partial<UserAccountRecord> & { email: string },
   allowRoleOverride = false
-): UserAccountRecord {
+): Promise<UserAccountRecord> {
   const store = loadStore();
   const norm = normalizeEmail(input.email);
   const deleted = loadDeletedAccountEmails();
@@ -256,15 +256,15 @@ export function upsertUserAccount(
 
   store.set(norm, record);
   persistLocalStore();
-  persistAccountsToSupabase(getAllUserAccounts()).catch(() => {});
+  await persistAccountsToSupabase(getAllUserAccounts());
   return record;
 }
 
-export function updateUserAccountRole(
+export async function updateUserAccountRole(
   email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status' | 'hasSelectedUnit'>>
-): UserAccountRecord | null {
+): Promise<UserAccountRecord | null> {
   const norm = normalizeEmail(email);
-  return !isValidRole(role) || !norm ? null : upsertUserAccount({ email: norm, role, hasSelectedUnit: true, ...updates }, true);
+  return !isValidRole(role) || !norm ? null : await upsertUserAccount({ email: norm, role, hasSelectedUnit: true, ...updates }, true);
 }
 
 export async function deleteUserAccount(email: string): Promise<boolean> {

@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email công vụ không hợp lệ.' }, { status: 400 });
     }
 
-    const account = upsertUserAccount(
+    const account = await upsertUserAccount(
       {
         email,
         displayName: body.displayName,
@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Thiếu email hoặc vai trò cần cập nhật.' }, { status: 400 });
     }
 
-    const updated = updateUserAccountRole(email, role, {
+    const updated = await updateUserAccountRole(email, role, {
       unitCode: body.unitCode,
       title: body.title,
       displayName: body.displayName,

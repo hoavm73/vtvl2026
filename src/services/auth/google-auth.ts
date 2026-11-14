@@ -8,6 +8,7 @@ import {
   getCurrentOperatorSession,
   getAllEmailSessions
 } from '@/services/telemetry/operator-session';
+import { getRoleFromTitle } from '@/services/auth/account-client';
 
 export interface GoogleLoginCheckResult {
   ok: boolean;
@@ -114,12 +115,17 @@ export function consumeGoogleOAuthCallback(defaultUnitCode = 'FIT'): OperatorSes
       payload.picture ||
       '';
 
+    const prevRole = prevRecord?.title ? getRoleFromTitle(prevRecord.title) : undefined;
+    const resolvedRole = isTcnsAdmin
+      ? 'admin'
+      : (isSameEmail && existing?.role ? existing.role : prevRole || 'staff');
+
     const session = saveCurrentOperatorSession(email, unitCode, title, {
       displayName,
       avatarUrl,
       authProvider: 'google',
       accessToken: token,
-      role: isTcnsAdmin ? 'admin' : (existing?.role || 'staff'),
+      role: resolvedRole,
       hasSelectedUnit
     });
 

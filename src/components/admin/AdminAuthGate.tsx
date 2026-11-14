@@ -34,6 +34,14 @@ export function AdminAuthGate({ onSuccess }: AdminAuthGateProps) {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.token && typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('hcmute_vtvl_admin_token', data.token);
+          } catch {
+            // ignore
+          }
+        }
         loginAsAdminSession();
         onSuccess();
       } else {
@@ -84,6 +92,7 @@ export function AdminAuthGate({ onSuccess }: AdminAuthGateProps) {
               />
               <KeyRound className="w-4 h-4 text-[#476885] absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
+            <p className="text-[11px] text-[#476885]">Mật khẩu mặc định hệ thống: <code className="font-bold text-[#004776]">Hcmute@2026</code></p>
             {error && (
               <p className="flex items-center gap-1.5 text-xs text-red-600 font-semibold pt-1">
                 <AlertCircle className="w-4 h-4 shrink-0" />

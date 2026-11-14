@@ -41,6 +41,14 @@ export async function loginWithAdminPassword(password: string): Promise<{ ok: bo
       const data = await res.json().catch(() => ({}));
       return { ok: false, error: data.error || 'Mật khẩu quản trị viên không chính xác.' };
     }
+    const data = await res.json().catch(() => ({}));
+    if (data.token && typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('hcmute_vtvl_admin_token', data.token);
+      } catch {
+        // ignore
+      }
+    }
     loginAsAdminSession();
     return { ok: true };
   } catch {

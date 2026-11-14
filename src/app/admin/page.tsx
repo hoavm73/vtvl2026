@@ -43,7 +43,19 @@ export default function AdminPage() {
     try {
       const cur = getCurrentOperatorSession();
       const headers: Record<string, string> = {};
-      if (cur?.accessToken) headers.Authorization = `Bearer ${cur.accessToken}`;
+      let adminToken = '';
+      if (typeof window !== 'undefined') {
+        try {
+          adminToken = sessionStorage.getItem('hcmute_vtvl_admin_token') || '';
+        } catch {
+          // ignore
+        }
+      }
+      if (adminToken) {
+        headers.Authorization = `Bearer ${adminToken}`;
+      } else if (cur?.accessToken) {
+        headers.Authorization = `Bearer ${cur.accessToken}`;
+      }
       if (cur?.email) headers['x-actor-email'] = cur.email;
 
       const authQuery = cur?.email ? `?email=${encodeURIComponent(cur.email)}` : '';

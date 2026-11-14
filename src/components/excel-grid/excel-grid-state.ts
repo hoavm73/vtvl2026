@@ -71,7 +71,6 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
   }, []);
 
   const updateCell = useCallback((sheetKey: ExcelSheetKey, rowId: string, field: string, value: string | number) => {
-    if (sheetKey === 'C1' && !isC1Unlocked) return;
     setData((prev) => {
       const sheetRows = prev[sheetKey] || [];
 

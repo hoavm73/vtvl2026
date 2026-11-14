@@ -43,6 +43,12 @@ export function StaffTicketCoreFields({
   onChangeChatLuong,
   onChangeCanCu
 }: StaffTicketCoreFieldsProps) {
+  const textareaClass = (value: string) => `w-full min-h-[64px] px-3 py-2 rounded-lg border text-xs leading-relaxed text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden resize-y transition-all duration-200 ${
+    value.trim()
+      ? 'border-[#7cc4f5] bg-[#eff8ff] shadow-[0_3px_10px_rgba(0,114,188,0.10)]'
+      : 'border-[#cbd5e1] bg-white'
+  }`;
+
   return (
     <>
       <tr>
@@ -76,12 +82,12 @@ export function StaffTicketCoreFields({
           3. Tên công việc cụ thể *
         </td>
         <td className="border border-[#004776] p-2">
-          <input
-            type="text"
+          <textarea
+            rows={2}
             value={tenCongViec}
             onChange={(e) => onChangeTenCongViec(e.target.value)}
             placeholder="Nhập tên công việc cụ thể đang đảm nhận (Biểu A2)..."
-            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+            className={textareaClass(tenCongViec)}
           />
         </td>
       </tr>
@@ -119,12 +125,12 @@ export function StaffTicketCoreFields({
           4. Sản phẩm đầu ra
         </td>
         <td className="border border-[#004776] p-2">
-          <input
-            type="text"
+          <textarea
+            rows={2}
             value={sanPham}
             onChange={(e) => onChangeSanPham(e.target.value)}
             placeholder="Ví dụ: Báo cáo, Quyết định, Đề thi, Giáo trình..."
-            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+            className={textareaClass(sanPham)}
           />
         </td>
       </tr>
@@ -134,12 +140,12 @@ export function StaffTicketCoreFields({
           5. Yêu cầu chất lượng
         </td>
         <td className="border border-[#004776] p-2">
-          <input
-            type="text"
+          <textarea
+            rows={2}
             value={chatLuong}
             onChange={(e) => onChangeChatLuong(e.target.value)}
             placeholder="Ví dụ: Đúng tiến độ, đạt chuẩn ISO, đúng quy định..."
-            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+            className={textareaClass(chatLuong)}
           />
         </td>
       </tr>
@@ -149,12 +155,12 @@ export function StaffTicketCoreFields({
           6. Căn cứ / Tài liệu giải trình
         </td>
         <td className="border border-[#004776] p-2">
-          <input
-            type="text"
+          <textarea
+            rows={2}
             value={canCu}
             onChange={(e) => onChangeCanCu(e.target.value)}
             placeholder="Ví dụ: Quyết định phân công, Quy chế làm việc..."
-            className="w-full h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs text-[#004776] font-medium focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC] outline-hidden"
+            className={textareaClass(canCu)}
           />
         </td>
       </tr>

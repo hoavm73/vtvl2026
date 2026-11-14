@@ -33,6 +33,18 @@ interface StaffTicketModernFormProps {
 }
 
 export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
+  const textareaClass = (value: string) => `w-full min-h-[72px] px-3 py-2.5 text-xs sm:text-sm leading-relaxed rounded-xl border text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden resize-y transition-all duration-200 ${
+    value.trim()
+      ? 'border-[#7cc4f5] bg-[#eff8ff] shadow-[0_4px_14px_rgba(0,114,188,0.10)]'
+      : 'border-[#cbd5e1] bg-white'
+  }`;
+
+  const numberInputClass = (value: string) => `w-full h-10 px-3 text-xs sm:text-sm rounded-xl border text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all duration-200 ${
+    Number(value) > 0
+      ? 'border-[#7cc4f5] bg-[#eff8ff] shadow-[0_4px_14px_rgba(0,114,188,0.10)]'
+      : 'border-[#cbd5e1] bg-white'
+  }`;
+
   return (
     <div className="space-y-5">
       {/* Nhóm 1: Nhiệm vụ & Vị trí việc làm */}
@@ -73,12 +85,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Tên công việc cụ thể *
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={props.tenCongViec}
               onChange={(e) => props.onChangeTenCongViec(e.target.value)}
               placeholder="Ví dụ: Lập kế hoạch giảng dạy học kỳ 1 năm học 2026–2027..."
-              className="w-full h-10 sm:h-11 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={textareaClass(props.tenCongViec)}
             />
           </div>
 
@@ -121,12 +133,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Sản phẩm đầu ra cụ thể
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={props.sanPham}
               onChange={(e) => props.onChangeSanPham(e.target.value)}
               placeholder="Ví dụ: Kế hoạch giảng dạy được phê duyệt..."
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={textareaClass(props.sanPham)}
             />
           </div>
 
@@ -134,12 +146,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Tiêu chuẩn chất lượng
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={props.chatLuong}
               onChange={(e) => props.onChangeChatLuong(e.target.value)}
               placeholder="Ví dụ: Đạt 100% tiến độ, không có sai sót..."
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={textareaClass(props.chatLuong)}
             />
           </div>
 
@@ -147,12 +159,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Căn cứ pháp lý / Quyết định giao việc
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={props.canCu}
               onChange={(e) => props.onChangeCanCu(e.target.value)}
               placeholder="Ví dụ: Quyết định phân công nhiệm vụ năm học số 123/QĐ-ĐHCNKT..."
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={textareaClass(props.canCu)}
             />
           </div>
         </div>
@@ -177,7 +189,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
               step="any"
               value={props.soSpNam}
               onChange={(e) => props.onChangeSoSp(e.target.value)}
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={numberInputClass(props.soSpNam)}
             />
           </div>
 
@@ -185,12 +197,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Nguồn số liệu kiểm chứng
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={props.nguonSoLieu}
               onChange={(e) => props.onChangeNguon(e.target.value)}
               placeholder="Ví dụ: Báo cáo tổng kết khoa, hệ thống phần mềm..."
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={textareaClass(props.nguonSoLieu)}
             />
           </div>
 
@@ -207,7 +219,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
               step="any"
               value={props.phutThucTe}
               onChange={(e) => props.onChangePhut(e.target.value)}
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={numberInputClass(props.phutThucTe)}
             />
           </div>
 
@@ -221,7 +233,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
               step="any"
               value={props.gioBoSung}
               onChange={(e) => props.onChangeGioBoSung(e.target.value)}
-              className="w-full h-10 px-3 text-xs sm:text-sm rounded-xl border border-[#cbd5e1] bg-white text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all"
+              className={numberInputClass(props.gioBoSung)}
             />
           </div>
         </div>

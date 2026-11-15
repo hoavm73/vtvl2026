@@ -97,11 +97,6 @@ export function UnitTicketsReviewList({
             {mode === 'pending' ? 'Phiếu chờ phê duyệt' : 'Toàn bộ phiếu của đơn vị'} ({displayedTickets.length})
           </h2>
         </div>
-        {mode === 'all' && (
-          <div className="text-xs text-[#64748b]">
-            {isLeader ? 'Quản lý, duyệt và gộp vào B1/B2.' : 'Chế độ chỉ đọc toàn đơn vị.'}
-          </div>
-        )}
       </div>
 
       {/* Bộ lọc cho chế độ All */}

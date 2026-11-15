@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ShieldCheck, Building2, User, FileSpreadsheet, FileText,
-  Clock, ArrowRight, Sparkles, LogIn
+  ArrowRight, Sparkles, LogIn
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { OperatorSession } from '@/services/telemetry/operator-session';
@@ -72,9 +72,6 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
               <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
                 Hệ thống Vị trí việc làm 360
               </h1>
-              <p className="text-[11.5px] sm:text-xs text-white/85 font-medium mt-0.5 truncate">
-                Chuẩn hóa danh mục và lập Đề án Vị trí việc làm giai đoạn 2026–2030
-              </p>
             </div>
           </div>
         </div>
@@ -88,9 +85,6 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
               </span>
               <p className="text-sm sm:text-base font-bold text-white">
                 Chào mừng bạn đến với Cổng thông tin Vị trí việc làm HCM-UTE
-              </p>
-              <p className="text-xs text-white/85 leading-relaxed max-w-xl">
-                Đăng nhập tài khoản công vụ @hcmute.edu.vn hoặc đăng nhập Quản trị viên để bắt đầu kê khai công việc, phát phiếu khảo sát hoặc thẩm định đề án.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -153,13 +147,6 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                         </>
                     )}
                   </div>
-                  {role !== 'staff' && (
-                    <p className="text-xs text-white/85 leading-relaxed pt-0.5 line-clamp-2">
-                      {role === 'admin'
-                        ? 'Quyền Quản trị viên — Điều hành danh mục 39 đơn vị, phân quyền & thẩm định đề án toàn trường.'
-                        : 'Quyền Lãnh đạo đơn vị — Quản lý hồ sơ VTVL đơn vị, phát phiếu khảo sát và tổng hợp 15 biểu.'}
-                    </p>
-                  )}
                 </div>
               </div>
 

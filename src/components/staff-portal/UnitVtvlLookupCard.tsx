@@ -80,18 +80,13 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
     <div className="bg-white rounded-2xl border border-[#cbd5e1] p-4 sm:p-5 shadow-xs space-y-4">
       {/* Tiêu đề */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-lg bg-[#e1edf8] text-[#0072BC]">
-              <Briefcase className="w-4 h-4" />
-            </span>
-            <h3 className="text-sm font-bold text-[#004776]">
-              Danh mục vị trí việc làm của đơn vị [{unit.code}]
-            </h3>
-          </div>
-          <p className="text-xs text-[#476885]">
-            Tra cứu chức danh, mã ngạch và chọn kê khai phiếu khối lượng công việc
-          </p>
+        <div className="flex items-center gap-2">
+          <span className="p-1 rounded-lg bg-[#e1edf8] text-[#0072BC]">
+            <Briefcase className="w-4 h-4" />
+          </span>
+          <h3 className="text-sm font-bold text-[#004776]">
+            Danh mục vị trí việc làm của đơn vị [{unit.code}]
+          </h3>
         </div>
         <span className="inline-flex items-center self-start sm:self-auto px-2.5 py-1 rounded-full text-xs font-bold bg-[#eef5fc] text-[#0072BC] border border-[#d8e3ef]">
           {filteredList.length} / {vtvlList.length} VTVL

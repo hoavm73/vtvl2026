@@ -87,7 +87,7 @@ export function SchoolOverviewDashboard() {
       {/* Lưới 4 chỉ số chính theo yêu cầu */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Chỉ số 1: Đơn vị trực thuộc */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-[#20446c]">Đơn vị trực thuộc</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#d8e3ef] flex items-center justify-center text-[#0072BC]">
@@ -95,16 +95,13 @@ export function SchoolOverviewDashboard() {
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight">{stats.totalUnits}</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight tabular-nums">{stats.totalUnits}</span>
             <span className="text-xs font-semibold text-[#0072BC]">đơn vị trực thuộc</span>
           </div>
-          <p className="text-[11px] text-[#476885] leading-tight">
-            15 Khoa/Viện · 16 Phòng/Ban · 08 TT, Phân hiệu & Tạp chí
-          </p>
         </div>
 
         {/* Chỉ số 2: Vị trí việc làm Toàn trường */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-[#20446c]">Vị trí việc làm</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#d8e3ef] flex items-center justify-center text-[#0072BC]">
@@ -112,16 +109,13 @@ export function SchoolOverviewDashboard() {
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight">{stats.totalPositions}</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight tabular-nums">{stats.totalPositions}</span>
             <span className="text-xs font-semibold text-[#0072BC]">vị trí toàn trường</span>
           </div>
-          <p className="text-[11px] text-[#476885] leading-tight">
-            Khung 04 nhóm chức danh NĐ 232/2026/NĐ-CP
-          </p>
         </div>
 
         {/* Chỉ số 3: Vị trí đã phê duyệt */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f6fcf8] to-[#edf9f1] border border-[#cbeed7] space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f6fcf8] to-[#edf9f1] border border-[#cbeed7] space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-emerald-800">Đã phê duyệt</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#cbeed7] flex items-center justify-center text-emerald-600">
@@ -129,30 +123,24 @@ export function SchoolOverviewDashboard() {
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight">{stats.approvedPositions}</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight tabular-nums">{stats.approvedPositions}</span>
             <span className="text-xs font-semibold text-emerald-600">vị trí đã phê duyệt</span>
           </div>
-          <p className="text-[11px] text-emerald-700 leading-tight">
-            Đã thẩm định và xác nhận vào hồ sơ đề án
-          </p>
         </div>
 
         {/* Chỉ số 4: Vị trí đang chờ duyệt */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#fffdf5] to-[#fef9e8] border border-[#fae8b2] space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#fffdf5] to-[#fef9e8] border border-[#fae8b2] space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-amber-800">Đang chờ duyệt</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#fae8b2] flex items-center justify-center text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-extrabold text-amber-700 tracking-tight">{stats.pendingPositions}</span>
-            <span className="text-xs font-semibold text-amber-600">vị trí đang chờ duyệt</span>
-          </div>
-          <div className="flex items-center justify-between gap-2 pt-0.5">
-            <p className="text-[11px] text-amber-700 leading-tight">
-              Đang chờ Lãnh đạo hoặc Admin phê duyệt
-            </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-2xl sm:text-3xl font-extrabold text-amber-700 tracking-tight tabular-nums">{stats.pendingPositions}</span>
+              <span className="text-xs font-semibold text-amber-600 truncate">chờ duyệt</span>
+            </div>
             <Link
               href="/phieu-cong-viec?tab=pending"
               className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#0072BC] hover:bg-[#004776] active:scale-95 rounded-lg shadow-sm hover:shadow transition-all shrink-0 cursor-pointer"
@@ -164,12 +152,12 @@ export function SchoolOverviewDashboard() {
         </div>
       </div>
 
-      {/* Thống kê số lượng và mô tả ngắn gọn từng khối đơn vị */}
+      {/* Phân bổ theo khối đơn vị */}
       <div className="pt-2 border-t border-[#e8f1fa] space-y-3">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-[#0072BC]" />
           <h3 className="text-xs sm:text-sm font-bold text-[#004776]">
-            Thống kê số lượng và mô tả ngắn gọn từng khối đơn vị
+            Phân bổ theo khối đơn vị
           </h3>
         </div>
 
@@ -179,22 +167,17 @@ export function SchoolOverviewDashboard() {
             return (
               <div
                 key={group.id}
-                className="p-3.5 rounded-2xl bg-[#f8fbff] hover:bg-white border border-[#dbe8f5] hover:border-[#0072BC] transition-all space-y-1.5 shadow-2xs"
+                className="px-3.5 py-3 rounded-2xl bg-[#f8fbff] hover:bg-white border border-[#dbe8f5] hover:border-[#0072BC] transition-all shadow-2xs flex items-center justify-between gap-2"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-6 h-6 rounded-lg bg-[#e1edf8] flex items-center justify-center text-[#0072BC] shrink-0">
-                      <IconComponent className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-bold text-[#004776] truncate">{group.label}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#e1edf8] flex items-center justify-center text-[#0072BC] shrink-0">
+                    <IconComponent className="w-3.5 h-3.5" />
                   </div>
-                  <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-[#e1edf8] text-[#0072BC] shrink-0">
-                    {group.count} đơn vị
-                  </span>
+                  <span className="text-xs font-bold text-[#004776] truncate">{group.label}</span>
                 </div>
-                <p className="text-[11px] text-[#476885] leading-relaxed line-clamp-2">
-                  {group.shortDesc}
-                </p>
+                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-[#e1edf8] text-[#0072BC] shrink-0 tabular-nums">
+                  {group.count} đơn vị
+                </span>
               </div>
             );
           })}

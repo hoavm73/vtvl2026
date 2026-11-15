@@ -110,14 +110,9 @@ export function AdminSessionControlTab() {
             <div className="w-8 h-8 rounded-lg bg-[var(--surface-tint)] border border-[var(--primary)]/20 flex items-center justify-center text-[#004776]">
               <UserCheck className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-[#004776]">
-                Phiên làm việc hiện tại trên trình duyệt
-              </h2>
-              <p className="text-xs text-[#64748b]">
-                Gắn kết với các thao tác nhập liệu bảng tính cục bộ
-              </p>
-            </div>
+            <h2 className="text-sm font-semibold text-[#004776]">
+              Phiên làm việc hiện tại trên trình duyệt
+            </h2>
           </div>
 
           {currentSession && (
@@ -186,14 +181,9 @@ export function AdminSessionControlTab() {
           <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
             <PlusCircle className="w-4 h-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-[#004776]">
-              Thiết lập / Chuyển đổi phiên làm việc
-            </h2>
-            <p className="text-xs text-[#64748b]">
-              Chỉ định email, đơn vị và chức vụ để kiểm tra luồng thao tác của đơn vị đó
-            </p>
-          </div>
+          <h2 className="text-sm font-semibold text-[#004776]">
+            Thiết lập / Chuyển đổi phiên làm việc
+          </h2>
         </div>
 
         <form onSubmit={handleCreateAndActivate} className="pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

@@ -188,7 +188,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS' }: ExcelWorkbookV
       {isReadOnlyViewer && (
         <div className="px-4 py-2.5 border-b border-amber-200 bg-amber-50 flex items-center gap-2 text-xs font-semibold text-amber-900">
           <Eye className="w-4 h-4 text-amber-700 shrink-0" />
-          <span>Chế độ chỉ xem — Tài khoản Cán bộ – Giảng viên xem dữ liệu đơn vị ở chế độ chỉ đọc. Kê khai qua Phiếu công việc cá nhân.</span>
+          <span>Chế độ chỉ xem (Cán bộ – Giảng viên)</span>
         </div>
       )}
 

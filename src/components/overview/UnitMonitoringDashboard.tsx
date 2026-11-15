@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Layers, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import {
@@ -141,18 +141,14 @@ export function UnitMonitoringDashboard() {
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#dbe8f5] p-4 sm:p-5 shadow-[0_2px_16px_-4px_rgba(0,71,118,0.06)] space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#e8eff7] pb-4">
           <div className="space-y-1 min-w-0">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#e1edf8] text-[#004776]">
-              <Layers className="w-3.5 h-3.5 text-[#006cee]" />
-              <span>Không gian điều hành · Phòng Tổ chức - Nhân sự &amp; Quản trị viên</span>
-            </div>
             <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
               Dashboard theo dõi đơn vị
             </h2>
-            <p className="text-xs text-[#20446c]">
-              {activeUnitInfo
-                ? `Đang xem chi tiết đơn vị [${activeUnitInfo.code}] ${activeUnitInfo.nameVi}`
-                : 'Tổng hợp tiến trình kê khai phiếu, biểu mẫu và nhật ký hoạt động 39 đơn vị HCM-UTE'}
-            </p>
+            {activeUnitInfo && (
+              <p className="text-xs text-[#20446c]">
+                Đơn vị đang lọc: [{activeUnitInfo.code}] {activeUnitInfo.nameVi}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">

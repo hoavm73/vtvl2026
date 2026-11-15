@@ -169,11 +169,6 @@ export default function StaffWorkTicketsPage() {
             <h1 className="text-lg sm:text-2xl font-bold text-[#004776]">
               Phiếu khảo sát khối lượng công việc cá nhân HCM-UTE
             </h1>
-            {isLeader && (
-              <p className="text-xs text-[#475569]">
-                Không gian Lãnh đạo đơn vị • Kê khai cá nhân, rà soát duyệt phiếu và tổng hợp vào Biểu A2/B1.
-              </p>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/bang-tinh" className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5 shadow-2xs">

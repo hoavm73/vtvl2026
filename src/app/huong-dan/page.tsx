@@ -99,7 +99,6 @@ export default function HuongDanDonViPage() {
               <div className="text-[11px] font-medium text-[var(--primary)] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">
                 {card.sheets}
               </div>
-              <p className="text-xs text-[var(--ink-muted)] leading-relaxed">{card.summary}</p>
             </div>
           ))}
         </div>

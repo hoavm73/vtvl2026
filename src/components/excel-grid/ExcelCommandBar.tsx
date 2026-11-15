@@ -109,7 +109,7 @@ export function ExcelCommandBar({
     return (
       <span className="inline-flex items-center gap-1.5 text-[#476885]">
         <Database className="w-3.5 h-3.5 shrink-0" />
-        <span>Dữ liệu mẫu ban đầu — chưa tạo hồ sơ máy chủ</span>
+        <span>Dữ liệu mẫu</span>
       </span>
     );
   };

@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileText,
   FileSpreadsheet,
-  Clock,
   ShieldCheck,
   BookOpen,
   Home,
@@ -19,7 +18,6 @@ import { OperatorSession } from '@/services/telemetry/operator-session';
 interface NavItemDef {
   href: string;
   label: string;
-  subLabel?: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   badgeColor?: string;
@@ -38,13 +36,11 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
       {
         href: '/',
         label: 'Trang chủ tổng quan',
-        subLabel: 'Lộ trình 5 bước & Việc cần làm',
         icon: Home
       },
       {
         href: '/?tab=unit-monitor',
-        label: 'Theo dõi đơn vị (TCNS)',
-        subLabel: 'Tiến trình, phiếu nháp/duyệt & lịch sử',
+        label: 'Theo dõi đơn vị',
         icon: BarChart3,
         roles: ['admin'],
         badge: 'TCNS',
@@ -53,12 +49,11 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
     ]
   },
   {
-    groupTitle: 'Nghiệp vụ Cá nhân',
+    groupTitle: 'Nghiệp vụ cá nhân',
     items: [
       {
         href: '/phieu-cong-viec',
         label: 'Phiếu công việc cá nhân',
-        subLabel: 'Kê khai, in PDF A4, gán phối hợp',
         icon: FileText,
         badge: 'Ưu tiên',
         badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -66,23 +61,21 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
     ]
   },
   {
-    groupTitle: 'Nghiệp vụ Đơn vị (VTVL 360)',
+    groupTitle: 'Nghiệp vụ đơn vị',
     items: [
       {
         href: '/bang-tinh',
         label: 'Bảng tính 15 biểu',
-        subLabel: 'A1–A2–C1–B1–B2–C2–C3–D1–D2',
         icon: FileSpreadsheet
       }
     ]
   },
   {
-    groupTitle: 'Hệ thống & Tra cứu',
+    groupTitle: 'Hệ thống & tra cứu',
     items: [
       {
         href: '/admin',
         label: 'Quản trị hệ thống',
-        subLabel: 'Phân quyền, mở khóa C1, phiên làm việc',
         icon: ShieldCheck,
         roles: ['admin', 'unit_leader'],
         badge: 'Admin',
@@ -91,7 +84,6 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
       {
         href: '/huong-dan',
         label: 'Hướng dẫn nghiệp vụ',
-        subLabel: 'Văn bản pháp lý, định mức chuẩn',
         icon: BookOpen
       }
     ]
@@ -107,9 +99,32 @@ interface AppSidebarProps {
 export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
   const currentRole = session?.role || 'staff';
+  const [isMonitorTab, setIsMonitorTab] = useState(false);
+
+  useEffect(() => {
+    const syncTab = (ev?: Event) => {
+      const custom = ev as CustomEvent<{ tab?: string }> | undefined;
+      if (custom?.detail?.tab) {
+        setIsMonitorTab(custom.detail.tab === 'unit-monitor');
+        return;
+      }
+      if (typeof window !== 'undefined') {
+        const tabParam = new URLSearchParams(window.location.search).get('tab');
+        setIsMonitorTab(window.location.pathname === '/' && tabParam === 'unit-monitor');
+      }
+    };
+    syncTab();
+    window.addEventListener('popstate', syncTab);
+    window.addEventListener('vtvl-home-tab-changed', syncTab);
+    return () => {
+      window.removeEventListener('popstate', syncTab);
+      window.removeEventListener('vtvl-home-tab-changed', syncTab);
+    };
+  }, [pathname]);
 
   const isItemActive = (href: string) => {
-    if (href === '/') return pathname === '/';
+    if (href === '/') return pathname === '/' && !isMonitorTab;
+    if (href === '/?tab=unit-monitor') return pathname === '/' && isMonitorTab;
     if (href === '/bang-tinh') return pathname === '/bang-tinh';
     if (href === '/phieu-cong-viec') return pathname === '/phieu-cong-viec';
     return pathname.startsWith(href);
@@ -128,7 +143,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
           <div className="flex items-center gap-2 pl-1">
             <span className="w-2 h-2 rounded-full bg-[#006cee]" />
             <span className="text-xs font-bold uppercase tracking-wider text-[#004776]">
-              Menu Nghiệp vụ
+              Menu nghiệp vụ
             </span>
           </div>
         )}
@@ -170,9 +185,16 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                   <Link
                     key={item.href}
                     href={targetHref}
-                    title={`${item.label}${item.subLabel ? ` — ${item.subLabel}` : ''}`}
-                    className={`flex items-center gap-2.5 rounded-xl transition-all group ${
-                      collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'
+                    title={item.label}
+                    onClick={() => {
+                      if (item.href === '/' || item.href === '/?tab=unit-monitor') {
+                        const nextTab = item.href === '/?tab=unit-monitor' ? 'unit-monitor' : 'overview';
+                        setIsMonitorTab(nextTab === 'unit-monitor');
+                        window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
+                      }
+                    }}
+                    className={`flex items-center gap-2.5 min-h-[40px] rounded-xl transition-all group ${
+                      collapsed ? 'justify-center p-2.5' : 'px-3 py-2'
                     } ${
                       active
                         ? 'bg-[#006cee] text-white font-bold shadow-xs'
@@ -186,30 +208,18 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                     />
 
                     {!collapsed && (
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className={`text-[13px] truncate ${active ? 'font-bold text-white' : 'font-semibold text-[#004776]'}`}>
-                            {item.label}
-                          </span>
-                          {item.badge && (
-                            <span
-                              className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
-                                active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#006cee] border-blue-200'
-                              }`}
-                            >
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        {item.subLabel && (
-                          <div
-                            className={`text-[11px] truncate leading-tight mt-0.5 ${
-                              active ? 'text-white/90 font-medium' : 'text-[#20446c]'
+                      <div className="min-w-0 flex-1 flex items-center justify-between gap-1.5">
+                        <span className={`text-[13px] truncate ${active ? 'font-bold text-white' : 'font-semibold text-[#004776]'}`}>
+                          {item.label}
+                        </span>
+                        {item.badge && (
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                              active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#006cee] border-blue-200'
                             }`}
-                            title={item.subLabel}
                           >
-                            {item.subLabel}
-                          </div>
+                            {item.badge}
+                          </span>
                         )}
                       </div>
                     )}

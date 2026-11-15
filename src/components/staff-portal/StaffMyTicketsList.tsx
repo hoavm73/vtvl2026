@@ -39,14 +39,9 @@ export function StaffMyTicketsList({
   return (
     <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden">
       <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-bold text-[#004776]">
-            Phiếu của tôi ({tickets.length})
-          </h2>
-          <p className="text-xs text-[#64748b]">
-            Quản lý, nộp phiếu và theo dõi trạng thái phê duyệt của đơn vị.
-          </p>
-        </div>
+        <h2 className="text-base font-bold text-[#004776]">
+          Phiếu của tôi ({tickets.length})
+        </h2>
       </div>
 
       <div className="divide-y divide-[#f1f5f9]">

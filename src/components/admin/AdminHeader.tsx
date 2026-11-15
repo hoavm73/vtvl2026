@@ -20,15 +20,12 @@ export function AdminHeader({ onLogout, onOpenOrgTree }: AdminHeaderProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg sm:text-xl font-bold text-[#004776] tracking-tight">
-              Trung tâm Quản trị VTVL
+              Trung tâm quản trị VTVL
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
               Quyền Admin
             </span>
           </div>
-          <p className="text-xs sm:text-[13px] text-[#475569] mt-0.5 leading-snug">
-            Phòng Tổ chức - Nhân sự (TCNS) · Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)
-          </p>
         </div>
       </div>
 

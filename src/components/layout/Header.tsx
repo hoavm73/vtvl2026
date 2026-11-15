@@ -131,7 +131,6 @@ export function Header() {
                   <img src="/ute_logo.png" alt="HCM-UTE Logo" className="h-8 w-auto object-contain shrink-0" />
                   <div className="min-w-0">
                     <div className="text-base font-bold text-[#004776]">VTVL HCM-UTE</div>
-                    <div className="text-xs font-medium text-[#476885] truncate">Điều hướng nghiệp vụ</div>
                   </div>
                 </div>
                 <button

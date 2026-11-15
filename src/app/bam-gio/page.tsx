@@ -156,8 +156,7 @@ export default function BamGioPage() {
                 <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-amber-900">Tính năng Bấm giờ đo định mức đang tạm ẩn</h2>
-                <p className="text-xs text-amber-800">Tính năng đang được tinh chỉnh và chuẩn hóa. Quý Thầy/Cô vui lòng thực hiện kê khai tại mục Phiếu công việc cá nhân.</p>
+                <h2 className="text-sm font-bold text-amber-900">Tính năng bấm giờ đo định mức đang tạm ẩn</h2>
               </div>
             </div>
             <Link href="/phieu-cong-viec" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005a96] text-white text-xs font-semibold shrink-0 transition-colors">

@@ -46,10 +46,20 @@ export default function HomePage() {
     if (!cur && !hasHash) {
       router.replace('/login');
     }
-    if (typeof window !== 'undefined') {
-      const tabParam = new URLSearchParams(window.location.search).get('tab');
-      if (tabParam === 'unit-monitor') setActiveTab('unit-monitor');
-    }
+    const syncTabFromLocation = (ev?: Event) => {
+      const custom = ev as CustomEvent<{ tab?: string }> | undefined;
+      if (custom?.detail?.tab === 'unit-monitor' || custom?.detail?.tab === 'overview') {
+        setActiveTab(custom.detail.tab);
+        return;
+      }
+      if (typeof window !== 'undefined') {
+        const tabParam = new URLSearchParams(window.location.search).get('tab');
+        setActiveTab(tabParam === 'unit-monitor' ? 'unit-monitor' : 'overview');
+      }
+    };
+    syncTabFromLocation();
+    window.addEventListener('popstate', syncTabFromLocation);
+    window.addEventListener('vtvl-home-tab-changed', syncTabFromLocation);
     window.addEventListener('vtvl-operator-changed', syncState);
     window.addEventListener('vtvl-unit-session-updated', syncState);
     window.addEventListener('vtvl-activity-updated', syncState);
@@ -61,6 +71,8 @@ export default function HomePage() {
       bc.onmessage = syncState;
     }
     return () => {
+      window.removeEventListener('popstate', syncTabFromLocation);
+      window.removeEventListener('vtvl-home-tab-changed', syncTabFromLocation);
       window.removeEventListener('vtvl-operator-changed', syncState);
       window.removeEventListener('vtvl-unit-session-updated', syncState);
       window.removeEventListener('vtvl-activity-updated', syncState);
@@ -68,6 +80,15 @@ export default function HomePage() {
       bc?.close();
     };
   }, []);
+
+  const handleSwitchTab = (nextTab: 'overview' | 'unit-monitor') => {
+    setActiveTab(nextTab);
+    if (typeof window !== 'undefined') {
+      const nextUrl = nextTab === 'unit-monitor' ? '/?tab=unit-monitor' : '/';
+      window.history.replaceState(null, '', nextUrl);
+      window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
+    }
+  };
 
   const activeUnit = getActiveUnitDefinition(operator?.unitCode || session.unitCode);
   const rawStep = session.activeStep || 1;
@@ -108,7 +129,7 @@ export default function HomePage() {
         <div className="inline-flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-full border border-[#dbe8f5] shadow-2xs">
           <button
             type="button"
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleSwitchTab('overview')}
             className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
               activeTab === 'overview'
                 ? 'bg-[#006cee] text-white shadow-xs'
@@ -116,12 +137,12 @@ export default function HomePage() {
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span>Tổng quan chung toàn trường</span>
+            <span>Tổng quan toàn trường</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('unit-monitor')}
+            onClick={() => handleSwitchTab('unit-monitor')}
             className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
               activeTab === 'unit-monitor'
                 ? 'bg-[#006cee] text-white shadow-xs'
@@ -129,7 +150,7 @@ export default function HomePage() {
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Dashboard theo dõi đơn vị (Phòng TCNS &amp; Admin)</span>
+            <span>Theo dõi đơn vị</span>
           </button>
         </div>
       )}

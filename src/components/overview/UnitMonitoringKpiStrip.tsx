@@ -18,7 +18,6 @@ interface KpiCardSpec {
   filterKey: StageFilterKey;
   label: string;
   value: number;
-  subText: string;
   accentText: string;
   dotColor: string;
 }
@@ -27,7 +26,6 @@ interface KpiCardSpec {
  * Dải thẻ KPI tương tác, thanh tiêu điểm đơn vị và thanh tỷ trọng tiến trình chuẩn S-Link.
  */
 export function UnitMonitoringKpiStrip({
-  selectedUnit,
   activeUnitRow,
   stageFilter,
   totals,
@@ -39,15 +37,14 @@ export function UnitMonitoringKpiStrip({
       filterKey: 'ALL',
       label: 'Tổng phiếu kê khai',
       value: totals.totalTickets,
-      subText: selectedUnit === 'ALL' ? `${totals.unitsWithTickets}/${totals.totalUnits} đơn vị có phiếu` : `Đơn vị [${selectedUnit}]`,
       accentText: 'text-[#004776]',
       dotColor: 'bg-[#004776]'
     },
-    { filterKey: 'has_draft', label: 'Lưu nháp', value: totals.draftCount, subText: 'Bản nháp cá nhân', accentText: 'text-[#20446c]', dotColor: 'bg-[#94b2d0]' },
-    { filterKey: 'has_pending', label: 'Gửi chờ duyệt', value: totals.submittedCount, subText: `${totals.resubmittedCount} phiếu nộp lại`, accentText: 'text-[#006cee]', dotColor: 'bg-[#006cee]' },
-    { filterKey: 'has_changes', label: 'Yêu cầu bổ sung', value: totals.changesRequestedCount, subText: 'Chờ cán bộ cập nhật', accentText: 'text-[#c26d00]', dotColor: 'bg-[#f99c00]' },
-    { filterKey: 'has_approved', label: 'Đã phê duyệt', value: totals.approvedCount, subText: 'Đủ điều kiện gộp biểu', accentText: 'text-[#008f5d]', dotColor: 'bg-[#00b87a]' },
-    { filterKey: 'has_merged', label: 'Đã gộp B1/B2', value: totals.mergedCount, subText: `${totals.totalAccounts} tài khoản nhân sự`, accentText: 'text-[#6d28d9]', dotColor: 'bg-[#7c3aed]' }
+    { filterKey: 'has_draft', label: 'Lưu nháp', value: totals.draftCount, accentText: 'text-[#20446c]', dotColor: 'bg-[#94b2d0]' },
+    { filterKey: 'has_pending', label: 'Gửi chờ duyệt', value: totals.submittedCount, accentText: 'text-[#006cee]', dotColor: 'bg-[#006cee]' },
+    { filterKey: 'has_changes', label: 'Yêu cầu bổ sung', value: totals.changesRequestedCount, accentText: 'text-[#c26d00]', dotColor: 'bg-[#f99c00]' },
+    { filterKey: 'has_approved', label: 'Đã phê duyệt', value: totals.approvedCount, accentText: 'text-[#008f5d]', dotColor: 'bg-[#00b87a]' },
+    { filterKey: 'has_merged', label: 'Đã gộp B1/B2', value: totals.mergedCount, accentText: 'text-[#6d28d9]', dotColor: 'bg-[#7c3aed]' }
   ];
 
   const mergedOnly = Math.max(0, totals.mergedCount);
@@ -135,7 +132,6 @@ export function UnitMonitoringKpiStrip({
                 )}
               </div>
               <div className={`mt-1.5 text-2xl font-extrabold tabular-nums tracking-tight ${card.accentText}`}>{card.value}</div>
-              <div className="mt-0.5 text-[11px] font-medium text-[#20446c]/80 truncate">{card.subText}</div>
             </button>
           );
         })}

@@ -121,7 +121,7 @@ function LoginForm() {
   return (
     <section
       aria-label="Khu vực đăng nhập"
-      className="w-full lg:w-[44%] min-h-screen lg:min-h-0 flex flex-col justify-between p-5 sm:p-8 xl:p-12 overflow-y-auto bg-[#F5F8FB]"
+      className="w-full lg:w-[44%] flex-1 lg:min-h-0 flex flex-col justify-between p-5 sm:p-8 xl:p-12 overflow-y-auto bg-[#F5F8FB]"
     >
       <div className="max-w-[420px] w-full mx-auto my-auto space-y-5 sm:space-y-6">
         <div className="text-center pt-2 sm:pt-0">
@@ -252,21 +252,6 @@ function LoginForm() {
             </div>
           </>
         )}
-      </div>
-
-      <div className="lg:hidden mt-6 pt-4 border-t border-[#D8E3EF] text-center space-y-3">
-        <div className="w-full max-w-[280px] mx-auto opacity-75">
-          <Image
-            src="/assets/login/hcmute-gate-line-art-transparent.png"
-            alt="Cổng trường HCM-UTE"
-            width={1774}
-            height={887}
-            className="w-full h-auto object-contain"
-          />
-        </div>
-        <p className="text-xs text-[#0B4F83] font-semibold">
-          Đề án Vị trí việc làm 2026–2030 • HCM-UTE
-        </p>
       </div>
 
       <footer className="text-center text-[11px] sm:text-xs text-[#64748B] pt-4 font-medium select-none">

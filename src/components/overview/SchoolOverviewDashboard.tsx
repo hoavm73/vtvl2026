@@ -99,7 +99,7 @@ export function SchoolOverviewDashboard() {
             <span className="text-xs font-semibold text-[#0072BC]">đơn vị trực thuộc</span>
           </div>
           <p className="text-[11px] text-[#476885] leading-tight">
-            15 Khoa/Viện · 14 Phòng ban · 19 TT & Đoàn thể
+            15 Khoa/Viện · 16 Phòng/Ban · 08 TT, Phân hiệu & Tạp chí
           </p>
         </div>
 

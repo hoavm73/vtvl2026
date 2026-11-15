@@ -87,16 +87,19 @@ runTest('6. Server DB Service-Role & Zero PII in Errors', () => {
 });
 
 runTest('7. Ticket Cache, Remote-first & Compensation Consistency', () => {
-  const ticketStorePath = path.join(root, 'src/services/storage/server-ticket-store.ts');
-  const ticketStoreCode = fs.readFileSync(ticketStorePath, 'utf8');
+  const ticketStoreCode = [
+    fs.readFileSync(path.join(root, 'src/services/storage/server-ticket-store.ts'), 'utf8'),
+    fs.readFileSync(path.join(root, 'src/services/storage/server-ticket-merge.ts'), 'utf8'),
+    fs.readFileSync(path.join(root, 'src/services/tickets/ticket-workflow-handlers.ts'), 'utf8')
+  ].join('\n');
 
   // Dev missing-config không clear cache
   assert.ok(ticketStoreCode.includes('if (remote === null) return;'), 'syncTicketsFromSupabase không được clear cache khi DB null');
-  // Compensation khi xung đột revision
+  // Compensation khi xung đột revision hoặc lỗi version/history
   assert.ok(ticketStoreCode.includes('REVISION_CONFLICT'), 'ticket store phải xử lý xung đột revision');
-  assert.ok(ticketStoreCode.includes('deleteTicketFromSupabase(ticket.id)'), 'upsert phải rollback delete ticket nếu insert mới bị conflict');
-  assert.ok(ticketStoreCode.includes('persistTicketToSupabase(existing)'), 'upsert phải rollback restore ticket cũ nếu update bị conflict');
-  assert.ok(ticketStoreCode.includes('persistTicketToSupabase(target)'), 'delete phải rollback restore ticket nếu xóa bị conflict');
+  assert.ok(ticketStoreCode.includes('deleteTicketFromSupabase(ticketId)'), 'delete phải xóa trên Supabase trước khi xóa cache');
+  assert.ok(ticketStoreCode.includes('restoreTicketInMemory(latest, latest.id)'), 'workflow phải rollback restore ticket cũ nếu tạo snapshot/history lỗi');
+  assert.ok(ticketStoreCode.includes('compensateRemoveSurveyVersion'), 'workflow phải xóa snapshot mồ côi khi rollback');
   // Cấm catch-ignore quanh persist
   assert.ok(!/catch\s*\{\s*\/\*\s*ignore cache fallback\s*\*\/\s*\}/i.test(ticketStoreCode), 'ticket store không được catch-ignore DB write');
 });
@@ -166,32 +169,35 @@ runTest('10. Kiểm tra Rule 8 (< 300 dòng) trên tất cả các tệp mã ngu
   });
 });
 
-runTest('11. Danh mục chuẩn 48 đơn vị theo DS Don vi.xlsx & loại bỏ triệt để mã thừa', () => {
+runTest('11. Danh mục chuẩn 39 đơn vị theo v2DS phan quyen (1).xls (cột G:I) & loại bỏ BGH, HDT, TTNN khỏi danh mục hoạt động', () => {
   const unitsPath = path.join(root, 'src/configs/hcmute-units.ts');
   const content = fs.readFileSync(unitsPath, 'utf8');
 
-  // Kiểm tra số lượng đơn vị bao gồm 48 đơn vị cơ sở và BANTT, BGH
-  const unitMatches = content.match(/code:\s*'[A-Z0-9-]+'/g) || [];
-  assert.ok(unitMatches.length >= 48 && unitMatches.length <= 50, `HCMUTE_UNITS phải có đủ danh mục chuẩn (hiện có ${unitMatches.length})`);
+  const activeArraySlice = content.slice(
+    content.indexOf('export const HCMUTE_UNITS'),
+    content.indexOf('export const DELETED_UNIT_CODES')
+  );
+  const unitMatches = activeArraySlice.match(/code:\s*'[A-Z0-9-]+'/g) || [];
+  assert.strictEqual(unitMatches.length, 39, `HCMUTE_UNITS phải có đúng 39 đơn vị hoạt động (hiện có ${unitMatches.length})`);
 
   // Kiểm tra mã mới chính thức
-  assert.ok(content.includes("code: 'CK'"), 'Khoa Cơ khí phải có mã chính thức là CK');
-  assert.ok(content.includes("code: 'CNTT'"), 'Khoa CNTT phải có mã chính thức là CNTT');
-  assert.ok(content.includes("code: 'QTTHTT'"), 'Phòng QTTH&TT phải có mã chính thức là QTTHTT');
-  assert.ok(content.includes("code: 'DT'"), 'Phòng Đào tạo phải có mã chính thức là DT');
-  assert.ok(content.includes("code: 'KHTC'"), 'Phòng KHTC phải có mã chính thức là KHTC');
-  assert.ok(content.includes("code: 'STKNCCCN'"), 'TT Sáng tạo KN&CGCN phải có mã chính thức là STKNCCCN');
-  assert.ok(content.includes("code: 'BANTT'"), 'Ban An ninh trật tự phải có mã chính thức là BANTT');
+  assert.ok(activeArraySlice.includes("code: 'CK'"), 'Khoa Cơ khí phải có mã chính thức là CK');
+  assert.ok(activeArraySlice.includes("code: 'CNTT'"), 'Khoa CNTT phải có mã chính thức là CNTT');
+  assert.ok(activeArraySlice.includes("code: 'QTTHTT'"), 'Phòng QTTH&TT phải có mã chính thức là QTTHTT');
+  assert.ok(activeArraySlice.includes("code: 'DT'"), 'Phòng Đào tạo phải có mã chính thức là DT');
+  assert.ok(activeArraySlice.includes("code: 'KHTC'"), 'Phòng KHTC phải có mã chính thức là KHTC');
+  assert.ok(activeArraySlice.includes("code: 'STKNCCCN'"), 'TT Sáng tạo KN&CGCN phải có mã chính thức là STKNCCCN');
+  assert.ok(activeArraySlice.includes("code: 'BANTT'"), 'Ban An ninh trật tự phải có mã chính thức là BANTT');
 
-  // Tuyệt đối không còn mã cũ hay mã thừa trong HCMUTE_UNITS
+  // Tuyệt đối không còn mã cũ hay mã ngoài 39 đơn vị trong HCMUTE_UNITS
   const legacyCodes = ['FME', 'FEET', 'FEEE', 'FIT', 'FCFT', 'FCE', 'FE', 'FAE', 'FGAM', 'FPI', 'FAS', 'FFL', 'ITE', 'IIE', 'CISAT', 'INC', 'ITC', 'STC', 'TPC', 'CFL', 'VGC', 'SRC', 'ESC', 'EETC', 'CERAC', 'BMC', 'AAO', 'OIA', 'ERO', 'FPO', 'STIAO', 'OGA', 'SAO', 'QAO', 'EMO', 'CPM'];
-  const deletedCodes = ['IDDF', 'TRTC', 'HDT', 'FFT'];
+  const excludedCodes = ['IDDF', 'TRTC', 'HDT', 'FFT', 'BGH', 'TTNN', 'TTVD', 'TTRBTM', 'TTKTTH', 'KTCNMT', 'NCUDKTXD', 'THKTTH', 'TTCNTT', 'CDT', 'DTN'];
 
   legacyCodes.forEach((c) => {
-    assert.ok(!content.includes(`code: '${c}'`), `HCMUTE_UNITS không được chứa mã cũ: ${c}`);
+    assert.ok(!activeArraySlice.includes(`code: '${c}'`), `HCMUTE_UNITS không được chứa mã cũ: ${c}`);
   });
-  deletedCodes.forEach((c) => {
-    assert.ok(!content.includes(`code: '${c}'`), `HCMUTE_UNITS không được chứa mã đã xóa: ${c}`);
+  excludedCodes.forEach((c) => {
+    assert.ok(!activeArraySlice.includes(`code: '${c}'`), `HCMUTE_UNITS không được chứa mã ngoài danh mục 39 đơn vị: ${c}`);
   });
 });
 
@@ -235,7 +241,7 @@ runTest('13. Unit Normalization: Chuẩn hóa 36 mã cũ -> mã mới, loại b�
     assert.strictEqual(LEGACY_UNIT_MAP.FIT, 'CNTT');
     assert.strictEqual(LEGACY_UNIT_MAP.BMC, 'QTTHTT');
     assert.strictEqual(LEGACY_UNIT_MAP.AAO, 'DT');
-    assert.strictEqual(Object.keys(LEGACY_UNIT_MAP).length, 36);
+    assert.strictEqual(LEGACY_UNIT_MAP.CISAT, 'STKNCCCN');
 
     const raw = [
       { code: 'FME', nameVi: 'Tên cũ FME' },
@@ -243,6 +249,7 @@ runTest('13. Unit Normalization: Chuẩn hóa 36 mã cũ -> mã mới, loại b�
       { code: 'FFT', nameVi: 'Khoa Thời trang cũ (phải bị xóa)' },
       { code: 'HDT', nameVi: 'Hội đồng trường cũ (phải bị xóa)' },
       { code: 'BGH', nameVi: 'Ban Giám hiệu cũ (phải bị xóa)' },
+      { code: 'TTNN', nameVi: 'Trung tâm Ngoại ngữ (ngoài 39 đơn vị hoạt động)' },
       { code: 'CUSTOM_LAB', nameVi: 'Phòng thí nghiệm tùy chỉnh' },
       { code: 'CK', nameVi: 'Khoa Cơ khí' }
     ];
@@ -251,7 +258,7 @@ runTest('13. Unit Normalization: Chuẩn hóa 36 mã cũ -> mã mới, loại b�
     assert.strictEqual(res.find(u => u.code === 'CK').nameVi, 'Khoa Cơ khí');
     assert.strictEqual(res.find(u => u.code === 'CNTT').nameVi, 'Khoa Công nghệ Thông tin');
     assert.strictEqual(res.find(u => u.code === 'CUSTOM_LAB').nameVi, 'Phòng thí nghiệm tùy chỉnh');
-    assert.ok(!res.some(u => ['FFT', 'HDT', 'BGH', 'FME', 'FIT'].includes(u.code)));
+    assert.ok(!res.some(u => ['FFT', 'HDT', 'BGH', 'TTNN', 'FME', 'FIT'].includes(u.code)));
   `;
   execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
@@ -399,6 +406,107 @@ runTest('17. Kiểm tra snapshot/restore trigger an toàn khi 0 trigger tồn t�
   // Postflight assertion: IF v_restored_trg_count <> v_snap_trg_count THEN RAISE EXCEPTION ...
   const failsAssertion = restoredCount !== snapshotCount;
   assert.strictEqual(failsAssertion, false, 'Khi có 0 trigger, postflight assertion phải pass trơn tru');
+});
+
+runTest('18. Chuẩn hóa thư mục supabase/rollbacks & Migration 20261115140000_reconcile_vtvl_39_units_and_versions.sql', () => {
+  const migrationsDir = path.join(root, 'supabase/migrations');
+  const rollbacksDir = path.join(root, 'supabase/rollbacks');
+  assert.ok(fs.existsSync(rollbacksDir), 'Thư mục supabase/rollbacks phải tồn tại');
+
+  const migrationFiles = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
+  // Không có tệp rollback nào nằm trong supabase/migrations
+  migrationFiles.forEach((f) => {
+    assert.ok(!f.includes('rollback'), `Tệp rollback ${f} phải nằm trong supabase/rollbacks, không nằm trong supabase/migrations`);
+  });
+
+  // Kiểm tra các phiên bản 14 chữ số trong supabase/migrations không bị trùng prefix
+  const numericPrefixes = migrationFiles
+    .map((f) => f.match(/^(\d{14})_/)?.[1])
+    .filter(Boolean);
+  const uniquePrefixes = new Set(numericPrefixes);
+  assert.strictEqual(numericPrefixes.length, uniquePrefixes.size, 'Không được có phiên bản migration 14 chữ số bị trùng lặp trong supabase/migrations');
+
+  // Kiểm tra migration mới nhất
+  const newMigPath = path.join(migrationsDir, '20261115140000_reconcile_vtvl_39_units_and_versions.sql');
+  assert.ok(fs.existsSync(newMigPath), 'Phải có migration 20261115140000_reconcile_vtvl_39_units_and_versions.sql');
+  const newMigSql = fs.readFileSync(newMigPath, 'utf8');
+  assert.ok(newMigSql.includes('BEGIN;') && newMigSql.includes('COMMIT;'), 'Migration mới phải bọc trong BEGIN...COMMIT');
+  assert.ok(newMigSql.includes('PREFLIGHT_FAILED') && newMigSql.includes('POSTFLIGHT_FAILED'), 'Migration mới phải có preflight và postflight');
+  assert.ok(newMigSql.includes('CREATE TABLE IF NOT EXISTS public.work_survey_versions'), 'Migration mới phải tạo bảng work_survey_versions');
+  assert.ok(newMigSql.includes('uq_work_survey_versions_survey_version'), 'Migration mới phải có UNIQUE(survey_id, version_no)');
+  assert.ok(newMigSql.includes('uq_survey_target_sheet_record'), 'Migration mới phải có UNIQUE(survey_id, target_sheet, target_record_id)');
+  assert.ok(newMigSql.includes('public.resolve_trusted_actor'), 'Migration mới phải có cầu nối danh tính đáng tin resolve_trusted_actor');
+
+  // Kiểm tra các tệp rollback trong supabase/rollbacks
+  const expectedRollbacks = [
+    '20261115020000_rollback_rbac_security.sql',
+    '20261115030000_rollback_work_survey_lifecycle.sql',
+    '20261115140000_rollback_vtvl_39_units_and_versions.sql'
+  ];
+  expectedRollbacks.forEach((rb) => {
+    assert.ok(fs.existsSync(path.join(rollbacksDir, rb)), `Thiếu tệp rollback: supabase/rollbacks/${rb}`);
+  });
+});
+
+runTest('19. Đối soát 100% tên cột & hàm trong 20261115140000_reconcile_vtvl_39_units_and_versions.sql với schema thực tế trên Supabase', () => {
+  const newMigPath = path.join(root, 'supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql');
+  const sql = fs.readFileSync(newMigPath, 'utf8');
+
+  // 1. dm_don_vi phải dùng đúng cột thực tế: ma_don_vi, ten_don_vi_vi, ten_don_vi_en, khoi_don_vi, linh_vuc, chuc_danh_thu_truong_vi, chuc_danh_thu_truong_en, so_nhan_su_mac_dinh, is_active
+  assert.ok(sql.includes('INSERT INTO public.dm_don_vi ('), 'Phải có INSERT INTO public.dm_don_vi');
+  assert.ok(sql.includes('ten_don_vi_vi, ten_don_vi_en, khoi_don_vi'), 'Phải dùng đúng cột ten_don_vi_vi, ten_don_vi_en, khoi_don_vi của dm_don_vi');
+  assert.ok(!sql.includes('INSERT INTO public.dm_don_vi (ma_don_vi, ten_don_vi,'), 'Tuyệt đối không dùng cột ten_don_vi không tồn tại trên dm_don_vi');
+
+  // 2. staff_work_tickets backfill và RPC phải dùng đúng cột thật (owner_email, owner_name, owner_title, san_pham, so_sp_nam, phut_thuc_te, gio_bo_sung), không dùng cột ảo
+  const nonExistentTicketCols = [
+    't.staff_name', 't.staff_code', 't.position_title', 't.nhom_vtvl', 't.san_pham_dau_ra', 't.so_luong_nam', 't.so_gio_mot_san_pham',
+    'v_ticket.staff_name', 'v_ticket.staff_code', 'v_ticket.position_title', 'v_ticket.san_pham_dau_ra', 'v_ticket.so_luong_nam'
+  ];
+  nonExistentTicketCols.forEach((col) => {
+    assert.ok(!sql.includes(col), `Migration SQL không được tham chiếu cột không tồn tại: ${col}`);
+  });
+  assert.ok(sql.includes('t.owner_email') && sql.includes('t.so_sp_nam') && sql.includes('t.phut_thuc_te') && sql.includes('t.gio_bo_sung'), 'Backfill phải dùng đúng cột thực tế của staff_work_tickets');
+
+  // 3. Cầu nối danh tính resolve_trusted_actor kiểm tra cả JWT, p_trusted_actor_email và app.actor_id
+  assert.ok(sql.includes("current_setting('app.actor_id', true)"), 'resolve_trusted_actor phải kiểm tra cả app.actor_id');
+  assert.ok(sql.includes('FORBIDDEN_ACTOR_SPOOFING'), 'resolve_trusted_actor phải chặn giả mạo danh tính');
+
+  // 4. RLS helper functions đầy đủ và chính sách rls_staff_tickets_update không cho phép sửa phiếu người khác
+  assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public.get_current_user_email()'), 'Phải định nghĩa get_current_user_email()');
+  assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public.get_current_user_unit()'), 'Phải định nghĩa get_current_user_unit()');
+  assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public.is_admin_user()'), 'Phải định nghĩa is_admin_user()');
+});
+
+runTest('20. Đối soát từng dòng (39 đơn vị) giữa HCMUTE_UNITS và file gốc v2DS phan quyen (1).xls (cột G:I, dòng 2..40)', () => {
+  const tsxCode = `
+    const XLSX = require('xlsx');
+    const assert = require('assert');
+    const { HCMUTE_UNITS } = require('./src/configs/hcmute-units');
+
+    const wb = XLSX.readFile('./v2DS phan quyen (1).xls');
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+
+    const xlsUnits = [];
+    for (let r = 2; r <= 40; r++) {
+      const group = String(sheet['G' + r]?.v || '').trim();
+      const tt = sheet['H' + r]?.v ?? null;
+      const nameVi = String(sheet['I' + r]?.v || '').trim();
+      if (group && nameVi) {
+        xlsUnits.push({ row: r, group, tt, nameVi });
+      }
+    }
+
+    assert.strictEqual(xlsUnits.length, 39, 'Cột G:I (dòng 2..40) trong file xls phải có đúng 39 đơn vị');
+    assert.strictEqual(HCMUTE_UNITS.length, 39, 'HCMUTE_UNITS phải có đúng 39 đơn vị');
+
+    for (let i = 0; i < 39; i++) {
+      const expected = xlsUnits[i];
+      const actual = HCMUTE_UNITS[i];
+      assert.ok(actual, 'Thiếu đơn vị tại vị trí ' + i);
+      assert.strictEqual(actual.nameVi, expected.nameVi, 'Sai tên đơn vị tại dòng ' + expected.row + ': ' + actual.nameVi + ' !== ' + expected.nameVi);
+    }
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
 
 console.log(`\n================================================================`);

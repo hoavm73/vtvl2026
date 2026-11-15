@@ -1,7 +1,7 @@
-# Sơ đồ thực thể quan hệ (ERD) Quy trình duyệt và gộp Phiếu công việc HCM-UTE VTVL 360
+# Sơ đồ thực thể quan hệ (ERD) Quy trình duyệt, gộp và lịch sử phiên bản Phiếu công việc HCM-UTE VTVL 360
 
 Hệ thống: **HCM-UTE VTVL 360** (Trường Đại học Công nghệ Kỹ thuật TP.HCM)  
-Căn cứ: Nghị định số 232/2026/NĐ-CP & Hướng dẫn số 07-HD/BTCTW  
+Căn cứ: Nghị định số 232/2026/NĐ-CP, Hướng dẫn số 07-HD/BTCTW & Danh mục 39 đơn vị chuẩn  
 Ngày cập nhật: 15/11/2026  
 
 ---
@@ -14,15 +14,19 @@ erDiagram
     USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "owns"
     DM_DON_VI ||--o{ STAFF_WORK_TICKETS : "scopes"
     DM_DON_VI ||--o{ WORKBOOKS : "maintains"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_VERSIONS : "snapshots"
     STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_STATUS_HISTORY : "tracks"
     STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "merges"
+    USER_ACCOUNTS ||--o{ WORK_SURVEY_VERSIONS : "submits"
     USER_ACCOUNTS ||--o{ WORK_SURVEY_STATUS_HISTORY : "performs"
     USER_ACCOUNTS ||--o{ WORK_SURVEY_MERGE_LINKS : "performs"
+    USER_ACCOUNTS ||--o{ AUDIT_LOGS : "records"
 
     DM_DON_VI {
-        string ma_don_vi PK "Mã đơn vị: FIT, FME, TCNS..."
-        string ten_don_vi_vi "Tên đơn vị tiếng Việt"
-        string loai_don_vi "Khoa | Phòng | Viện | Trung tâm"
+        string ma_don_vi PK "Mã đơn vị: 39 đơn vị hoạt động chuẩn (CTL, CK, CNTT, SDH, QTTHTT, TCNS, BANTT...)"
+        string ten_don_vi "Tên đơn vị tiếng Việt chính thức"
+        string khoi_don_vi "Khoa - Viện | Phòng - Ban | Trung tâm - Phân hiệu - Tạp chí"
+        boolean is_active "TRUE cho 39 đơn vị hoạt động; FALSE cho đơn vị ngoài danh mục"
     }
 
     USER_ACCOUNTS {
@@ -30,13 +34,13 @@ erDiagram
         string user_id UK "Định danh người dùng canonical"
         string full_name "Họ và tên cán bộ / giảng viên"
         string role "admin | unit_leader | staff"
-        string unit_id FK "Mã đơn vị trực thuộc"
+        string unit_id FK "Mã đơn vị trực thuộc (FK dm_don_vi)"
         boolean is_active "Trạng thái hoạt động"
     }
 
     STAFF_WORK_TICKETS {
         string id PK "Mã phiếu: tkt-UNIT-TIME-RAND"
-        string owner_id FK "ID chủ sở hữu (user_accounts.user_id)"
+        string owner_id FK "ID chủ sở hữu (user_accounts.email)"
         string owner_email "Email chủ sở hữu"
         string unit_id FK "ID đơn vị công tác (dm_don_vi.ma_don_vi)"
         string unit_code "Mã đơn vị"
@@ -46,25 +50,40 @@ erDiagram
         string ten_cong_viec "Tên công việc cụ thể"
         string ma_vtvl "Mã vị trí việc làm Biểu C1"
         string ma_vtvl_phoi_hop "Mã VTVL phối hợp"
-        string sanPham "Sản phẩm đầu ra"
-        string chatLuong "Tiêu chuẩn chất lượng"
-        string canCu "Căn cứ pháp lý / tài liệu"
-        numeric so_sp_nam "Số sản phẩm / năm"
+        string san_pham "Sản phẩm đầu ra"
+        string chat_luong "Tiêu chuẩn chất lượng"
+        string can_cu "Căn cứ pháp lý / tài liệu"
+        numeric so_sp_nam "Số sản phẩm hoàn thành trong năm (01/10/2025 - 30/9/2026)"
         numeric phut_thuc_te "Phút thực tế / sản phẩm"
-        numeric gio_bo_sung "Giờ bổ sung / năm"
+        numeric gio_bo_sung "Giờ bổ sung (Nếu có)"
         string nguon_so_lieu "Nguồn số liệu sản lượng"
-        timestamp submitted_at "Thời điểm nộp phiếu"
-        timestamp resubmitted_at "Thời điểm nộp lại"
+        integer current_version_no "Số phiên bản nộp hiện hành (0 nếu draft, >=1 khi đã nộp)"
+        string last_change_summary "Giải trình nội dung cập nhật gần nhất"
+        string source_ticket_id "Mã phiếu nguồn"
+        timestamp submitted_at "Thời điểm nộp phiếu lần đầu"
+        timestamp resubmitted_at "Thời điểm nộp lại gần nhất"
         timestamp approved_at "Thời điểm phê duyệt"
         string approved_by "Người phê duyệt"
         string revision_reason "Lý do yêu cầu bổ sung"
         timestamp revision_requested_at "Thời điểm yêu cầu bổ sung"
         string revision_requested_by "Người yêu cầu bổ sung"
-        boolean is_merged_to_b1_b2 "Đã gộp vào B1/B2"
-        string b1_row_id "Khóa dòng liên kết trong Biểu B1"
-        string b2_row_id "Khóa dòng liên kết trong Biểu B2/A2"
+        boolean is_merged_to_b1_b2 "Đã gộp vào biểu đơn vị"
+        string a2_row_id "Khóa dòng liên kết trong Biểu A2 (a2-[id])"
+        string b1_row_id "Khóa dòng liên kết trong Biểu B1 (b1-[id])"
+        string b2_row_id "Khóa dòng liên kết trong Biểu B2 (NULL nếu không có dữ liệu B2)"
         timestamp merged_at "Thời điểm gộp"
         string merged_by "Người thực hiện gộp"
+    }
+
+    WORK_SURVEY_VERSIONS {
+        uuid id PK "Khóa chính UUID"
+        string survey_id FK "Mã phiếu (FK staff_work_tickets.id)"
+        integer version_no "Số phiên bản nguyên dương (1, 2, 3...) UNIQUE(survey_id, version_no)"
+        jsonb snapshot "Snapshot bất biến (nội dung kê khai, mã+tên danh mục, coordinatedTasks)"
+        string submitted_by "Email người nộp"
+        timestamp submitted_at "Thời điểm nộp (NULL nếu bản ghi chuyển đổi không rõ ngày gốc)"
+        string change_summary "Giải trình nội dung cập nhật"
+        boolean is_migration_baseline "Đánh dấu bản ghi chuyển đổi dữ liệu cũ"
     }
 
     WORK_SURVEY_STATUS_HISTORY {
@@ -72,40 +91,33 @@ erDiagram
         string survey_id FK "Mã phiếu liên kết"
         string from_status "Trạng thái trước thao tác"
         string to_status "Trạng thái sau thao tác"
-        string action "SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE"
-        string reason "Lý do bổ sung (nếu có)"
-        string actor_id FK "Người thực hiện (email/user_id)"
+        string action "SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE_TO_SHEETS"
+        string reason "Lý do yêu cầu bổ sung hoặc giải trình nộp lại"
+        string actor_id "Người thực hiện"
         string actor_role "Vai trò tại thời điểm thực hiện"
-        string unit_id FK "Đơn vị liên quan"
+        string unit_id "Đơn vị liên quan"
         timestamp created_at "Thời điểm ghi nhận"
     }
 
     WORK_SURVEY_MERGE_LINKS {
         uuid id PK "Khóa chính UUID"
         string survey_id FK "Mã phiếu liên kết"
-        string target_sheet "B1 | B2 | A2"
-        string target_record_id "Khóa dòng trong biểu"
-        integer source_version "Phiên bản nguồn lúc gộp"
-        string merged_by FK "Người thực hiện gộp"
+        string target_sheet "A2 | B1 | B2"
+        string target_record_id "Khóa dòng trong biểu đích (a2-[id], b1-[id], b2-[id])"
+        integer source_version "Phiên bản phiếu nguồn tại thời điểm gộp"
+        string merged_by "Người thực hiện gộp"
         timestamp merged_at "Thời điểm gộp"
         timestamp updated_at "Thời điểm cập nhật"
-    }
-
-    WORKBOOKS {
-        string unit_code PK "Mã đơn vị sở hữu"
-        jsonb data "Dữ liệu 15 biểu (A1, A2, B1, B2, C1...)"
-        integer current_revision "Phiên bản hiện tại"
     }
 ```
 
 ---
 
-## 2. So sánh kiến trúc CSDL trước và sau Migration
+## 2. Cơ chế ánh xạ (Mapping) thực tế từ Phiếu công việc sang các Biểu A2, B1, B2
 
-| Hạng mục | Trước Migration (`20261114`) | Sau Migration (`20261115030000`) |
-|---|---|---|
-| **Bảng phiếu công việc** | `staff_work_tickets` chỉ có các trường cơ bản về kê khai khối lượng. | Bổ sung đầy đủ 14 trường quản lý vòng đời: `submitted_at`, `resubmitted_at`, `approved_at`, `approved_by`, `revision_reason`, `revision_requested_at`, `revision_requested_by`, `merged_at`, `merged_by`, `b1_row_id`, `b2_row_id`, `is_merged_to_b1_b2`, `unit_id`, `owner_id`. |
-| **Trạng thái phiếu** | Chỉ nhận 2 trạng thái: `Nháp` và `Đã nộp`. | Chuẩn hóa 5 trạng thái: `draft`, `submitted`, `changes_requested`, `resubmitted`, `approved` (kèm alias tiếng Việt tương thích ngược). |
-| **Lịch sử phê duyệt** | Ghi nhận chung vào `audit_logs`. | Có bảng chuyên biệt `work_survey_status_history` lưu vết từng bước chuyển trạng thái, người duyệt, vai trò và lý do yêu cầu bổ sung. |
-| **Gộp biểu B1/B2** | Lưu trực tiếp vào JSON của `workbooks`, chưa có bảng mapping độc lập. | Bảng `work_survey_merge_links` với `UNIQUE (survey_id, target_sheet)` đảm bảo không bao giờ sinh dòng trùng khi gộp nhiều lần. |
-| **Bảo vệ Lãnh đạo tự duyệt** | Kiểm tra phân quyền ở API. | Bảo vệ 3 lớp: UI ẩn nút Duyệt, API trả mã `FORBIDDEN_SELF_REVIEW`, Database RPC kích hoạt Exception `ERRCODE = 42501`. |
+| Biểu đích | Khóa dòng đích (`target_record_id`) | Trường trên `staff_work_tickets` | Quy tắc ánh xạ dữ liệu & Chống dữ liệu giả |
+|---|---|---|---|
+| **Biểu 2. A2_CongViec** | `a2-[ticket.id]` | `a2_row_id` | Ánh xạ danh mục công việc (`maCongViec`, `maNhiemVu`, `maVtvl`, `maVtvlPhoiHop`, `tenCongViec`, `sanPham`, `chatLuong`, `canCu`, `nguoiLapPhieu`) kèm `sourceVersion`. **Tuyệt đối không gọi biểu A2 là B2.** |
+| **Biểu 4. B1_ThongKeSP** | `b1-[ticket.id]` | `b1_row_id` | Ánh xạ khối lượng sản phẩm và định mức thời gian (`maCongViec`, `maVtvl`, `soSpNam`, `phutThucTe`, `gioBoSung`, `nguonSoLieu`) kèm `sourceVersion`. Tự động tính lại công thức tổng giờ năm: \(\text{Tổng giờ} = \frac{\text{soSpNam} \times \text{phutThucTe}}{60} + \text{gioBoSung}\). |
+| **Biểu 6. B2_DinhMuc** | `b2-[ticket.id]` *(chỉ khi có dữ liệu tác động B2)* | `b2_row_id` | Nếu phiếu cá nhân không có dữ liệu đo định mức tác động trực tiếp đến biểu B2, `b2_row_id` giữ giá trị `NULL` và **không tự sinh số liệu B2 giả**. |
+| **Khóa chống trùng (`work_survey_merge_links`)** | `UNIQUE (survey_id, target_sheet, target_record_id)` | `is_merged_to_b1_b2` | Đảm bảo khi 1 phiếu sinh nhiều dòng hoặc được gộp lặp lại nhiều lần (re-merge), hệ thống cập nhật đúng dòng đích kèm `source_version` mới nhất mà không tạo bản ghi trùng lặp. |

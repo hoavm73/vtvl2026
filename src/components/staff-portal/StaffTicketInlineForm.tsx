@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LayoutList, Printer } from 'lucide-react';
-import { StaffWorkTicket, TicketStatus } from '@/types/staff-ticket';
+import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
@@ -10,6 +10,7 @@ import { getCurrentOperatorSession } from '@/services/telemetry/operator-session
 import { StaffTicketModernForm } from './StaffTicketModernForm';
 import { StaffTicketA4Preview } from './StaffTicketA4Preview';
 import { StaffTicketToolbar } from './StaffTicketToolbar';
+import { StaffTicketResubmitBox } from './StaffTicketResubmitBox';
 
 interface StaffTicketInlineFormProps {
   unitCode: string;
@@ -24,15 +25,7 @@ interface StaffTicketInlineFormProps {
 }
 
 export function StaffTicketInlineForm({
-  unitCode,
-  ownerEmail,
-  ownerName,
-  ownerTitle,
-  editingTicket,
-  a1Missions,
-  c1Vtvls,
-  onCancelEdit,
-  onSaved
+  unitCode, ownerEmail, ownerName, ownerTitle, editingTicket, a1Missions, c1Vtvls, onCancelEdit, onSaved
 }: StaffTicketInlineFormProps) {
   const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
   const [maNhiemVu, setMaNhiemVu] = useState('');
@@ -47,43 +40,30 @@ export function StaffTicketInlineForm({
   const [nguonSoLieu, setNguonSoLieu] = useState('');
   const [phutThucTe, setPhutThucTe] = useState<string>('0');
   const [gioBoSung, setGioBoSung] = useState<string>('0');
+  const [changeSummary, setChangeSummary] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   const unit = findHcmuteUnit(unitCode);
+  const isResubmittingMode = Boolean(editingTicket && toCanonicalStatus(editingTicket.status) === 'changes_requested');
 
   const resetForm = () => {
-    setMaNhiemVu('');
-    setMaCongViec('');
-    setTenCongViec('');
-    setMaVtvl('');
-    setMaVtvlPhoiHop('');
-    setSanPham('');
-    setChatLuong('');
-    setCanCu('');
-    setSoSpNam('0');
-    setNguonSoLieu('');
-    setPhutThucTe('0');
-    setGioBoSung('0');
+    setMaNhiemVu(''); setMaCongViec(''); setTenCongViec(''); setMaVtvl(''); setMaVtvlPhoiHop('');
+    setSanPham(''); setChatLuong(''); setCanCu(''); setSoSpNam('0'); setNguonSoLieu('');
+    setPhutThucTe('0'); setGioBoSung('0'); setChangeSummary('');
   };
 
   useEffect(() => {
-    setErr('');
-    setSuccessMsg('');
+    setErr(''); setSuccessMsg('');
     const t = editingTicket;
     if (t) {
       const cleanUnit = unitCode.toUpperCase();
-      const updatedMission = replaceUnitCodePrefix(t.maNhiemVu, t.unitCode, cleanUnit);
-      const updatedTask = replaceUnitCodePrefix(t.maCongViec, t.unitCode, cleanUnit);
-      const updatedVtvl = replaceUnitCodePrefix(t.maVtvl, t.unitCode, cleanUnit);
-      const updatedVtvlPhoiHop = t.maVtvlPhoiHop ? replaceUnitCodePrefix(t.maVtvlPhoiHop, t.unitCode, cleanUnit) : '';
-
-      setMaNhiemVu(updatedMission || '');
-      setMaCongViec(updatedTask || '');
+      setMaNhiemVu(replaceUnitCodePrefix(t.maNhiemVu, t.unitCode, cleanUnit) || '');
+      setMaCongViec(replaceUnitCodePrefix(t.maCongViec, t.unitCode, cleanUnit) || '');
       setTenCongViec(t.tenCongViec || '');
-      setMaVtvl(updatedVtvl || '');
-      setMaVtvlPhoiHop(updatedVtvlPhoiHop || '');
+      setMaVtvl(replaceUnitCodePrefix(t.maVtvl, t.unitCode, cleanUnit) || '');
+      setMaVtvlPhoiHop(t.maVtvlPhoiHop ? replaceUnitCodePrefix(t.maVtvlPhoiHop, t.unitCode, cleanUnit) : '');
       setSanPham(t.sanPham || '');
       setChatLuong(t.chatLuong || '');
       setCanCu(t.canCu || '');
@@ -91,6 +71,7 @@ export function StaffTicketInlineForm({
       setNguonSoLieu(t.nguonSoLieu || '');
       setPhutThucTe(String(t.phutThucTe ?? 0));
       setGioBoSung(String(t.gioBoSung ?? 0));
+      setChangeSummary(t.lastChangeSummary || '');
     } else {
       resetForm();
     }
@@ -98,10 +79,7 @@ export function StaffTicketInlineForm({
 
   const handleMissionChange = async (nextMission: string) => {
     setMaNhiemVu(nextMission);
-    if (!nextMission) {
-      setMaCongViec('');
-      return;
-    }
+    if (!nextMission) { setMaCongViec(''); return; }
     if (editingTicket && editingTicket.maNhiemVu === nextMission) {
       setMaCongViec(editingTicket.maCongViec);
       return;
@@ -120,57 +98,49 @@ export function StaffTicketInlineForm({
   };
 
   const handleSave = async (status: TicketStatus) => {
-    setErr('');
-    setSuccessMsg('');
+    setErr(''); setSuccessMsg('');
     if (!maNhiemVu || !tenCongViec.trim() || !maVtvl) {
       setErr('Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm chính và nhập Tên công việc cụ thể.');
       return;
     }
-    if (status === 'Đã nộp') {
+    const isSubmitAction = status === 'Đã nộp' || status === 'Đã nộp lại' || status === 'submitted' || status === 'resubmitted';
+    if (isSubmitAction) {
       const missing: string[] = [];
       if (!sanPham.trim()) missing.push('Sản phẩm đầu ra');
       if (!chatLuong.trim()) missing.push('Tiêu chuẩn chất lượng');
       if (!canCu.trim()) missing.push('Căn cứ pháp lý / Quyết định giao việc');
-      if (!soSpNam || Number(soSpNam) <= 0) missing.push('Số sản phẩm hoàn thành trong năm (01/10/2025 đến 30/9/2026)');
+      if (!soSpNam || Number(soSpNam) <= 0) missing.push('Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)');
       if (!nguonSoLieu.trim()) missing.push('Nguồn số liệu kiểm chứng');
       if (!phutThucTe || Number(phutThucTe) <= 0) missing.push('Thời gian thực tế (phút/SP)');
+      if (isResubmittingMode && !changeSummary.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa');
       if (missing.length > 0) {
         setErr(`Để nộp phiếu, vui lòng điền đầy đủ các trường bắt buộc (trừ các mục có ghi "nếu có"): ${missing.join(', ')}.`);
         return;
       }
     }
+
     setSaving(true);
     try {
       const op = getCurrentOperatorSession();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-actor-email': ownerEmail
-      };
-      if (op?.accessToken) {
-        headers.Authorization = `Bearer ${op.accessToken}`;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-actor-email': ownerEmail };
+      if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+
+      const effectiveAction = isSubmitAction ? (isResubmittingMode ? 'resubmit' : 'submit') : 'draft';
+      const effectiveStatus: TicketStatus = isSubmitAction
+        ? (isResubmittingMode ? 'Đã nộp lại' : 'Đã nộp')
+        : (isResubmittingMode ? 'Yêu cầu bổ sung' : 'Nháp');
+
       const res = await fetch('/api/tickets', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          id: editingTicket?.id,
-          unitCode,
-          ownerEmail,
-          ownerName,
-          ownerTitle,
-          status,
-          maNhiemVu,
-          maCongViec,
-          tenCongViec: tenCongViec.trim(),
-          maVtvl,
-          maVtvlPhoiHop,
-          sanPham: sanPham.trim(),
-          chatLuong: chatLuong.trim(),
-          canCu: canCu.trim(),
-          soSpNam: Number(soSpNam) || 0,
-          nguonSoLieu: nguonSoLieu.trim(),
-          phutThucTe: Number(phutThucTe) || 0,
-          gioBoSung: Number(gioBoSung) || 0,
+          id: editingTicket?.id, unitCode, ownerEmail, ownerName, ownerTitle,
+          action: effectiveAction, status: effectiveStatus,
+          changeSummary: changeSummary.trim() || undefined,
+          maNhiemVu, maCongViec, tenCongViec: tenCongViec.trim(), maVtvl, maVtvlPhoiHop,
+          sanPham: sanPham.trim(), chatLuong: chatLuong.trim(), canCu: canCu.trim(),
+          soSpNam: Number(soSpNam) || 0, nguonSoLieu: nguonSoLieu.trim(),
+          phutThucTe: Number(phutThucTe) || 0, gioBoSung: Number(gioBoSung) || 0,
           coordinatedTasks: editingTicket?.coordinatedTasks || []
         })
       });
@@ -179,7 +149,11 @@ export function StaffTicketInlineForm({
         setErr(json.error || 'Không thể lưu phiếu công việc.');
         return;
       }
-      setSuccessMsg(status === 'Đã nộp' ? 'Đã lưu và gửi thành công lên dữ liệu đơn vị!' : 'Đã lưu nháp và giữ mã công việc ở đơn vị!');
+      setSuccessMsg(
+        isSubmitAction
+          ? (isResubmittingMode ? 'Đã nộp lại phiếu và lưu phiên bản mới thành công!' : 'Đã lưu và gửi phiếu thành công!')
+          : 'Đã lưu nháp và giữ mã công việc ở đơn vị!'
+      );
       onSaved(json.ticket);
       if (!editingTicket) resetForm();
     } catch {
@@ -191,7 +165,7 @@ export function StaffTicketInlineForm({
 
   const missionOptions = a1Missions.map((m) => ({
     value: String(m.maNhiemVu || ''),
-    label: `${m.maNhiemVu} — ${String(m.tenNhiemVu || '').slice(0, 60)}`
+    label: `${m.maNhiemVu} — ${String(m.tenNhiemVu || '')}`
   }));
 
   const vtvlOptions = c1Vtvls.map((v) => ({
@@ -199,26 +173,29 @@ export function StaffTicketInlineForm({
     label: `${v.maVtvl} — ${String(v.tenVtvl || '')}`
   }));
 
+  const draftTicketCandidate: Partial<StaffWorkTicket> = useMemo(
+    () => ({
+      unitCode, ownerName, ownerTitle, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
+      sanPham, chatLuong, canCu, soSpNam: Number(soSpNam) || 0, nguonSoLieu,
+      phutThucTe: Number(phutThucTe) || 0, gioBoSung: Number(gioBoSung) || 0,
+      coordinatedTasks: editingTicket?.coordinatedTasks || []
+    }),
+    [unitCode, ownerName, ownerTitle, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop, sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung, editingTicket?.coordinatedTasks]
+  );
+
   const formProps = {
     maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
     sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung,
     missionOptions, vtvlOptions,
-    onChangeMission: handleMissionChange,
-    onChangeTenCongViec: setTenCongViec,
-    onChangeVtvl: setMaVtvl,
-    onChangeVtvlPhoiHop: setMaVtvlPhoiHop,
-    onChangeSanPham: setSanPham,
-    onChangeChatLuong: setChatLuong,
-    onChangeCanCu: setCanCu,
-    onChangeSoSp: setSoSpNam,
-    onChangeNguon: setNguonSoLieu,
-    onChangePhut: setPhutThucTe,
-    onChangeGioBoSung: setGioBoSung
+    onChangeMission: handleMissionChange, onChangeTenCongViec: setTenCongViec,
+    onChangeVtvl: setMaVtvl, onChangeVtvlPhoiHop: setMaVtvlPhoiHop,
+    onChangeSanPham: setSanPham, onChangeChatLuong: setChatLuong,
+    onChangeCanCu: setCanCu, onChangeSoSp: setSoSpNam,
+    onChangeNguon: setNguonSoLieu, onChangePhut: setPhutThucTe, onChangeGioBoSung: setGioBoSung
   };
 
   return (
     <div id="staff-ticket-form-card" className="space-y-3">
-      {/* Thanh công cụ và chuyển đổi chế độ xem */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-[#cbd5e1] shadow-2xs print:hidden">
         <div className="inline-flex p-1 bg-[#f1f5f9] rounded-xl border border-[#e2e8f0] shrink-0">
           <button
@@ -255,6 +232,15 @@ export function StaffTicketInlineForm({
 
       {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
       {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
+
+      {isResubmittingMode && editingTicket && (
+        <StaffTicketResubmitBox
+          editingTicket={editingTicket}
+          draftTicketCandidate={draftTicketCandidate}
+          changeSummary={changeSummary}
+          onChangeSummary={setChangeSummary}
+        />
+      )}
 
       <div className={viewMode === 'form' ? 'block print:hidden' : 'hidden print:hidden'}>
         <StaffTicketModernForm {...formProps} />

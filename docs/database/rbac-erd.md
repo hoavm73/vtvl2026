@@ -15,8 +15,9 @@ erDiagram
     DM_DON_VI ||--o{ WORKBOOKS : "owns (sở hữu hồ sơ 15 biểu)"
     USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "creates (kê khai và sở hữu phiếu)"
     DM_DON_VI ||--o{ STAFF_WORK_TICKETS : "scopes (phạm vi đơn vị của phiếu)"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_VERSIONS : "snapshots (phiên bản bất biến v1, v2...)"
     STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_STATUS_HISTORY : "has (lịch sử trạng thái vòng đời)"
-    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "merges (liên kết gộp chính thức B1/B2)"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "merges (liên kết gộp chính thức A2/B1/B2)"
     USER_ACCOUNTS ||--o{ AUDIT_LOGS : "performs (người thực hiện thao tác)"
     DM_DON_VI ||--o{ AUDIT_LOGS : "scopes (phạm vi đơn vị bị tác động)"
 
@@ -43,11 +44,11 @@ erDiagram
     }
 
     DM_DON_VI {
-        string ma_don_vi PK "Mã định danh đơn vị (FIT, FME, TCNS, SDH...)"
+        string ma_don_vi PK "Mã định danh đơn vị (39 đơn vị hoạt động)"
         string ten_don_vi_vi "Tên đầy đủ đơn vị tiếng Việt"
         string ten_don_vi_en "Tên đơn vị tiếng Anh"
-        string loai_don_vi "Khoa | Phòng | Viện | Trung tâm"
-        boolean is_active "Đơn vị đang hoạt động"
+        string loai_don_vi "khoa-vien | phong-ban | trung-tam | dang-doanthe"
+        boolean is_active "Đơn vị đang hoạt động (TRUE cho 39 đơn vị chuẩn)"
         timestamp updated_at "Thời điểm cập nhật"
     }
 
@@ -72,6 +73,8 @@ erDiagram
         string unit_id FK "ID đơn vị công tác (dm_don_vi.ma_don_vi)"
         string unit_code "Mã đơn vị"
         string status "draft | submitted | changes_requested | resubmitted | approved"
+        integer current_version_no "Số hiệu phiên bản đã nộp hiện hành (0, 1, 2...)"
+        string last_change_summary "Giải trình nội dung đã cập nhật"
         string ma_nhiem_vu "Mã nhiệm vụ liên kết Biểu A1"
         string ma_cong_viec "Mã công việc [Mã NV].CVxx"
         string ten_cong_viec "Tên công việc cụ thể"
@@ -85,7 +88,7 @@ erDiagram
         numeric gio_bo_sung "Giờ bổ sung / năm"
         string nguon_so_lieu "Nguồn số liệu sản lượng"
         jsonb coordinated_tasks "Danh mục việc phối hợp liên đơn vị"
-        string source_ticket_id "Liên kết nguồn chống gộp trùng vào B1/B2"
+        string source_ticket_id "Liên kết nguồn chống gộp trùng"
         timestamp submitted_at "Thời điểm nộp phiếu"
         timestamp resubmitted_at "Thời điểm nộp lại"
         timestamp approved_at "Thời điểm phê duyệt"
@@ -93,13 +96,26 @@ erDiagram
         string revision_reason "Lý do yêu cầu bổ sung"
         timestamp revision_requested_at "Thời điểm yêu cầu bổ sung"
         string revision_requested_by "Người yêu cầu bổ sung"
-        boolean is_merged_to_b1_b2 "Đã gộp vào B1/B2 chính thức"
+        boolean is_merged_to_b1_b2 "Đã gộp vào A2/B1/B2 chính thức"
+        string a2_row_id "Khóa dòng liên kết trong Biểu A2"
         string b1_row_id "Khóa dòng liên kết trong Biểu B1"
-        string b2_row_id "Khóa dòng liên kết trong Biểu B2/A2"
+        string b2_row_id "Khóa dòng liên kết trong Biểu B2 (NULL nếu không có tác động B2)"
         timestamp merged_at "Thời điểm gộp"
         string merged_by "Người thực hiện gộp"
         timestamp created_at "Thời điểm tạo phiếu"
         timestamp updated_at "Thời điểm sửa phiếu gần nhất"
+    }
+
+    WORK_SURVEY_VERSIONS {
+        uuid id PK "Khóa chính UUID"
+        string survey_id FK "Mã phiếu (UNIQUE survey_id, version_no)"
+        integer version_no "Số hiệu phiên bản nguyên dương (1, 2, 3...)"
+        jsonb snapshot "Snapshot JSONB đầy đủ, bất biến"
+        string submitted_by "Email người nộp (NULL với baseline legacy)"
+        timestamp submitted_at "Thời điểm nộp (NULL với baseline legacy)"
+        string change_summary "Giải trình cập nhật / Bản ghi chuyển đổi dữ liệu"
+        boolean is_legacy_baseline "Cờ đánh dấu bản ghi chuyển đổi dữ liệu lịch sử"
+        timestamp created_at "Thời điểm tạo bản ghi"
     }
 
     WORK_SURVEY_STATUS_HISTORY {
@@ -117,9 +133,9 @@ erDiagram
 
     WORK_SURVEY_MERGE_LINKS {
         uuid id PK "Khóa chính UUID"
-        string survey_id FK "Mã phiếu liên kết (Chống gộp trùng)"
-        string target_sheet "B1 | B2 | A2"
-        string target_record_id "Khóa dòng trong biểu"
+        string survey_id FK "Mã phiếu (UNIQUE survey_id, target_sheet, target_record_id)"
+        string target_sheet "A2 | B1 | B2"
+        string target_record_id "Khóa dòng đích trong biểu"
         integer source_version "Phiên bản nguồn lúc gộp"
         string merged_by FK "Người thực hiện gộp"
         timestamp merged_at "Thời điểm gộp"
@@ -131,11 +147,11 @@ erDiagram
         string actor_email "Email người thao tác"
         string actor_role "Vai trò: admin | unit_leader | staff"
         string unit_id "Mã đơn vị liên quan"
-        string action "LOGIN | UPDATE_15_SHEETS | REVIEW_TICKET | MERGE_B1_B2..."
+        string action "SUBMIT_TICKET | RESUBMIT_TICKET | APPROVE_TICKET | REQUEST_CHANGES_TICKET | MERGE_B1_B2 | UPDATE_15_SHEETS | ACCOUNT_ROLE_UNIT_CHANGE..."
         string target_id "Khóa của thực thể bị tác động"
-        string target_entity "Bảng bị tác động (workbooks, staff_work_tickets...)"
-        jsonb old_values "Dữ liệu trước khi chỉnh sửa"
-        jsonb new_values "Dữ liệu sau khi chỉnh sửa"
+        string target_entity "Bảng bị tác động (workbooks, staff_work_tickets, user_accounts...)"
+        jsonb old_values "Dữ liệu trước khi chỉnh sửa (đã lọc secret)"
+        jsonb new_values "Dữ liệu sau khi chỉnh sửa (đã lọc secret)"
         string ip_address "Địa chỉ IP client"
         string user_agent "Trình duyệt và thiết bị"
         timestamp created_at "Thời điểm ghi nhật ký"
@@ -150,9 +166,10 @@ erDiagram
 |---|---|---|
 | `AUTH_USERS` | `auth.users` | Quản lý định danh OAuth Supabase và email công vụ |
 | `PROFILES` | `public.user_accounts` | Hồ sơ nhân sự, 3 vai trò cố định (`admin`, `unit_leader`, `staff`) và đơn vị trực thuộc |
-| `UNITS` | `public.dm_don_vi` | Danh mục 48/51 đơn vị chính thức của Trường Đại học Công nghệ Kỹ thuật TP.HCM |
+| `UNITS` | `public.dm_don_vi` | Danh mục **39 đơn vị hoạt động chính thức** (`is_active = TRUE`) của Trường Đại học Công nghệ Kỹ thuật TP.HCM (cột G:I, tệp `v2DS phan quyen (1).xls`) |
 | `WORKBOOKS` | `public.workbooks` | Hồ sơ 15 biểu của từng đơn vị theo Hướng dẫn 07-HD/BTCTW |
 | `WORK_SURVEYS` | `public.staff_work_tickets` | Phiếu khảo sát khối lượng công việc cá nhân liên thông A1-A2-B1-C1 |
-| `WORK_SURVEY_STATUS_HISTORY` | `public.work_survey_status_history` | Nhật ký chuyển đổi 5 trạng thái vòng đời của phiếu cá nhân |
-| `WORK_SURVEY_MERGE_LINKS` | `public.work_survey_merge_links` | Khóa liên kết nguồn idempotent ngăn chặn gộp trùng vào biểu B1/B2 |
-| `AUDIT_LOGS` | `public.audit_logs` | Nhật ký kiểm toán bảo mật, lưu vết toàn bộ thao tác quan trọng trên hệ thống |
+| `WORK_SURVEY_VERSIONS` | `public.work_survey_versions` | Bảng lưu snapshot phiên bản bất biến (`v1, v2, v3...`) phục vụ đối chiếu thay đổi từng trường |
+| `WORK_SURVEY_STATUS_HISTORY` | `public.work_survey_status_history` | Nhật ký chuyển đổi 5 trạng thái vòng đời của phiếu cá nhân (bất biến) |
+| `WORK_SURVEY_MERGE_LINKS` | `public.work_survey_merge_links` | Khóa liên kết nguồn idempotent `UNIQUE(survey_id, target_sheet, target_record_id)` ngăn chặn gộp trùng vào biểu A2/B1/B2 |
+| `AUDIT_LOGS` | `public.audit_logs` | Nhật ký kiểm toán bảo mật bất biến, tự động lọc mật khẩu/token/secret |

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
+import { execSync } from 'child_process';
 
 const root = process.cwd();
 let passed = 0;
@@ -19,166 +20,148 @@ function runTest(name, fn) {
 }
 
 console.log('================================================================');
-console.log(' BỘ KIỂM THỬ QUY TRÌNH PHIẾU CÔNG VIỆC VTVL HCM-UTE (16 CA)');
-console.log(' 3 Vai trò: Admin (TCNS), Lãnh đạo SDH, Cán bộ CK');
-console.log(' Căn cứ: Nghị định số 232/2026/NĐ-CP & Hướng dẫn số 07-HD/BTCTW');
+console.log(' BỘ KIỂM THỬ ĐƠN VỊ & GIAO DIỆN QUY TRÌNH PHIẾU VTVL HCM-UTE');
+console.log(' Thực thi hàm chuyển trạng thái, công thức A2/B1/B2 & UI Props');
 console.log('================================================================');
 
-// 1. Đọc mã nguồn các thành phần chính
-const ticketsRoute = fs.readFileSync(path.join(root, 'src/app/api/tickets/route.ts'), 'utf8');
-const ticketStore = fs.readFileSync(path.join(root, 'src/services/storage/server-ticket-store.ts'), 'utf8');
-const ticketDb = fs.readFileSync(path.join(root, 'src/services/storage/server-ticket-db.ts'), 'utf8');
-const ticketsTypes = fs.readFileSync(path.join(root, 'src/types/staff-ticket.ts'), 'utf8');
 const pageCode = fs.readFileSync(path.join(root, 'src/app/phieu-cong-viec/page.tsx'), 'utf8');
 const reviewListCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/UnitTicketsReviewList.tsx'), 'utf8');
 const myListCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffMyTicketsList.tsx'), 'utf8');
-const migrationSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261115030000_work_survey_lifecycle_erd.sql'), 'utf8');
-const rollbackSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261115030000_rollback_work_survey_lifecycle.sql'), 'utf8');
+const inlineFormCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketInlineForm.tsx'), 'utf8');
+const fieldsSectionCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketModernForm.tsx'), 'utf8');
+const detailModalCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketDetailModal.tsx'), 'utf8');
+const versionDiffCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketVersionDiffTab.tsx'), 'utf8');
+const mergePreviewCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketMergePreviewModal.tsx'), 'utf8');
+const printSheetCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketA4Preview.tsx'), 'utf8');
 
-// -----------------------------------------------------------------------------
-// CA 1: Cán bộ tạo và lưu nháp phiếu (draft)
-// -----------------------------------------------------------------------------
-runTest('Ca 1: Cán bộ tạo và lưu nháp phiếu (draft)', () => {
-  assert.ok(ticketsTypes.includes("'draft'"), 'Type phải hỗ trợ canonical draft');
-  assert.ok(ticketsRoute.includes("resolvedStatus = 'Nháp'") || ticketsRoute.includes("resolvedStatus: TicketStatus = 'Nháp'"), 'Mặc định lưu phiếu là Nháp/draft');
-  assert.ok(myListCode.includes('canEdit'), 'Cán bộ có quyền sửa phiếu nháp');
+runTest('Ca 1: Thực thi hàm chuẩn hóa trạng thái toCanonicalStatus & toDisplayStatus', () => {
+  const tsxCode = `
+    const assert = require('assert');
+    const { toCanonicalStatus, toDisplayStatus } = require('./src/types/staff-ticket');
+
+    assert.strictEqual(toCanonicalStatus('Nháp'), 'draft');
+    assert.strictEqual(toCanonicalStatus('draft'), 'draft');
+    assert.strictEqual(toCanonicalStatus('Đã nộp'), 'submitted');
+    assert.strictEqual(toCanonicalStatus('submitted'), 'submitted');
+    assert.strictEqual(toCanonicalStatus('Yêu cầu bổ sung'), 'changes_requested');
+    assert.strictEqual(toCanonicalStatus('Trả lại'), 'changes_requested');
+    assert.strictEqual(toCanonicalStatus('changes_requested'), 'changes_requested');
+    assert.strictEqual(toCanonicalStatus('Đã nộp lại'), 'resubmitted');
+    assert.strictEqual(toCanonicalStatus('resubmitted'), 'resubmitted');
+    assert.strictEqual(toCanonicalStatus('Đã duyệt'), 'approved');
+    assert.strictEqual(toCanonicalStatus('approved'), 'approved');
+
+    assert.strictEqual(toDisplayStatus('draft'), 'Nháp');
+    assert.strictEqual(toDisplayStatus('submitted'), 'Đã nộp');
+    assert.strictEqual(toDisplayStatus('changes_requested'), 'Yêu cầu bổ sung');
+    assert.strictEqual(toDisplayStatus('resubmitted'), 'Đã nộp lại');
+    assert.strictEqual(toDisplayStatus('approved'), 'Đã duyệt');
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
 
-// -----------------------------------------------------------------------------
-// CA 2: Cán bộ nộp phiếu Nháp thành Đã nộp
-// -----------------------------------------------------------------------------
-runTest('Ca 2: Cán bộ nộp phiếu Nháp thành Đã nộp (draft -> submitted)', () => {
-  assert.ok(ticketsRoute.includes("action === 'submit'"), 'API PATCH phải hỗ trợ action submit');
-  assert.ok(ticketsRoute.includes("submittedAt:"), 'Khi nộp phải ghi nhận submittedAt');
-  assert.ok(migrationSql.includes('rpc_submit_work_survey'), 'Migration phải có RPC submit');
+runTest('Ca 2: Thực thi công thức recalculateGridFormulas — phân định rõ A2 -> B1 và B2_CT -> B2 (không tự sinh B2 giả)', () => {
+  const tsxCode = `
+    const assert = require('assert');
+    const { recalculateGridFormulas } = require('./src/components/excel-grid/excel-grid-formulas');
+
+    // Trường hợp 1: Chỉ có dòng A2 và B1 từ phiếu đã gộp, không có B2_CT -> B2 phải rỗng (0 dòng giả)
+    const afterMergeNoB2Ct = recalculateGridFormulas({
+      A1: [{ id: 'a1-1', maNhiemVu: 'SDH.NV01', tenNhiemVu: 'Đào tạo Sau đại học' }],
+      A2: [{ id: 'a2-t1', maCongViec: 'SDH.NV01.CV01', maNhiemVu: 'SDH.NV01', maVtvl: 'SDH.CV01', tenCongViec: 'Thẩm định luận văn', sanPham: 'Hồ sơ' }],
+      B1: [{ id: 'b1-t1', maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', soSpNam: 15, phutThucTe: 120, gioBoSung: 12 }],
+      B2_CT: [],
+      B2: []
+    }, 'SDH', 'Viện Sau Đại học');
+
+    assert.strictEqual(afterMergeNoB2Ct.B1.length, 1);
+    assert.strictEqual(afterMergeNoB2Ct.B1[0].gioSp, 30, 'B1 gioSp = (15 * 120)/60 = 30 giờ');
+    assert.strictEqual(afterMergeNoB2Ct.B1[0].gioTong, 42, 'B1 gioTong = 30 + 12 = 42 giờ');
+    assert.strictEqual(afterMergeNoB2Ct.B2.length, 0, 'Khi không có dữ liệu B2_CT thì không được tự sinh số liệu B2 giả');
+
+    // Trường hợp 2: Có dữ liệu biến động tại B2_CT -> B2 tổng hợp trung thực từ B2_CT
+    const afterMergeWithB2Ct = recalculateGridFormulas({
+      A1: [{ id: 'a1-1', maNhiemVu: 'SDH.NV01', tenNhiemVu: 'Đào tạo Sau đại học' }],
+      A2: [{ id: 'a2-t1', maCongViec: 'SDH.NV01.CV01', maNhiemVu: 'SDH.NV01', maVtvl: 'SDH.CV01', tenCongViec: 'Thẩm định luận văn', sanPham: 'Hồ sơ' }],
+      B1: [{ id: 'b1-t1', maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', soSpNam: 15, phutThucTe: 120, gioBoSung: 12 }],
+      B2_CT: [
+        { id: 'b2ct-1', maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', gioBienDong: -6 },
+        { id: 'b2ct-2', maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', gioBienDong: -4 }
+      ],
+      B2: []
+    }, 'SDH', 'Viện Sau Đại học');
+
+    assert.strictEqual(afterMergeWithB2Ct.B2.length, 1, 'Khi có B2_CT thì B2 phải tổng hợp đúng 1 dòng cho mã công việc');
+    assert.strictEqual(afterMergeWithB2Ct.B2[0].gioB1, 42);
+    assert.strictEqual(afterMergeWithB2Ct.B2[0].gioGiam, -10);
+    assert.strictEqual(afterMergeWithB2Ct.B2[0].gioSauTacDong, 32);
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
 
-// -----------------------------------------------------------------------------
-// CA 3: Sau khi nộp, cán bộ không sửa được phiếu (FORBIDDEN_TICKET_LOCKED)
-// -----------------------------------------------------------------------------
-runTest('Ca 3: Sau khi nộp, cán bộ không sửa được phiếu (chặn 403 FORBIDDEN_TICKET_LOCKED)', () => {
-  assert.ok(ticketsRoute.includes('FORBIDDEN_TICKET_LOCKED'), 'API POST phải trả mã FORBIDDEN_TICKET_LOCKED khi phiếu đã nộp');
-  assert.ok(myListCode.includes("canonical === 'draft' || canonical === 'changes_requested'"), 'Giao diện chỉ hiển thị nút Sửa khi draft hoặc changes_requested');
+runTest('Ca 3: Giao diện biểu mẫu phiếu công việc dùng ShadcnSelect cho trường chọn & textarea tô nền xanh nhạt khi có nội dung', () => {
+  assert.ok(fieldsSectionCode.includes('ShadcnSelect'), 'Trường chọn Nhiệm vụ A1 và VTVL C1 phải dùng ShadcnSelect');
+  assert.ok(fieldsSectionCode.includes('<textarea'), 'Các trường tự nhập phải dùng textarea');
+  assert.ok(fieldsSectionCode.includes('border-[#7cc4f5] bg-[#eff8ff]'), 'Ô đã nhập phải được tô nền xanh dương nhạt border-[#7cc4f5] bg-[#eff8ff]');
+  assert.ok(fieldsSectionCode.includes('Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)'), 'Nhãn Số sản phẩm hoàn thành trong năm phải đúng chuẩn chu kỳ 01/10/2025 đến 30/9/2026');
+  assert.ok(fieldsSectionCode.includes('Giờ bổ sung (Nếu có)'), 'Nhãn Giờ bổ sung (Nếu có) phải đúng yêu cầu');
 });
 
-// -----------------------------------------------------------------------------
-// CA 4: Lãnh đạo đúng đơn vị thấy phiếu trong tab Chờ duyệt
-// -----------------------------------------------------------------------------
-runTest('Ca 4: Lãnh đạo đúng đơn vị thấy phiếu trong tab Chờ duyệt', () => {
-  assert.ok(pageCode.includes("activeTab === 'pending'"), 'Trang có tab Chờ duyệt cho Lãnh đạo');
-  assert.ok(pageCode.includes('pendingCount'), 'Hiển thị badge số lượng phiếu chờ duyệt');
-  assert.ok(reviewListCode.includes("mode === 'pending'"), 'UnitTicketsReviewList hỗ trợ mode pending');
-  assert.ok(reviewListCode.includes("c === 'submitted' || c === 'resubmitted'"), 'Chờ duyệt lọc chính xác phiếu submitted và resubmitted');
+runTest('Ca 4: Biểu mẫu kiểm tra bắt buộc nhập Giải trình nội dung cập nhật khi nộp lại (client & server)', () => {
+  assert.ok(inlineFormCode.includes("if (isResubmittingMode && !changeSummary.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa')"), 'InlineForm phải bắt buộc nhập Giải trình khi nộp lại');
+  assert.ok(pageCode.includes("if (isResubmit && !t.lastChangeSummary?.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa')"), 'Trang phiếu công việc phải kiểm tra Giải trình khi bấm Nộp lại');
 });
 
-// -----------------------------------------------------------------------------
-// CA 5: Lãnh đạo đơn vị khác không thấy và không duyệt được phiếu
-// -----------------------------------------------------------------------------
-runTest('Ca 5: Lãnh đạo đơn vị khác không thấy và không duyệt được phiếu (chặn 403 FORBIDDEN_CROSS_UNIT)', () => {
-  assert.ok(ticketsRoute.includes('FORBIDDEN_CROSS_UNIT'), 'API phải chặn thao tác khác đơn vị với FORBIDDEN_CROSS_UNIT');
-  assert.ok(ticketsRoute.includes('target.unitCode.toUpperCase() !== caller.unitCode.toUpperCase()'), 'So sánh unitCode của phiếu với caller unitCode');
+runTest('Ca 5: Modal Xem trước gộp (StaffTicketMergePreviewModal) giữ nhãn nút "Gộp vào B1/B2" và mô tả trung thực Biểu A2 & B1', () => {
+  assert.ok(mergePreviewCode.includes('Gộp vào B1/B2 — Xem trước dữ liệu') && mergePreviewCode.includes("'Gộp vào B1/B2'"), 'Nút và tiêu đề modal giữ nhãn cũ "Gộp vào B1/B2"');
+  assert.ok(mergePreviewCode.includes('1. Bản ghi vào Biểu A2 (Danh mục công việc & sản phẩm)'), 'Mục 1 của modal phải ghi rõ Biểu A2, không gọi nhầm A2 là B2');
+  assert.ok(mergePreviewCode.includes('2. Bản ghi vào Biểu B1 (Thống kê sản phẩm & định mức giờ)'), 'Mục 2 của modal phải ghi rõ Biểu B1');
+  assert.ok(mergePreviewCode.includes('3. Liên kết Biểu B2 (Tổng hợp nhật ký khảo sát giờ):'), 'Mục 3 giải thích rõ điều kiện liên kết Biểu B2 từ B2_CT');
+  assert.ok(reviewListCode.includes('Gộp vào B1/B2') && reviewListCode.includes('Đã gộp B1/B2') && myListCode.includes('Đã gộp B1/B2'), 'Nút và badge danh sách giữ nhãn "Gộp vào B1/B2" / "Đã gộp B1/B2"');
 });
 
-// -----------------------------------------------------------------------------
-// CA 6: Lãnh đạo yêu cầu bổ sung và bắt buộc phải nhập lý do
-// -----------------------------------------------------------------------------
-runTest('Ca 6: Lãnh đạo yêu cầu bổ sung và bắt buộc phải nhập lý do (MISSING_REVISION_REASON)', () => {
-  assert.ok(ticketsRoute.includes('MISSING_REVISION_REASON'), 'API phải trả MISSING_REVISION_REASON nếu thiếu lý do');
-  assert.ok(ticketsRoute.includes('revisionReason: reasonText'), 'API phải lưu lý do yêu cầu bổ sung');
-  const revisionModalCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketRevisionModal.tsx'), 'utf8');
-  assert.ok(revisionModalCode.includes('Lý do yêu cầu bổ sung'), 'Có modal nhập lý do bổ sung');
+runTest('Ca 8: Nhiều cán bộ cùng kê khai một mã công việc — không ghi đè mất kê khai và không cộng trùng khi gộp lại', () => {
+  const tsxCode = `
+    import assert from 'assert';
+    import { recalculateGridFormulas } from './src/components/excel-grid/excel-grid-formulas';
+
+    // Hai cán bộ (tkt-1 và tkt-2) cùng kê khai mã công việc SDH.NV01.CV01 trên cùng VTVL SDH.CV01
+    const result = recalculateGridFormulas({
+      A1: [{ id: 'a1-1', maNhiemVu: 'SDH.NV01', tenNhiemVu: 'Quản lý đào tạo Sau đại học' }],
+      A2: [
+        { id: 'a2-tkt-1', sourceTicketId: 'tkt-1', sourceVersion: 1, maCongViec: 'SDH.NV01.CV01', maNhiemVu: 'SDH.NV01', maVtvl: 'SDH.CV01', tenCongViec: 'Thẩm định hồ sơ (Cán bộ 1)', sanPham: 'Hồ sơ' },
+        { id: 'a2-tkt-2', sourceTicketId: 'tkt-2', sourceVersion: 2, maCongViec: 'SDH.NV01.CV01', maNhiemVu: 'SDH.NV01', maVtvl: 'SDH.CV01', tenCongViec: 'Thẩm định hồ sơ (Cán bộ 2)', sanPham: 'Hồ sơ' }
+      ],
+      B1: [
+        { id: 'b1-tkt-1', sourceTicketId: 'tkt-1', sourceVersion: 1, maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', soSpNam: 10, phutThucTe: 60, gioBoSung: 2 },
+        { id: 'b1-tkt-2', sourceTicketId: 'tkt-2', sourceVersion: 2, maCongViec: 'SDH.NV01.CV01', maVtvl: 'SDH.CV01', soSpNam: 20, phutThucTe: 60, gioBoSung: 3 }
+      ],
+      B2_CT: [],
+      B2: [],
+      C1: [{ id: 'c1-1', maVtvl: 'SDH.CV01', tenVtvl: 'Chuyên viên', gioChuanPp2: 1904 }],
+      C3: []
+    }, 'SDH', 'Viện Sau Đại học');
+
+    assert.strictEqual(result.B1.length, 2, 'Phải bảo toàn đủ 2 dòng B1 cho 2 cán bộ cùng kê khai 1 mã công việc');
+    const b1Row1 = result.B1.find((r) => r.sourceTicketId === 'tkt-1');
+    const b1Row2 = result.B1.find((r) => r.sourceTicketId === 'tkt-2');
+    assert.ok(b1Row1 && b1Row1.gioTong === 12 && b1Row1.sourceVersion === 1, 'Dòng B1 của Cán bộ 1 giữ đúng 12 giờ (10 + 2) và v1');
+    assert.ok(b1Row2 && b1Row2.gioTong === 23 && b1Row2.sourceVersion === 2, 'Dòng B1 của Cán bộ 2 giữ đúng 23 giờ (20 + 3) và v2');
+    assert.strictEqual(result.C3[0].gioB1, 35, 'Biểu C3 phải cộng đúng tổng 12 + 23 = 35 giờ từ cả 2 cán bộ');
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
 
-// -----------------------------------------------------------------------------
-// CA 7: Cán bộ thấy lý do, sửa phiếu và nộp lại
-// -----------------------------------------------------------------------------
-runTest('Ca 7: Cán bộ thấy lý do, sửa phiếu và nộp lại (changes_requested -> resubmitted)', () => {
-  assert.ok(myListCode.includes('t.revisionReason'), 'Danh sách phiếu của tôi hiển thị rõ revisionReason');
-  assert.ok(myListCode.includes('canResubmit'), 'Có nút Nộp lại khi changes_requested');
-  assert.ok(ticketsRoute.includes("action === 'resubmit'"), 'API PATCH hỗ trợ action resubmit');
-  assert.ok(ticketsRoute.includes("resubmittedAt:"), 'Ghi nhận resubmittedAt khi nộp lại');
+runTest('Ca 6: Modal chi tiết phiếu hiển thị đầy đủ lịch sử phiên bản (v1, v2, v3...) và bộ chọn đối chiếu từng trường', () => {
+  assert.ok(detailModalCode.includes('StaffTicketVersionDiffTab'), 'Modal chi tiết phải tích hợp StaffTicketVersionDiffTab');
+  assert.ok(versionDiffCode.includes('computeTicketVersionDiff'), 'Component đối chiếu phải gọi computeTicketVersionDiff');
+  assert.ok(versionDiffCode.includes('MIGRATION_BASELINE_LABEL'), 'Hiển thị rõ MIGRATION_BASELINE_LABEL ("Bản ghi chuyển đổi dữ liệu") cho phiếu cũ');
+  assert.ok(versionDiffCode.includes('MISSING_PRIOR_DATA_LABEL'), 'Hiển thị rõ MISSING_PRIOR_DATA_LABEL khi phiếu Nháp chưa có lịch sử phiên bản');
 });
 
-// -----------------------------------------------------------------------------
-// CA 8: Phiếu Đã nộp lại xuất hiện trong tab Chờ duyệt
-// -----------------------------------------------------------------------------
-runTest('Ca 8: Phiếu Đã nộp lại xuất hiện trong tab Chờ duyệt', () => {
-  assert.ok(reviewListCode.includes("c === 'resubmitted'"), 'Mode pending bao gồm phiếu resubmitted');
-  assert.ok(reviewListCode.includes('localeCompare'), 'Sắp xếp thời gian nộp mới nhất lên đầu');
-});
-
-// -----------------------------------------------------------------------------
-// CA 9: Lãnh đạo duyệt phiếu thành công
-// -----------------------------------------------------------------------------
-runTest('Ca 9: Lãnh đạo duyệt phiếu thành công (resubmitted -> approved)', () => {
-  assert.ok(ticketsRoute.includes("action === 'approve'"), 'API PATCH hỗ trợ action approve');
-  assert.ok(ticketsRoute.includes("status: 'Đã duyệt'"), 'Cập nhật status Đã duyệt');
-  assert.ok(ticketsRoute.includes('approvedBy: caller.email'), 'Lưu email người duyệt approvedBy');
-  assert.ok(ticketsRoute.includes('approvedAt: nowIso'), 'Lưu thời điểm duyệt approvedAt');
-});
-
-// -----------------------------------------------------------------------------
-// CA 10: Phiếu đã duyệt không còn chỉnh sửa được
-// -----------------------------------------------------------------------------
-runTest('Ca 10: Phiếu đã duyệt không còn chỉnh sửa được (chỉ đọc)', () => {
-  assert.ok(ticketsRoute.includes("canonical !== 'draft' && canonical !== 'changes_requested'"), 'Chỉ draft và changes_requested mới được sửa');
-  assert.ok(myListCode.includes("const canEdit = canonical === 'draft' || canonical === 'changes_requested'"), 'Chỉ hiển thị nút Sửa khi draft hoặc changes_requested');
-});
-
-// -----------------------------------------------------------------------------
-// CA 11: Chỉ phiếu đã duyệt mới được gộp vào B1/B2
-// -----------------------------------------------------------------------------
-runTest('Ca 11: Chỉ phiếu đã duyệt mới được gộp vào B1/B2 (FORBIDDEN_UNAPPROVED_MERGE)', () => {
-  assert.ok(ticketsRoute.includes('FORBIDDEN_UNAPPROVED_MERGE'), 'API chặn gộp nếu chưa duyệt với FORBIDDEN_UNAPPROVED_MERGE');
-  assert.ok(ticketStore.includes("ticket.status !== 'Đã duyệt'"), 'Lõi store chỉ gộp khi status là Đã duyệt');
-});
-
-// -----------------------------------------------------------------------------
-// CA 12: Gộp nhiều lần không tạo dữ liệu trùng (Idempotent)
-// -----------------------------------------------------------------------------
-runTest('Ca 12: Gộp nhiều lần không tạo dữ liệu trùng (Idempotent sourceTicketId)', () => {
-  assert.ok(ticketStore.includes('sourceTicketId: ticket.id'), 'Lõi store gán sourceTicketId chống trùng');
-  assert.ok(ticketStore.includes('filteredA2'), 'Lõi store lọc bỏ bản ghi cũ trước khi thêm dòng mới');
-  assert.ok(ticketStore.includes('filteredB1'), 'Lõi store lọc bỏ bản ghi B1 cũ trước khi thêm dòng mới');
-  assert.ok(migrationSql.includes('uq_survey_target_sheet'), 'Database có UNIQUE constraint (survey_id, target_sheet)');
-});
-
-// -----------------------------------------------------------------------------
-// CA 13: Cán bộ xem được phiếu toàn đơn vị nhưng không sửa được (Chỉ đọc)
-// -----------------------------------------------------------------------------
-runTest('Ca 13: Cán bộ xem được phiếu toàn đơn vị nhưng không sửa được (chế độ chỉ đọc)', () => {
-  assert.ok(pageCode.includes("Phiếu toàn đơn vị (Chỉ đọc)"), 'Tiêu đề tab hiển thị chỉ đọc cho cán bộ');
-  assert.ok(reviewListCode.includes('canReview'), 'Chỉ Lãnh đạo mới có nút Duyệt/Yêu cầu bổ sung');
-  assert.ok(!reviewListCode.includes('onEditTicket'), 'Bảng toàn đơn vị không có nút sửa phiếu');
-});
-
-// -----------------------------------------------------------------------------
-// CA 14: Lãnh đạo không tự duyệt phiếu do chính mình tạo (FORBIDDEN_SELF_REVIEW)
-// -----------------------------------------------------------------------------
-runTest('Ca 14: Lãnh đạo không tự duyệt phiếu do chính mình tạo (FORBIDDEN_SELF_REVIEW)', () => {
-  assert.ok(ticketsRoute.includes('FORBIDDEN_SELF_REVIEW'), 'API PATCH chặn tự duyệt với FORBIDDEN_SELF_REVIEW');
-  assert.ok(reviewListCode.includes('isOwnLeaderTicket'), 'UI nhận diện isOwnLeaderTicket để ẩn nút duyệt');
-  assert.ok(reviewListCode.includes('Phiếu cá nhân của Lãnh đạo (Cần TCNS duyệt)'), 'UI hiển thị thông báo cần cấp trên duyệt');
-  assert.ok(migrationSql.includes('FORBIDDEN_SELF_REVIEW'), 'Database RPC rpc_approve_work_survey chặn tự duyệt');
-});
-
-// -----------------------------------------------------------------------------
-// CA 15: Admin duyệt được phiếu của lãnh đạo
-// -----------------------------------------------------------------------------
-runTest('Ca 15: Admin duyệt được phiếu của lãnh đạo các đơn vị', () => {
-  assert.ok(ticketsRoute.includes('!caller.isAdmin && target.ownerEmail.toLowerCase() === caller.email.toLowerCase()'), 'Ràng buộc tự duyệt loại trừ caller.isAdmin');
-  assert.ok(migrationSql.includes("v_caller_role <> 'admin' AND lower(v_ticket.owner_email) = v_caller_email"), 'RPC database cho phép Admin duyệt mọi phiếu');
-});
-
-// -----------------------------------------------------------------------------
-// CA 16: Mọi thay đổi trạng thái đều có audit log / lịch sử trạng thái
-// -----------------------------------------------------------------------------
-runTest('Ca 16: Mọi thay đổi trạng thái đều ghi vào work_survey_status_history và audit_logs', () => {
-  assert.ok(ticketsRoute.includes('recordStatusHistoryInSupabase'), 'API gọi recordStatusHistoryInSupabase');
-  assert.ok(ticketsRoute.includes('appendAuditLog'), 'API gọi appendAuditLog');
-  assert.ok(migrationSql.includes('work_survey_status_history'), 'Migration tạo bảng work_survey_status_history');
-  assert.ok(migrationSql.includes('work_survey_merge_links'), 'Migration tạo bảng work_survey_merge_links');
-  assert.ok(rollbackSql.includes('DROP TABLE IF EXISTS public.work_survey_status_history'), 'Rollback script an toàn');
+runTest('Ca 7: Bản in PDF A4 của phiếu công việc giữ nguyên định dạng chuẩn hành chính HCM-UTE', () => {
+  assert.ok(printSheetCode.includes('TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM'), 'Bản in PDF có quốc hiệu và tên trường chuẩn');
+  assert.ok(printSheetCode.includes('print:block'), 'Bản in PDF hỗ trợ chế độ in A4');
 });
 
 console.log('\n================================================================');

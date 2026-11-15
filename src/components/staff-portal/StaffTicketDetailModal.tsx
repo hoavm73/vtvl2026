@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  X, CheckCircle2, Clock, AlertTriangle, RefreshCw, Printer, Check, CornerDownLeft
+  X, CheckCircle2, Clock, AlertTriangle, RefreshCw, Printer, Check, CornerDownLeft, FileText, GitCompare
 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { StaffTicketVersionDiffTab } from './StaffTicketVersionDiffTab';
 
 interface StaffTicketDetailModalProps {
   ticket: StaffWorkTicket | null;
@@ -22,6 +23,8 @@ export function StaffTicketDetailModal({
   ticket, unitNameVi, currentUserRole, currentUserEmail,
   onClose, onPrint, onApprove, onRequestChanges
 }: StaffTicketDetailModalProps) {
+  const [activeTab, setActiveTab] = useState<'a4' | 'diff'>('a4');
+
   if (!ticket) return null;
 
   const canonical = toCanonicalStatus(ticket.status);
@@ -41,6 +44,7 @@ export function StaffTicketDetailModal({
   const unit = findHcmuteUnit(ticket.unitCode);
   const displayUnitName = unitNameVi || unit.nameVi;
   const today = new Date();
+  const versionCount = Array.isArray(ticket.versions) ? ticket.versions.length : (ticket.currentVersionNo || 0);
 
   const getStatusBadge = () => {
     switch (canonical) {
@@ -48,7 +52,7 @@ export function StaffTicketDetailModal({
       case 'changes_requested': return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
       case 'resubmitted': return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
       case 'submitted': return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
-      default: return { cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: Clock, label: 'Nháp' };
+      default: return { cls: 'bg-slate-100 text-[#004776] border-slate-300', icon: Clock, label: 'Nháp' };
     }
   };
 
@@ -66,7 +70,7 @@ export function StaffTicketDetailModal({
     { num: '8', label: 'Căn cứ pháp lý & hồ sơ giải trình', val: ticket.canCu || '—' },
     { num: '9', label: 'Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)', val: `${ticket.soSpNam} sản phẩm / năm${ticket.nguonSoLieu ? ` (Nguồn: ${ticket.nguonSoLieu})` : ''}` },
     { num: '10', label: 'Thời gian trung bình / 1 SP', val: `${ticket.phutThucTe} phút / sản phẩm` },
-    { num: '11', label: 'Giờ bổ sung (giờ/năm)', val: `${ticket.gioBoSung || 0} giờ / năm` }
+    { num: '11', label: 'Giờ bổ sung (Nếu có)', val: `${ticket.gioBoSung || 0} giờ / năm` }
   ];
 
   return (
@@ -83,6 +87,11 @@ export function StaffTicketDetailModal({
                 <StatusIcon className="w-3.5 h-3.5" />
                 {badge.label}
               </span>
+              {versionCount > 0 && (
+                <span className="text-xs font-bold text-[#004776] bg-white px-2 py-0.5 rounded-md border border-[#cbd5e1]">
+                  v{versionCount}
+                </span>
+              )}
               {ticket.isMergedToB1B2 && (
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                   Đã gộp B1/B2
@@ -95,6 +104,30 @@ export function StaffTicketDetailModal({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Bộ chuyển tab: Biểu mẫu A4 & Thay đổi so với bản trước */}
+            <div className="inline-flex p-0.5 bg-[#e2e8f0] rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab('a4')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  activeTab === 'a4' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Chi tiết phiếu (A4)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('diff')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  activeTab === 'diff' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                }`}
+              >
+                <GitCompare className="w-3.5 h-3.5" />
+                <span>Thay đổi so với bản trước</span>
+              </button>
+            </div>
+
             {canReview && (
               <>
                 <button
@@ -118,7 +151,7 @@ export function StaffTicketDetailModal({
 
             <button
               type="button"
-              onClick={() => onPrint ? onPrint(ticket) : window.print()}
+              onClick={() => (onPrint ? onPrint(ticket) : window.print())}
               className="h-9 px-3.5 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
             >
               <Printer className="w-4 h-4" />
@@ -135,111 +168,113 @@ export function StaffTicketDetailModal({
           </div>
         </div>
 
-        {/* Khung cuộn tài liệu A4 mô phỏng chuẩn Nghị định 30/2020/NĐ-CP */}
+        {/* Nội dung theo tab */}
         <div className="p-4 sm:p-6 overflow-y-auto bg-[#f1f5f9] flex flex-col items-center space-y-4">
           {ticket.revisionReason && (
-            <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1 shadow-xs">
-              <div className="flex items-center gap-1.5 font-bold text-amber-800 text-xs sm:text-sm">
+            <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-[#004776] space-y-1 shadow-xs">
+              <div className="flex items-center gap-1.5 font-bold text-[#004776] text-xs sm:text-sm">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
                 <span>Ý kiến / Lý do yêu cầu bổ sung từ Lãnh đạo đơn vị:</span>
               </div>
               <p className="text-xs pl-5 whitespace-pre-wrap leading-relaxed">{ticket.revisionReason}</p>
               {ticket.revisionRequestedBy && (
-                <div className="text-[11px] text-amber-700 pl-5 pt-0.5">
-                  Người yêu cầu: <strong>{ticket.revisionRequestedBy}</strong> • {ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt).toLocaleString('vi-VN') : ''}
+                <div className="text-[11px] text-[#476885] pl-5 pt-0.5">
+                  Người yêu cầu: <strong>{ticket.revisionRequestedBy}</strong> •{' '}
+                  {ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt).toLocaleString('vi-VN') : ''}
                 </div>
               )}
             </div>
           )}
 
-          {/* Tờ A4 chuẩn lề 2-2-3-2 cm */}
-          <div
-            id="vtvl-ticket-detail-a4-sheet"
-            className="bg-white w-full max-w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed"
-            style={{ fontFamily: '"Times New Roman", Times, serif' }}
-          >
-            {/* Quốc hiệu & Tên đơn vị */}
-            <div className="grid grid-cols-12 gap-2 text-center mb-5">
-              <div className="col-span-5">
-                <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
-                <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
-                <div className="text-[11px] font-bold uppercase mt-0.5">{displayUnitName}</div>
-                <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
+          {activeTab === 'diff' ? (
+            <StaffTicketVersionDiffTab ticket={ticket} />
+          ) : (
+            <div
+              id="vtvl-ticket-detail-a4-sheet"
+              className="bg-white w-full max-w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              <div className="grid grid-cols-12 gap-2 text-center mb-5">
+                <div className="col-span-5">
+                  <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
+                  <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+                  <div className="text-[11px] font-bold uppercase mt-0.5">{displayUnitName}</div>
+                  <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
+                </div>
+                <div className="col-span-7">
+                  <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
+                  <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
+                </div>
               </div>
-              <div className="col-span-7">
-                <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
-                <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
-              </div>
-            </div>
 
-            {/* Tiêu đề biểu mẫu */}
-            <div className="text-center mb-6">
-              <h2 className="text-[16px] sm:text-[18px] font-bold uppercase tracking-tight text-[#004776]">
-                PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
-              </h2>
-              <div className="text-[12px] italic text-[#476885] mt-0.5">
-                (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026)
+              <div className="text-center mb-6">
+                <h2 className="text-[16px] sm:text-[18px] font-bold uppercase tracking-tight text-[#004776]">
+                  PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
+                </h2>
+                <div className="text-[12px] italic text-[#476885] mt-0.5">
+                  (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026)
+                </div>
               </div>
-            </div>
 
-            {/* Thông tin nhân sự */}
-            <div className="space-y-1.5 mb-5 text-[13px] border-b border-[#e2e8f0] pb-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div><strong>Họ và tên người lập phiếu:</strong> {ticket.ownerName} ({ticket.ownerEmail})</div>
-                <div><strong>Trạng thái:</strong> <span className="font-bold text-[#0072BC]">{badge.label}</span></div>
+              <div className="space-y-1.5 mb-5 text-[13px] border-b border-[#e2e8f0] pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div><strong>Họ và tên người lập phiếu:</strong> {ticket.ownerName} ({ticket.ownerEmail})</div>
+                  <div><strong>Trạng thái:</strong> <span className="font-bold text-[#0072BC]">{badge.label}</span></div>
+                </div>
+                <div>
+                  <strong>Chức danh / Chức vụ:</strong> {ticket.ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp;{' '}
+                  <strong>Đơn vị:</strong> {displayUnitName} ({ticket.unitCode})
+                </div>
               </div>
-              <div><strong>Chức danh / Chức vụ:</strong> {ticket.ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp; <strong>Đơn vị:</strong> {displayUnitName} ({ticket.unitCode})</div>
-            </div>
 
-            {/* Bảng chi tiết 12 mục chuẩn */}
-            <div className="overflow-x-auto mb-6">
-              <table className="w-full border-collapse border border-[#004776] text-[12.5px]">
-                <tbody>
-                  {tableFields.map((f) => (
-                    <tr key={f.num}>
-                      <td className="border border-[#004776] px-3 py-2 font-bold w-1/3 align-top">
-                        {f.num}. {f.label}
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full border-collapse border border-[#004776] text-[12.5px]">
+                  <tbody>
+                    {tableFields.map((f) => (
+                      <tr key={f.num}>
+                        <td className="border border-[#004776] px-3 py-2 font-bold w-1/3 align-top">
+                          {f.num}. {f.label}
+                        </td>
+                        <td className={`border border-[#004776] px-3 py-2 whitespace-pre-line leading-relaxed ${f.isCode ? 'font-bold text-[#0072BC]' : f.isBold ? 'font-semibold' : ''}`}>
+                          {f.val}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-[#f8fafc]">
+                      <td className="border border-[#004776] px-3 py-2 font-bold align-top">
+                        12. Tổng thời gian quy đổi (Biểu B1)
                       </td>
-                      <td className={`border border-[#004776] px-3 py-2 leading-relaxed ${f.isCode ? 'font-bold text-[#0072BC]' : f.isBold ? 'font-semibold' : ''}`}>
-                        {f.val}
+                      <td className="border border-[#004776] px-3 py-2 font-bold text-[#0072BC] text-[13px]">
+                        {totalHoursAll} giờ/năm
+                        <span className="block font-normal text-[11px] text-[#476885] mt-0.5">
+                          (Quy đổi theo sản phẩm: {totalHoursSp} giờ + Giờ bổ sung: {gioBs} giờ)
+                        </span>
                       </td>
                     </tr>
-                  ))}
-                  <tr className="bg-[#f8fafc]">
-                    <td className="border border-[#004776] px-3 py-2 font-bold align-top">
-                      12. Tổng thời gian quy đổi (Biểu B1)
-                    </td>
-                    <td className="border border-[#004776] px-3 py-2 font-bold text-[#0072BC] text-[13px]">
-                      {totalHoursAll} giờ/năm
-                      <span className="block font-normal text-[11px] text-[#476885] mt-0.5">
-                        (Quy đổi theo sản phẩm: {totalHoursSp} giờ + Giờ bổ sung: {gioBs} giờ)
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Bảng chữ ký theo thể thức Nghị định 30/2020/NĐ-CP */}
-            <div className="grid grid-cols-2 gap-4 text-center mt-8 pt-4">
-              <div>
-                <div className="font-bold text-[12.5px] uppercase">TRƯỞNG ĐƠN VỊ DUYỆT</div>
-                <div className="text-[11px] italic text-[#476885]">(Ký, ghi rõ họ tên và xác nhận)</div>
-                <div className="h-20" />
-                <div className="font-bold text-[13px]">{displayUnitName}</div>
-              </div>
-              <div>
-                <div className="text-[12px] italic mb-1 text-[#476885]">
-                  TP. Hồ Chí Minh, ngày {today.getDate()} tháng {today.getMonth() + 1} năm {today.getFullYear()}
+              <div className="grid grid-cols-2 gap-4 text-center mt-8 pt-4">
+                <div>
+                  <div className="font-bold text-[12.5px] uppercase">TRƯỞNG ĐƠN VỊ DUYỆT</div>
+                  <div className="text-[11px] italic text-[#476885]">(Ký, ghi rõ họ tên và xác nhận)</div>
+                  <div className="h-20" />
+                  <div className="font-bold text-[13px]">{displayUnitName}</div>
                 </div>
-                <div className="font-bold text-[12.5px] uppercase">NGƯỜI KÊ KHAI PHIẾU</div>
-                <div className="text-[11px] italic text-[#476885]">(Ký và ghi rõ họ tên)</div>
-                <div className="h-16" />
-                <div className="font-bold text-[13px]">{ticket.ownerName}</div>
+                <div>
+                  <div className="text-[12px] italic mb-1 text-[#476885]">
+                    TP. Hồ Chí Minh, ngày {today.getDate()} tháng {today.getMonth() + 1} năm {today.getFullYear()}
+                  </div>
+                  <div className="font-bold text-[12.5px] uppercase">NGƯỜI KÊ KHAI PHIẾU</div>
+                  <div className="text-[11px] italic text-[#476885]">(Ký và ghi rõ họ tên)</div>
+                  <div className="h-16" />
+                  <div className="font-bold text-[13px]">{ticket.ownerName}</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -58,17 +58,57 @@ export function generateAdminToken(): string {
   return `${body}.${signature}`;
 }
 
+/**
+ * Chuẩn hóa mốc hết hạn token về mili-giây (Unix Epoch ms).
+ * - expiresAt: định dạng nội bộ HCM-UTE VTVL 360 (mili-giây, >= 1e12).
+ * - exp: chuẩn JWT RFC 7519 (giây, 1e9..1e11) hoặc mili-giây (>= 1e12).
+ * Từ chối mọi giá trị không phải number hữu hạn, <= 0, hoặc vượt quá 366 ngày kể từ hiện tại.
+ */
+export function normalizeTokenExpirationMs(rawPayload: Record<string, unknown>, nowMs = Date.now()): number | null {
+  const hasExpiresAt = rawPayload.expiresAt !== undefined && rawPayload.expiresAt !== null;
+  const hasExp = rawPayload.exp !== undefined && rawPayload.exp !== null;
+  if (!hasExpiresAt && !hasExp) return null;
+
+  const rawVal = hasExpiresAt ? rawPayload.expiresAt : rawPayload.exp;
+  if (typeof rawVal !== 'number' || !Number.isFinite(rawVal) || rawVal <= 0) {
+    return null;
+  }
+
+  // Nếu dùng trường exp chuẩn JWT (đơn vị giây: 1_000_000_000 .. 99_999_999_999), đổi sang mili-giây
+  const expMs = !hasExpiresAt && rawVal >= 1_000_000_000 && rawVal < 100_000_000_000
+    ? Math.trunc(rawVal * 1000)
+    : Math.trunc(rawVal);
+
+  const minValidEpochMs = 1_577_836_800_000; // 2020-01-01T00:00:00Z
+  const maxValidEpochMs = nowMs + 366 * 24 * 60 * 60 * 1000; // Tối đa 1 năm kể từ hiện tại
+  if (expMs < minValidEpochMs || expMs > maxValidEpochMs) {
+    return null;
+  }
+  return expMs;
+}
+
 export function verifyAdminToken(token: string): AdminSessionPayload | null {
-  if (!token || !token.includes('.')) return null;
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const [body, signature] = parts;
   const secret = getAuthSecret();
-  const [body, signature] = token.split('.');
   const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
   if (!safeCompareSignature(signature, expectedSig)) return null;
 
   try {
-    const payload: AdminSessionPayload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-    if (payload.role !== 'admin' || Date.now() > payload.expiresAt) return null;
-    return payload;
+    const parsed = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const payload = parsed as Record<string, unknown>;
+    if (payload.role !== 'admin') return null;
+    const nowMs = Date.now();
+    const expTime = normalizeTokenExpirationMs(payload, nowMs);
+    if (expTime === null || nowMs >= expTime) return null;
+    return {
+      role: 'admin',
+      authenticatedAt: typeof payload.authenticatedAt === 'string' ? payload.authenticatedAt : new Date(nowMs).toISOString(),
+      expiresAt: expTime
+    };
   } catch {
     return null;
   }

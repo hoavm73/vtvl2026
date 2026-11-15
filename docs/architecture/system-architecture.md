@@ -68,3 +68,19 @@ erDiagram
     C3_NHU_CAU ||--|{ D2_PHUONG_AN : "lam_nam_co_so_2026"
     DU_BAO_5_NAM ||--|| D2_PHUONG_AN : "dieu_chinh_nhu_cau_theo_nam"
 ```
+
+## 4. Cơ chế gộp phiếu công việc ("Gộp vào B1/B2"), bảo toàn đa cá nhân & khóa đồng thời đa tiến trình
+
+1. **Nhãn giao diện và đích ghi dữ liệu thực tế:**
+   - Giao diện giữ nguyên nhãn nút thao tác và huy hiệu truyền thống **`"Gộp vào B1/B2"`** / **`"Đã gộp B1/B2"`**.
+   - Về mặt kỹ thuật, thao tác gộp ghi trực tiếp dòng công việc và khối lượng giờ thực hiện vào **`Biểu A2` (`2. A2_CongViec`)** và **`Biểu B1` (`3. B1_KhoiLuong`)**, sau đó kích hoạt `recalculateGridFormulas` để tính lại dây chuyền công thức sang `Biểu C3` và `Biểu D2`.
+   - **`Biểu B2` (`5. B2_ThayDoi`)** chỉ được liên kết và tính lại từ `Biểu B2_CT` (`4. B2_CT_TacDong`) khi đơn vị đã có dữ liệu kê khai tác động chuyển đổi số/tự chủ. Hệ thống tuyệt đối không sinh dữ liệu `B2` giả từ phiếu khảo sát công việc cá nhân.
+
+2. **Bảo toàn nhiều cán bộ cùng kê khai một `maCongViec`:**
+   - Khi hai hoặc nhiều cán bộ trong cùng đơn vị kê khai các phiếu khác nhau nhưng chọn cùng một mã công việc (`maCongViec`), cả `mergeApprovedTicketToUnitWorkbook` ([server-ticket-merge.ts](file:///Users/macaz/Documents/0.%20App/VTVL%20/src/services/storage/server-ticket-merge.ts)) và `recalculateGridFormulas` ([excel-grid-formulas.ts](file:///Users/macaz/Documents/0.%20App/VTVL%20/src/components/excel-grid/excel-grid-formulas.ts)) đều định danh dòng theo `sourceTicketId` của từng phiếu.
+   - Chỉ khi cùng một phiếu (`sourceTicketId` trùng nhau) được nộp lại phiên bản mới (`v2`, `v3`...) thì dòng cũ của chính phiếu đó mới được cập nhật tại chỗ; phiếu của cán bộ khác giữ dòng độc lập và được cộng dồn chính xác tổng giờ chuẩn vào `Biểu B2` và `Biểu C3`.
+
+3. **Khóa đồng thời đa tiến trình & chống ghi đè dữ liệu (`Optimistic Locking` + `Cross-Process Lock`):**
+   - Ở chế độ lưu trữ cục bộ (`.data/`), `withUnitWorkbookLock` ([server-file-lock.ts](file:///Users/macaz/Documents/0.%20App/VTVL%20/src/services/storage/server-file-lock.ts)) sử dụng cơ chế tạo tệp khóa nguyên tử `fs.openSync(..., 'wx')` kết hợp xóa bộ nhớ đệm để tuần tự hóa các tiến trình gộp đồng thời, đồng thời kiểm tra `baseRevision` và loại bỏ việc gán đè `wb.data = snapshotWbData` trong khối `catch`.
+   - Ở chế độ cơ sở dữ liệu Supabase, hàm `rpc_merge_work_survey_to_b1_b2` khóa cả dòng phiếu (`staff_work_tickets FOR UPDATE`) và dòng bảng tính đơn vị (`workbooks FOR UPDATE`), kiểm tra `p_expected_wb_revision` và dùng `PERFORM set_config('app.actor_id', ..., true)` (`SET LOCAL`) trong cùng một giao dịch.
+

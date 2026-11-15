@@ -181,7 +181,7 @@ export async function PUT(req: NextRequest) {
       unitCode: 'ALL',
       unitName: 'Toàn trường',
       action: 'THAY_ĐỔI_ĐƠN_VỊ',
-      details: 'Khôi phục danh mục 51 đơn vị chuẩn HCM-UTE.',
+      details: 'Khôi phục danh mục 39 đơn vị chuẩn HCM-UTE.',
       actorEmail: caller.email,
       actorRole: caller.role
     });

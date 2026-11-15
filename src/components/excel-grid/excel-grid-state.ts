@@ -258,10 +258,10 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
   }, [saveSheetData, activeSheet, goToNextSheet]);
 
   const dynamicOptionsMap = useMemo(() => ({
-    vtvlList: Array.from(new Set((data.C1 || []).map((r) => String(r.maVtvl || '')).filter(Boolean))),
-    missionList: Array.from(new Set((data.A1 || []).map((r) => String(r.maNhiemVu || '')).filter(Boolean))),
-    taskList: Array.from(new Set((data.A2 || []).map((r) => String(r.maCongViec || '')).filter(Boolean))),
-    productList: Array.from(new Set((data.DM_SP || []).map((r) => String(r.maSpChuan || '')).filter(Boolean))),
+    vtvlList: (data.C1 || []).filter((r) => r.maVtvl).map((r) => ({ value: String(r.maVtvl), label: r.tenVtvl ? `${r.maVtvl} — ${r.tenVtvl}` : String(r.maVtvl) })),
+    missionList: (data.A1 || []).filter((r) => r.maNhiemVu).map((r) => ({ value: String(r.maNhiemVu), label: r.tenNhiemVu ? `${r.maNhiemVu} — ${r.tenNhiemVu}` : String(r.maNhiemVu) })),
+    taskList: (data.A2 || []).filter((r) => r.maCongViec).map((r) => ({ value: String(r.maCongViec), label: r.tenCongViec ? `${r.maCongViec} — ${r.tenCongViec}` : String(r.maCongViec) })),
+    productList: (data.DM_SP || []).filter((r) => r.maSpChuan).map((r) => ({ value: String(r.maSpChuan), label: r.tenSanPham ? `${r.maSpChuan} — ${r.tenSanPham}` : String(r.maSpChuan) })),
     pl1VtvlList: PL1_VTVL_CATALOG.map((item) => ({ value: item.pl1Code, label: `${item.pl1Code} – ${item.positionName}` }))
   }), [data.C1, data.A1, data.A2, data.DM_SP]);
 

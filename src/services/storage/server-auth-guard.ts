@@ -8,7 +8,7 @@ import {
 import {
   verifyAdminToken,
   verifySupabaseAccessTokenEmail,
-  isVerifiedAdminAccount
+  normalizeTokenExpirationMs
 } from './server-admin-auth';
 import { normalizeEmail } from './server-workbook-store';
 import { getAuthSecret, safeCompareSignature } from './account-crypto';
@@ -57,16 +57,33 @@ export function generateUserSessionToken(payload: {
 }
 
 export function verifyUserSessionToken(token: string): UserSessionPayload | null {
-  if (!token || !token.includes('.')) return null;
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const [body, signature] = parts;
   const secret = getAuthSecret();
-  const [body, signature] = token.split('.');
   const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
   if (!safeCompareSignature(signature, expectedSig)) return null;
 
   try {
-    const payload: UserSessionPayload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-    if (!payload.email || Date.now() > payload.expiresAt) return null;
-    return payload;
+    const parsed = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const payload = parsed as Record<string, unknown>;
+    if (typeof payload.email !== 'string' || !payload.email.includes('@')) return null;
+    if (payload.role !== 'admin' && payload.role !== 'unit_leader' && payload.role !== 'staff') return null;
+    if (typeof payload.unitCode !== 'string' || !payload.unitCode.trim()) return null;
+
+    const nowMs = Date.now();
+    const expTime = normalizeTokenExpirationMs(payload, nowMs);
+    if (expTime === null || nowMs >= expTime) return null;
+
+    return {
+      email: normalizeEmail(payload.email),
+      role: payload.role,
+      unitCode: payload.unitCode.trim().toUpperCase(),
+      issuedAt: typeof payload.issuedAt === 'string' ? payload.issuedAt : new Date(nowMs).toISOString(),
+      expiresAt: expTime
+    };
   } catch {
     return null;
   }

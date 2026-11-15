@@ -32,7 +32,7 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-[#0072BC]" />
             <h2 className="text-base font-bold text-[#004776]">
-              Xem trước dữ liệu gộp vào B1 & B2 [{ticket.maCongViec}]
+              Gộp vào B1/B2 — Xem trước dữ liệu [{ticket.maCongViec}]
             </h2>
           </div>
           <button type="button" onClick={onClose} className="p-1 rounded-lg text-[#64748b] hover:text-[#004776] cursor-pointer">
@@ -43,14 +43,14 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
         <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-[13px] text-[#004776]">
           {ticket.isMergedToB1B2 && (
             <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-[#0072BC]">
-              Phiếu này đã được gộp trước đó (bởi {ticket.mergedBy}). Thao tác gộp lại sẽ <strong>cập nhật bản ghi hiện có</strong> mà không sinh dòng trùng lặp.
+              Phiếu này đã được gộp trước đó (bởi {ticket.mergedBy}). Thao tác gộp lại sẽ <strong>cập nhật bản ghi hiện có</strong> theo phiên bản v{ticket.currentVersionNo || 1} mà không sinh dòng trùng lặp.
             </div>
           )}
 
-          {/* Bản ghi B2 / A2 */}
+          {/* Bản ghi A2 */}
           <div className="space-y-2 p-3.5 rounded-xl border border-[#cbd5e1] bg-[#f8fbff]">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-[#0072BC] uppercase text-xs">1. Bản ghi vào Biểu B2 (và A2)</span>
+              <span className="font-bold text-[#0072BC] uppercase text-xs">1. Bản ghi vào Biểu A2 (Danh mục công việc & sản phẩm)</span>
               <span className="text-[11px] font-mono text-[#64748b]">ID: a2-{ticket.id}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -67,7 +67,7 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
           {/* Bản ghi B1 */}
           <div className="space-y-2 p-3.5 rounded-xl border border-[#cbd5e1] bg-[#f8fbff]">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-[#0072BC] uppercase text-xs">2. Bản ghi vào Biểu B1 (Khối lượng)</span>
+              <span className="font-bold text-[#0072BC] uppercase text-xs">2. Bản ghi vào Biểu B1 (Thống kê sản phẩm & định mức giờ)</span>
               <span className="text-[11px] font-mono text-[#64748b]">ID: b1-{ticket.id}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center p-2 rounded-lg bg-white border border-[#e2e8f0]">
@@ -85,6 +85,11 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
               </div>
             </div>
           </div>
+
+          {/* Minh bạch về Biểu B2 */}
+          <div className="p-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-[11px] text-[#475569]">
+            <strong className="text-[#004776]">3. Liên kết Biểu B2 (Tổng hợp nhật ký khảo sát giờ):</strong> Hệ thống chỉ liên kết dòng Biểu B2 khi mã công việc <strong>{ticket.maCongViec}</strong> có dữ liệu đo bấm giờ thực tế tại <strong>Biểu B2_CT</strong> (không tự sinh số liệu B2 giả).
+          </div>
         </div>
 
         <div className="p-3.5 border-t border-[#e2e8f0] bg-[#f8fafc] flex justify-end gap-2">
@@ -98,7 +103,7 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
             className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{merging ? 'Đang gộp...' : 'Xác nhận gộp vào B1/B2'}</span>
+            <span>{merging ? 'Đang gộp...' : 'Gộp vào B1/B2'}</span>
           </button>
         </div>
       </div>

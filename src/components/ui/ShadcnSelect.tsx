@@ -80,15 +80,22 @@ export function ShadcnSelect({
     );
   }, [options, search]);
 
+  const hasLongLabels = useMemo(
+    () => options.some((o) => (o.label || '').length > 45),
+    [options]
+  );
+
   const updateCoords = useCallback(() => {
     if (!containerRef.current || typeof window === 'undefined') return;
     const rect = containerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const shouldOpenUpward = spaceBelow < 250 && spaceAbove > spaceBelow;
+    const shouldOpenUpward = spaceBelow < 280 && spaceAbove > spaceBelow;
 
-    const targetWidth = Math.max(rect.width, 240);
-    const maxWidth = Math.min(targetWidth, Math.min(420, window.innerWidth - 16));
+    const minMenuWidth = hasLongLabels ? Math.min(560, window.innerWidth - 16) : 240;
+    const maxMenuWidth = hasLongLabels ? Math.min(680, window.innerWidth - 16) : Math.min(460, window.innerWidth - 16);
+    const targetWidth = Math.max(rect.width, minMenuWidth);
+    const maxWidth = Math.min(targetWidth, maxMenuWidth);
 
     let left = rect.left;
     if (left + maxWidth > window.innerWidth - 8) {
@@ -102,7 +109,7 @@ export function ShadcnSelect({
       width: maxWidth,
       openUpward: shouldOpenUpward
     });
-  }, []);
+  }, [hasLongLabels]);
 
   useEffect(() => {
     if (!open) return;
@@ -144,6 +151,8 @@ export function ShadcnSelect({
     };
   }, [open, onBlur]);
 
+  const isCompactTrigger = size === 'cell-compact' || size === 'cell-comfortable' || size === 'sm' || displayValue;
+
   const sizeClass =
     size === 'cell-compact'
       ? 'h-8 px-2 text-[13px] rounded-md'
@@ -151,7 +160,7 @@ export function ShadcnSelect({
         ? 'h-9 px-2.5 text-[13px] rounded-md'
         : size === 'sm'
           ? 'h-9 px-3 text-xs rounded-lg'
-          : 'h-11 sm:h-10 px-3 text-base sm:text-sm rounded-lg';
+          : 'min-h-11 sm:min-h-10 h-auto py-2 px-3 text-base sm:text-sm rounded-lg';
 
   const borderClass = hasError
     ? 'border-[var(--fix)] bg-[var(--fix-soft)] text-[var(--fix)] focus:ring-2 focus:ring-[var(--fix)]/25'
@@ -184,7 +193,7 @@ export function ShadcnSelect({
         width: `${coords.width}px`,
         zIndex: 99999
       }}
-      className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xl py-1 max-h-60 flex flex-col animate-in fade-in-50 zoom-in-95 duration-100"
+      className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xl py-1 max-h-80 flex flex-col animate-in fade-in-50 zoom-in-95 duration-100"
     >
       {showSearch && (
         <div className="px-2 pb-1 pt-0.5 border-b border-[#f1f5f9]">
@@ -201,7 +210,7 @@ export function ShadcnSelect({
           </div>
         </div>
       )}
-      <div className="overflow-y-auto py-0.5 max-h-52">
+      <div className="overflow-y-auto py-0.5 max-h-68 divide-y divide-[#f1f5f9]">
         {filteredOptions.length === 0 ? (
           <div className="px-3 py-2 text-xs text-[#64748b] text-center">Không có kết quả</div>
         ) : (
@@ -214,6 +223,7 @@ export function ShadcnSelect({
                 role="option"
                 aria-selected={isSelected}
                 disabled={opt.disabled}
+                title={opt.label}
                 onClick={() => {
                   onChange?.(opt.value);
                   onValueChange?.(opt.value);
@@ -221,14 +231,14 @@ export function ShadcnSelect({
                   setSearch('');
                   onBlur?.();
                 }}
-                className={`w-full text-left px-2.5 py-1.5 text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                className={`w-full text-left px-3 py-2 text-xs flex items-start justify-between gap-2.5 transition-colors cursor-pointer ${
                   isSelected
                     ? 'bg-[#eef5ff] text-[#004776] font-semibold'
                     : 'text-[#004776] hover:bg-[#f8fafc] font-normal'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
-                <span className="truncate">{opt.label}</span>
-                {isSelected && <Check className="w-3.5 h-3.5 text-[#004776] shrink-0" />}
+                <span className="whitespace-normal break-words leading-relaxed text-left">{opt.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-[#004776] shrink-0 mt-0.5" />}
               </button>
             );
           })
@@ -253,7 +263,11 @@ export function ShadcnSelect({
         className={`w-full inline-flex items-center justify-between gap-1.5 border font-normal transition-all outline-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${sizeClass} ${borderClass}`}
         title={selectedOption?.label || value || placeholder}
       >
-        <span className={`truncate text-left ${value !== '' ? 'text-[#004776]' : 'text-[#64748b]'}`}>
+        <span
+          className={`${isCompactTrigger ? 'truncate' : 'whitespace-normal break-words leading-snug'} text-left ${
+            value !== '' ? 'text-[#004776]' : 'text-[#64748b]'
+          }`}
+        >
           {displayValue ? (value || placeholder) : (selectedOption ? selectedOption.label : value || placeholder)}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-[#64748b] shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />

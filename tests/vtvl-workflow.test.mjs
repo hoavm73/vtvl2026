@@ -101,11 +101,57 @@ runTest('3. Kiểm tra Quy chuẩn thương hiệu HCM-UTE & Màu chữ rgb(0, 7
   }
 });
 
-// 4. Kiểm tra Danh mục 48 đơn vị thuộc HCM-UTE và Khung 38 VTVL (Phụ lục I HD 1907)
-runTest('4. Kiểm tra Danh mục 48 đơn vị & Khung 38 vị trí việc làm (04 nhóm)', () => {
+// 4. Kiểm tra Danh mục chính xác 39 đơn vị hoạt động thuộc HCM-UTE (theo v2DS phan quyen (1).xls cột G:I) và Khung 38 VTVL
+runTest('4. Kiểm tra Danh mục chính xác 39 đơn vị hoạt động & Khung 38 vị trí việc làm (04 nhóm)', () => {
   const unitsContent = fs.readFileSync(path.join(root, 'src/configs/hcmute-units.ts'), 'utf8');
-  const unitMatches = unitsContent.match(/code:\s*'[A-Z0-9-]+'/g) || [];
-  assert.ok(unitMatches.length >= 48 && unitMatches.length <= 50, `Danh mục đơn vị phải chuẩn tối thiểu 48 đơn vị (hiện có ${unitMatches.length})`);
+  const expected39Units = [
+    ['CTL', 'Khoa Chính trị và Luật'],
+    ['CK', 'Khoa Cơ khí'],
+    ['CNTT', 'Khoa Công nghệ Thông tin'],
+    ['DTTT', 'Khoa Đào tạo Tiên tiến'],
+    ['DDT', 'Khoa Điện - Điện tử'],
+    ['GTNL', 'Khoa Giao thông và Năng lượng'],
+    ['HHKHSS', 'Khoa Hóa học và Khoa học sự sống'],
+    ['KHUD', 'Khoa Khoa học ứng dụng'],
+    ['KT', 'Khoa Kinh tế'],
+    ['MTTT', 'Khoa Mỹ thuật và Truyền thông'],
+    ['NN', 'Khoa Ngoại ngữ'],
+    ['XD', 'Khoa Xây dựng'],
+    ['VSPKT', 'Viện Sư phạm kỹ thuật'],
+    ['VDTQT', 'Viện Đào tạo Quốc tế'],
+    ['SDH', 'Viện Sau Đại học'],
+    ['BANTT', 'Ban An ninh trật tự'],
+    ['KTX', 'Ban quản lý Ký túc xá'],
+    ['CTSV', 'Phòng Công tác Sinh viên'],
+    ['DT', 'Phòng Đào tạo'],
+    ['HCTH', 'Phòng Hành chính - Tổng hợp'],
+    ['KHTC', 'Phòng Kế hoạch Tài chính'],
+    ['KTDBCL', 'Phòng Khảo thí và Đảm bảo chất lượng'],
+    ['KHCN', 'Phòng Khoa học Công nghệ'],
+    ['QHDN', 'Phòng Quan hệ Doanh nghiệp'],
+    ['QHQT', 'Phòng Quan hệ Quốc tế'],
+    ['QLDTXDDT', 'Phòng Quản lý Đầu tư xây dựng và Đấu thầu'],
+    ['QTCSVC', 'Phòng Quản trị Cơ sở vật chất'],
+    ['QTTHTT', 'Phòng Quản trị thương hiệu và Truyền thông'],
+    ['TCNS', 'Phòng Tổ chức - Nhân sự'],
+    ['TYT', 'Trạm Y tế'],
+    ['VPDU', 'Văn phòng Đảng ủy'],
+    ['CNPM', 'Trung tâm Công nghệ phần mềm'],
+    ['GDQPAN', 'Trung tâm Giáo dục Quốc phòng và An ninh'],
+    ['GDTC', 'Trung tâm Giáo dục Thể chất'],
+    ['HLDHS', 'Trung tâm Học liệu và Dạy học số'],
+    ['STKNCCCN', 'Trung tâm Sáng tạo khởi nghiệp và Chuyển giao công nghệ'],
+    ['TTTTMT', 'Trung tâm Thông tin - Máy tính'],
+    ['PHBP', 'Phân hiệu Trường ĐH CNKT TPHCM tại Bình Phước'],
+    ['TCKHGDKT', 'Tạp chí Khoa học giáo dục kỹ thuật']
+  ];
+  const activeArraySlice = unitsContent.slice(
+    unitsContent.indexOf('export const HCMUTE_UNITS'),
+    unitsContent.indexOf('export const DELETED_UNIT_CODES')
+  );
+  const codeMatches = [...activeArraySlice.matchAll(/code:\s*'([A-Z0-9-]+)',\s*nameVi:\s*'([^']+)'/g)].map(m => [m[1], m[2]]);
+  assert.strictEqual(codeMatches.length, 39, `Danh mục HCMUTE_UNITS phải có đúng 39 đơn vị (hiện có ${codeMatches.length})`);
+  assert.deepStrictEqual(codeMatches, expected39Units, 'Tập 39 mã và tên đơn vị trong HCMUTE_UNITS phải khớp tuyệt đối nguồn chuẩn v2DS phan quyen (1).xls');
 
   const nd232Content = fs.readFileSync(path.join(root, 'src/configs/hcmute-nd232-catalog.ts'), 'utf8');
   const fwMatches = nd232Content.match(/m\('HD1907-(?:I|II|III|IV)-\d+'/g) || [];

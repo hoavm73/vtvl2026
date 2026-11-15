@@ -136,12 +136,14 @@ export default function StaffWorkTicketsPage() {
     if (!t.soSpNam || Number(t.soSpNam) <= 0) missing.push('Số sản phẩm hoàn thành trong năm');
     if (!t.nguonSoLieu?.trim()) missing.push('Nguồn số liệu kiểm chứng');
     if (!t.phutThucTe || Number(t.phutThucTe) <= 0) missing.push('Thời gian thực tế (phút/SP)');
+    if (isResubmit && !t.lastChangeSummary?.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa');
     if (missing.length > 0) {
-      alert(`Vui lòng bấm "Chỉnh sửa" để hoàn thiện các trường bắt buộc trước khi nộp phiếu (trừ các trường "nếu có"):\n• ${missing.join('\n• ')}`);
+      setEditingTicket(t); setActiveTab('my');
+      alert(`Vui lòng hoàn thiện các trường bắt buộc ở biểu mẫu bên trái trước khi nộp (trừ các trường "nếu có"):\n• ${missing.join('\n• ')}`);
       return;
     }
     const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
-    if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit', unitCode: t.unitCode });
+    if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit', unitCode: t.unitCode, changeSummary: t.lastChangeSummary });
   };
 
   const handleDelete = async (ticket: StaffWorkTicket) => {
@@ -169,7 +171,7 @@ export default function StaffWorkTicketsPage() {
             </h1>
             {isLeader && (
               <p className="text-xs text-[#475569]">
-                Không gian Lãnh đạo đơn vị • Kê khai cá nhân, rà soát duyệt phiếu và tổng hợp vào B1/B2.
+                Không gian Lãnh đạo đơn vị • Kê khai cá nhân, rà soát duyệt phiếu và tổng hợp vào Biểu A2/B1.
               </p>
             )}
           </div>

@@ -29,6 +29,7 @@ export function invalidateSupabaseCache(): void {
 }
 
 export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<ServerWorkbook[]> {
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return [];
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
 
   const now = Date.now();
@@ -127,6 +128,7 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
 }
 
 export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: string): Promise<boolean> {
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return true;
   if (!SUPABASE_URL || !SUPABASE_KEY) return false;
   invalidateSupabaseCache();
   try {

@@ -31,17 +31,18 @@ function getSupabaseHeaders(): Record<string, string> {
   };
 }
 
-export const DELETED_UNIT_CODES = new Set(['IDDF', 'TRTC', 'HDT', 'BGH', 'FFT']);
+export const DELETED_UNIT_CODES = new Set([
+  'IDDF', 'TRTC', 'HDT', 'BGH', 'FFT',
+  'TTNN', 'TTVD', 'TTRBTM', 'TTKTTH', 'KTCNMT', 'NCUDKTXD', 'THKTTH', 'TTCNTT', 'CDT', 'DTN'
+]);
 
 export const LEGACY_UNIT_MAP: Record<string, string> = {
   FME: 'CK', FEET: 'GTNL', FEEE: 'DDT', FIT: 'CNTT', FCFT: 'HHKHSS',
   FCE: 'XD', FE: 'KT', FAE: 'DTTT', FGAM: 'MTTT', FPI: 'CTL',
   FAS: 'KHUD', FFL: 'NN', ITE: 'VSPKT', IIE: 'VDTQT', CISAT: 'STKNCCCN',
-  INC: 'TTTTMT', ITC: 'TTCNTT', STC: 'CNPM', TPC: 'THKTTH', CFL: 'TTNN',
-  VGC: 'TTVD', SRC: 'TTRBTM', ESC: 'TTKTTH', EETC: 'KTCNMT', CERAC: 'NCUDKTXD',
-  BMC: 'QTTHTT', AAO: 'DT', OIA: 'QHQT', ERO: 'QHDN', FPO: 'KHTC',
-  STIAO: 'KHCN', OGA: 'HCTH', SAO: 'CTSV', QAO: 'KTDBCL', EMO: 'QTCSVC',
-  CPM: 'QLDTXDDT'
+  INC: 'TTTTMT', STC: 'CNPM', BMC: 'QTTHTT', AAO: 'DT', OIA: 'QHQT',
+  ERO: 'QHDN', FPO: 'KHTC', STIAO: 'KHCN', OGA: 'HCTH', SAO: 'CTSV',
+  QAO: 'KTDBCL', EMO: 'QTCSVC', CPM: 'QLDTXDDT'
 };
 
 export function normalizeRemoteUnits(remoteUnits: HcmuteUnit[]): HcmuteUnit[] {

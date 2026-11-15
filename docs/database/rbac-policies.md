@@ -1,162 +1,79 @@
-# Chính sách Row-Level Security (RLS) & Hàm bảo mật RPC HCM-UTE VTVL 360
+# Chính sách Row-Level Security (RLS), Cầu nối danh tính & RPC HCM-UTE VTVL 360
 
 Hệ thống: **HCM-UTE VTVL 360** (Trường Đại học Công nghệ Kỹ thuật TP.HCM)  
 Căn cứ: Nghị định số 232/2026/NĐ-CP & Hướng dẫn số 07-HD/BTCTW  
+Migration chuẩn: [`supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql`](file:///Users/macaz/Documents/0. App/VTVL /supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql)  
 Ngày cập nhật: 15/11/2026  
 
 ---
 
-## 1. Các hàm cơ sở Security Definer (Phòng chống Search Path Hijacking)
+## 1. Kiến trúc xác thực thực tế & Cầu nối danh tính đáng tin (`resolve_trusted_actor`)
 
-Tất cả hàm phân quyền Security Definer đều được ghim cố định `SET search_path = public, pg_temp` để chống tấn công leo thang đặc quyền qua schema giả mạo.
+Hệ thống HCM-UTE VTVL 360 vận hành kết hợp:
+1. **Custom Session Token ký HMAC-SHA256** (`hcmute_vtvl_session`) tại tầng Next.js API Route (`resolveApiSession(request)`).
+2. **Kết nối Supabase qua `service_role` hoặc Supabase JWT**.
+
+Vì khi Backend gọi Supabase bằng `service_role`, hàm `auth.uid()` hoặc `auth.jwt() ->> 'email'` không tự động chứa email người dùng cuối, migration `20261115140000_reconcile_vtvl_39_units_and_versions.sql` thiết lập hàm cầu nối danh tính đáng tin `public.resolve_trusted_actor(p_trusted_actor_email)`:
 
 ```sql
--- 1. Lấy email người dùng từ JWT hoặc session
-CREATE OR REPLACE FUNCTION public.get_current_user_email()
-RETURNS text
-LANGUAGE sql
+CREATE OR REPLACE FUNCTION public.resolve_trusted_actor(
+  p_trusted_actor_email TEXT DEFAULT NULL
+)
+RETURNS TABLE(
+  actor_email TEXT,
+  actor_role TEXT,
+  actor_unit TEXT,
+  actor_active BOOLEAN
+)
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT coalesce(
-    nullif(current_setting('request.jwt.claim.email', true), ''),
-    auth.jwt() ->> 'email',
-    ''
-  )::text;
-$$;
-
--- 2. Lấy vai trò canonical từ bảng user_accounts
-CREATE OR REPLACE FUNCTION public.get_current_user_role()
-RETURNS text
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-  SELECT coalesce(
-    (SELECT role FROM public.user_accounts WHERE lower(email) = lower(public.get_current_user_email()) LIMIT 1),
-    'staff'
-  )::text;
-$$;
-
--- 3. Lấy đơn vị công tác canonical
-CREATE OR REPLACE FUNCTION public.get_current_user_unit()
-RETURNS text
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-  SELECT coalesce(
-    (SELECT COALESCE(unit_id, unit_code) FROM public.user_accounts WHERE lower(email) = lower(public.get_current_user_email()) LIMIT 1),
-    ''
-  )::text;
-$$;
-
--- 4. Xác minh quyền Quản trị viên hệ thống (Admin)
-CREATE OR REPLACE FUNCTION public.is_admin_user()
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-  SELECT (
-    lower(public.get_current_user_email()) = 'tcns@hcmute.edu.vn'
-    OR public.get_current_user_role() = 'admin'
-  );
-$$;
+...
 ```
+
+### Nguyên tắc bảo mật cốt lõi:
+- **Khi gọi bằng JWT `authenticated`:** Hàm lấy email trực tiếp từ `auth.jwt() ->> 'email'`. Nếu tham số `p_trusted_actor_email` truyền vào khác với email trong JWT → lập tức chặn với lỗi `ACTOR_SPOOFING_DETECTED (42501)`. Client **không thể** truyền `actor` tùy ý để mạo danh.
+- **Khi gọi từ Backend API đã xác thực HMAC Session (`service_role` / `postgres`):** Hàm tra cứu hồ sơ thật trong bảng `public.user_accounts`, kiểm tra `is_active = TRUE` và `status = 'active'`, lấy `role` và `unit_id` trực tiếp từ cơ sở dữ liệu (không tin payload từ client).
+- **Giới hạn quyền thực thi RPC:** Toàn bộ RPC nghiệp vụ đều bị thu hồi quyền khỏi `PUBLIC` và `anon` (`REVOKE EXECUTE ON FUNCTION ... FROM PUBLIC, anon;`), chỉ cấp cho `authenticated` và `service_role`.
+- **Ghim `search_path`:** Tất cả hàm `SECURITY DEFINER` đều khai báo `SET search_path = public, pg_temp`.
 
 ---
 
 ## 2. Chi tiết chính sách Row-Level Security (RLS) theo từng bảng
 
-### 2.1 Bảng `public.staff_work_tickets` (Phiếu khảo sát khối lượng công việc)
-
-Phân định độc lập 4 thao tác (SELECT, INSERT, UPDATE, DELETE):
-
-| Thao tác | Đối tượng được phép | Điều kiện RLS |
-|---|---|---|
-| **SELECT** | - Admin<br>- Chủ sở hữu<br>- Cán bộ / Lãnh đạo cùng đơn vị | - Admin: xem mọi phiếu của toàn trường.<br>- Chủ sở hữu: xem mọi phiếu của chính mình (kể cả trạng thái Nháp).<br>- Đồng nghiệp & Lãnh đạo cùng đơn vị: **CHỈ xem được các phiếu từ trạng thái ĐÃ NỘP trở đi** (`status <> 'Nháp' AND status <> 'draft'`). Cấm tuyệt đối xem phiếu Nháp của người khác. |
-| **INSERT** | - Admin<br>- Chủ sở hữu | - Cán bộ / Lãnh đạo chỉ được tạo phiếu cho chính mình (`owner_email = get_current_user_email()`) và đúng đơn vị mình (`unit_code = get_current_user_unit()`).<br>- Trạng thái khởi tạo chỉ được là `'Nháp'` hoặc `'Đã nộp'`. |
-| **UPDATE** | - Admin<br>- Chủ sở hữu | - Cán bộ chỉ được cập nhật phiếu của mình khi còn ở trạng thái `'Nháp'` hoặc `'Trả lại'`. Khi đã nộp hoặc đã duyệt, phiếu bị khóa sửa đổi.<br>- Duyệt/trả lại phiếu phải thông qua RPC `rpc_review_staff_ticket`. |
-| **DELETE** | - Admin<br>- Chủ sở hữu | - Chủ sở hữu chỉ được xóa phiếu Nháp của chính mình. Cấm xóa phiếu đã nộp/duyệt. |
-
-### 2.2 Bảng `public.user_accounts` (Tài khoản & Hồ sơ nhân sự)
-
-- **SELECT**:
-  - `admin`: Xem toàn bộ danh sách tài khoản của 51 đơn vị.
-  - `unit_leader` & `staff`: Xem tài khoản cá nhân của mình hoặc danh sách nhân sự thuộc đơn vị công tác của mình (`unit_code = get_current_user_unit()`).
-  - Cột `password_hash` bị loại trừ hoàn toàn khỏi API công khai và chỉ lưu trữ trên tầng máy chủ bảo mật.
-- **INSERT / UPDATE / DELETE**:
-  - `admin`: Có toàn quyền quản trị, thêm mới, phân quyền, đổi đơn vị và khóa tài khoản (`is_active = false`).
-  - `unit_leader`: Được cấp quyền thêm cán bộ mới trong nội bộ đơn vị mình (với role bắt buộc là `'staff'` và `unit_code` đúng đơn vị mình). Không được đổi quyền tài khoản thành Admin.
-  - `staff`: Chỉ được cập nhật thông tin cá nhân cơ bản (`full_name`, `display_name`). Cấm sửa `role` hoặc `unit_code`.
-
-### 2.3 Bảng `public.workbooks` (15 Biểu vị trí việc làm đơn vị)
-
-- **SELECT**:
-  - `admin`: Xem hồ sơ 15 biểu của toàn bộ 51 đơn vị trường HCM-UTE.
-  - `unit_leader` & `staff`: Chỉ xem hồ sơ biểu mẫu của đơn vị mình phụ trách (`unit_code = get_current_user_unit()`).
-- **UPDATE**:
-  - `admin`: Cập nhật mọi biểu của mọi đơn vị.
-  - `unit_leader`: Cập nhật toàn bộ 15 biểu của đơn vị mình, bao gồm cả biểu C1 mà không cần Admin mở khóa.
-  - `staff`: **CẤM sửa đổi trực tiếp 15 biểu của đơn vị** (trả về lỗi HTTP 403 `FORBIDDEN_STAFF_EDIT_WORKBOOK`). Không được thêm dòng, xóa dòng, tách nhiệm vụ hoặc lưu biểu.
-
-### 2.4 Bảng `public.audit_logs` (Nhật ký kiểm toán)
-
-- **Bất biến dữ liệu:** Bật RLS và **CẤM toàn bộ lệnh UPDATE và DELETE**.
-- **SELECT**: Chỉ Admin được xem toàn bộ nhật ký kiểm toán hệ thống. Lãnh đạo đơn vị được xem nhật ký thao tác thuộc đơn vị mình (`unit_id = get_current_user_unit()`).
-- **INSERT**: Cho phép ghi nhận từ các phiên người dùng hợp lệ hoặc qua hệ thống Backend Service Role.
+| Bảng dữ liệu | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `public.staff_work_tickets` | - Admin: toàn trường.<br>- Chủ sở hữu: mọi phiếu của mình (kể cả `draft`).<br>- Cùng đơn vị (`unit_leader`, `staff`): chỉ xem phiếu `status <> 'draft'`. | Chủ sở hữu tạo phiếu của mình (`owner_email = caller` & `unit = caller_unit`) hoặc Admin. | Chỉ chủ sở hữu khi `status IN ('draft', 'changes_requested')` (hoặc qua RPC duyệt/gộp). Không ai sửa nội dung kê khai của người khác. | Chỉ chủ sở hữu xóa phiếu `draft` của mình hoặc Admin. |
+| `public.work_survey_versions` | - Admin: toàn trường.<br>- Chủ sở hữu: mọi phiên bản phiếu của mình.<br>- Cùng đơn vị: các phiên bản thuộc phiếu đã nộp (`status <> 'draft'`). | Chỉ tạo qua tiến trình nộp/nộp lại (`submit` / `resubmit`). | **CẤM TUYỆT ĐỐI** (Trigger `trg_work_survey_versions_immutable` chặn mọi `UPDATE`). | **CẤM TUYỆT ĐỐI** (Trigger chặn mọi `DELETE`). |
+| `public.work_survey_status_history` | Admin, chủ sở hữu phiếu, hoặc thành viên cùng đơn vị (với phiếu không phải `draft`). | Chỉ ghi nhận từ hệ thống / RPC khi chuyển trạng thái. | **CẤM TUYỆT ĐỐI** (Trigger `trg_status_history_immutable`). | **CẤM TUYỆT ĐỐI** (Trigger `trg_status_history_immutable`). |
+| `public.work_survey_merge_links` | Admin hoặc thành viên cùng đơn vị với phiếu. | Chỉ ghi nhận từ RPC / tiến trình gộp khi phiếu ở trạng thái `approved`. | Chỉ cập nhật `source_version`, `merged_by`, `updated_at` khi gộp lại idempotent. | Chỉ Admin. |
+| `public.audit_logs` | Admin (toàn trường) hoặc Lãnh đạo đơn vị (`unit_id = caller_unit`). | Ghi nhận từ hệ thống, tự động lọc mật khẩu/token qua trigger `trg_sanitize_audit_logs`. | **CẤM TUYỆT ĐỐI** (Trigger `trg_audit_logs_immutable`). | **CẤM TUYỆT ĐỐI** (Trigger `trg_audit_logs_immutable`). |
+| `public.workbooks` | Admin (toàn trường) hoặc thành viên cùng đơn vị (`unit_code = caller_unit`). | Admin hoặc Lãnh đạo đúng đơn vị. | Admin hoặc Lãnh đạo đúng đơn vị (`staff` bị chặn tuyệt đối). | Chỉ Admin. |
+| `public.user_accounts` | Admin (toàn trường) hoặc thành viên cùng đơn vị. | Admin hoặc Lãnh đạo thêm `staff` trong đơn vị mình. | Admin hoặc Lãnh đạo quản lý `staff` trong đơn vị mình (không cấp Admin, không sửa Admin, không chuyển đơn vị). | Chỉ Admin. |
 
 ---
 
-## 3. Thủ tục lưu trữ bảo mật (Security Definer RPC)
+## 3. Năm thủ tục RPC nguyên tử (Atomic Security Definer RPCs)
 
-### 3.1 Thủ tục duyệt / trả lại phiếu: `rpc_review_staff_ticket`
+Tất cả 5 thao tác vòng đời phiếu đều thực thi nguyên tử trong một giao dịch: kiểm tra quyền → khóa dòng `FOR UPDATE` → cập nhật `staff_work_tickets` → tạo snapshot `work_survey_versions` (khi nộp/nộp lại) → ghi `work_survey_status_history` → ghi `audit_logs`:
 
-```sql
-CREATE OR REPLACE FUNCTION public.rpc_review_staff_ticket(
-  p_ticket_id text,
-  p_action text, -- 'approve' | 'return'
-  p_notes text DEFAULT ''
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-...
--- Quy tắc kiểm tra then chốt:
--- 1. Cán bộ (staff) không có quyền duyệt phiếu (ErrCode 42501).
--- 2. Lãnh đạo đơn vị (unit_leader) KHÔNG ĐƯỢC TỰ DUYỆT PHIẾU CỦA CHÍNH MÌNH (FORBIDDEN_SELF_REVIEW).
---    Nếu owner_email = caller_email, bắt buộc chuyển cấp trên (Admin/TCNS) phê duyệt.
--- 3. Lãnh đạo không được duyệt phiếu của đơn vị khác (ErrCode 42501).
--- 4. Trạng thái phiếu phải đang là 'Đã nộp' (hoặc 'submitted') mới được duyệt.
--- 5. Tự động ghi nhật ký vào public.audit_logs.
-...
-$$;
-```
-
-### 3.2 Thủ tục gộp phiếu đã duyệt vào B1/B2: `rpc_merge_approved_ticket_to_b1_b2`
-
-```sql
-CREATE OR REPLACE FUNCTION public.rpc_merge_approved_ticket_to_b1_b2(
-  p_ticket_id text
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-...
--- Quy tắc kiểm tra then chốt:
--- 1. Chỉ phiếu có trạng thái 'Đã duyệt' ('approved') mới được phép gộp.
--- 2. Kiểm tra cờ is_merged_to_b1_b2 = TRUE để chống gộp lặp lại.
--- 3. Ghi nhận source_ticket_id làm căn cứ nguồn gốc.
--- 4. Cán bộ không có quyền kích hoạt gộp (Chỉ Admin hoặc Lãnh đạo đơn vị).
-...
-$$;
-```
+1. **`public.rpc_submit_work_survey(p_ticket_id, p_snapshot, p_trusted_actor_email)`**
+   - Chỉ chủ sở hữu phiếu thực hiện khi `status = 'draft'`.
+   - Tăng `current_version_no = 1`, lưu snapshot `v1` bất biến vào `work_survey_versions`, chuyển trạng thái sang `submitted`.
+   - Xử lý idempotent: nếu phiếu đã ở `submitted` và đã có snapshot hiện hành thì trả về `idempotent: true`, không sinh phiên bản trùng.
+2. **`public.rpc_request_work_survey_changes(p_ticket_id, p_reason, p_trusted_actor_email)`**
+   - Chỉ `admin` hoặc `unit_leader` cùng đơn vị thực hiện khi `status IN ('submitted', 'resubmitted')`.
+   - Bắt buộc có lý do (`REVISION_REASON_REQUIRED`).
+   - Chặn tự yêu cầu bổ sung trên phiếu của chính mình (`FORBIDDEN_SELF_REVIEW`).
+3. **`public.rpc_resubmit_work_survey(p_ticket_id, p_snapshot, p_change_summary, p_trusted_actor_email)`**
+   - Chỉ chủ sở hữu phiếu thực hiện khi `status = 'changes_requested'`.
+   - Bắt buộc nhập giải trình cập nhật (`CHANGE_SUMMARY_REQUIRED`).
+   - Tăng `current_version_no = v_next_ver` (`v2, v3...`), giữ nguyên các snapshot cũ, chuyển trạng thái sang `resubmitted`.
+4. **`public.rpc_approve_work_survey(p_ticket_id, p_note, p_trusted_actor_email)`**
+   - Chỉ `admin` hoặc `unit_leader` cùng đơn vị thực hiện khi `status IN ('submitted', 'resubmitted')`.
+   - Chặn Lãnh đạo tự duyệt phiếu của chính mình (`FORBIDDEN_SELF_REVIEW`).
+5. **`public.rpc_merge_work_survey_to_b1_b2(p_ticket_id, p_a2_row_id, p_b1_row_id, p_b2_row_id, p_trusted_actor_email)`**
+   - Chỉ `admin` hoặc `unit_leader` cùng đơn vị thực hiện khi `status = 'approved'`.
+   - Tạo liên kết chống trùng `UNIQUE(survey_id, target_sheet, target_record_id)` cho `A2` và `B1`; chỉ ghi liên kết `B2` khi có `p_b2_row_id` thực tế (không tự sinh số liệu B2 giả).

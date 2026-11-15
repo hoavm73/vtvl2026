@@ -57,6 +57,50 @@ export interface WorkSurveyMergeLink {
   updatedAt: string;
 }
 
+export interface WorkSurveySnapshot {
+  unitCode: string;
+  unitNameSnapshot?: string;
+  ownerName: string;
+  ownerTitle: string;
+  maNhiemVu: string;
+  tenNhiemVuSnapshot?: string;
+  maCongViec: string;
+  tenCongViec: string;
+  maVtvl: string;
+  tenVtvlSnapshot?: string;
+  maVtvlPhoiHop?: string;
+  tenVtvlPhoiHopSnapshot?: string;
+  sanPham: string;
+  chatLuong: string;
+  canCu: string;
+  soSpNam: number;
+  nguonSoLieu: string;
+  phutThucTe: number;
+  gioBoSung: number;
+  coordinatedTasks: CoordinatedTaskLink[];
+}
+
+export interface WorkSurveyVersion {
+  id: string;
+  surveyId: string;
+  versionNo: number;
+  snapshot: WorkSurveySnapshot;
+  submittedBy: string;
+  submittedAt?: string | null;
+  changeSummary?: string;
+  isMigrationBaseline?: boolean;
+}
+
+export type FieldDiffChangeType = 'added' | 'modified' | 'deleted';
+
+export interface TicketFieldDiff {
+  fieldKey: string;
+  fieldLabel: string;
+  changeType: FieldDiffChangeType;
+  previousValue: string;
+  currentValue: string;
+}
+
 export interface StaffWorkTicket {
   id: string;
   unitCode: string;
@@ -89,10 +133,17 @@ export interface StaffWorkTicket {
   revisionRequestedBy?: string;
   mergedAt?: string;
   mergedBy?: string;
+  a2RowId?: string;
   b1RowId?: string;
   b2RowId?: string;
   isMergedToB1B2?: boolean;
+  currentVersionNo?: number;
+  lastChangeSummary?: string;
+  isTestData?: boolean;
+  isArchived?: boolean;
   statusHistory?: WorkSurveyStatusHistory[];
+  versions?: WorkSurveyVersion[];
+  mergeLinks?: WorkSurveyMergeLink[];
   createdAt: string;
   updatedAt: string;
 }

@@ -7,48 +7,54 @@ Ngày cập nhật: 15/11/2026
 
 ---
 
-## 1. Ma trận quyền nguồn sự thật duy nhất (Single Source of Truth)
+## 1. Tài khoản chuẩn của hệ thống
 
-| Chức năng | Admin (Phòng TCNS) | Lãnh đạo đơn vị (`unit_leader`) | Cán bộ – Giảng viên (`staff`) |
-|---|:---:|:---:|:---:|
-| **Xem dữ liệu mọi đơn vị** | Có | Không | Không |
-| **Sửa 15 biểu của đơn vị** | Có | Có | Không |
-| **Sửa biểu C1** | Có | Có | Không |
-| **Kê khai phiếu cá nhân** | Có | Có | Có |
-| **Xem phiếu toàn đơn vị** | Có | Có | Có |
-| **Duyệt/trả lại phiếu** | Có | Có | Không |
-| **Quản trị tài khoản, đơn vị** | Có | Có | Không |
+| Email | Vai trò (`role`) | Đơn vị (`unit_id` / `unit_code`) | Ghi chú |
+|---|---|---|---|
+| `tcns@hcmute.edu.vn` | `admin` | `TCNS` (Phòng Tổ chức – Nhân sự) | Quản trị viên toàn hệ thống |
+| `minhhoavo73@gmail.com` | `unit_leader` | `SDH` (Khoa Đào tạo Sau đại học) | Lãnh đạo đơn vị chuẩn |
+| `hoavm@hcmute.edu.vn` | `staff` | `QTTHTT` (Phòng Quản trị Thương hiệu và Truyền thông) | Cán bộ – Giảng viên chuẩn (`CK` chỉ là đơn vị từng dùng kiểm thử, tuyệt đối không đổi `hoavm` sang `CK`) |
 
 ---
 
-## 2. Chi tiết phạm vi quyền theo từng vai trò
+## 2. Ma trận quyền nguồn sự thật duy nhất (Single Source of Truth)
 
-### 2.1 Quản trị viên hệ thống (Admin)
-- **Xem và chỉnh sửa dữ liệu của tất cả đơn vị.**
-- **Chỉnh sửa toàn bộ 15 biểu**, bao gồm biểu C1.
-- **Xem, duyệt hoặc trả lại phiếu của mọi đơn vị.**
-- **Quản trị toàn bộ tài khoản và danh mục đơn vị.**
-- **Có quyền thay đổi đơn vị, vai trò và trạng thái tài khoản.**
+| Chức năng | Admin (Phòng TCNS) | Lãnh đạo đơn vị (`unit_leader`) | Cán bộ – Giảng viên (`staff`) |
+|---|:---:|:---:|:---:|
+| **Xem dữ liệu mọi đơn vị (39 đơn vị hoạt động)** | Có | Không (chỉ đơn vị mình) | Không (chỉ đơn vị mình) |
+| **Sửa 15 biểu của đơn vị** | Có | Có (đúng đơn vị mình) | Không (chỉ đọc) |
+| **Sửa biểu C1** | Có | Có (đúng đơn vị mình) | Không |
+| **Tạo & sửa nội dung phiếu cá nhân** | Chỉ chủ sở hữu sửa phiếu của mình ở `draft` / `changes_requested` | Chỉ chủ sở hữu sửa phiếu của mình ở `draft` / `changes_requested` | Chỉ chủ sở hữu sửa phiếu của mình ở `draft` / `changes_requested` |
+| **Xem phiếu Nháp (`draft`)** | Có (toàn trường) | Chỉ phiếu Nháp của chính mình | Chỉ phiếu Nháp của chính mình |
+| **Xem phiếu đã nộp của người khác cùng đơn vị** | Có (toàn trường) | Có (cùng đơn vị) | Có (cùng đơn vị, chỉ đọc) |
+| **Xem lịch sử phiên bản & so sánh trường (`v1, v2...`)** | Có (toàn trường) | Có (phiếu đã nộp trong đơn vị mình) | Có (phiếu của mình + phiếu đã nộp cùng đơn vị, không xem bản nháp người khác) |
+| **Duyệt / yêu cầu bổ sung phiếu** | Có (bao gồm phiếu của Lãnh đạo) | Có (cùng đơn vị, **trừ phiếu của chính mình**) | Không |
+| **Gộp phiếu `approved` vào biểu A2/B1/B2** | Có | Có (cùng đơn vị) | Không |
+| **Quản trị tài khoản trong đơn vị** | Toàn hệ thống | Có (nội bộ đơn vị mình; không cấp Admin, không sửa Admin, không chuyển đơn vị) | Không |
 
-### 2.2 Lãnh đạo đơn vị (`unit_leader`)
-- **Chỉ xem và chỉnh sửa 15 biểu** của đơn vị được gán cho mình (`unit_id`).
-- **Được sửa biểu C1** của đơn vị mình, không cần Admin mở khóa.
-- **Xem tất cả phiếu cá nhân** thuộc đơn vị mình (từ trạng thái Đã nộp trở đi).
-- **Được duyệt hoặc trả lại phiếu** thuộc đơn vị mình.
-  - **Quy tắc chống xung đột lợi ích:** Lãnh đạo đơn vị **KHÔNG ĐƯỢC TỰ DUYỆT PHIẾU CỦA CHÍNH MÌNH** (mã lỗi `FORBIDDEN_SELF_REVIEW`). Phiếu của Lãnh đạo do Admin/TCNS phê duyệt.
-- **Được quản lý tài khoản trong đơn vị mình** (chỉ các tài khoản có cùng `unit_id`).
-- **Ràng buộc cấm:**
-  - Không được xem hoặc quản trị dữ liệu của đơn vị khác.
-  - Không được cấp quyền Admin.
-  - Không được chuyển tài khoản sang đơn vị khác.
-  - Không được sửa, khóa hoặc xóa tài khoản Admin.
-  - Không được sửa mã đơn vị và thông tin hệ thống của đơn vị khác.
+---
 
-### 2.3 Cán bộ – Giảng viên (`staff`)
-- **Chỉ truy cập dữ liệu thuộc đơn vị của mình.**
-- **Được xem danh sách phiếu của toàn đơn vị ở chế độ chỉ đọc** (đối chiếu và học hỏi).
-- **Chỉ được tạo, chỉnh sửa hoặc xóa phiếu do chính mình tạo** khi phiếu ở trạng thái `draft` hoặc `changes_requested`.
-- **Sau khi nộp phiếu**, cán bộ không được tự sửa nội dung trừ khi có yêu cầu bổ sung từ Lãnh đạo hoặc Admin.
-- **Xem 15 biểu của đơn vị ở chế độ chỉ đọc**, không có quyền chỉnh sửa, thêm dòng, xóa dòng hay lưu biểu.
-- **Không có quyền duyệt hoặc trả lại phiếu** của bất kỳ ai.
-- **Không truy cập các chức năng quản trị tài khoản và danh mục đơn vị.**
+## 3. Chi tiết phạm vi quyền theo từng vai trò
+
+### 3.1 Quản trị viên hệ thống (`admin`)
+- Toàn quyền xem và chỉnh sửa bảng tính 15 biểu (bao gồm biểu C1) của mọi đơn vị.
+- Xem, phê duyệt, yêu cầu bổ sung và gộp phiếu của mọi đơn vị (bao gồm phê duyệt phiếu do Lãnh đạo đơn vị kê khai).
+- Không sửa trực tiếp nội dung kê khai trong phiếu của người khác (`FORBIDDEN_NOT_OWNER`); nếu cần chỉnh sửa nội dung kê khai thì thực hiện thao tác **Yêu cầu bổ sung** (`request_changes`) để chủ sở hữu cập nhật và nộp lại thành phiên bản mới (`v2, v3...`).
+- Quản trị toàn bộ tài khoản và danh mục 39 đơn vị hoạt động.
+
+### 3.2 Lãnh đạo đơn vị (`unit_leader`)
+- Quản lý đúng đơn vị được gán (`unit_id`); chỉnh sửa toàn bộ 15 biểu (bao gồm biểu C1) của đơn vị mình.
+- Duyệt (`approve`), yêu cầu bổ sung (`request_changes`) và gộp (`merge`) các phiếu thuộc đơn vị mình.
+- **Quy tắc không tự duyệt:** Lãnh đạo đơn vị **không được tự duyệt hoặc tự yêu cầu bổ sung phiếu của chính mình** (`FORBIDDEN_SELF_REVIEW`). Phiếu của Lãnh đạo do Admin phê duyệt.
+- Quản lý tài khoản trong đơn vị mình, nhưng **bị chặn tuyệt đối**:
+  - Không được cấp quyền `admin` (`FORBIDDEN_PROMOTE_ADMIN`).
+  - Không được sửa hoặc khóa tài khoản `admin` (`FORBIDDEN_MODIFY_ADMIN`).
+  - Không được chuyển tài khoản sang đơn vị khác (`FORBIDDEN_CHANGE_UNIT`).
+  - Không ai được sửa trực tiếp nội dung kê khai phiếu của người khác (`FORBIDDEN_NOT_OWNER`).
+
+### 3.3 Cán bộ – Giảng viên (`staff`)
+- Xem bảng tính 15 biểu của đơn vị mình ở chế độ **chỉ đọc** (`FORBIDDEN_STAFF_EDIT_WORKBOOK` nếu gọi API ghi).
+- Tạo phiếu của chính mình; chỉ chủ sở hữu mới được sửa nội dung phiếu khi phiếu ở trạng thái `draft` hoặc `changes_requested` (`LOCKED_TICKET_STATUS` khi ở `submitted`, `resubmitted`, `approved`).
+- Xem phiếu đã nộp (`submitted`, `changes_requested`, `resubmitted`, `approved`) và lịch sử phiên bản đã nộp của đồng nghiệp cùng đơn vị để đối chiếu.
+- Phiếu `draft` chỉ chủ sở hữu và Admin được xem (`FORBIDDEN_DRAFT_PRIVATE`).
+- Không có quyền duyệt phiếu, gộp phiếu hoặc quản trị tài khoản.

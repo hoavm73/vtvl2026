@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       findHcmuteUnit(summary.unitCode);
     } catch {
       return NextResponse.json(
-        { error: 'Đơn vị không tồn tại trong danh mục 48 đơn vị HCM-UTE.' },
+        { error: 'Đơn vị không tồn tại trong danh mục 39 đơn vị HCM-UTE.' },
         { status: 400 }
       );
     }

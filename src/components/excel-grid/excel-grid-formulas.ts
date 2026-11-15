@@ -8,10 +8,17 @@ export function recalculateGridFormulas(
   const next = { ...prev };
 
   // 1. Sync tasks from A2 to B1 & B2 if missing, and sync maVtvl
+  // Hỗ trợ nhiều cán bộ cùng kê khai một mã công việc (phân biệt theo sourceTicketId / id dòng)
   const existingA2 = next.A2 || [];
-  const b1Map = new Map((next.B1 || []).map((r) => [String(r.maCongViec), r]));
+  const b1ByTicket = new Map((next.B1 || []).filter((r) => r.sourceTicketId).map((r) => [String(r.sourceTicketId), r]));
+  const b1ById = new Map((next.B1 || []).filter((r) => r.id).map((r) => [String(r.id), r]));
+  const b1ByTask = new Map((next.B1 || []).filter((r) => !r.sourceTicketId).map((r) => [String(r.maCongViec), r]));
   const updatedB1: GenericGridRow[] = existingA2.map((t, idx) => {
-    const existing = b1Map.get(String(t.maCongViec));
+    const mappedB1Id = t.id && String(t.id).startsWith('a2-') ? `b1-${String(t.id).slice(3)}` : undefined;
+    const existing =
+      (t.sourceTicketId ? b1ByTicket.get(String(t.sourceTicketId)) : undefined) ||
+      (mappedB1Id ? b1ById.get(mappedB1Id) : undefined) ||
+      (!t.sourceTicketId ? b1ByTask.get(String(t.maCongViec)) : undefined);
     const rawQty = existing?.soSpNam;
     const rawMins = existing?.phutThucTe;
     const qty = rawQty !== undefined && rawQty !== null && rawQty !== '' ? Number(rawQty) : '';
@@ -28,6 +35,8 @@ export function recalculateGridFormulas(
     }
     return {
       id: existing?.id || `b1-sync-${idx + 1}`,
+      ...(existing?.sourceTicketId || t.sourceTicketId ? { sourceTicketId: existing?.sourceTicketId || t.sourceTicketId } : {}),
+      ...(existing?.sourceVersion || t.sourceVersion ? { sourceVersion: existing?.sourceVersion || t.sourceVersion } : {}),
       maCongViec: t.maCongViec,
       maVtvl: t.maVtvl,
       soSpNam: qty,
@@ -61,9 +70,10 @@ export function recalculateGridFormulas(
 
   const updatedB2: GenericGridRow[] = activeTaskCodes.map((taskCode, idx) => {
     const existing = b2Map.get(taskCode);
-    const b1Item = updatedB1.find((b) => b.maCongViec === taskCode);
+    const b1Matches = updatedB1.filter((b) => b.maCongViec === taskCode);
+    const b1Item = b1Matches[0];
     const a2Item = existingA2.find((a) => a.maCongViec === taskCode);
-    const b1Hours = Number(b1Item?.gioTong) || 0;
+    const b1Hours = Math.round(b1Matches.reduce((acc, b) => acc + (Number(b.gioTong) || 0), 0) * 10) / 10;
     const ctMatches = updatedB2Ct.filter((c) => c.maCongViec === taskCode);
     const sumVar = ctMatches.reduce((acc, c) => acc + (Number(c.gioBienDong) || 0), 0);
     const newHours = Number(existing?.gioMoi) || 0;

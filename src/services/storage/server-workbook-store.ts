@@ -3,6 +3,7 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
 import { fetchWorkbooksFromSupabase, persistWorkbookToSupabase, deleteWorkbookFromSupabase } from './server-supabase-store';
 import { getInitialSeedWorkbooks } from './server-seed-workbooks';
+import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lock';
 import fs from 'fs';
 import path from 'path';
 
@@ -33,6 +34,11 @@ const STORE_FILE = path.join(DATA_DIR, 'server_workbooks.json');
 const DELETED_WB_FILE = path.join(DATA_DIR, 'deleted_workbooks.json');
 let memoryWorkbooks: Map<string, ServerWorkbook> | null = null;
 let deletedWbIds: Set<string> | null = null;
+export function resetWorkbookMemoryStore(): void { memoryWorkbooks = null; deletedWbIds = null; }
+registerCacheInvalidator(resetWorkbookMemoryStore);
+export async function withUnitWorkbookLock<T>(unitCode: string, fn: () => Promise<T>): Promise<T> {
+  return withCrossProcessLock(`unit_wb_${unitCode.trim().toUpperCase()}`, fn);
+}
 
 function ensureDataDir(): void {
   try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch { /* ignore */ }
@@ -51,12 +57,12 @@ function loadDeletedWbIds(): Set<string> {
 }
 function persistDeletedWbIds(): void {
   if (!deletedWbIds) return;
-  try {
-    ensureDataDir();
-    fs.writeFileSync(DELETED_WB_FILE, JSON.stringify(Array.from(deletedWbIds)), 'utf8');
-  } catch { /* ignore */ }
+  try { ensureDataDir(); fs.writeFileSync(DELETED_WB_FILE, JSON.stringify(Array.from(deletedWbIds)), 'utf8'); } catch { /* ignore */ }
 }
-
+function persistStore(): void {
+  if (!memoryWorkbooks) return;
+  try { ensureDataDir(); fs.writeFileSync(STORE_FILE, JSON.stringify(Array.from(memoryWorkbooks.values()), null, 2), 'utf8'); } catch { /* ignore */ }
+}
 function loadStore(): Map<string, ServerWorkbook> {
   if (memoryWorkbooks) return memoryWorkbooks;
   memoryWorkbooks = new Map();
@@ -73,22 +79,13 @@ function loadStore(): Map<string, ServerWorkbook> {
   } catch { /* ignore */ }
   if (memoryWorkbooks.size === 0 && !process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
     try {
-      const seeds = getInitialSeedWorkbooks();
-      seeds.forEach((wb) => {
+      getInitialSeedWorkbooks().forEach((wb) => {
         if (!deleted.has(wb.id) && !deleted.has(wb.unitId)) memoryWorkbooks!.set(wb.id, wb);
       });
       persistStore();
     } catch { /* ignore */ }
   }
   return memoryWorkbooks;
-}
-
-function persistStore(): void {
-  if (!memoryWorkbooks) return;
-  try {
-    ensureDataDir();
-    fs.writeFileSync(STORE_FILE, JSON.stringify(Array.from(memoryWorkbooks.values()), null, 2), 'utf8');
-  } catch { /* ignore */ }
 }
 
 export async function syncServerWorkbooksFromSupabase(): Promise<void> {

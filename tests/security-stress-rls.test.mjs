@@ -310,14 +310,16 @@ runAttackSuite().catch((err) => {
 `;
 
   const scriptPath = path.join(root, '.data', 'temp-security-runner.ts');
+  const accountsJsonPath = path.join(root, '.data', 'accounts.json');
   if (!fs.existsSync(path.join(root, '.data'))) fs.mkdirSync(path.join(root, '.data'), { recursive: true });
+  const backupAccounts = fs.existsSync(accountsJsonPath) ? fs.readFileSync(accountsJsonPath, 'utf8') : null;
   fs.writeFileSync(scriptPath, runnerScript, 'utf8');
 
   try {
     const res = spawnSync('npx', ['tsx', scriptPath], {
       cwd: root,
       encoding: 'utf8',
-      env: { ...process.env, NODE_ENV: 'test' }
+      env: { ...process.env, NODE_ENV: 'test', VTVL_ISOLATED_LOCAL_STORE: 'true' }
     });
 
     if (res.stdout) console.log(res.stdout.trim());
@@ -325,6 +327,11 @@ runAttackSuite().catch((err) => {
     assert.strictEqual(res.status, 0, `Tiến trình kiểm thử tấn công kết thúc với mã lỗi: ${res.status}`);
   } finally {
     if (fs.existsSync(scriptPath)) fs.unlinkSync(scriptPath);
+    if (backupAccounts !== null) {
+      fs.writeFileSync(accountsJsonPath, backupAccounts, 'utf8');
+    } else if (fs.existsSync(accountsJsonPath)) {
+      fs.unlinkSync(accountsJsonPath);
+    }
   }
 });
 

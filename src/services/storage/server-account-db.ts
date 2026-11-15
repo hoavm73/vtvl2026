@@ -7,6 +7,7 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABA
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 export function assertAccountDbConfigured(operation: string): boolean {
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return false;
   if (!SUPABASE_URL || !SERVICE_KEY) {
     if (process.env.NODE_ENV === 'production') {
       const err = new Error(`[DB_SERVICE_UNAVAILABLE] Dịch vụ CSDL máy chủ chưa được cấu hình cho thao tác ${operation}.`);
@@ -118,6 +119,7 @@ export async function shadowSyncAccountsToTienDo(
   accounts: UserAccountRecord[],
   deletedEmails: string[]
 ): Promise<void> {
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return;
   if (!SUPABASE_URL || !SERVICE_KEY) return;
   try {
     const existingRes = await fetch(

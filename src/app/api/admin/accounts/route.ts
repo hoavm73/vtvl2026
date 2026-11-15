@@ -9,7 +9,7 @@ import {
   UserRole
 } from '@/services/storage/server-account-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
-import { appendAuditLog } from '@/services/storage/server-audit-store';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
 export async function GET(req: NextRequest) {
@@ -91,14 +91,19 @@ export async function POST(req: NextRequest) {
       true
     );
 
-    appendAuditLog({
+    const audit = appendAuditLog({
       unitCode: account.unitCode,
       unitName: account.unitNameVi,
       action: 'THAY_ĐỔI_TÀI_KHOẢN',
+      targetId: account.email,
+      targetEntity: 'user_accounts',
       details: `Tạo/cập nhật tài khoản ${account.email} (${account.displayName}) - Vai trò: ${account.role}`,
       actorEmail: caller.email,
-      actorRole: caller.role
+      actorRole: caller.role,
+      oldValues: existing ? { role: existing.role, unitCode: existing.unitCode, status: existing.status } : null,
+      newValues: { role: account.role, unitCode: account.unitCode, status: account.status }
     });
+    await persistAuditLogToSupabase(audit);
 
     return NextResponse.json({ account });
   } catch (err: unknown) {
@@ -160,14 +165,19 @@ export async function PATCH(req: NextRequest) {
 
     if (!updated) return NextResponse.json({ error: 'Cập nhật phân quyền không thành công.' }, { status: 400 });
 
-    appendAuditLog({
+    const audit = appendAuditLog({
       unitCode: updated.unitCode,
       unitName: updated.unitNameVi,
       action: 'THAY_ĐỔI_TÀI_KHOẢN',
+      targetId: updated.email,
+      targetEntity: 'user_accounts',
       details: `Cập nhật phân quyền tài khoản ${updated.email} - Vai trò: ${updated.role}`,
       actorEmail: caller.email,
-      actorRole: caller.role
+      actorRole: caller.role,
+      oldValues: { role: existing.role, unitCode: existing.unitCode, status: existing.status },
+      newValues: { role: updated.role, unitCode: updated.unitCode, status: updated.status }
     });
+    await persistAuditLogToSupabase(audit);
 
     return NextResponse.json({ account: updated });
   } catch (err: unknown) {

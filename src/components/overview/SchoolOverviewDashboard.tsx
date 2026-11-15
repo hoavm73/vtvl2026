@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Building2, Briefcase, CheckCircle2, Clock,
-  ShieldCheck, Layers, Landmark, GraduationCap, Building
+  ShieldCheck, Layers, Landmark, GraduationCap, Building, ArrowRight
 } from 'lucide-react';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
@@ -148,9 +149,18 @@ export function SchoolOverviewDashboard() {
             <span className="text-2xl sm:text-3xl font-extrabold text-amber-700 tracking-tight">{stats.pendingPositions}</span>
             <span className="text-xs font-semibold text-amber-600">vị trí đang chờ duyệt</span>
           </div>
-          <p className="text-[11px] text-amber-700 leading-tight">
-            Đang chờ Lãnh đạo hoặc Admin phê duyệt
-          </p>
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <p className="text-[11px] text-amber-700 leading-tight">
+              Đang chờ Lãnh đạo hoặc Admin phê duyệt
+            </p>
+            <Link
+              href="/phieu-cong-viec?tab=pending"
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#0072BC] hover:bg-[#004776] active:scale-95 rounded-lg shadow-sm hover:shadow transition-all shrink-0 cursor-pointer"
+            >
+              <span>Duyệt</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -83,18 +83,19 @@ export default function StaffWorkTicketsPage() {
 
   useEffect(() => {
     syncWithSession(getCurrentOperatorSession(), true);
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam === 'pending' || tabParam === 'review') setActiveTab('pending');
+      else if (tabParam === 'unit') setActiveTab('unit');
+    }
     const onUp = () => {
       const op = getCurrentOperatorSession();
       if (!op) { router.replace('/login'); return; }
       const key = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
-      if (lastLoadedKeyRef.current !== key) {
-        syncWithSession(op, false);
-      }
+      if (lastLoadedKeyRef.current !== key) syncWithSession(op, false);
     };
     window.addEventListener('vtvl-operator-changed', onUp);
-    return () => {
-      window.removeEventListener('vtvl-operator-changed', onUp);
-    };
+    return () => window.removeEventListener('vtvl-operator-changed', onUp);
   }, [syncWithSession, router]);
 
   const isLeader = session?.role === 'unit_leader' || session?.role === 'admin';

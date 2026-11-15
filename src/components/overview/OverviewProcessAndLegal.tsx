@@ -110,7 +110,7 @@ export function OverviewProcessAndLegal() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-[#20446c] mt-1 font-medium">
-              Chu trình khép kín từ nạp chức năng nhiệm vụ đến thẩm định 15 biểu theo Hướng dẫn 07-HD/BTCTW
+              Chu trình khép kín từ nạp chức năng nhiệm vụ đến thẩm định và hoàn thiện 15 biểu
             </p>
           </div>
           <Link

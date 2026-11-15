@@ -73,7 +73,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                 Hệ thống Vị trí việc làm 360
               </h1>
               <p className="text-[11.5px] sm:text-xs text-white/85 font-medium mt-0.5 truncate">
-                Chuẩn hóa danh mục, đo định mức giờ và lập đề án giai đoạn 2026–2030 theo Hướng dẫn 07-HD/BTCTW
+                Chuẩn hóa danh mục và lập Đề án Vị trí việc làm giai đoạn 2026–2030
               </p>
             </div>
           </div>

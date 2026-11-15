@@ -29,6 +29,7 @@ next-env.d.ts
 /20skill-van-phong-main/
 /outputs/
 *.xlsx
+*.xls
 *.docx
 *.zip
 *.rar

@@ -77,6 +77,8 @@ export const HCMUTE_UNITS: HcmuteUnit[] = [
   { code: 'QLDTXDDT', nameVi: 'Phòng Quản lý đầu tư xây dựng và Đấu thầu', nameEn: 'Office of Construction Project Management and Bidding', group: 'phong-ban', domain: 'cpm.hcmute.edu.vn', headTitleVi: 'Trưởng phòng', headTitleEn: 'Director of the Office of Construction Project Management and Bidding', defaultStaffCount: 14 },
   { code: 'KTX', nameVi: 'Ban Quản lý Ký túc xá', nameEn: 'Dormitory Management Office', group: 'phong-ban', domain: 'ktx.hcmute.edu.vn', headTitleVi: 'Trưởng ban', headTitleEn: 'Director of the Dormitory Management Office', defaultStaffCount: 24 },
   { code: 'TYT', nameVi: 'Trạm Y tế', nameEn: 'Health Care Office', group: 'phong-ban', domain: 'hd.hcmute.edu.vn', headTitleVi: 'Trưởng trạm', headTitleEn: 'Head of the Health Care Office', defaultStaffCount: 10 },
+  { code: 'BANTT', nameVi: 'Ban An ninh trật tự', nameEn: 'Office of Campus Security and Order', group: 'phong-ban', domain: 'bantt.hcmute.edu.vn', headTitleVi: 'Trưởng ban', headTitleEn: 'Head of the Office of Campus Security and Order', defaultStaffCount: 30 },
+  { code: 'BGH', nameVi: 'Ban Giám hiệu', nameEn: 'Presidential Board', group: 'phong-ban', domain: 'bgh.hcmute.edu.vn', headTitleVi: 'Hiệu trưởng', headTitleEn: 'President', defaultStaffCount: 4 },
   { code: 'PHBP', nameVi: 'Phân hiệu Trường Đại học Công nghệ Kỹ thuật TP.HCM tại Bình Phước', nameEn: 'HCM-UTE Binh Phuoc Campus', group: 'trung-tam', subType: 'PHAN_HIEU', domain: 'binhphuoc.hcmute.edu.vn', headTitleVi: 'Giám đốc Phân hiệu', headTitleEn: 'Director of Binh Phuoc Campus', defaultStaffCount: 35 },
   { code: 'TCKHGDKT', nameVi: 'Tạp chí Khoa học Giáo dục Kỹ thuật', nameEn: 'Journal of Technical Education Science', group: 'trung-tam', subType: 'TAP_CHI', domain: 'jte.hcmute.edu.vn', headTitleVi: 'Tổng biên tập', headTitleEn: 'Editor-in-Chief of the Journal of Technical Education Science', defaultStaffCount: 8 },
   { code: 'HLDHS', nameVi: 'Trung tâm Học liệu và Dạy học số', nameEn: 'Center for Learning Resources and Digital Learning', group: 'trung-tam', subType: 'HOC_LIEU_SO', domain: 'lib.hcmute.edu.vn', headTitleVi: 'Giám đốc trung tâm', headTitleEn: 'Director of the Center for Learning Resources and Digital Learning', defaultStaffCount: 26 },
@@ -98,7 +100,7 @@ export const HCMUTE_UNITS: HcmuteUnit[] = [
   { code: 'DTN', nameVi: 'Đoàn Thanh niên - Hội Sinh viên', nameEn: 'Ho Chi Minh Communist Youth Union & Students Association', group: 'dang-doanthe', domain: 'doanthanhnien.hcmute.edu.vn', headTitleVi: 'Bí thư Đoàn Thanh niên', headTitleEn: 'Secretary of the Ho Chi Minh Communist Youth Union', defaultStaffCount: 9 },
 ];
 
-export const DELETED_UNIT_CODES = new Set(['IDDF', 'TRTC', 'HDT', 'BGH', 'FFT']);
+export const DELETED_UNIT_CODES = new Set(['IDDF', 'TRTC', 'HDT', 'FFT']);
 
 export const UNIT_CODE_ALIASES: Record<string, string> = {
   FME: 'CK', FEET: 'GTNL', FEEE: 'DDT', FIT: 'CNTT', FCFT: 'HHKHSS',
@@ -112,11 +114,17 @@ export const UNIT_CODE_ALIASES: Record<string, string> = {
   PKHTC: 'KHTC', PDT: 'DT', PHCTH: 'HCTH', PKHCN: 'KHCN',
   PKTDBCL: 'KTDBCL', PCTSV: 'CTSV', PQTTH: 'QTTHTT', 'PQTTH&TT': 'QTTHTT',
   PQTCSVC: 'QTCSVC', PQLDTXDDT: 'QLDTXDDT', PQHQT: 'QHQT', PQHDN: 'QHDN',
-  BQLKTX: 'KTX', BANTT: 'KTX', TTHLDHS: 'HLDHS',
+  BQLKTX: 'KTX', BANTT: 'BANTT', BGH: 'BGH', TTHLDHS: 'HLDHS',
   TTSTKN: 'STKNCCCN', 'TTSTKN&CGCN': 'STKNCCCN', TTCNPM: 'CNPM',
   TTGDQPAN: 'GDQPAN', TTGDTC: 'GDTC', VSDH: 'SDH',
   KDTTT: 'DTTT', FHQ: 'DTTT', KHOA: 'CK',
-  FVE: 'GTNL', FGA: 'MTTT', FPT: 'CTL', FLLCT: 'CTL', FFD: 'HHKHSS', FTT: 'HHKHSS'
+  FVE: 'GTNL', FGA: 'MTTT', FPT: 'CTL', FLLCT: 'CTL', FFD: 'HHKHSS', FTT: 'HHKHSS',
+  'BAN AN NINH TRẬT TỰ': 'BANTT', 'BAN GIÁM HIỆU': 'BGH',
+  'KHOA GIAO THÔNG VÀ NĂNG LƯỢNG': 'GTNL',
+  'KHOA HÓA HỌC VÀ KHOA HỌC SỰ SỐNG': 'HHKHSS',
+  'PHÂN HIỆU TRƯỜNG ĐH CNKT TPHCM TẠI BÌNH PHƯỚC': 'PHBP',
+  'TRUNG TÂM SÁNG TẠO KHỞI NGHIỆP VÀ CHUYỂN GIAO CÔNG NGHỆ': 'STKNCCCN',
+  'TRUNG TÂM NGOẠI NGỮ (TỰ CHỦ)': 'TTNN'
 };
 
 export const QD2266_UNIT_NAMES: Record<string, string> = {

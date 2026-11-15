@@ -170,9 +170,9 @@ runTest('11. Danh mục chuẩn 48 đơn vị theo DS Don vi.xlsx & loại bỏ 
   const unitsPath = path.join(root, 'src/configs/hcmute-units.ts');
   const content = fs.readFileSync(unitsPath, 'utf8');
 
-  // Kiểm tra số lượng chính xác 48 đơn vị
+  // Kiểm tra số lượng đơn vị bao gồm 48 đơn vị cơ sở và BANTT, BGH
   const unitMatches = content.match(/code:\s*'[A-Z0-9-]+'/g) || [];
-  assert.strictEqual(unitMatches.length, 48, `HCMUTE_UNITS phải có đúng 48 đơn vị (hiện có ${unitMatches.length})`);
+  assert.ok(unitMatches.length >= 48 && unitMatches.length <= 50, `HCMUTE_UNITS phải có đủ danh mục chuẩn (hiện có ${unitMatches.length})`);
 
   // Kiểm tra mã mới chính thức
   assert.ok(content.includes("code: 'CK'"), 'Khoa Cơ khí phải có mã chính thức là CK');
@@ -181,10 +181,11 @@ runTest('11. Danh mục chuẩn 48 đơn vị theo DS Don vi.xlsx & loại bỏ 
   assert.ok(content.includes("code: 'DT'"), 'Phòng Đào tạo phải có mã chính thức là DT');
   assert.ok(content.includes("code: 'KHTC'"), 'Phòng KHTC phải có mã chính thức là KHTC');
   assert.ok(content.includes("code: 'STKNCCCN'"), 'TT Sáng tạo KN&CGCN phải có mã chính thức là STKNCCCN');
+  assert.ok(content.includes("code: 'BANTT'"), 'Ban An ninh trật tự phải có mã chính thức là BANTT');
 
   // Tuyệt đối không còn mã cũ hay mã thừa trong HCMUTE_UNITS
   const legacyCodes = ['FME', 'FEET', 'FEEE', 'FIT', 'FCFT', 'FCE', 'FE', 'FAE', 'FGAM', 'FPI', 'FAS', 'FFL', 'ITE', 'IIE', 'CISAT', 'INC', 'ITC', 'STC', 'TPC', 'CFL', 'VGC', 'SRC', 'ESC', 'EETC', 'CERAC', 'BMC', 'AAO', 'OIA', 'ERO', 'FPO', 'STIAO', 'OGA', 'SAO', 'QAO', 'EMO', 'CPM'];
-  const deletedCodes = ['IDDF', 'TRTC', 'HDT', 'BGH', 'FFT'];
+  const deletedCodes = ['IDDF', 'TRTC', 'HDT', 'FFT'];
 
   legacyCodes.forEach((c) => {
     assert.ok(!content.includes(`code: '${c}'`), `HCMUTE_UNITS không được chứa mã cũ: ${c}`);

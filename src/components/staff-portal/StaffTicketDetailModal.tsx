@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import {
-  X, CheckCircle2, Clock, AlertTriangle, RefreshCw, Printer, Check, CornerDownLeft, FileText, GitCompare
+  X, AlertTriangle, Printer, Check, CornerDownLeft, FileText, GitCompare
 } from 'lucide-react';
-import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { StaffWorkTicket } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffTicketVersionDiffTab } from './StaffTicketVersionDiffTab';
+import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 
 interface StaffTicketDetailModalProps {
   ticket: StaffWorkTicket | null;
@@ -27,7 +28,9 @@ export function StaffTicketDetailModal({
 
   if (!ticket) return null;
 
-  const canonical = toCanonicalStatus(ticket.status);
+  const badge = getTicketStatusMeta(ticket);
+  const canonical = badge.canonical;
+  const StatusIcon = badge.Icon;
   const isOwnTicket = ticket.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
   const canReview = Boolean(
     (currentUserRole === 'admin' || (currentUserRole === 'unit_leader' && !isOwnTicket)) &&
@@ -45,19 +48,6 @@ export function StaffTicketDetailModal({
   const displayUnitName = unitNameVi || unit.nameVi;
   const today = new Date();
   const versionCount = Array.isArray(ticket.versions) ? ticket.versions.length : (ticket.currentVersionNo || 0);
-
-  const getStatusBadge = () => {
-    switch (canonical) {
-      case 'approved': return { cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2, label: 'Đã duyệt' };
-      case 'changes_requested': return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
-      case 'resubmitted': return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
-      case 'submitted': return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
-      default: return { cls: 'bg-slate-100 text-[#004776] border-slate-300', icon: Clock, label: 'Nháp' };
-    }
-  };
-
-  const badge = getStatusBadge();
-  const StatusIcon = badge.icon;
 
   const tableFields = [
     { num: '1', label: 'Mã nhiệm vụ (Biểu A1)', val: ticket.maNhiemVu || '—' },
@@ -83,7 +73,7 @@ export function StaffTicketDetailModal({
               <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2.5 py-0.5 rounded-md">
                 {ticket.maCongViec}
               </span>
-              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badge.cls}`}>
+              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badge.pillCls}`}>
                 <StatusIcon className="w-3.5 h-3.5" />
                 {badge.label}
               </span>
@@ -170,6 +160,9 @@ export function StaffTicketDetailModal({
 
         {/* Nội dung theo tab */}
         <div className="p-4 sm:p-6 overflow-y-auto bg-[#f1f5f9] flex flex-col items-center space-y-4">
+          <div className="w-full max-w-[210mm]">
+            <TicketApprovalProgress ticket={ticket} variant="banner" />
+          </div>
           {ticket.revisionReason && (
             <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-[#004776] space-y-1 shadow-xs">
               <div className="flex items-center gap-1.5 font-bold text-[#004776] text-xs sm:text-sm">

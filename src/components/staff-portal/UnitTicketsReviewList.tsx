@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  CheckCircle2, Clock, AlertTriangle, RefreshCw, Eye, Printer, Users, Layers, Filter, Search
+  CheckCircle2, AlertTriangle, Eye, Printer, Users, Layers, Search, User, Link2
 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 
 interface UnitTicketsReviewListProps {
   tickets: StaffWorkTicket[];
@@ -30,11 +31,9 @@ export function UnitTicketsReviewList({
   const [ownerFilter, setOwnerFilter] = useState('ALL');
   const [missionFilter, setMissionFilter] = useState('ALL');
 
-  // Danh mục bộ lọc
   const owners = useMemo(() => Array.from(new Set(tickets.map((t) => t.ownerName || t.ownerEmail))), [tickets]);
   const missions = useMemo(() => Array.from(new Set(tickets.map((t) => t.maNhiemVu).filter(Boolean))), [tickets]);
 
-  // Lọc và sắp xếp
   const displayedTickets = useMemo(() => {
     let list = [...tickets];
     if (mode === 'pending') {
@@ -42,81 +41,48 @@ export function UnitTicketsReviewList({
         const c = toCanonicalStatus(t.status);
         return c === 'submitted' || c === 'resubmitted';
       });
-      // Sắp xếp nộp gần nhất lên trước
-      list.sort((a, b) => {
-        const timeA = a.resubmittedAt || a.submittedAt || a.updatedAt;
-        const timeB = b.resubmittedAt || b.submittedAt || b.updatedAt;
-        return timeB.localeCompare(timeA);
-      });
-    } else {
-      if (statusFilter !== 'ALL') {
-        list = list.filter((t) => toCanonicalStatus(t.status) === statusFilter);
-      }
-      if (ownerFilter !== 'ALL') {
-        list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
-      }
-      if (missionFilter !== 'ALL') {
-        list = list.filter((t) => t.maNhiemVu === missionFilter);
-      }
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
-        list = list.filter((t) =>
-          t.tenCongViec.toLowerCase().includes(q) ||
-          t.maCongViec.toLowerCase().includes(q) ||
-          t.ownerName.toLowerCase().includes(q) ||
-          t.ownerEmail.toLowerCase().includes(q)
-        );
-      }
+      list.sort((a, b) => (b.resubmittedAt || b.submittedAt || b.updatedAt).localeCompare(a.resubmittedAt || a.submittedAt || a.updatedAt));
+      return list;
+    }
+    if (statusFilter !== 'ALL') list = list.filter((t) => toCanonicalStatus(t.status) === statusFilter);
+    if (ownerFilter !== 'ALL') list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
+    if (missionFilter !== 'ALL') list = list.filter((t) => t.maNhiemVu === missionFilter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((t) =>
+        t.tenCongViec.toLowerCase().includes(q) ||
+        t.maCongViec.toLowerCase().includes(q) ||
+        t.ownerName.toLowerCase().includes(q) ||
+        t.ownerEmail.toLowerCase().includes(q)
+      );
     }
     return list;
   }, [tickets, mode, statusFilter, ownerFilter, missionFilter, search]);
 
-  const getStatusBadge = (t: StaffWorkTicket) => {
-    const c = toCanonicalStatus(t.status);
-    switch (c) {
-      case 'approved':
-        return { cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2, label: 'Đã duyệt' };
-      case 'changes_requested':
-        return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
-      case 'resubmitted':
-        return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
-      case 'submitted':
-        return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
-      default:
-        return { cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: Clock, label: 'Nháp' };
-    }
-  };
-
   return (
-    <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3">
+    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
+      <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#0072BC]" />
+          <Users className="w-4 h-4 text-[#006cee]" />
           <h2 className="text-base font-bold text-[#004776]">
             {mode === 'pending' ? 'Phiếu chờ phê duyệt' : 'Toàn bộ phiếu của đơn vị'} ({displayedTickets.length})
           </h2>
         </div>
       </div>
 
-      {/* Bộ lọc cho chế độ All */}
       {mode === 'all' && (
-        <div className="p-3 bg-[#f8fbff] border-b border-[#e2e8f0] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+        <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#64748b] absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo tên việc, mã, người..."
-              className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#0072BC] outline-none"
+              className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none"
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả trạng thái</option>
             <option value="submitted">Đã nộp</option>
             <option value="resubmitted">Đã nộp lại</option>
@@ -124,143 +90,172 @@ export function UnitTicketsReviewList({
             <option value="changes_requested">Yêu cầu bổ sung</option>
             <option value="draft">Nháp</option>
           </select>
-          <select
-            value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none"
-          >
+          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả người kê khai</option>
             {owners.map((o) => (<option key={o} value={o}>{o}</option>))}
           </select>
-          <select
-            value={missionFilter}
-            onChange={(e) => setMissionFilter(e.target.value)}
-            className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none"
-          >
+          <select value={missionFilter} onChange={(e) => setMissionFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả nhiệm vụ (A1)</option>
             {missions.map((m) => (<option key={m} value={m}>{m}</option>))}
           </select>
         </div>
       )}
 
-      {/* Danh sách phiếu */}
-      <div className="divide-y divide-[#f1f5f9]">
+      <div className="divide-y divide-[#eef3f8]">
         {loading && tickets.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#64748b]">Đang tải dữ liệu phiếu...</div>
+          <div className="p-8 text-center text-xs text-[#20446c]">Đang tải dữ liệu phiếu...</div>
         ) : displayedTickets.length === 0 ? (
-          <div className="p-6 text-center text-xs text-[#64748b]">
+          <div className="p-6 text-center text-xs text-[#20446c]">
             {mode === 'pending' ? 'Hiện tại không có phiếu nào cần phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.'}
           </div>
         ) : (
           displayedTickets.map((t) => {
             const hours = Math.round((((t.soSpNam * t.phutThucTe) / 60) + t.gioBoSung) * 10) / 10;
-            const canonical = toCanonicalStatus(t.status);
-            const badge = getStatusBadge(t);
-            const StatusIcon = badge.icon;
+            const meta = getTicketStatusMeta(t);
+            const StatusIcon = meta.Icon;
+            const canonical = meta.canonical;
             const isOwnLeaderTicket = currentUserRole === 'unit_leader' && t.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
             const canReview = isLeader && (canonical === 'submitted' || canonical === 'resubmitted');
             const canMerge = isLeader && canonical === 'approved';
+            const submittedDateIso = t.resubmittedAt || t.submittedAt;
 
             return (
-              <div key={t.id} className="p-4 hover:bg-[#f8fbff] transition-colors space-y-2.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2 py-0.5 rounded-md">
-                        {t.maCongViec}
+              <div key={t.id} className="relative pl-4 sm:pl-5 pr-4 sm:pr-5 py-4 hover:bg-[#f8fbff]/80 transition-colors">
+                <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${meta.stripeCls}`} />
+
+                <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-4">
+                  {/* Vùng trái: Thông tin định danh, nội dung & định mức */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2.5">
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-[#006cee] bg-[#eef5ff] border border-[#cfe2fc] px-2.5 py-0.5 rounded-md tabular-nums">
+                          {t.maCongViec}
+                        </span>
+                        <span className="text-xs font-semibold text-[#004776] bg-[#f1f6fc] border border-[#dbe8f5] px-2.5 py-0.5 rounded-md">
+                          VTVL: {t.maVtvl}
+                        </span>
+                        {t.maNhiemVu && (
+                          <span className="text-[11px] font-medium text-[#20446c] bg-[#f8fafc] border border-[#e2e8f0] px-2 py-0.5 rounded-md">
+                            NV: {t.maNhiemVu}
+                          </span>
+                        )}
+                        {(t.currentVersionNo || 0) > 0 && (
+                          <span className="text-[11px] font-bold text-[#004776] bg-white border border-[#cbd5e1] px-2 py-0.5 rounded-md tabular-nums">
+                            v{t.currentVersionNo}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-snug">{t.tenCongViec}</h3>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#20446c]">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
+                          Người kê khai: <strong className="text-[#004776]">{t.ownerName}</strong> ({t.ownerTitle || t.ownerEmail})
+                        </span>
+                        <span>• Đơn vị: <strong className="text-[#004776]">{t.unitCode}</strong></span>
+                        {submittedDateIso && (
+                          <span className="tabular-nums">• Nộp: {new Date(submittedDateIso).toLocaleDateString('vi-VN')}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                        Sản lượng: <strong className="text-[#004776]">{t.soSpNam}</strong> SP
                       </span>
-                      <span className="text-xs font-semibold text-[#475569] bg-[#f1f5f9] px-2 py-0.5 rounded-md">
-                        VTVL: {t.maVtvl}
+                      <span className="px-2.5 py-1 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                        Thời gian: <strong className="text-[#004776]">{t.phutThucTe}</strong> phút/SP
                       </span>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${badge.cls}`}>
+                      {t.gioBoSung > 0 && (
+                        <span className="px-2.5 py-1 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                          Giờ bổ sung: <strong className="text-[#004776]">+{t.gioBoSung}</strong> giờ
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-lg bg-[#eef5ff] border border-[#cfe2fc] text-[#004776] font-semibold">
+                        Tổng: <strong className="text-[#006cee]">{hours}</strong> giờ/năm
+                      </span>
+                      {t.coordinatedTasks && t.coordinatedTasks.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#f1f6fc] border border-[#dbe8f5] text-[#006cee] font-medium">
+                          <Link2 className="w-3 h-3" /> {t.coordinatedTasks.length} việc phối hợp
+                        </span>
+                      )}
+                    </div>
+
+                    {t.revisionReason && canonical === 'changes_requested' && (
+                      <div className="p-2.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-xs text-[#004776]">
+                        <strong className="text-[#b45309]">Yêu cầu bổ sung: </strong>{t.revisionReason}
+                      </div>
+                    )}
+                    {t.lastChangeSummary && canonical === 'resubmitted' && (
+                      <div className="p-2.5 rounded-lg bg-[#f5f3ff] border-l-2 border-[#7c3aed] text-xs text-[#004776]">
+                        <strong className="text-[#6d28d9]">Giải trình nộp lại: </strong>{t.lastChangeSummary}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Vùng phải: Trạng thái (trên), Tiến trình 4 bước (giữa) & Nghiệp vụ căn phải (dưới) */}
+                  <div className="lg:w-[395px] xl:w-[425px] shrink-0 flex flex-col lg:items-end justify-between gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#e8eff7] lg:pl-4">
+                    <div className="flex flex-wrap items-center lg:justify-end gap-1.5">
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
                         <StatusIcon className="w-3 h-3" />
-                        {badge.label}
+                        {meta.label}
                       </span>
                       {t.isMergedToB1B2 && (
-                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">
                           Đã gộp B1/B2
                         </span>
                       )}
                     </div>
 
-                    <div className="text-sm font-semibold text-[#004776]">{t.tenCongViec}</div>
+                    <TicketApprovalProgress ticket={t} />
 
-                    <div className="text-xs text-[#476885]">
-                      Người kê khai: <strong className="text-[#004776]">{t.ownerName}</strong> ({t.ownerTitle || t.ownerEmail}) • Đơn vị: <strong>{t.unitCode}</strong>
-                    </div>
+                    <div className="flex flex-wrap items-center lg:justify-end gap-1.5 w-full">
+                      <button type="button" onClick={() => onViewTicket(t)} className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors">
+                        <Eye className="w-3.5 h-3.5 text-[#006cee]" /> Xem chi tiết
+                      </button>
 
-                    <div className="text-xs text-[#64748b]">
-                      Sản lượng: <strong>{t.soSpNam}</strong> SP • Thời gian: <strong>{t.phutThucTe}</strong> phút/SP • Tổng: <strong>{hours}</strong> giờ/năm
-                      {t.submittedAt && <span className="ml-2">• Nộp lúc: {new Date(t.submittedAt).toLocaleDateString('vi-VN')}</span>}
+                      <button type="button" onClick={() => onPrintTicket(t)} className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors">
+                        <Printer className="w-3.5 h-3.5 text-[#006cee]" /> In PDF
+                      </button>
+
+                      {isLeader && onReviewTicket && canReview && (
+                        isOwnLeaderTicket ? (
+                          <span className="text-[11px] font-medium text-[#b45309] bg-[#fff8eb] px-2.5 py-1 rounded-lg border border-[#fcd34d]">
+                            Phiếu cá nhân của Lãnh đạo (Cần TCNS duyệt)
+                          </span>
+                        ) : (
+                          <>
+                            {onRequestChanges && (
+                              <button type="button" onClick={() => onRequestChanges(t)} className="h-8 px-3 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors">
+                                <AlertTriangle className="w-3.5 h-3.5 text-[#f99c00]" /> Yêu cầu bổ sung
+                              </button>
+                            )}
+                            {onApproveTicket && (
+                              <button type="button" onClick={() => onApproveTicket(t)} className="h-8 px-3 rounded-lg bg-[#00a86b] hover:bg-[#008f5d] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Duyệt phiếu
+                              </button>
+                            )}
+                          </>
+                        )
+                      )}
+
+                      {canMerge && onMergeTicket && (
+                        <button
+                          type="button"
+                          onClick={() => onMergeTicket(t)}
+                          className={`h-8 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors ${
+                            t.isMergedToB1B2
+                              ? 'border border-[#a7f3d0] bg-[#e6f9f1] text-[#008f5d] hover:bg-[#d1fae5]'
+                              : 'bg-[#006cee] hover:bg-[#005ecc] text-white'
+                          }`}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>{t.isMergedToB1B2 ? 'Cập nhật gộp B1/B2' : 'Gộp vào B1/B2'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                </div>
-
-                {/* Thao tác */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => onViewTicket(t)}
-                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-[#0072BC]" /> Xem chi tiết
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onPrintTicket(t)}
-                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-[#0072BC]" /> In PDF
-                  </button>
-
-                  {/* Quyền Duyệt & Yêu cầu bổ sung của Lãnh đạo/Admin */}
-                  {isLeader && onReviewTicket && canReview && (
-                    <>
-                      {isOwnLeaderTicket ? (
-                        <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                          Phiếu cá nhân của Lãnh đạo (Cần TCNS duyệt)
-                        </span>
-                      ) : (
-                        <>
-                          {onApproveTicket && (
-                            <button
-                              type="button"
-                              onClick={() => onApproveTicket(t)}
-                              className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Duyệt phiếu
-                            </button>
-                          )}
-                          {onRequestChanges && (
-                            <button
-                              type="button"
-                              onClick={() => onRequestChanges(t)}
-                              className="h-8 px-3 rounded-lg border border-amber-300 bg-white hover:bg-amber-50 text-amber-700 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
-                            >
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Yêu cầu bổ sung
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  {/* Gộp B1/B2 dành cho phiếu đã duyệt */}
-                  {canMerge && onMergeTicket && (
-                    <button
-                      type="button"
-                      onClick={() => onMergeTicket(t)}
-                      className={`h-8 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs ${
-                        t.isMergedToB1B2
-                          ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                          : 'bg-[#0072BC] hover:bg-[#004776] text-white'
-                      }`}
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>{t.isMergedToB1B2 ? 'Cập nhật gộp B1/B2' : 'Gộp vào B1/B2'}</span>
-                    </button>
-                  )}
                 </div>
               </div>
             );

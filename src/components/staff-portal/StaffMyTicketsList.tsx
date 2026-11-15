@@ -2,9 +2,17 @@
 
 import React from 'react';
 import {
-  Edit3, Trash2, Eye, Printer, Link2, CheckCircle2, Clock, AlertTriangle, RefreshCw, Send
+  Edit3,
+  Trash2,
+  Eye,
+  Printer,
+  Link2,
+  AlertTriangle,
+  RefreshCw,
+  Send
 } from 'lucide-react';
-import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { StaffWorkTicket } from '@/types/staff-ticket';
+import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 
 interface StaffMyTicketsListProps {
   tickets: StaffWorkTicket[];
@@ -18,101 +26,158 @@ interface StaffMyTicketsListProps {
 }
 
 export function StaffMyTicketsList({
-  tickets, loading, onEditTicket, onPrintTicket, onCoordTicket, onDeleteTicket, onSubmitTicket, onViewTicket
+  tickets,
+  loading,
+  onEditTicket,
+  onPrintTicket,
+  onCoordTicket,
+  onDeleteTicket,
+  onSubmitTicket,
+  onViewTicket
 }: StaffMyTicketsListProps) {
-  const getBadge = (ticket: StaffWorkTicket) => {
-    const c = toCanonicalStatus(ticket.status);
-    switch (c) {
-      case 'approved':
-        return { cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2, label: 'Đã duyệt' };
-      case 'changes_requested':
-        return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
-      case 'resubmitted':
-        return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
-      case 'submitted':
-        return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
-      default:
-        return { cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: Clock, label: 'Nháp' };
-    }
-  };
-
   return (
-    <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden">
-      <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex items-center justify-between">
+    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
+      <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex items-center justify-between">
         <h2 className="text-base font-bold text-[#004776]">
           Phiếu của tôi ({tickets.length})
         </h2>
       </div>
 
-      <div className="divide-y divide-[#f1f5f9]">
+      <div className="divide-y divide-[#eef3f8]">
         {loading && tickets.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#64748b]">Đang tải danh sách phiếu...</div>
+          <div className="p-8 text-center text-xs text-[#20446c]">Đang tải danh sách phiếu...</div>
         ) : tickets.length === 0 ? (
-          <div className="p-6 text-center text-xs text-[#64748b]">
+          <div className="p-6 text-center text-xs text-[#20446c]">
             Bạn chưa có phiếu công việc nào trong danh sách. Hãy điền thông tin và bấm &quot;Lưu nháp&quot; hoặc &quot;Lưu và nộp&quot;.
           </div>
         ) : (
           tickets.map((t) => {
             const hours = Math.round((((t.soSpNam * t.phutThucTe) / 60) + t.gioBoSung) * 10) / 10;
-            const canonical = toCanonicalStatus(t.status);
-            const badge = getBadge(t);
-            const StatusIcon = badge.icon;
+            const meta = getTicketStatusMeta(t);
+            const StatusIcon = meta.Icon;
+            const canonical = meta.canonical;
             const canEdit = canonical === 'draft' || canonical === 'changes_requested';
             const canDelete = canonical === 'draft';
             const canSubmit = canonical === 'draft';
             const canResubmit = canonical === 'changes_requested';
 
             return (
-              <div key={t.id} className="p-4 hover:bg-[#f8fbff] transition-colors space-y-2.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2 py-0.5 rounded-md">
-                        {t.maCongViec}
-                      </span>
-                      <span className="text-xs font-semibold text-[#475569] bg-[#f1f5f9] px-2 py-0.5 rounded-md">
-                        VTVL: {t.maVtvl}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${badge.cls}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {badge.label}
-                      </span>
-                      {t.isMergedToB1B2 && (
-                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Đã gộp B1/B2
-                        </span>
-                      )}
-                    </div>
+              <div key={t.id} className="relative pl-4 sm:pl-5 pr-4 py-4 hover:bg-[#f8fbff]/80 transition-colors space-y-3">
+                <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${meta.stripeCls}`} />
 
-                    <div className="text-sm font-semibold text-[#004776]">{t.tenCongViec}</div>
-
-                    {/* Hiển thị lý do yêu cầu bổ sung nếu có */}
-                    {t.revisionReason && canonical === 'changes_requested' && (
-                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>Yêu cầu chỉnh sửa: </strong>{t.revisionReason}
-                        </div>
-                      </div>
+                {/* Hàng đầu: Mã công việc bên trái — Trạng thái phê duyệt bên phải */}
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                    <span className="text-xs font-mono font-bold text-[#006cee] bg-[#eef5ff] border border-[#cfe2fc] px-2.5 py-0.5 rounded-md tabular-nums">
+                      {t.maCongViec}
+                    </span>
+                    <span className="text-xs font-semibold text-[#004776] bg-[#f1f6fc] border border-[#dbe8f5] px-2.5 py-0.5 rounded-md">
+                      VTVL: {t.maVtvl}
+                    </span>
+                    {(t.currentVersionNo || 0) > 0 && (
+                      <span className="text-[11px] font-bold text-[#004776] bg-white border border-[#cbd5e1] px-2 py-0.5 rounded-md tabular-nums">
+                        v{t.currentVersionNo}
+                      </span>
                     )}
+                  </div>
 
-                    <div className="text-xs text-[#64748b]">
-                      Sản lượng: <strong>{t.soSpNam}</strong> SP • Thời gian: <strong>{t.phutThucTe}</strong> phút/SP • Tổng: <strong>{hours}</strong> giờ/năm
-                      {t.coordinatedTasks && t.coordinatedTasks.length > 0 && (
-                        <span className="ml-2 text-[#0072BC] font-medium">• {t.coordinatedTasks.length} công việc phối hợp</span>
-                      )}
-                    </div>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {meta.label}
+                    </span>
+                    {t.isMergedToB1B2 && (
+                      <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">
+                        Đã gộp B1/B2
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {/* Tiêu đề & Chỉ số định mức */}
+                <div className="space-y-2">
+                  <div className="text-sm sm:text-[15px] font-bold text-[#004776] leading-snug">
+                    {t.tenCongViec}
+                  </div>
+
+                  {t.revisionReason && canonical === 'changes_requested' && (
+                    <div className="p-2.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-xs text-[#004776] flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-[#f99c00] shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-[#b45309]">Yêu cầu chỉnh sửa: </strong>{t.revisionReason}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums">
+                    <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                      Sản lượng: <strong className="text-[#004776]">{t.soSpNam}</strong> SP
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                      Thời gian: <strong className="text-[#004776]">{t.phutThucTe}</strong> phút/SP
+                    </span>
+                    {t.gioBoSung > 0 && (
+                      <span className="px-2 py-0.5 rounded-md bg-[#f8fafc] border border-[#e2e8f0] text-[#20446c]">
+                        Bổ sung: <strong className="text-[#004776]">+{t.gioBoSung}</strong> giờ
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-md bg-[#eef5ff] border border-[#cfe2fc] text-[#004776] font-semibold">
+                      Tổng: <strong className="text-[#006cee]">{hours}</strong> giờ/năm
+                    </span>
+                    {t.coordinatedTasks && t.coordinatedTasks.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#f1f6fc] border border-[#dbe8f5] text-[#006cee] font-medium">
+                        <Link2 className="w-3 h-3" /> {t.coordinatedTasks.length} công việc phối hợp
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Thanh tiến trình phê duyệt 4 bước */}
+                <TicketApprovalProgress ticket={t} />
+
+                {/* Nghiệp vụ thao tác căn phải */}
+                <div className="flex flex-wrap items-center justify-end gap-1.5 pt-2 border-t border-[#eef3f8]">
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteTicket(t)}
+                      className="h-8 px-2.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-xs font-medium text-[#f4212e] inline-flex items-center gap-1 cursor-pointer mr-auto transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Xóa
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => (onViewTicket ? onViewTicket(t) : onPrintTicket(t))}
+                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-[#006cee]" /> Xem chi tiết
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onPrintTicket(t)}
+                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-[#006cee]" /> In PDF
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onCoordTicket(t)}
+                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-[#006cee]" /> Phối hợp
+                  </button>
+
                   {canEdit && (
                     <button
                       type="button"
                       onClick={() => onEditTicket(t)}
-                      className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1 cursor-pointer"
+                      className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#0072BC]" /> Sửa
+                      <Edit3 className="w-3.5 h-3.5 text-[#006cee]" /> Sửa
                     </button>
                   )}
 
@@ -120,7 +185,7 @@ export function StaffMyTicketsList({
                     <button
                       type="button"
                       onClick={() => onSubmitTicket(t, false)}
-                      className="h-8 px-2.5 rounded-lg bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                      className="h-8 px-3 rounded-lg bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
                     >
                       <Send className="w-3.5 h-3.5" /> Nộp phiếu
                     </button>
@@ -130,43 +195,9 @@ export function StaffMyTicketsList({
                     <button
                       type="button"
                       onClick={() => onSubmitTicket(t, true)}
-                      className="h-8 px-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                      className="h-8 px-3 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
                     >
                       <RefreshCw className="w-3.5 h-3.5" /> Nộp lại
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => onViewTicket ? onViewTicket(t) : onPrintTicket(t)}
-                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-[#0072BC]" /> Xem chi tiết
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onPrintTicket(t)}
-                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-[#0072BC]" /> In PDF
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onCoordTicket(t)}
-                    className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Link2 className="w-3.5 h-3.5 text-[#0072BC]" /> Phối hợp
-                  </button>
-
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteTicket(t)}
-                      className="h-8 px-2.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-xs font-medium text-red-600 inline-flex items-center gap-1 cursor-pointer ml-auto"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Xóa
                     </button>
                   )}
                 </div>

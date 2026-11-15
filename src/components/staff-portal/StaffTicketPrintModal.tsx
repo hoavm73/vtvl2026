@@ -149,7 +149,7 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
                   <td className="border border-[#004776] px-2.5 py-1.5">{ticket.canCu || '—'}</td>
                 </tr>
                 <tr>
-                  <td className="border border-[#004776] px-2.5 py-1.5 font-bold">7. Số lượng SP (01/10/2025–30/9/2026)</td>
+                  <td className="border border-[#004776] px-2.5 py-1.5 font-bold">7. Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)</td>
                   <td className="border border-[#004776] px-2.5 py-1.5">
                     <strong>{ticket.soSpNam}</strong> sản phẩm
                     {ticket.nguonSoLieu ? ` (Nguồn: ${ticket.nguonSoLieu})` : ''}

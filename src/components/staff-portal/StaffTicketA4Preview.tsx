@@ -66,7 +66,7 @@ export function StaffTicketA4Preview(props: StaffTicketA4PreviewProps) {
             PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
           </h2>
           <div className="text-[12px] italic text-[#476885] mt-0.5">
-            (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026 • Theo Hướng dẫn số 07-HD/BTCTW)
+            (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026)
           </div>
         </div>
 
@@ -149,7 +149,7 @@ export function StaffTicketA4Preview(props: StaffTicketA4PreviewProps) {
               </tr>
               <tr>
                 <td className="border border-[#004776] px-3 py-2 font-bold align-top">
-                  7. Số lượng SP / năm (Kỳ 2025–2026)
+                  7. Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)
                 </td>
                 <td className="border border-[#004776] px-3 py-2">
                   <strong>{soSp}</strong> sản phẩm/năm

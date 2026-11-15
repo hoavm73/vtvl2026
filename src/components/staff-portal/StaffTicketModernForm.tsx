@@ -126,12 +126,15 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           <h3 className="text-sm font-bold text-[#004776] uppercase tracking-wide">
             2. Sản phẩm đầu ra &amp; Tiêu chuẩn
           </h3>
+          <span className="text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2 py-0.5 rounded-full">
+            Bắt buộc *
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Sản phẩm đầu ra cụ thể
+              Sản phẩm đầu ra cụ thể *
             </label>
             <textarea
               rows={2}
@@ -144,7 +147,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Tiêu chuẩn chất lượng
+              Tiêu chuẩn chất lượng *
             </label>
             <textarea
               rows={2}
@@ -157,7 +160,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
           <div className="sm:col-span-12 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Căn cứ pháp lý / Quyết định giao việc
+              Căn cứ pháp lý / Quyết định giao việc *
             </label>
             <textarea
               rows={2}
@@ -176,12 +179,15 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           <h3 className="text-sm font-bold text-[#004776] uppercase tracking-wide">
             3. Định mức thời gian &amp; Sản lượng hàng năm
           </h3>
+          <span className="text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2 py-0.5 rounded-full">
+            Bắt buộc *
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Số sản phẩm hoàn thành trong năm
+              Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026) *
             </label>
             <input
               type="number"
@@ -195,7 +201,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Nguồn số liệu kiểm chứng
+              Nguồn số liệu kiểm chứng *
             </label>
             <textarea
               rows={2}
@@ -208,7 +214,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Thời gian thực hiện thực tế (phút/SP)
+              Thời gian thực hiện thực tế (phút/SP) *
             </label>
             <input
               type="number"

@@ -64,7 +64,7 @@ export function StaffTicketDetailModal({
     { num: '6', label: 'Sản phẩm đầu ra', val: ticket.sanPham || '—' },
     { num: '7', label: 'Tiêu chuẩn chất lượng', val: ticket.chatLuong || '—' },
     { num: '8', label: 'Căn cứ pháp lý & hồ sơ giải trình', val: ticket.canCu || '—' },
-    { num: '9', label: 'Số lượng SP / năm (Kỳ 2025–2026)', val: `${ticket.soSpNam} sản phẩm / năm${ticket.nguonSoLieu ? ` (Nguồn: ${ticket.nguonSoLieu})` : ''}` },
+    { num: '9', label: 'Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026)', val: `${ticket.soSpNam} sản phẩm / năm${ticket.nguonSoLieu ? ` (Nguồn: ${ticket.nguonSoLieu})` : ''}` },
     { num: '10', label: 'Thời gian trung bình / 1 SP', val: `${ticket.phutThucTe} phút / sản phẩm` },
     { num: '11', label: 'Giờ bổ sung (giờ/năm)', val: `${ticket.gioBoSung || 0} giờ / năm` }
   ];
@@ -179,7 +179,7 @@ export function StaffTicketDetailModal({
                 PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
               </h2>
               <div className="text-[12px] italic text-[#476885] mt-0.5">
-                (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026 • Theo Hướng dẫn số 07-HD/BTCTW)
+                (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026)
               </div>
             </div>
 

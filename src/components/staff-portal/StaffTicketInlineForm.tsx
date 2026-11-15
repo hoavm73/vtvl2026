@@ -126,6 +126,19 @@ export function StaffTicketInlineForm({
       setErr('Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm chính và nhập Tên công việc cụ thể.');
       return;
     }
+    if (status === 'Đã nộp') {
+      const missing: string[] = [];
+      if (!sanPham.trim()) missing.push('Sản phẩm đầu ra');
+      if (!chatLuong.trim()) missing.push('Tiêu chuẩn chất lượng');
+      if (!canCu.trim()) missing.push('Căn cứ pháp lý / Quyết định giao việc');
+      if (!soSpNam || Number(soSpNam) <= 0) missing.push('Số sản phẩm hoàn thành trong năm (01/10/2025 đến 30/9/2026)');
+      if (!nguonSoLieu.trim()) missing.push('Nguồn số liệu kiểm chứng');
+      if (!phutThucTe || Number(phutThucTe) <= 0) missing.push('Thời gian thực tế (phút/SP)');
+      if (missing.length > 0) {
+        setErr(`Để nộp phiếu, vui lòng điền đầy đủ các trường bắt buộc (trừ các mục có ghi "nếu có"): ${missing.join(', ')}.`);
+        return;
+      }
+    }
     setSaving(true);
     try {
       const op = getCurrentOperatorSession();

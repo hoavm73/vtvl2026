@@ -126,6 +126,20 @@ export default function StaffWorkTicketsPage() {
     await sendPatchAction({ ticketId: t.id, action: 'merge', unitCode: t.unitCode });
   };
   const handleSubmitMyTicket = async (t: StaffWorkTicket, isResubmit: boolean) => {
+    const missing: string[] = [];
+    if (!t.maNhiemVu) missing.push('Mã nhiệm vụ');
+    if (!t.tenCongViec?.trim()) missing.push('Tên công việc cụ thể');
+    if (!t.maVtvl) missing.push('Mã VTVL chính');
+    if (!t.sanPham?.trim()) missing.push('Sản phẩm đầu ra');
+    if (!t.chatLuong?.trim()) missing.push('Tiêu chuẩn chất lượng');
+    if (!t.canCu?.trim()) missing.push('Căn cứ pháp lý');
+    if (!t.soSpNam || Number(t.soSpNam) <= 0) missing.push('Số sản phẩm hoàn thành trong năm');
+    if (!t.nguonSoLieu?.trim()) missing.push('Nguồn số liệu kiểm chứng');
+    if (!t.phutThucTe || Number(t.phutThucTe) <= 0) missing.push('Thời gian thực tế (phút/SP)');
+    if (missing.length > 0) {
+      alert(`Vui lòng bấm "Chỉnh sửa" để hoàn thiện các trường bắt buộc trước khi nộp phiếu (trừ các trường "nếu có"):\n• ${missing.join('\n• ')}`);
+      return;
+    }
     const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
     if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit', unitCode: t.unitCode });
   };
@@ -220,18 +234,8 @@ export default function StaffWorkTicketsPage() {
                 editingTicket={editingTicket?.unitCode === session.unitCode ? editingTicket : null}
                 a1Missions={a1Missions} c1Vtvls={c1Vtvls}
                 onCancelEdit={() => setEditingTicket(null)}
-                onSaved={(savedTicket?: StaffWorkTicket) => {
-                  if (savedTicket) {
-                    setMyTickets((prev) => {
-                      const idx = prev.findIndex((t) => t.id === savedTicket.id);
-                      if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = savedTicket;
-                        return next;
-                      }
-                      return [savedTicket, ...prev];
-                    });
-                  }
+                onSaved={(st?: StaffWorkTicket) => {
+                  if (st) setMyTickets((p) => p.some((t) => t.id === st.id) ? p.map((t) => t.id === st.id ? st : t) : [st, ...p]);
                   loadData(session);
                 }}
               />
@@ -245,11 +249,8 @@ export default function StaffWorkTicketsPage() {
                 onSubmitTicket={handleSubmitMyTicket}
               />
               <UnitVtvlLookupCard
-                unitCode={session.unitCode}
-                c1Vtvls={c1Vtvls}
-                onSelectVtvl={(selectedCode) => {
-                  setEditingTicket((prev) => (prev ? { ...prev, maVtvl: selectedCode } : null));
-                }}
+                unitCode={session.unitCode} c1Vtvls={c1Vtvls}
+                onSelectVtvl={(code) => setEditingTicket((prev) => (prev ? { ...prev, maVtvl: code } : null))}
               />
             </div>
           </div>
@@ -282,8 +283,7 @@ export default function StaffWorkTicketsPage() {
 
       {/* Modals */}
       <StaffTicketDetailModal
-        ticket={detailTicket} unitNameVi={unitNameVi}
-        currentUserRole={session.role} currentUserEmail={session.email}
+        ticket={detailTicket} unitNameVi={unitNameVi} currentUserRole={session.role} currentUserEmail={session.email}
         onClose={() => setDetailTicket(null)} onPrint={setPrintTicket}
         onApprove={isLeader ? async (t) => { setDetailTicket(null); await handleApprove(t); } : undefined}
         onRequestChanges={isLeader ? (t) => { setDetailTicket(null); setRevisionTicket(t); } : undefined}

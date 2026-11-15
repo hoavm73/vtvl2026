@@ -82,6 +82,12 @@ export async function POST(req: NextRequest) {
     else if (isResubmitting) resolvedStatus = 'Đã nộp lại';
     else if (caller.isAdmin && body.status) resolvedStatus = body.status;
 
+    if (isSubmitting || isResubmitting) {
+      if (!body.sanPham?.trim() || !body.chatLuong?.trim() || !body.canCu?.trim() || !Number(body.soSpNam) || !body.nguonSoLieu?.trim() || !Number(body.phutThucTe)) {
+        return NextResponse.json({ error: 'Vui lòng điền đủ các trường bắt buộc (trừ các mục "nếu có") để nộp phiếu.', code: 'MISSING_REQUIRED_FIELDS' }, { status: 400 });
+      }
+    }
+
     const result = await upsertTicketAndSyncUnit({
       id: body.id, unitCode: effectiveUnit, ownerEmail: effectiveOwner,
       ownerName: body.ownerName || caller.email.split('@')[0],
@@ -186,6 +192,9 @@ export async function PATCH(req: NextRequest) {
     if (action === 'submit' || action === 'resubmit') {
       if (!caller.isAdmin && target.ownerEmail.toLowerCase() !== caller.email.toLowerCase()) {
         return NextResponse.json({ error: 'Bạn chỉ có quyền nộp phiếu của chính mình.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
+      }
+      if (!target.sanPham?.trim() || !target.chatLuong?.trim() || !target.canCu?.trim() || !Number(target.soSpNam) || !target.nguonSoLieu?.trim() || !Number(target.phutThucTe)) {
+        return NextResponse.json({ error: 'Phiếu chưa đủ các trường bắt buộc (trừ các mục "nếu có") để nộp.', code: 'MISSING_REQUIRED_FIELDS' }, { status: 400 });
       }
       const isResubmit = action === 'resubmit';
       const nextStatus: TicketStatus = isResubmit ? 'Đã nộp lại' : 'Đã nộp';

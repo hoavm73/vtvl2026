@@ -1,257 +1,265 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, Filter, FileSpreadsheet, ExternalLink } from 'lucide-react';
-import { UNIT_GROUPS } from '@/configs/hcmute-units';
-import { UnitSummaryRow, MonitorTotals } from './UnitMonitoringTypes';
+import { Search, FileSpreadsheet, ExternalLink, ArrowUpDown, X, FlaskConical } from 'lucide-react';
+import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
+import { SHORT_UNIT_GROUP_LABELS, StageFilterKey, UnitSummaryRow } from './UnitMonitoringTypes';
 
 interface UnitMonitoringTableProps {
   selectedUnit: string;
   selectedGroup: string;
-  stageFilter: string;
+  stageFilter: StageFilterKey;
   searchQuery: string;
   includeTest: boolean;
-  totals: MonitorTotals;
   filteredUnitRows: UnitSummaryRow[];
   onSelectUnit: (unitCode: string) => void;
   onSelectGroup: (group: string) => void;
-  onChangeStageFilter: (stage: string) => void;
+  onResetStageFilter: () => void;
   onChangeSearch: (q: string) => void;
   onToggleIncludeTest: (val: boolean) => void;
 }
 
+type ActivityMode = 'all' | 'active' | 'empty';
+
+const GROUP_COUNTS: Record<string, number> = UNIT_GROUPS.reduce(
+  (acc, g) => ({ ...acc, [g.id]: HCMUTE_UNITS.filter((u) => u.group === g.id).length }),
+  {}
+);
+
+function renderCountPill(value: number, activeClass: string) {
+  if (value <= 0) return <span className="text-[#20446c]/30 font-normal select-none tabular-nums">—</span>;
+  return (
+    <span className={`inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums ${activeClass}`}>
+      {value}
+    </span>
+  );
+}
+
+/**
+ * Bảng theo dõi tiến trình 39 đơn vị thiết kế phẳng, tối ưu mật độ & ưu tiên đơn vị đang triển khai.
+ */
 export function UnitMonitoringTable({
   selectedUnit,
   selectedGroup,
   stageFilter,
   searchQuery,
   includeTest,
-  totals,
   filteredUnitRows,
   onSelectUnit,
   onSelectGroup,
-  onChangeStageFilter,
+  onResetStageFilter,
   onChangeSearch,
   onToggleIncludeTest
 }: UnitMonitoringTableProps) {
+  const [activityMode, setActivityMode] = useState<ActivityMode>('all');
+  const [sortByActivity, setSortByActivity] = useState<boolean>(true);
+
+  const displayRows = useMemo(() => {
+    const byMode = filteredUnitRows.filter((u) => {
+      const hasData = u.totalTickets > 0 || u.populatedSheetsCount > 0;
+      if (activityMode === 'active') return hasData;
+      if (activityMode === 'empty') return !hasData;
+      return true;
+    });
+    if (!sortByActivity) return byMode;
+    return [...byMode].sort((a, b) => {
+      const aActive = a.totalTickets > 0 || a.populatedSheetsCount > 0 ? 1 : 0;
+      const bActive = b.totalTickets > 0 || b.populatedSheetsCount > 0 ? 1 : 0;
+      if (bActive !== aActive) return bActive - aActive;
+      if (b.submittedCount !== a.submittedCount) return b.submittedCount - a.submittedCount;
+      if (b.totalTickets !== a.totalTickets) return b.totalTickets - a.totalTickets;
+      if (b.progressPercent !== a.progressPercent) return b.progressPercent - a.progressPercent;
+      return a.unitCode.localeCompare(b.unitCode);
+    });
+  }, [filteredUnitRows, activityMode, sortByActivity]);
+
   return (
-    <div className="space-y-4">
-      {/* 6 Thẻ số liệu KPI trọng yếu */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <div className="p-3.5 rounded-2xl bg-[#f8fbff] border border-[#dbe8f5] space-y-1">
-          <div className="text-[11px] font-bold text-[#476885]">Tổng phiếu kê khai</div>
-          <div className="text-2xl font-extrabold text-[#004776]">{totals.totalTickets}</div>
-          <div className="text-[11px] text-[#0072BC] font-semibold">
-            {selectedUnit === 'ALL' ? `${totals.unitsWithTickets}/39 đơn vị đã tạo phiếu` : `Đơn vị [${selectedUnit}]`}
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-[#f8fafc] border border-[#cbd5e1] space-y-1">
-          <div className="text-[11px] font-bold text-[#476885]">Đang lưu nháp</div>
-          <div className="text-2xl font-extrabold text-[#004776]">{totals.draftCount}</div>
-          <div className="text-[11px] text-[#476885]">Phiếu Nháp cá nhân</div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-1">
-          <div className="text-[11px] font-bold text-[#0072BC]">Đã gửi chờ duyệt</div>
-          <div className="text-2xl font-extrabold text-[#0072BC]">{totals.submittedCount}</div>
-          <div className="text-[11px] text-[#004776]">
-            Nộp mới &amp; nộp lại ({totals.resubmittedCount} nộp lại)
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1">
-          <div className="text-[11px] font-bold text-amber-800">Yêu cầu bổ sung</div>
-          <div className="text-2xl font-extrabold text-amber-700">{totals.changesRequestedCount}</div>
-          <div className="text-[11px] text-amber-800">Đang chờ cán bộ chỉnh sửa</div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
-          <div className="text-[11px] font-bold text-emerald-800">Đã phê duyệt</div>
-          <div className="text-2xl font-extrabold text-emerald-700">{totals.approvedCount}</div>
-          <div className="text-[11px] text-emerald-800">Sẵn sàng gộp vào biểu</div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-1">
-          <div className="text-[11px] font-bold text-purple-900">Đã gộp B1/B2</div>
-          <div className="text-2xl font-extrabold text-purple-800">{totals.mergedCount}</div>
-          <div className="text-[11px] text-purple-900">{totals.totalAccounts} tài khoản nhân sự</div>
-        </div>
-      </div>
-
-      {/* Thanh công cụ lọc chi tiết Khối đơn vị, Trạng thái tiến trình & Tìm kiếm */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#f8fbff] p-3.5 rounded-2xl border border-[#dbe8f5]">
+    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden">
+      {/* Thanh công cụ 1 dòng gọn gàng */}
+      <div className="px-4 py-3 border-b border-[#e8eff7] bg-[#fafcff] flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-1.5">
-          <Filter className="w-3.5 h-3.5 text-[#0072BC] mr-1" />
           <button
             type="button"
             onClick={() => onSelectGroup('ALL')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
-              selectedGroup === 'ALL' ? 'bg-[#004776] text-white' : 'bg-white text-[#004776] border border-[#cbd5e1]'
+            className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+              selectedGroup === 'ALL' ? 'bg-[#004776] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
             }`}
           >
-            Tất cả khối
+            Tất cả ({HCMUTE_UNITS.length})
           </button>
           {UNIT_GROUPS.map((g) => (
             <button
               key={g.id}
               type="button"
               onClick={() => onSelectGroup(g.id)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
-                selectedGroup === g.id ? 'bg-[#004776] text-white' : 'bg-white text-[#004776] border border-[#cbd5e1]'
+              className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                selectedGroup === g.id ? 'bg-[#004776] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
               }`}
             >
-              {g.label}
+              {SHORT_UNIT_GROUP_LABELS[g.id] || g.label} ({GROUP_COUNTS[g.id] || 0})
             </button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="Lọc theo trạng thái tiến trình"
-            value={stageFilter}
-            onChange={(e) => onChangeStageFilter(e.target.value)}
-            className="h-9 px-2.5 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776]"
-          >
-            <option value="ALL">Mọi trạng thái tiến trình</option>
-            <option value="has_pending">Đơn vị có phiếu gửi chờ duyệt</option>
-            <option value="has_draft">Đơn vị có phiếu lưu nháp</option>
-            <option value="has_changes">Đơn vị có phiếu yêu cầu bổ sung</option>
-            <option value="has_approved">Đơn vị có phiếu đã duyệt</option>
-            <option value="has_merged">Đơn vị đã gộp B1/B2</option>
-            <option value="empty">Đơn vị chưa có phiếu kê khai</option>
-          </select>
+          <div className="inline-flex items-center p-0.5 rounded-full bg-[#eef4fb] border border-[#dbe8f5]">
+            {([{ id: 'all', label: 'Tất cả' }, { id: 'active', label: 'Có dữ liệu' }, { id: 'empty', label: 'Chưa kê khai' }] as const).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setActivityMode(m.id)}
+                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all ${
+                  activityMode === m.id ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#20446c] hover:text-[#004776]'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#64748b] absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#20446c]/60 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onChangeSearch(e.target.value)}
-              placeholder="Tìm mã hoặc tên đơn vị..."
-              className="h-9 pl-8 pr-3 rounded-xl border border-[#cbd5e1] bg-white text-xs text-[#004776] outline-hidden focus:border-[#0072BC]"
+              placeholder="Tìm mã hoặc tên đơn vị…"
+              className="h-9 pl-8 pr-7 w-48 sm:w-52 rounded-full border border-[#cbd5e1] bg-white text-xs text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Xóa từ khóa tìm kiếm"
+                onClick={() => onChangeSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#20446c]/60 hover:text-[#004776] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#004776] cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={includeTest}
-              onChange={(e) => onToggleIncludeTest(e.target.checked)}
-              className="rounded border-[#cbd5e1]"
-            />
-            <span>Kèm phiếu thử lịch sử (CK)</span>
-          </label>
+          <button
+            type="button"
+            onClick={() => onToggleIncludeTest(!includeTest)}
+            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold border cursor-pointer transition-colors ${
+              includeTest ? 'bg-[#fff4e5] text-[#c26d00] border-[#fcd34d]' : 'bg-white text-[#20446c] border-[#d8e3ef] hover:bg-[#eef5ff]'
+            }`}
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            <span>Phiếu thử (CK)</span>
+          </button>
         </div>
       </div>
 
-      {/* Bảng theo dõi tiến trình 39 đơn vị */}
-      <div className="rounded-2xl border border-[#dbe8f5] overflow-hidden">
-        <div className="overflow-x-auto max-h-[400px]">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-[#f1f6fc] text-[#004776] sticky top-0 z-10 border-b border-[#dbe8f5]">
+      {stageFilter !== 'ALL' && (
+        <div className="px-4 py-2 bg-[#f4f9ff] border-b border-[#dbe8f5] flex items-center justify-between text-xs text-[#004776]">
+          <span>Đang lọc theo thẻ KPI — hiển thị <strong>{displayRows.length}</strong> đơn vị phù hợp.</span>
+          <button type="button" onClick={onResetStageFilter} className="font-semibold text-[#006cee] hover:underline cursor-pointer">
+            Hiển thị tất cả đơn vị
+          </button>
+        </div>
+      )}
+
+      <div className="overflow-x-auto max-h-[420px]">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead className="bg-[#f4f8fc] text-[#004776] sticky top-0 z-10 border-b border-[#dbe8f5] text-[11.5px] font-semibold">
+            <tr>
+              <th className="py-2.5 px-4">
+                <div className="flex items-center gap-2">
+                  <span>Đơn vị ({displayRows.length})</span>
+                  <button
+                    type="button"
+                    onClick={() => setSortByActivity(!sortByActivity)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#d8e3ef] text-[10.5px] font-semibold text-[#20446c] hover:text-[#006cee] cursor-pointer"
+                    title="Đổi cách sắp xếp danh sách đơn vị"
+                  >
+                    <ArrowUpDown className="w-3 h-3" />
+                    <span>{sortByActivity ? 'Ưu tiên hoạt động' : 'Theo danh mục'}</span>
+                  </button>
+                </div>
+              </th>
+              <th className="py-2.5 px-3">Tiến trình</th>
+              <th className="py-2.5 px-2 text-center">Lưu nháp</th>
+              <th className="py-2.5 px-2 text-center">Gửi duyệt</th>
+              <th className="py-2.5 px-2 text-center">Cần sửa</th>
+              <th className="py-2.5 px-2 text-center">Đã duyệt</th>
+              <th className="py-2.5 px-2 text-center">Đã gộp B1/B2</th>
+              <th className="py-2.5 px-2.5 text-center">Biểu đã nhập</th>
+              <th className="py-2.5 px-2.5 text-center">Nhân sự</th>
+              <th className="py-2.5 px-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#eef3f8]">
+            {displayRows.length === 0 ? (
               <tr>
-                <th className="py-2.5 px-3 font-bold">Đơn vị ({filteredUnitRows.length})</th>
-                <th className="py-2.5 px-3 font-bold">Tiến trình &amp; Mức độ</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Lưu nháp</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Gửi duyệt</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Cần sửa</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Đã duyệt</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Đã gộp B1/B2</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Biểu đã nhập</th>
-                <th className="py-2.5 px-2.5 font-bold text-center">Nhân sự</th>
-                <th className="py-2.5 px-3 font-bold text-right">Thao tác nhanh</th>
+                <td colSpan={10} className="py-10 text-center text-xs text-[#20446c]">Không có đơn vị nào phù hợp với điều kiện lọc hiện tại.</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eef3f8]">
-              {filteredUnitRows.map((u) => {
+            ) : (
+              displayRows.map((u) => {
                 const isSelected = selectedUnit === u.unitCode;
                 return (
                   <tr
                     key={u.unitCode}
-                    className={`hover:bg-[#f4f9ff] transition-colors ${isSelected ? 'bg-[#eef6ff]' : 'bg-white'}`}
+                    className={`transition-colors ${isSelected ? 'bg-[#eef6ff]/90 shadow-[inset_3px_0_0_0_#006cee]' : 'bg-white hover:bg-[#f7fbff]'}`}
                   >
-                    <td className="py-2.5 px-3">
-                      <button
-                        type="button"
-                        onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)}
-                        className="text-left group cursor-pointer"
-                      >
-                        <div className="font-bold text-[#004776] group-hover:text-[#0072BC]">
-                          [{u.unitCode}] {u.unitNameVi}
+                    <td className="py-2.5 px-4">
+                      <button type="button" onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)} className="text-left group cursor-pointer flex items-start gap-2">
+                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#e1edf8] text-[#004776] group-hover:bg-[#006cee] group-hover:text-white transition-colors shrink-0 mt-0.5">
+                          {u.unitCode}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[#004776] group-hover:text-[#006cee] leading-snug">{u.unitNameVi}</div>
+                          <div className="text-[11px] text-[#20446c]/80">{SHORT_UNIT_GROUP_LABELS[u.group] || u.groupLabel}</div>
                         </div>
-                        <div className="text-[11px] text-[#476885]">{u.groupLabel}</div>
                       </button>
                     </td>
-                    <td className="py-2.5 px-3 min-w-[165px]">
-                      <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                        <span>{u.stageLabel}</span>
-                        <span className="text-[#0072BC]">{u.progressPercent}%</span>
+                    <td className="py-2.5 px-3 min-w-[160px]">
+                      <div className="flex items-center justify-between text-[11px] font-semibold mb-1 tabular-nums">
+                        <span className="text-[#20446c] truncate max-w-[120px]">{u.stageLabel}</span>
+                        <span className="text-[#006cee] font-bold">{u.progressPercent}%</span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-[#e2e8f0] overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-[#0072BC] to-emerald-500 rounded-full"
-                          style={{ width: `${u.progressPercent}%` }}
-                        />
+                      <div className="w-full h-1.5 rounded-full bg-[#e8eff7] overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[#006cee] to-[#00b87a] rounded-full transition-all" style={{ width: `${u.progressPercent}%` }} />
                       </div>
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-bold">
-                      {u.draftCount > 0 ? <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[#004776]">{u.draftCount}</span> : '0'}
+                    <td className="py-2.5 px-2 text-center">{renderCountPill(u.draftCount, 'bg-[#eef4fb] text-[#004776]')}</td>
+                    <td className="py-2.5 px-2 text-center">{renderCountPill(u.submittedCount, 'bg-[#e6f1ff] text-[#006cee]')}</td>
+                    <td className="py-2.5 px-2 text-center">{renderCountPill(u.changesRequestedCount, 'bg-[#fff4e5] text-[#c26d00]')}</td>
+                    <td className="py-2.5 px-2 text-center">{renderCountPill(u.approvedCount, 'bg-[#e6f9f1] text-[#008f5d]')}</td>
+                    <td className="py-2.5 px-2 text-center">{renderCountPill(u.mergedCount, 'bg-purple-50 text-purple-800')}</td>
+                    <td className="py-2.5 px-2.5 text-center font-semibold text-[#20446c] tabular-nums whitespace-nowrap">
+                      {u.populatedSheetsCount > 0 ? `${u.populatedSheetsCount}/${u.totalCoreSheets} (v${u.workbookRevision})` : <span className="text-[#20446c]/35 font-normal">0/{u.totalCoreSheets}</span>}
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-bold">
-                      {u.submittedCount > 0 ? <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#0072BC]">{u.submittedCount}</span> : '0'}
+                    <td className="py-2.5 px-2.5 text-center text-[11px] text-[#20446c] tabular-nums whitespace-nowrap">
+                      <strong className="text-[#004776]">{u.accountCount}</strong> ({u.leaderCount} LĐ · {u.staffCount} CB)
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-bold">
-                      {u.changesRequestedCount > 0 ? <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700">{u.changesRequestedCount}</span> : '0'}
-                    </td>
-                    <td className="py-2.5 px-2.5 text-center font-bold">
-                      {u.approvedCount > 0 ? <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">{u.approvedCount}</span> : '0'}
-                    </td>
-                    <td className="py-2.5 px-2.5 text-center font-bold">
-                      {u.mergedCount > 0 ? <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-800">{u.mergedCount}</span> : '0'}
-                    </td>
-                    <td className="py-2.5 px-2.5 text-center font-semibold text-[#335d84]">
-                      {u.populatedSheetsCount}/{u.totalCoreSheets} biểu (v{u.workbookRevision})
-                    </td>
-                    <td className="py-2.5 px-2.5 text-center text-[11px] text-[#476885]">
-                      <strong>{u.accountCount}</strong> ({u.leaderCount} LĐ / {u.staffCount} CB)
-                    </td>
-                    <td className="py-2.5 px-3 text-right whitespace-nowrap space-x-1.5">
-                      <button
-                        type="button"
-                        onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)}
-                        className="px-2.5 py-1 rounded-lg bg-[#e1edf8] hover:bg-[#0072BC] text-[#004776] hover:text-white text-[11px] font-bold cursor-pointer transition-colors"
-                      >
-                        {isSelected ? 'Bỏ lọc' : 'Lọc đơn vị'}
-                      </button>
-                      <Link
-                        href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`}
-                        onClick={() => {
-                          if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-[11px] font-bold text-[#004776]"
-                      >
-                        <span>Phiếu</span>
-                        <ExternalLink className="w-3 h-3 text-[#0072BC]" />
-                      </Link>
-                      <Link
-                        href="/bang-tinh"
-                        onClick={() => {
-                          if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-[11px] font-bold text-[#004776]"
-                      >
-                        <FileSpreadsheet className="w-3 h-3 text-[#0072BC]" />
-                        <span>15 biểu</span>
-                      </Link>
+                    <td className="py-2.5 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Link
+                          href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`}
+                          onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
+                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors"
+                        >
+                          <span>Phiếu</span>
+                          <ExternalLink className="w-3 h-3 text-[#006cee]" />
+                        </Link>
+                        <Link
+                          href="/bang-tinh"
+                          onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
+                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors"
+                        >
+                          <FileSpreadsheet className="w-3 h-3 text-[#006cee]" />
+                          <span>15 biểu</span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

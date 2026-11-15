@@ -105,13 +105,13 @@ export default function HomePage() {
 
       {/* Thanh chuyển đổi Tab dành riêng cho Phòng Tổ chức - Nhân sự & Admin */}
       {isTcnsOrAdmin && (
-        <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-[#d8e3ef] shadow-2xs">
+        <div className="inline-flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-full border border-[#dbe8f5] shadow-2xs">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 cursor-pointer transition-all ${
+            className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
               activeTab === 'overview'
-                ? 'bg-[#0072BC] text-white shadow-xs'
+                ? 'bg-[#006cee] text-white shadow-xs'
                 : 'text-[#004776] hover:bg-[#eef5ff]'
             }`}
           >
@@ -122,9 +122,9 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setActiveTab('unit-monitor')}
-            className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 cursor-pointer transition-all ${
+            className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
               activeTab === 'unit-monitor'
-                ? 'bg-[#0072BC] text-white shadow-xs'
+                ? 'bg-[#006cee] text-white shadow-xs'
                 : 'text-[#004776] hover:bg-[#eef5ff]'
             }`}
           >

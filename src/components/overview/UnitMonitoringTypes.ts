@@ -76,3 +76,34 @@ export interface MonitorHistoryItem {
   statusBadge?: string;
   timestampIso: string;
 }
+
+export type StageFilterKey =
+  | 'ALL'
+  | 'has_draft'
+  | 'has_pending'
+  | 'has_changes'
+  | 'has_approved'
+  | 'has_merged'
+  | 'empty';
+
+export const SHORT_UNIT_GROUP_LABELS: Record<string, string> = {
+  'khoa-vien': 'Khoa & Viện',
+  'phong-ban': 'Phòng & Ban',
+  'trung-tam': 'Trung tâm',
+  'dang-doanthe': 'Đảng ủy'
+};
+
+/**
+ * Định dạng mốc thời gian gọn chuẩn bảng theo dõi: HH:mm · DD/MM/YYYY.
+ */
+export function formatCompactTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${hh}:${mm} · ${dd}/${mo}/${yyyy}`;
+}

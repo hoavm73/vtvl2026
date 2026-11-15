@@ -1,233 +1,215 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  FileText, History, Clock, CheckCircle2, AlertTriangle,
-  RefreshCw, FileSpreadsheet, ShieldCheck, ExternalLink, User
-} from 'lucide-react';
-import { MonitorTicketItem, MonitorHistoryItem } from './UnitMonitoringTypes';
+import { FileText, History, Clock, CheckCircle2, AlertTriangle, RefreshCw, ExternalLink, User } from 'lucide-react';
+import { MonitorTicketItem, MonitorHistoryItem, formatCompactTime } from './UnitMonitoringTypes';
 
 interface UnitMonitoringHistoryPanelProps {
   selectedUnit: string;
   tickets: MonitorTicketItem[];
   history: MonitorHistoryItem[];
+  externalStatusSync?: string;
   onSelectUnit: (unitCode: string) => void;
 }
 
+const STATUS_BADGE_META: Record<string, { label: string; badgeClass: string; stripeClass: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  approved: { label: 'Đã duyệt', badgeClass: 'bg-[#e6f9f1] text-[#008f5d]', stripeClass: 'bg-[#00b87a]', Icon: CheckCircle2 },
+  changes_requested: { label: 'Yêu cầu bổ sung', badgeClass: 'bg-[#fff4e5] text-[#c26d00]', stripeClass: 'bg-[#f99c00]', Icon: AlertTriangle },
+  resubmitted: { label: 'Đã nộp lại', badgeClass: 'bg-purple-50 text-purple-700', stripeClass: 'bg-[#7c3aed]', Icon: RefreshCw },
+  submitted: { label: 'Chờ duyệt', badgeClass: 'bg-[#e6f1ff] text-[#006cee]', stripeClass: 'bg-[#006cee]', Icon: Clock },
+  draft: { label: 'Lưu nháp', badgeClass: 'bg-[#eef4fb] text-[#20446c]', stripeClass: 'bg-[#94b2d0]', Icon: Clock }
+};
+
+const TIMELINE_DOT_COLOR: Record<MonitorHistoryItem['category'], string> = {
+  ticket: 'bg-[#006cee] ring-[#e6f1ff]',
+  workbook: 'bg-[#00b87a] ring-[#e6f9f1]',
+  audit: 'bg-[#7c3aed] ring-[#f3e8ff]'
+};
+
+const TICKET_TABS = [
+  { id: 'ALL', label: 'Tất cả' },
+  { id: 'pending', label: 'Chờ duyệt' },
+  { id: 'changes_requested', label: 'Cần bổ sung' },
+  { id: 'approved', label: 'Đã duyệt' },
+  { id: 'merged', label: 'Đã gộp B1/B2' },
+  { id: 'draft', label: 'Lưu nháp' }
+] as const;
+
+const HISTORY_TABS = [
+  { id: 'ALL', label: 'Tất cả' },
+  { id: 'ticket', label: 'Phiếu CV' },
+  { id: 'workbook', label: 'Bảng tính' },
+  { id: 'audit', label: 'Nhật ký' }
+] as const;
+
+/**
+ * Hai khối song song chuẩn S-Link: Danh sách phiếu phẳng có vạch trạng thái & Dòng thời gian lịch sử dọc.
+ */
 export function UnitMonitoringHistoryPanel({
   selectedUnit,
   tickets,
   history,
+  externalStatusSync,
   onSelectUnit
 }: UnitMonitoringHistoryPanelProps) {
   const [ticketStatusFilter, setTicketStatusFilter] = useState<string>('ALL');
   const [historyCatFilter, setHistoryCatFilter] = useState<'ALL' | 'ticket' | 'workbook' | 'audit'>('ALL');
 
-  const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
-      if (ticketStatusFilter === 'ALL') return true;
-      if (ticketStatusFilter === 'merged') return t.isMergedToB1B2;
-      if (ticketStatusFilter === 'pending') return t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted';
-      return t.canonicalStatus === ticketStatusFilter;
-    });
-  }, [tickets, ticketStatusFilter]);
+  useEffect(() => {
+    if (externalStatusSync !== undefined) setTicketStatusFilter(externalStatusSync);
+  }, [externalStatusSync]);
 
-  const filteredHistory = useMemo(() => {
-    return history.filter((h) => (historyCatFilter === 'ALL' ? true : h.category === historyCatFilter));
-  }, [history, historyCatFilter]);
+  const ticketTabCounts = useMemo(() => ({
+    ALL: tickets.length,
+    pending: tickets.filter((t) => t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted').length,
+    changes_requested: tickets.filter((t) => t.canonicalStatus === 'changes_requested').length,
+    approved: tickets.filter((t) => t.canonicalStatus === 'approved').length,
+    merged: tickets.filter((t) => t.isMergedToB1B2).length,
+    draft: tickets.filter((t) => t.canonicalStatus === 'draft').length
+  }), [tickets]);
 
-  const formatTime = (iso?: string) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString('vi-VN', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  };
+  const filteredTickets = useMemo(() => tickets.filter((t) => {
+    if (ticketStatusFilter === 'ALL') return true;
+    if (ticketStatusFilter === 'merged') return t.isMergedToB1B2;
+    if (ticketStatusFilter === 'pending') return t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted';
+    return t.canonicalStatus === ticketStatusFilter;
+  }), [tickets, ticketStatusFilter]);
 
-  const renderStatusBadge = (t: MonitorTicketItem) => {
-    if (t.canonicalStatus === 'approved') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle2 className="w-3 h-3" /> Đã duyệt
-        </span>
-      );
-    }
-    if (t.canonicalStatus === 'changes_requested') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-          <AlertTriangle className="w-3 h-3" /> Yêu cầu bổ sung
-        </span>
-      );
-    }
-    if (t.canonicalStatus === 'resubmitted') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-          <RefreshCw className="w-3 h-3" /> Đã nộp lại
-        </span>
-      );
-    }
-    if (t.canonicalStatus === 'submitted') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#0072BC] border border-blue-200">
-          <Clock className="w-3 h-3" /> Chờ duyệt
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#f1f5f9] text-[#004776] border border-[#cbd5e1]">
-        <Clock className="w-3 h-3" /> Lưu nháp
-      </span>
-    );
-  };
+  const filteredHistory = useMemo(
+    () => history.filter((h) => (historyCatFilter === 'ALL' ? true : h.category === historyCatFilter)),
+    [history, historyCatFilter]
+  );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
-      {/* Cột trái: Danh sách phiếu công việc hiện có */}
-      <div className="lg:col-span-7 bg-[#f8fbff] rounded-2xl border border-[#dbe8f5] p-4 sm:p-5 space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2ecf7] pb-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#0072BC]" />
-            <h3 className="text-sm font-bold text-[#004776]">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      {/* Cột trái: Danh sách phiếu khảo sát phẳng, vạch màu trạng thái */}
+      <div className="xl:col-span-7 bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col">
+        <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
+            <h3 className="text-sm font-bold text-[#004776] truncate">
               Phiếu khảo sát hiện có ({filteredTickets.length})
-              {selectedUnit !== 'ALL' ? ` — Đơn vị [${selectedUnit}]` : ' — Toàn trường'}
             </h3>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">
+              {selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1">
-            {[
-              { id: 'ALL', label: 'Tất cả' },
-              { id: 'draft', label: 'Lưu nháp' },
-              { id: 'pending', label: 'Gửi duyệt' },
-              { id: 'changes_requested', label: 'Cần bổ sung' },
-              { id: 'approved', label: 'Đã duyệt' },
-              { id: 'merged', label: 'Đã gộp B1/B2' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setTicketStatusFilter(tab.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
-                  ticketStatusFilter === tab.id
-                    ? 'bg-[#0072BC] text-white shadow-2xs'
-                    : 'bg-white text-[#004776] border border-[#d8e3ef] hover:bg-[#eef5ff]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {TICKET_TABS.map((tab) => {
+              const cnt = ticketTabCounts[tab.id];
+              const isActive = ticketStatusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setTicketStatusFilter(tab.id)}
+                  className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1 ${
+                    isActive ? 'bg-[#006cee] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {cnt > 0 && <span className={`text-[10px] tabular-nums ${isActive ? 'text-white/90' : 'text-[#006cee] font-bold'}`}>{cnt}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {filteredTickets.length === 0 ? (
-          <div className="py-10 text-center text-xs text-[#476885] bg-white rounded-xl border border-[#e2ecf7]">
-            Chưa có phiếu khảo sát nào khớp với bộ lọc hiện tại.
-          </div>
+          <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có phiếu khảo sát nào khớp với bộ lọc hiện tại.</div>
         ) : (
-          <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
-            {filteredTickets.map((t) => (
-              <div
-                key={t.id}
-                className="p-3.5 rounded-xl bg-white border border-[#dbe8f5] hover:border-[#0072BC] transition-all space-y-2 shadow-2xs"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onSelectUnit(t.unitCode)}
-                      className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#e1edf8] text-[#004776] hover:bg-[#0072BC] hover:text-white cursor-pointer transition-colors"
-                    >
-                      [{t.unitCode}]
-                    </button>
-                    <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2 py-0.5 rounded-md">
-                      {t.maCongViec}
-                    </span>
-                    {t.currentVersionNo > 0 && (
-                      <span className="text-[11px] font-bold text-[#004776] bg-[#f8fafc] px-2 py-0.5 rounded-md border border-[#cbd5e1]">
-                        v{t.currentVersionNo}
-                      </span>
+          <div className="divide-y divide-[#eef3f8] max-h-[430px] overflow-y-auto">
+            {filteredTickets.map((t) => {
+              const meta = STATUS_BADGE_META[t.canonicalStatus] || STATUS_BADGE_META.draft;
+              const BadgeIcon = meta.Icon;
+              return (
+                <div key={t.id} className="px-4 py-3 hover:bg-[#f8fbff] transition-colors flex gap-3">
+                  <div className={`w-1 rounded-full shrink-0 self-stretch ${meta.stripeClass}`} />
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => onSelectUnit(t.unitCode)}
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#e1edf8] text-[#004776] hover:bg-[#006cee] hover:text-white cursor-pointer transition-colors"
+                        >
+                          {t.unitCode}
+                        </button>
+                        <span className="text-[11.5px] font-mono font-bold text-[#006cee] tabular-nums">{t.maCongViec}</span>
+                        {t.currentVersionNo > 0 && (
+                          <span className="text-[10.5px] font-semibold text-[#20446c] bg-[#f4f8fc] px-1.5 py-0.5 rounded border border-[#dbe8f5] tabular-nums">
+                            v{t.currentVersionNo}
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${meta.badgeClass}`}>
+                          <BadgeIcon className="w-3 h-3" /> {meta.label}
+                        </span>
+                        {t.isMergedToB1B2 && (
+                          <span className="text-[11px] font-semibold text-[#008f5d] bg-[#e6f9f1] px-2 py-0.5 rounded-full">Đã gộp B1/B2</span>
+                        )}
+                        {t.isTestData && (
+                          <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Dữ liệu thử</span>
+                        )}
+                      </div>
+
+                      <Link
+                        href={`/phieu-cong-viec?unitCode=${encodeURIComponent(t.unitCode)}&tab=unit`}
+                        onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', t.unitCode); }}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#006cee] hover:text-[#004776] shrink-0"
+                      >
+                        <span>Mở phiếu</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+
+                    <div className="text-[13px] font-semibold text-[#004776] leading-snug">{t.tenCongViec}</div>
+
+                    {t.revisionReason && (
+                      <div className="px-2.5 py-1.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-[11px] text-[#004776]">
+                        <strong>Yêu cầu sửa:</strong> {t.revisionReason}
+                      </div>
                     )}
-                    {renderStatusBadge(t)}
-                    {t.isMergedToB1B2 && (
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        Đã gộp B1/B2
-                      </span>
+                    {t.lastChangeSummary && (
+                      <div className="px-2.5 py-1.5 rounded-lg bg-[#f4f9ff] border-l-2 border-[#006cee] text-[11px] text-[#004776]">
+                        <strong>Giải trình:</strong> {t.lastChangeSummary}
+                      </div>
                     )}
-                    {t.isTestData && (
-                      <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                        Dữ liệu thử lịch sử
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#20446c]/80 tabular-nums">
+                      <span className="inline-flex items-center gap-1 min-w-0 truncate">
+                        <User className="w-3 h-3 text-[#006cee] shrink-0" />
+                        <strong className="text-[#004776] truncate">{t.ownerName || t.ownerEmail}</strong>
+                        <span className="truncate">({t.ownerEmail})</span>
                       </span>
-                    )}
+                      <span className="shrink-0">
+                        <strong className="text-[#004776]">{t.soSpNam}</strong> SP · <strong className="text-[#004776]">{t.totalHours}h</strong>/năm · {formatCompactTime(t.updatedAt)}
+                      </span>
+                    </div>
                   </div>
-
-                  <Link
-                    href={`/phieu-cong-viec?unitCode=${encodeURIComponent(t.unitCode)}&tab=unit`}
-                    onClick={() => {
-                      if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', t.unitCode);
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0072BC] hover:text-[#004776]"
-                  >
-                    <span>Mở phiếu</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
                 </div>
-
-                <div className="text-xs sm:text-sm font-bold text-[#004776] leading-snug">
-                  {t.tenCongViec}
-                </div>
-
-                {t.revisionReason && (
-                  <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-[#004776]">
-                    <strong>Yêu cầu chỉnh sửa:</strong> {t.revisionReason}
-                  </div>
-                )}
-                {t.lastChangeSummary && (
-                  <div className="p-2 rounded-lg bg-blue-50/70 border border-blue-200 text-[11px] text-[#004776]">
-                    <strong>Giải trình cập nhật:</strong> {t.lastChangeSummary}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#476885] pt-0.5">
-                  <span className="inline-flex items-center gap-1">
-                    <User className="w-3 h-3 text-[#0072BC]" />
-                    <strong>{t.ownerName || t.ownerEmail}</strong> ({t.ownerEmail})
-                  </span>
-                  <span>
-                    Sản lượng: <strong>{t.soSpNam}</strong> SP • Tổng: <strong>{t.totalHours}h</strong>/năm • Cập nhật: {formatTime(t.updatedAt)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Cột phải: Dòng thời gian Lịch sử hiện có & Nhật ký tiến trình */}
-      <div className="lg:col-span-5 bg-[#f8fbff] rounded-2xl border border-[#dbe8f5] p-4 sm:p-5 space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2ecf7] pb-3">
+      {/* Cột phải: Dòng thời gian lịch sử hoạt động (Vertical Timeline) */}
+      <div className="xl:col-span-5 bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col">
+        <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#0072BC]" />
-            <h3 className="text-sm font-bold text-[#004776]">
-              Lịch sử hoạt động &amp; Tiến trình ({filteredHistory.length})
-            </h3>
+            <History className="w-4 h-4 text-[#006cee] shrink-0" />
+            <h3 className="text-sm font-bold text-[#004776]">Nhật ký tiến trình &amp; lịch sử ({filteredHistory.length})</h3>
           </div>
-
-          <div className="flex flex-wrap items-center gap-1">
-            {[
-              { id: 'ALL', label: 'Tất cả' },
-              { id: 'ticket', label: 'Phiếu CV' },
-              { id: 'workbook', label: 'Bảng tính' },
-              { id: 'audit', label: 'Nhật ký' }
-            ].map((c) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {HISTORY_TABS.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                onClick={() => setHistoryCatFilter(c.id as 'ALL' | 'ticket' | 'workbook' | 'audit')}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
-                  historyCatFilter === c.id
-                    ? 'bg-[#004776] text-white'
-                    : 'bg-white text-[#004776] border border-[#d8e3ef] hover:bg-[#eef5ff]'
+                onClick={() => setHistoryCatFilter(c.id)}
+                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${
+                  historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
                 }`}
               >
                 {c.label}
@@ -237,40 +219,37 @@ export function UnitMonitoringHistoryPanel({
         </div>
 
         {filteredHistory.length === 0 ? (
-          <div className="py-10 text-center text-xs text-[#476885] bg-white rounded-xl border border-[#e2ecf7]">
-            Chưa có bản ghi lịch sử hoạt động nào.
-          </div>
+          <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có bản ghi lịch sử hoạt động nào.</div>
         ) : (
-          <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
-            {filteredHistory.map((item) => {
-              const CatIcon =
-                item.category === 'ticket' ? FileText : item.category === 'workbook' ? FileSpreadsheet : ShieldCheck;
-              return (
-                <div key={item.id} className="p-3 rounded-xl bg-white border border-[#dbe8f5] space-y-1.5 shadow-2xs">
+          <div className="p-4 max-h-[430px] overflow-y-auto">
+            <div className="relative pl-5 space-y-4">
+              <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
+              {filteredHistory.map((item) => (
+                <div key={item.id} className="relative space-y-1">
+                  <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${TIMELINE_DOT_COLOR[item.category]}`} />
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <CatIcon className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
                       <button
                         type="button"
                         onClick={() => onSelectUnit(item.unitCode)}
-                        className="text-[11px] font-bold text-[#0072BC] hover:underline cursor-pointer shrink-0"
+                        className="text-[11px] font-bold text-[#006cee] hover:underline cursor-pointer shrink-0"
                       >
                         [{item.unitCode}]
                       </button>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#eef5ff] text-[#004776] truncate">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] truncate">
                         {item.actionLabel}
                       </span>
                     </div>
-                    <span className="text-[10.5px] text-[#476885] shrink-0">{formatTime(item.timestampIso)}</span>
+                    <span className="text-[10.5px] text-[#20446c]/75 shrink-0 tabular-nums">{formatCompactTime(item.timestampIso)}</span>
                   </div>
-                  <div className="text-xs font-bold text-[#004776] leading-snug">{item.title}</div>
-                  <div className="text-[11px] text-[#335d84] leading-relaxed">{item.details}</div>
-                  <div className="text-[10.5px] text-[#476885]">
-                    Người thực hiện: <strong className="text-[#004776]">{item.actorEmail}</strong> • {item.unitNameVi}
+                  <div className="text-xs font-semibold text-[#004776] leading-snug">{item.title}</div>
+                  <div className="text-[11px] text-[#20446c] leading-relaxed">{item.details}</div>
+                  <div className="text-[10.5px] text-[#20446c]/80">
+                    Thực hiện: <strong className="text-[#004776]">{item.actorEmail}</strong> · {item.unitNameVi}
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         )}
       </div>

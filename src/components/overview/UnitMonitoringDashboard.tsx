@@ -8,19 +8,35 @@ import {
   UnitSummaryRow,
   MonitorTotals,
   MonitorTicketItem,
-  MonitorHistoryItem
+  MonitorHistoryItem,
+  StageFilterKey
 } from './UnitMonitoringTypes';
+import { UnitMonitoringKpiStrip } from './UnitMonitoringKpiStrip';
 import { UnitMonitoringTable } from './UnitMonitoringTable';
 import { UnitMonitoringHistoryPanel } from './UnitMonitoringHistoryPanel';
 
+const STAGE_TO_TICKET_TAB: Record<StageFilterKey, string> = {
+  ALL: 'ALL',
+  has_draft: 'draft',
+  has_pending: 'pending',
+  has_changes: 'changes_requested',
+  has_approved: 'approved',
+  has_merged: 'merged',
+  empty: 'ALL'
+};
+
+/**
+ * Dashboard theo dõi tiến trình, số liệu kê khai & lịch sử đơn vị dành cho Phòng TCNS và Quản trị viên.
+ */
 export function UnitMonitoringDashboard() {
   const [selectedUnit, setSelectedUnit] = useState<string>('ALL');
   const [selectedGroup, setSelectedGroup] = useState<string>('ALL');
-  const [stageFilter, setStageFilter] = useState<string>('ALL');
+  const [stageFilter, setStageFilter] = useState<StageFilterKey>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [includeTest, setIncludeTest] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(true);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [totals, setTotals] = useState<MonitorTotals>({
     totalUnits: 39,
@@ -76,6 +92,8 @@ export function UnitMonitoringDashboard() {
       setUnitSummaries(data.unitSummaries || []);
       setTickets(data.tickets || []);
       setHistory(data.history || []);
+      const now = new Date();
+      setLastSyncedTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
     } catch {
       setError('Lỗi kết nối máy chủ khi tải Dashboard theo dõi đơn vị.');
     } finally {
@@ -110,90 +128,133 @@ export function UnitMonitoringDashboard() {
     [selectedUnit]
   );
 
+  const activeUnitRow = useMemo(
+    () => (selectedUnit === 'ALL' ? null : unitSummaries.find((u) => u.unitCode === selectedUnit) || null),
+    [selectedUnit, unitSummaries]
+  );
+
+  const isInitialSkeleton = loading && unitSummaries.length === 0;
+
   return (
-    <section className="bg-white rounded-3xl border border-[#d8e3ef] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5 text-[#004776]">
-      {/* Header & Bộ lọc tổng hợp Toàn trường / Theo đơn vị */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#e2ecf7] pb-4">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold bg-[#e1edf8] text-[#004776]">
-            <Layers className="w-3.5 h-3.5 text-[#0072BC]" />
-            <span>Dành riêng cho Phòng Tổ chức - Nhân sự &amp; Quản trị viên</span>
+    <section className="space-y-4 text-[#004776]">
+      {/* Khối Header điều hành & Dải KPI chuẩn S-Link */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#dbe8f5] p-4 sm:p-5 shadow-[0_2px_16px_-4px_rgba(0,71,118,0.06)] space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#e8eff7] pb-4">
+          <div className="space-y-1 min-w-0">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-[#e1edf8] text-[#004776]">
+              <Layers className="w-3.5 h-3.5 text-[#006cee]" />
+              <span>Không gian điều hành · Phòng Tổ chức - Nhân sự &amp; Quản trị viên</span>
+            </div>
+            <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
+              Dashboard theo dõi đơn vị
+            </h2>
+            <p className="text-xs text-[#20446c]">
+              {activeUnitInfo
+                ? `Đang xem chi tiết đơn vị [${activeUnitInfo.code}] ${activeUnitInfo.nameVi}`
+                : 'Tổng hợp tiến trình kê khai phiếu, biểu mẫu và nhật ký hoạt động 39 đơn vị HCM-UTE'}
+            </p>
           </div>
-          <h2 className="text-base sm:text-xl font-bold text-[#004776]">
-            Dashboard theo dõi tiến trình, số liệu phiếu và lịch sử đơn vị
-          </h2>
-          <p className="text-xs text-[#476885]">
-            {activeUnitInfo
-              ? `Đang lọc chi tiết: [${activeUnitInfo.code}] ${activeUnitInfo.nameVi}`
-              : 'Đang xem tổng hợp toàn trường (39 đơn vị hoạt động chính thức)'}
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setSelectedUnit('ALL')}
+              className={`h-9.5 px-4 rounded-full text-xs font-semibold cursor-pointer transition-all ${
+                selectedUnit === 'ALL'
+                  ? 'bg-[#006cee] hover:bg-[#005ecc] text-white shadow-xs'
+                  : 'bg-[#e1edf8] hover:bg-[#d5e5f6] text-[#004776]'
+              }`}
+            >
+              Toàn trường (39)
+            </button>
+
+            <select
+              aria-label="Chọn đơn vị cần theo dõi"
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+              className="h-9.5 px-3.5 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 max-w-[260px]"
+            >
+              <option value="ALL">Lọc theo từng đơn vị…</option>
+              {HCMUTE_UNITS.map((u) => (
+                <option key={u.code} value={u.code}>
+                  [{u.code}] {u.nameVi}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={fetchMonitorData}
+              className="h-9.5 px-3.5 rounded-full border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#006cee] ${loading ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+              {lastSyncedTime && (
+                <span className="text-[11px] font-medium text-[#20446c]/75 tabular-nums">
+                  {lastSyncedTime}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedUnit('ALL')}
-            className={`h-10 px-3.5 rounded-xl text-xs font-bold cursor-pointer transition-all border ${
-              selectedUnit === 'ALL'
-                ? 'bg-[#0072BC] text-white border-[#0072BC] shadow-xs'
-                : 'bg-white text-[#004776] border-[#cbd5e1] hover:bg-[#eef5ff]'
-            }`}
-          >
-            Tổng hợp toàn trường (39)
-          </button>
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-[#f4212e]">
+            {error}
+          </div>
+        )}
 
-          <select
-            aria-label="Chọn đơn vị cần theo dõi"
-            value={selectedUnit}
-            onChange={(e) => setSelectedUnit(e.target.value)}
-            className="h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-xs font-bold text-[#004776] outline-hidden focus:border-[#0072BC]"
-          >
-            <option value="ALL">-- Chọn lọc theo từng đơn vị (39 đơn vị) --</option>
-            {HCMUTE_UNITS.map((u) => (
-              <option key={u.code} value={u.code}>
-                [{u.code}] {u.nameVi}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            onClick={fetchMonitorData}
-            className="h-10 px-3.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-bold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#0072BC] ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </button>
-        </div>
+        {isInitialSkeleton ? (
+          <div className="space-y-3 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="h-[88px] rounded-2xl bg-[#f1f6fc] border border-[#e2ecf7]" />
+              ))}
+            </div>
+            <div className="h-10 rounded-xl bg-[#f4f8fc]" />
+          </div>
+        ) : (
+          <UnitMonitoringKpiStrip
+            selectedUnit={selectedUnit}
+            activeUnitRow={activeUnitRow}
+            stageFilter={stageFilter}
+            totals={totals}
+            onSelectStageFilter={setStageFilter}
+            onClearUnit={() => setSelectedUnit('ALL')}
+          />
+        )}
       </div>
 
-      {error && (
-        <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
-          {error}
+      {isInitialSkeleton ? (
+        <div className="h-72 rounded-2xl bg-white border border-[#dbe8f5] p-5 animate-pulse space-y-3">
+          <div className="h-9 rounded-full bg-[#f1f6fc] w-2/3" />
+          <div className="h-44 rounded-xl bg-[#f8fbff]" />
         </div>
+      ) : (
+        <>
+          <UnitMonitoringTable
+            selectedUnit={selectedUnit}
+            selectedGroup={selectedGroup}
+            stageFilter={stageFilter}
+            searchQuery={searchQuery}
+            includeTest={includeTest}
+            filteredUnitRows={filteredUnitRows}
+            onSelectUnit={setSelectedUnit}
+            onSelectGroup={setSelectedGroup}
+            onResetStageFilter={() => setStageFilter('ALL')}
+            onChangeSearch={setSearchQuery}
+            onToggleIncludeTest={setIncludeTest}
+          />
+
+          <UnitMonitoringHistoryPanel
+            selectedUnit={selectedUnit}
+            tickets={tickets}
+            history={history}
+            externalStatusSync={STAGE_TO_TICKET_TAB[stageFilter]}
+            onSelectUnit={setSelectedUnit}
+          />
+        </>
       )}
-
-      <UnitMonitoringTable
-        selectedUnit={selectedUnit}
-        selectedGroup={selectedGroup}
-        stageFilter={stageFilter}
-        searchQuery={searchQuery}
-        includeTest={includeTest}
-        totals={totals}
-        filteredUnitRows={filteredUnitRows}
-        onSelectUnit={setSelectedUnit}
-        onSelectGroup={setSelectedGroup}
-        onChangeStageFilter={setStageFilter}
-        onChangeSearch={setSearchQuery}
-        onToggleIncludeTest={setIncludeTest}
-      />
-
-      <UnitMonitoringHistoryPanel
-        selectedUnit={selectedUnit}
-        tickets={tickets}
-        history={history}
-        onSelectUnit={setSelectedUnit}
-      />
     </section>
   );
 }

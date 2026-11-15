@@ -207,12 +207,9 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-                Thời gian thực hiện thực tế (phút/SP)
-              </label>
-              <span className="text-[11px] text-[#64748b]">Có thể đo bằng Bấm giờ</span>
-            </div>
+            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+              Thời gian thực hiện thực tế (phút/SP)
+            </label>
             <input
               type="number"
               min="0"

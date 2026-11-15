@@ -189,7 +189,7 @@ export function MergeStepSection({ unit: propUnit }: MergeStepSectionProps) {
 
         {formFiles.length === 0 ? (
           <div className="bg-[var(--sheet)] px-4 py-6 text-center text-xs sm:text-sm text-[var(--ink-muted)]">
-            Chưa có phiếu khảo sát nào được chọn. Bấm <strong>+ Thêm tệp khảo sát</strong> hoặc thực hiện đo tại <Link href="/bam-gio" className="text-[var(--primary)] font-bold underline">Giai đoạn 3: Đo định mức</Link> để tự động đính kèm phiếu.
+            Chưa có phiếu khảo sát nào được chọn. Bấm <strong>+ Thêm tệp khảo sát</strong> để nạp các phiếu đã thu thập vào bảng tổng hợp.
           </div>
         ) : (
           <ul className="divide-y divide-[var(--border-subtle)] bg-[var(--sheet)] px-4">

@@ -132,7 +132,7 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
   staff: {
     label: 'Cán bộ – Giảng viên – Nhân viên',
     badge: 'Quyền Cán bộ – Giảng viên',
-    subtitle: 'Nhiệm vụ trực tiếp kê khai phiếu mô tả công việc, bấm giờ đo đạc thời lượng và nộp hồ sơ',
+    subtitle: 'Nhiệm vụ trực tiếp kê khai phiếu mô tả công việc, xác định khối lượng và nộp hồ sơ',
     actions: [
       {
         id: 'staff-form',
@@ -143,16 +143,6 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; badge: string; subtitle: s
         btnLabel: 'Mở phiếu công việc',
         icon: FileText,
         tag: 'Kê khai cá nhân'
-      },
-      {
-        id: 'staff-timer',
-        title: 'Bấm giờ đo định mức thời gian thực tế',
-        target: 'Công cụ Bấm giờ đo định mức',
-        desc: 'Bấm giờ trực tiếp trên hệ thống để đo lường số phút thực hiện mỗi sản phẩm/hồ sơ, ghi nhận số liệu khách quan.',
-        href: '/bam-gio',
-        btnLabel: 'Bấm giờ thực tế',
-        icon: Clock,
-        tag: 'Đo lường định mức'
       },
       {
         id: 'staff-catalog',

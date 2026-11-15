@@ -52,12 +52,6 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         icon: FileText,
         badge: 'Ưu tiên',
         badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      },
-      {
-        href: '/bam-gio',
-        label: 'Đo định mức thời gian',
-        subLabel: 'Bấm giờ & nhập thời lượng thực tế',
-        icon: Clock
       }
     ]
   },

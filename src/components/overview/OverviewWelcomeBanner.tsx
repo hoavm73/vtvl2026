@@ -185,15 +185,6 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
                   <span>Phiếu công việc</span>
                 </Link>
 
-                {/* Nút Secondary: Bấm giờ (Secondary glass) */}
-                <Link
-                  href="/bam-gio"
-                  className="inline-flex items-center gap-1.5 h-9 sm:h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/25 backdrop-blur-xs transition-all active:scale-[0.98] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <Clock className="w-3.5 h-3.5 text-[#5ED4F4] shrink-0" />
-                  <span>Bấm giờ</span>
-                </Link>
-
                 {role !== 'staff' && (
                   <Link
                     href="/bang-tinh"

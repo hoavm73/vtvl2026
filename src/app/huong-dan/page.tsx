@@ -30,9 +30,9 @@ const ROLE_CARDS = [
   {
     role: '3. Giảng viên & Chuyên viên',
     sheets: 'B1 · B2_CT · C2',
-    summary: 'Đo định mức thời gian (Giai đoạn 3), kê khai sản lượng năm học (Biểu B1) và công đoạn chuyển đổi số (Biểu B2_CT).',
+    summary: 'Kê khai định mức thời gian, sản lượng năm học (Biểu B1) và công đoạn chuyển đổi số (Biểu B2_CT).',
     details: [
-      'Thực hiện đo định mức thời gian xử lý công việc thực tế (Trung bình phút/sản phẩm) tại Giai đoạn 3 (/bam-gio).',
+      'Thực hiện kê khai định mức thời gian xử lý công việc và sản lượng thực tế tại Phiếu công việc cá nhân.',
       'Kê khai sản lượng thực tế phát sinh trong kỳ 01/10/2025–30/9/2026 (Cột C biểu B1), ghi rõ nguồn xác thực (Cột H, I).',
       'Kê khai chi tiết các công đoạn đã ứng dụng chuyển đổi số tại biểu 5. B2_CT_TacDong.'
     ]

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Timer, Play, Pause, Plus, Download, CheckCircle2, Trash2, ArrowRight, UserCheck, ClipboardList, Edit3 } from 'lucide-react';
+import { Timer, Play, Pause, Plus, Download, CheckCircle2, Trash2, ArrowRight, UserCheck, ClipboardList, Edit3, FileText, AlertTriangle } from 'lucide-react';
 import { WorkflowSidebar, InfoTip } from '@/components/layout/MilestonesBar';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { NGACH_LIST_BY_GROUP, TASK_TEMPLATES_BY_GROUP } from '@/configs/hcmute-quotas';
@@ -14,13 +14,7 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 export default function BamGioPage() {
   const [stepMode, setStepMode] = useState<3 | 4>(3);
-  const [unitCode, setUnitCode] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const s = getActiveUnitSession();
-      if (s?.unitCode) return findHcmuteUnit(s.unitCode).code;
-    }
-    return 'CK';
-  });
+  const [unitCode, setUnitCode] = useState<string>(() => (typeof window !== 'undefined' && getActiveUnitSession()?.unitCode ? findHcmuteUnit(getActiveUnitSession().unitCode).code : 'CK'));
   const [proposedPositions, setProposedPositions] = useState<ProposedVtvlRow[]>([]);
   const [customPositionNames, setCustomPositionNames] = useState<Record<string, string>>({});
   const [customCareerLevels, setCustomCareerLevels] = useState<Record<string, string>>({});
@@ -67,9 +61,7 @@ export default function BamGioPage() {
     return () => { window.removeEventListener('popstate', syncUrlStep); window.removeEventListener('vtvl-unit-session-updated', syncFromSession); window.removeEventListener('storage', syncFromSession); window.removeEventListener('vtvl-focus-task', onFocusTask); bc?.close(); };
   }, []);
 
-  const handleSwitchStep = (next: 3 | 4) => {
-    setStepMode(next); if (typeof window !== 'undefined') window.history.replaceState(null, '', `/bam-gio?step=${next}`);
-  };
+  const handleSwitchStep = (next: 3 | 4) => { setStepMode(next); if (typeof window !== 'undefined') window.history.replaceState(null, '', `/bam-gio?step=${next}`); };
 
   const tasksOfUnit = useMemo(() => TASK_TEMPLATES_BY_GROUP[unit.group].map((t) => {
     const cleanSuffix = t.taskSuffix.replace(/^[A-Za-z0-9_]+-/, '');
@@ -86,8 +78,7 @@ export default function BamGioPage() {
     const map = new Map<string, { suffix: string; code: string; name: string; level: string; ngachCode: string }>();
     tasksOfUnit.forEach((t) => {
       if (!map.has(t.vtvlSuffix)) {
-        const cleanSuffix = t.vtvlSuffix.replace(/^[A-Za-z0-9_]+-/, '');
-        const ngach = ngachList.find((n) => n.code === t.ngachCode);
+        const cleanSuffix = t.vtvlSuffix.replace(/^[A-Za-z0-9_]+-/, ''), ngach = ngachList.find((n) => n.code === t.ngachCode);
         const fwTitle = ngach?.frameworkTitle || ngach?.name || t.vtvlName;
         const defaultName = ngach ? buildDefaultSpecificVtvlName(fwTitle, unit.nameVi, ngach.specificNameSuffix, unit.group) : t.vtvlName;
         const specificName = ngach ? customPositionNames[ngach.code] ?? defaultName : t.vtvlName;
@@ -121,10 +112,7 @@ export default function BamGioPage() {
 
   const formatTimer = (sec: number) => `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
   const activeTask = useMemo(() => tasksForPosition.find((t) => t.fullTaskCode === activeTaskCode) || tasksForPosition[0], [tasksForPosition, activeTaskCode]);
-  const measuredTaskCount = useMemo(() => {
-    const codes = new Set(sessions.map((s) => s.taskCode));
-    return tasksForPosition.filter((t) => codes.has(t.fullTaskCode)).length;
-  }, [sessions, tasksForPosition]);
+  const measuredTaskCount = useMemo(() => new Set(sessions.map((s) => s.taskCode)).size, [sessions]);
 
   const commitSessions = (nextSessions: TimeSessionRow[]) => {
     setSessions(nextSessions);
@@ -134,18 +122,18 @@ export default function BamGioPage() {
 
   const handleFinishLiveTimer = () => {
     if (!activeTask) return;
-    const durationMin = Math.max(1, Math.round(elapsedSec / 60)); const prods = Math.max(1, productCountInput);
-    const minPerProd = Number((durationMin / prods).toFixed(1)); const runNum = sessions.filter((s) => s.taskCode === activeTask.fullTaskCode).length + 1;
-    const now = new Date(); const endStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const durationMin = Math.max(1, Math.round(elapsedSec / 60)), prods = Math.max(1, productCountInput), minPerProd = Number((durationMin / prods).toFixed(1));
+    const runNum = sessions.filter((s) => s.taskCode === activeTask.fullTaskCode).length + 1, now = new Date();
+    const endStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     commitSessions([...sessions, { id: `${Date.now()}`, taskCode: activeTask.fullTaskCode, taskName: activeTask.taskName, runNumber: runNum, date: manualDate, startTime: 'Đo trực tiếp', endTime: endStr, durationMinutes: durationMin, productCount: prods, minutesPerProduct: minPerProd, performerTitle }]);
     setRunning(false); setElapsedSec(0); setStatusBanner(`Đã lưu phiên đo thực tế mã ${activeTask.fullTaskCode} (${minPerProd} phút/SP).`);
   };
 
   const handleAddManualSession = (e: React.FormEvent) => {
     e.preventDefault(); if (!activeTask) return;
-    const [sh, sm] = manualStart.split(':').map(Number); const [eh, em] = manualEnd.split(':').map(Number);
-    const durationMin = Math.max(5, eh * 60 + em - (sh * 60 + sm)); const prods = Math.max(1, manualProducts);
-    const minPerProd = Number((durationMin / prods).toFixed(1)); const runNum = sessions.filter((s) => s.taskCode === activeTask.fullTaskCode).length + 1;
+    const [sh, sm] = manualStart.split(':').map(Number), [eh, em] = manualEnd.split(':').map(Number);
+    const durationMin = Math.max(5, eh * 60 + em - (sh * 60 + sm)), prods = Math.max(1, manualProducts), minPerProd = Number((durationMin / prods).toFixed(1));
+    const runNum = sessions.filter((s) => s.taskCode === activeTask.fullTaskCode).length + 1;
     commitSessions([...sessions, { id: `${Date.now()}`, taskCode: activeTask.fullTaskCode, taskName: activeTask.taskName, runNumber: runNum, date: manualDate, startTime: manualStart, endTime: manualEnd, durationMinutes: durationMin, productCount: prods, minutesPerProduct: minPerProd, performerTitle }]);
     setStatusBanner(`Đã lưu bản ghi ${activeTask.fullTaskCode} (${minPerProd} phút/SP).`);
   };
@@ -162,6 +150,22 @@ export default function BamGioPage() {
       <div className="flex flex-col lg:flex-row gap-4 items-start min-w-0">
         <WorkflowSidebar activeStep={stepMode} onSelectStep={(s) => { if (s === 3 || s === 4) handleSwitchStep(s); }} unitCode={unit.code} />
         <div className="flex-1 w-full space-y-4 min-w-0">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-amber-900">Tính năng Bấm giờ đo định mức đang tạm ẩn</h2>
+                <p className="text-xs text-amber-800">Tính năng đang được tinh chỉnh và chuẩn hóa. Quý Thầy/Cô vui lòng thực hiện kê khai tại mục Phiếu công việc cá nhân.</p>
+              </div>
+            </div>
+            <Link href="/phieu-cong-viec" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005a96] text-white text-xs font-semibold shrink-0 transition-colors">
+              <FileText className="w-3.5 h-3.5" />
+              <span>Về Phiếu công việc</span>
+            </Link>
+          </div>
+
           <section className="bg-white rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 shadow-2xs">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3">
               <div className="flex items-center gap-2">

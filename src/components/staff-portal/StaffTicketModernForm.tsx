@@ -228,7 +228,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
           <div className="sm:col-span-6 space-y-1.5">
             <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
-              Giờ làm việc tăng thêm trong năm (nếu có)
+              Giờ bổ sung (Nếu có)
             </label>
             <input
               type="number"

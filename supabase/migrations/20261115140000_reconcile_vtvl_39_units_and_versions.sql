@@ -60,47 +60,47 @@ INSERT INTO public.dm_don_vi (
 )
 VALUES
   -- 1. Khối Khoa / Viện (15 đơn vị)
-  ('CTL',      'Khoa Chính trị và Luật',                                       'Faculty of Political Theory and Law',                     'KHOA_VIEN',    'fpi.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Political Theory and Law',                     36, TRUE, NOW()),
-  ('CK',       'Khoa Cơ khí',                                                  'Faculty of Mechanical Engineering',                       'KHOA_VIEN',    'fme.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Mechanical Engineering',                       78, TRUE, NOW()),
-  ('CNTT',     'Khoa Công nghệ Thông tin',                                     'Faculty of Information Technology',                       'KHOA_VIEN',    'fit.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Information Technology',                       68, TRUE, NOW()),
-  ('DTTT',     'Khoa Đào tạo Tiên tiến',                                       'Faculty of Advanced Education',                           'KHOA_VIEN',    'fae.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Advanced Education',                           38, TRUE, NOW()),
-  ('DDT',      'Khoa Điện - Điện tử',                                          'Faculty of Electrical and Electronics Engineering',       'KHOA_VIEN',    'feee.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Electrical and Electronics Engineering',       82, TRUE, NOW()),
-  ('GTNL',     'Khoa Giao thông và Năng lượng',                                'Faculty of Vehicle and Energy Engineering',               'KHOA_VIEN',    'feet.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Vehicle and Energy Engineering',               64, TRUE, NOW()),
-  ('HHKHSS',   'Khoa Hóa học và Khoa học sự sống',                             'Faculty of Chemical and Food Technology',                 'KHOA_VIEN',    'fcft.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Chemical and Food Technology',                 46, TRUE, NOW()),
-  ('KHUD',     'Khoa Khoa học ứng dụng',                                       'Faculty of Applied Sciences',                             'KHOA_VIEN',    'fas.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Applied Sciences',                             44, TRUE, NOW()),
-  ('KT',       'Khoa Kinh tế',                                                 'Faculty of Economics',                                    'KHOA_VIEN',    'fe.hcmute.edu.vn',         'Trưởng khoa',         'Dean of the Faculty of Economics',                                    54, TRUE, NOW()),
-  ('MTTT',     'Khoa Mỹ thuật và Truyền thông',                                'Faculty of Graphic Arts and Media',                       'KHOA_VIEN',    'fgam.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Graphic Arts and Media',                       48, TRUE, NOW()),
-  ('NN',       'Khoa Ngoại ngữ',                                               'Faculty of Foreign Languages',                            'KHOA_VIEN',    'ffl.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Foreign Languages',                            42, TRUE, NOW()),
-  ('XD',       'Khoa Xây dựng',                                                'Faculty of Civil Engineering',                            'KHOA_VIEN',    'fce.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Civil Engineering',                            52, TRUE, NOW()),
-  ('VSPKT',    'Viện Sư phạm kỹ thuật',                                        'Institute of Technical Education',                        'KHOA_VIEN',    'ite.hcmute.edu.vn',        'Viện trưởng',         'Director of the Institute of Technical Education',                    30, TRUE, NOW()),
-  ('VDTQT',    'Viện Đào tạo Quốc tế',                                         'Institute of International Education',                    'KHOA_VIEN',    'iie.hcmute.edu.vn',        'Viện trưởng',         'Director of the Institute of International Education',                28, TRUE, NOW()),
-  ('SDH',      'Viện Sau Đại học',                                             'Postgraduate School',                                     'KHOA_VIEN',    'sdh.hcmute.edu.vn',        'Viện trưởng',         'Director of the Postgraduate School',                                 18, TRUE, NOW()),
+  ('CTL',      'Khoa Chính trị và Luật',                                       'Faculty of Political Theory and Law',                     'khoa-vien',    'fpi.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Political Theory and Law',                     36, TRUE, NOW()),
+  ('CK',       'Khoa Cơ khí',                                                  'Faculty of Mechanical Engineering',                       'khoa-vien',    'fme.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Mechanical Engineering',                       78, TRUE, NOW()),
+  ('CNTT',     'Khoa Công nghệ Thông tin',                                     'Faculty of Information Technology',                       'khoa-vien',    'fit.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Information Technology',                       68, TRUE, NOW()),
+  ('DTTT',     'Khoa Đào tạo Tiên tiến',                                       'Faculty of Advanced Education',                           'khoa-vien',    'fae.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Advanced Education',                           38, TRUE, NOW()),
+  ('DDT',      'Khoa Điện - Điện tử',                                          'Faculty of Electrical and Electronics Engineering',       'khoa-vien',    'feee.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Electrical and Electronics Engineering',       82, TRUE, NOW()),
+  ('GTNL',     'Khoa Giao thông và Năng lượng',                                'Faculty of Vehicle and Energy Engineering',               'khoa-vien',    'feet.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Vehicle and Energy Engineering',               64, TRUE, NOW()),
+  ('HHKHSS',   'Khoa Hóa học và Khoa học sự sống',                             'Faculty of Chemical and Food Technology',                 'khoa-vien',    'fcft.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Chemical and Food Technology',                 46, TRUE, NOW()),
+  ('KHUD',     'Khoa Khoa học ứng dụng',                                       'Faculty of Applied Sciences',                             'khoa-vien',    'fas.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Applied Sciences',                             44, TRUE, NOW()),
+  ('KT',       'Khoa Kinh tế',                                                 'Faculty of Economics',                                    'khoa-vien',    'fe.hcmute.edu.vn',         'Trưởng khoa',         'Dean of the Faculty of Economics',                                    54, TRUE, NOW()),
+  ('MTTT',     'Khoa Mỹ thuật và Truyền thông',                                'Faculty of Graphic Arts and Media',                       'khoa-vien',    'fgam.hcmute.edu.vn',       'Trưởng khoa',         'Dean of the Faculty of Graphic Arts and Media',                       48, TRUE, NOW()),
+  ('NN',       'Khoa Ngoại ngữ',                                               'Faculty of Foreign Languages',                            'khoa-vien',    'ffl.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Foreign Languages',                            42, TRUE, NOW()),
+  ('XD',       'Khoa Xây dựng',                                                'Faculty of Civil Engineering',                            'khoa-vien',    'fce.hcmute.edu.vn',        'Trưởng khoa',         'Dean of the Faculty of Civil Engineering',                            52, TRUE, NOW()),
+  ('VSPKT',    'Viện Sư phạm kỹ thuật',                                        'Institute of Technical Education',                        'khoa-vien',    'ite.hcmute.edu.vn',        'Viện trưởng',         'Director of the Institute of Technical Education',                    30, TRUE, NOW()),
+  ('VDTQT',    'Viện Đào tạo Quốc tế',                                         'Institute of International Education',                    'khoa-vien',    'iie.hcmute.edu.vn',        'Viện trưởng',         'Director of the Institute of International Education',                28, TRUE, NOW()),
+  ('SDH',      'Viện Sau Đại học',                                             'Postgraduate School',                                     'khoa-vien',    'sdh.hcmute.edu.vn',        'Viện trưởng',         'Director of the Postgraduate School',                                 18, TRUE, NOW()),
   -- 2. Khối Phòng / Ban & Đảng ủy (16 đơn vị)
-  ('BANTT',    'Ban An ninh trật tự',                                          'Office of Campus Security and Order',                     'PHONG_BAN',    'bantt.hcmute.edu.vn',      'Trưởng ban',          'Director of the Office of Campus Security and Order',                 30, TRUE, NOW()),
-  ('KTX',      'Ban quản lý Ký túc xá',                                        'Dormitory Management Office',                             'PHONG_BAN',    'ktx.hcmute.edu.vn',        'Trưởng ban',          'Director of the Dormitory Management Office',                         24, TRUE, NOW()),
-  ('CTSV',     'Phòng Công tác Sinh viên',                                     'Office of Student Affairs',                               'PHONG_BAN',    'sao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Student Affairs',                           20, TRUE, NOW()),
-  ('DT',       'Phòng Đào tạo',                                                'Academic Affairs Office',                                 'PHONG_BAN',    'aao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Academic Affairs Office',                             26, TRUE, NOW()),
-  ('HCTH',     'Phòng Hành chính - Tổng hợp',                                  'Office of General Administration',                        'PHONG_BAN',    'uteoffice.hcmute.edu.vn',  'Trưởng phòng',        'Director of the Office of General Administration',                    28, TRUE, NOW()),
-  ('KHTC',     'Phòng Kế hoạch Tài chính',                                     'Finance and Planning Office',                             'PHONG_BAN',    'fpo.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Finance and Planning Office',                         22, TRUE, NOW()),
-  ('KTDBCL',   'Phòng Khảo thí và Đảm bảo chất lượng',                         'Office of Testing and Quality Assurance',                 'PHONG_BAN',    'qao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Testing and Quality Assurance',             16, TRUE, NOW()),
-  ('KHCN',     'Phòng Khoa học Công nghệ',                                     'Office of Science and Technology',                        'PHONG_BAN',    'stiao.hcmute.edu.vn',      'Trưởng phòng',        'Director of the Office of Science and Technology',                    14, TRUE, NOW()),
-  ('QHDN',     'Phòng Quan hệ Doanh nghiệp',                                   'Enterprise Relations Office',                             'PHONG_BAN',    'pr.hcmute.edu.vn',         'Trưởng phòng',        'Director of the Enterprise Relations Office',                         12, TRUE, NOW()),
-  ('QHQT',     'Phòng Quan hệ Quốc tế',                                        'International Affairs Office',                            'PHONG_BAN',    'oia.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of International Affairs',                     12, TRUE, NOW()),
-  ('QLDTXDDT', 'Phòng Quản lý Đầu tư xây dựng và Đấu thầu',                    'Office of Construction Project Management and Bidding',   'PHONG_BAN',    'cpm.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Construction Project Management and Bidding', 14, TRUE, NOW()),
-  ('QTCSVC',   'Phòng Quản trị Cơ sở vật chất',                                'Office of Facilities Management',                         'PHONG_BAN',    'emo.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Facilities Management',                     32, TRUE, NOW()),
-  ('QTTHTT',   'Phòng Quản trị thương hiệu và Truyền thông',                   'Office of Brand Management and Communications',           'PHONG_BAN',    'bmc.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Brand Management and Communications',       18, TRUE, NOW()),
-  ('TCNS',     'Phòng Tổ chức - Nhân sự',                                      'Office of Organization and Personnel',                    'PHONG_BAN',    'tcns.hcmute.edu.vn',       'Trưởng phòng',        'Director of the Office of Organization and Personnel',                16, TRUE, NOW()),
-  ('TYT',      'Trạm Y tế',                                                    'Health Care Office',                                      'PHONG_BAN',    'hd.hcmute.edu.vn',         'Trưởng trạm',         'Director of the Health Care Office',                                  10, TRUE, NOW()),
-  ('VPDU',     'Văn phòng Đảng ủy',                                            'Office of University Party Committee',                    'DANG_DOANTHE', 'danguy.hcmute.edu.vn',     'Bí thư Đảng ủy',      'Secretary of the Party Committee',                                    8,  TRUE, NOW()),
+  ('BANTT',    'Ban An ninh trật tự',                                          'Office of Campus Security and Order',                     'phong-ban',    'bantt.hcmute.edu.vn',      'Trưởng ban',          'Director of the Office of Campus Security and Order',                 30, TRUE, NOW()),
+  ('KTX',      'Ban quản lý Ký túc xá',                                        'Dormitory Management Office',                             'phong-ban',    'ktx.hcmute.edu.vn',        'Trưởng ban',          'Director of the Dormitory Management Office',                         24, TRUE, NOW()),
+  ('CTSV',     'Phòng Công tác Sinh viên',                                     'Office of Student Affairs',                               'phong-ban',    'sao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Student Affairs',                           20, TRUE, NOW()),
+  ('DT',       'Phòng Đào tạo',                                                'Academic Affairs Office',                                 'phong-ban',    'aao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Academic Affairs Office',                             26, TRUE, NOW()),
+  ('HCTH',     'Phòng Hành chính - Tổng hợp',                                  'Office of General Administration',                        'phong-ban',    'uteoffice.hcmute.edu.vn',  'Trưởng phòng',        'Director of the Office of General Administration',                    28, TRUE, NOW()),
+  ('KHTC',     'Phòng Kế hoạch Tài chính',                                     'Finance and Planning Office',                             'phong-ban',    'fpo.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Finance and Planning Office',                         22, TRUE, NOW()),
+  ('KTDBCL',   'Phòng Khảo thí và Đảm bảo chất lượng',                         'Office of Testing and Quality Assurance',                 'phong-ban',    'qao.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Testing and Quality Assurance',             16, TRUE, NOW()),
+  ('KHCN',     'Phòng Khoa học Công nghệ',                                     'Office of Science and Technology',                        'phong-ban',    'stiao.hcmute.edu.vn',      'Trưởng phòng',        'Director of the Office of Science and Technology',                    14, TRUE, NOW()),
+  ('QHDN',     'Phòng Quan hệ Doanh nghiệp',                                   'Enterprise Relations Office',                             'phong-ban',    'pr.hcmute.edu.vn',         'Trưởng phòng',        'Director of the Enterprise Relations Office',                         12, TRUE, NOW()),
+  ('QHQT',     'Phòng Quan hệ Quốc tế',                                        'International Affairs Office',                            'phong-ban',    'oia.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of International Affairs',                     12, TRUE, NOW()),
+  ('QLDTXDDT', 'Phòng Quản lý Đầu tư xây dựng và Đấu thầu',                    'Office of Construction Project Management and Bidding',   'phong-ban',    'cpm.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Construction Project Management and Bidding', 14, TRUE, NOW()),
+  ('QTCSVC',   'Phòng Quản trị Cơ sở vật chất',                                'Office of Facilities Management',                         'phong-ban',    'emo.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Facilities Management',                     32, TRUE, NOW()),
+  ('QTTHTT',   'Phòng Quản trị thương hiệu và Truyền thông',                   'Office of Brand Management and Communications',           'phong-ban',    'bmc.hcmute.edu.vn',        'Trưởng phòng',        'Director of the Office of Brand Management and Communications',       18, TRUE, NOW()),
+  ('TCNS',     'Phòng Tổ chức - Nhân sự',                                      'Office of Organization and Personnel',                    'phong-ban',    'tcns.hcmute.edu.vn',       'Trưởng phòng',        'Director of the Office of Organization and Personnel',                16, TRUE, NOW()),
+  ('TYT',      'Trạm Y tế',                                                    'Health Care Office',                                      'phong-ban',    'hd.hcmute.edu.vn',         'Trưởng trạm',         'Director of the Health Care Office',                                  10, TRUE, NOW()),
+  ('VPDU',     'Văn phòng Đảng ủy',                                            'Office of University Party Committee',                    'dang-doanthe', 'danguy.hcmute.edu.vn',     'Bí thư Đảng ủy',      'Secretary of the Party Committee',                                    8,  TRUE, NOW()),
   -- 3. Khối Trung tâm, Phân hiệu & Tạp chí (8 đơn vị)
-  ('CNPM',     'Trung tâm Công nghệ phần mềm',                                 'Software Technology Center',                              'TRUNG_TAM',    'stc.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Software Technology Center',                          12, TRUE, NOW()),
-  ('GDQPAN',   'Trung tâm Giáo dục Quốc phòng và An ninh',                     'National Defense and Security Training Center',           'TRUNG_TAM',    'gdqp.hcmute.edu.vn',       'Giám đốc trung tâm',  'Director of the National Defense and Security Training Center',       20, TRUE, NOW()),
-  ('GDTC',     'Trung tâm Giáo dục Thể chất',                                  'Physical Education Center',                               'TRUNG_TAM',    'gdtc.hcmute.edu.vn',       'Giám đốc trung tâm',  'Director of the Physical Education Center',                           22, TRUE, NOW()),
-  ('HLDHS',    'Trung tâm Học liệu và Dạy học số',                             'Center for Learning Resources and Digital Learning',      'TRUNG_TAM',    'lib.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Center for Learning Resources and Digital Learning',  26, TRUE, NOW()),
-  ('STKNCCCN', 'Trung tâm Sáng tạo khởi nghiệp và Chuyển giao công nghệ',      'Center of Innovation, Startup and Technology Transfer',   'TRUNG_TAM',    'cisat.hcmute.edu.vn',      'Giám đốc trung tâm',  'Director of the Center of Innovation, Startup and Technology Transfer', 14, TRUE, NOW()),
-  ('TTTTMT',   'Trung tâm Thông tin - Máy tính',                               'Information and Computer Center',                         'TRUNG_TAM',    'inc.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Information and Computer Center',                     16, TRUE, NOW()),
-  ('PHBP',     'Phân hiệu Trường ĐH CNKT TPHCM tại Bình Phước',                'HCM-UTE Binh Phuoc Campus',                               'TRUNG_TAM',    'binhphuoc.hcmute.edu.vn',  'Giám đốc Phân hiệu',  'Director of Binh Phuoc Campus',                                       35, TRUE, NOW()),
-  ('TCKHGDKT', 'Tạp chí Khoa học giáo dục kỹ thuật',                           'Journal of Technical Education Science',                  'TRUNG_TAM',    'jte.hcmute.edu.vn',        'Tổng biên tập',       'Editor-in-Chief of the Journal of Technical Education Science',       8,  TRUE, NOW())
+  ('CNPM',     'Trung tâm Công nghệ phần mềm',                                 'Software Technology Center',                              'trung-tam',    'stc.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Software Technology Center',                          12, TRUE, NOW()),
+  ('GDQPAN',   'Trung tâm Giáo dục Quốc phòng và An ninh',                     'National Defense and Security Training Center',           'trung-tam',    'gdqp.hcmute.edu.vn',       'Giám đốc trung tâm',  'Director of the National Defense and Security Training Center',       20, TRUE, NOW()),
+  ('GDTC',     'Trung tâm Giáo dục Thể chất',                                  'Physical Education Center',                               'trung-tam',    'gdtc.hcmute.edu.vn',       'Giám đốc trung tâm',  'Director of the Physical Education Center',                           22, TRUE, NOW()),
+  ('HLDHS',    'Trung tâm Học liệu và Dạy học số',                             'Center for Learning Resources and Digital Learning',      'trung-tam',    'lib.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Center for Learning Resources and Digital Learning',  26, TRUE, NOW()),
+  ('STKNCCCN', 'Trung tâm Sáng tạo khởi nghiệp và Chuyển giao công nghệ',      'Center of Innovation, Startup and Technology Transfer',   'trung-tam',    'cisat.hcmute.edu.vn',      'Giám đốc trung tâm',  'Director of the Center of Innovation, Startup and Technology Transfer', 14, TRUE, NOW()),
+  ('TTTTMT',   'Trung tâm Thông tin - Máy tính',                               'Information and Computer Center',                         'trung-tam',    'inc.hcmute.edu.vn',        'Giám đốc trung tâm',  'Director of the Information and Computer Center',                     16, TRUE, NOW()),
+  ('PHBP',     'Phân hiệu Trường ĐH CNKT TPHCM tại Bình Phước',                'HCM-UTE Binh Phuoc Campus',                               'trung-tam',    'binhphuoc.hcmute.edu.vn',  'Giám đốc Phân hiệu',  'Director of Binh Phuoc Campus',                                       35, TRUE, NOW()),
+  ('TCKHGDKT', 'Tạp chí Khoa học giáo dục kỹ thuật',                           'Journal of Technical Education Science',                  'trung-tam',    'jte.hcmute.edu.vn',        'Tổng biên tập',       'Editor-in-Chief of the Journal of Technical Education Science',       8,  TRUE, NOW())
 ON CONFLICT (ma_don_vi) DO UPDATE SET
   ten_don_vi_vi           = EXCLUDED.ten_don_vi_vi,
   ten_don_vi_en           = EXCLUDED.ten_don_vi_en,
@@ -135,6 +135,8 @@ BEGIN
   ALTER TABLE public.user_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
   ALTER TABLE public.user_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 END $$;
+
+GRANT SELECT (unit_id, is_active, updated_at) ON public.user_accounts TO authenticated;
 
 UPDATE public.user_accounts
 SET unit_id = COALESCE(unit_id, unit_code),
@@ -1157,6 +1159,7 @@ CREATE POLICY "rls_work_survey_versions_insert" ON public.work_survey_versions
 
 -- Cập nhật RLS select cho staff_work_tickets:
 -- Phiếu Nháp chỉ chủ sở hữu và Admin được xem; phiếu đã nộp xem trong cùng đơn vị hoặc Admin
+DROP POLICY IF EXISTS "staff_tickets_select_auth" ON public.staff_work_tickets;
 DROP POLICY IF EXISTS "rls_staff_tickets_select" ON public.staff_work_tickets;
 CREATE POLICY "rls_staff_tickets_select" ON public.staff_work_tickets
   FOR SELECT TO authenticated
@@ -1171,6 +1174,7 @@ CREATE POLICY "rls_staff_tickets_select" ON public.staff_work_tickets
 
 -- Chỉ chủ sở hữu được sửa nội dung phiếu ở trạng thái draft hoặc changes_requested;
 -- KHÔNG AI (kể cả Admin/Lãnh đạo) được sửa trực tiếp nội dung kê khai của người khác
+DROP POLICY IF EXISTS "staff_tickets_update_auth" ON public.staff_work_tickets;
 DROP POLICY IF EXISTS "rls_staff_tickets_update" ON public.staff_work_tickets;
 CREATE POLICY "rls_staff_tickets_update" ON public.staff_work_tickets
   FOR UPDATE TO authenticated
@@ -1212,6 +1216,21 @@ REVOKE UPDATE, DELETE ON public.work_survey_status_history FROM authenticated, a
 REVOKE UPDATE, DELETE ON public.work_survey_merge_links FROM authenticated, anon;
 REVOKE UPDATE, DELETE ON public.audit_logs FROM authenticated, anon;
 
+GRANT ALL ON public.work_survey_versions, public.work_survey_status_history, public.work_survey_merge_links TO service_role;
+GRANT SELECT ON public.work_survey_status_history, public.work_survey_merge_links TO authenticated;
+
+DROP POLICY IF EXISTS "service_role_full_work_survey_versions" ON public.work_survey_versions;
+CREATE POLICY "service_role_full_work_survey_versions" ON public.work_survey_versions
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_full_work_survey_status_history" ON public.work_survey_status_history;
+CREATE POLICY "service_role_full_work_survey_status_history" ON public.work_survey_status_history
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_full_work_survey_merge_links" ON public.work_survey_merge_links;
+CREATE POLICY "service_role_full_work_survey_merge_links" ON public.work_survey_merge_links
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
 -- ==============================================================================
 -- PHẦN 9: POSTFLIGHT ASSERTIONS (KIỂM TRA ĐỐI SOÁT SAU KHI CHẠY MIGRATION)
 -- ==============================================================================
@@ -1239,5 +1258,17 @@ BEGIN
     RAISE EXCEPTION 'POSTFLIGHT_FAILED: Thiếu UNIQUE(survey_id, version_no) trên work_survey_versions.';
   END IF;
 END $$;
+
+CREATE SCHEMA IF NOT EXISTS supabase_migrations;
+CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
+  version text NOT NULL PRIMARY KEY,
+  statements text[],
+  name text
+);
+INSERT INTO supabase_migrations.schema_migrations (version, name)
+VALUES ('20261115140000', 'reconcile_vtvl_39_units_and_versions')
+ON CONFLICT (version) DO UPDATE SET name = EXCLUDED.name;
+
+NOTIFY pgrst, 'reload schema';
 
 COMMIT;

@@ -89,8 +89,16 @@ export function getTicketsByOwner(email: string, unitCode?: string): StaffWorkTi
   return tickets.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+export function getTicketById(id: string): StaffWorkTicket | null {
+  const store = loadTickets();
+  return store.get(id) || null;
+}
+
 export function getTicketsByUnit(unitCode: string): StaffWorkTicket[] {
-  return Array.from(loadTickets().values()).filter((t) => t.unitCode === unitCode).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const uc = (unitCode || '').trim().toUpperCase();
+  return Array.from(loadTickets().values())
+    .filter((t) => t.unitCode.toUpperCase() === uc)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function upsertTicketAndSyncUnit(
@@ -121,7 +129,11 @@ export async function upsertTicketAndSyncUnit(
     sourceTicketId: input.sourceTicketId || ticketId, createdAt: existing?.createdAt || nowIso, updatedAt: nowIso
   };
 
-  await persistTicketToSupabase(ticket);
+  try {
+    await persistTicketToSupabase(ticket);
+  } catch (dbErr) {
+    console.warn('[STORAGE] Supabase persist fallback:', dbErr);
+  }
   store.set(ticket.id, ticket);
   persistTickets();
 

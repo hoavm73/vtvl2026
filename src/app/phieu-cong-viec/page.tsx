@@ -116,17 +116,17 @@ export default function StaffWorkTicketsPage() {
 
   const handleApprove = async (t: StaffWorkTicket) => {
     if (!window.confirm(`Xác nhận phê duyệt phiếu [${t.maCongViec} - ${t.tenCongViec}]?`)) return;
-    await sendPatchAction({ ticketId: t.id, action: 'approve' });
+    await sendPatchAction({ ticketId: t.id, action: 'approve', unitCode: t.unitCode });
   };
   const handleRevisionSubmit = async (t: StaffWorkTicket, reason: string) => {
-    await sendPatchAction({ ticketId: t.id, action: 'changes_requested', reason });
+    await sendPatchAction({ ticketId: t.id, action: 'changes_requested', reason, unitCode: t.unitCode });
   };
   const handleMergeSubmit = async (t: StaffWorkTicket) => {
-    await sendPatchAction({ ticketId: t.id, action: 'merge' });
+    await sendPatchAction({ ticketId: t.id, action: 'merge', unitCode: t.unitCode });
   };
   const handleSubmitMyTicket = async (t: StaffWorkTicket, isResubmit: boolean) => {
     const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
-    if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit' });
+    if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit', unitCode: t.unitCode });
   };
 
   const handleDelete = async (ticket: StaffWorkTicket) => {

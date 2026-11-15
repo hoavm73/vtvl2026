@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTicketsByOwner, getTicketsByUnit, upsertTicketAndSyncUnit, deleteTicketAndSyncUnit,
+  getTicketsByOwner, getTicketsByUnit, getTicketById, upsertTicketAndSyncUnit, deleteTicketAndSyncUnit,
   allocateNextTaskCode, syncTicketsFromWorkbook, syncTicketsFromSupabase
 } from '@/services/storage/server-ticket-store';
 import { getOrCreateWorkbook, normalizeEmail, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
@@ -177,8 +177,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.', code: 'INVALID_ACTION' }, { status: 400 });
     }
 
-    const unitCode = caller.isAdmin && body.unitCode ? String(body.unitCode).toUpperCase() : caller.unitCode;
-    const target = getTicketsByUnit(unitCode).find((t) => t.id === targetId);
+    const target = getTicketById(targetId) || (body.unitCode ? getTicketsByUnit(String(body.unitCode)).find((t) => t.id === targetId) : null);
     if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
 
     const nowIso = new Date().toISOString();

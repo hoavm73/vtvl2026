@@ -55,9 +55,6 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
             <h3 className="text-base font-bold text-[#004776]">
               Xem trước & Xuất PDF khổ A4 — [{ticket.maCongViec}]
             </h3>
-            <p className="text-xs text-[#64748b]">
-              Định dạng chuẩn A4 dọc • Lề: Trên 2cm – Dưới 2cm – Trái 3cm – Phải 2cm (Nghị định 30/2020/NĐ-CP)
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <button

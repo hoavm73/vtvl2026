@@ -50,7 +50,7 @@ export function StaffMyTicketsList({
       </div>
 
       <div className="divide-y divide-[#f1f5f9]">
-        {loading ? (
+        {loading && tickets.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#64748b]">Đang tải danh sách phiếu...</div>
         ) : tickets.length === 0 ? (
           <div className="p-6 text-center text-xs text-[#64748b]">

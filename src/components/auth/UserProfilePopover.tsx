@@ -52,7 +52,12 @@ export function UserProfilePopover() {
   useEffect(() => {
     const callbackSession = consumeGoogleOAuthCallback();
     loadAndSync(callbackSession);
-    const handleSessionChange = () => loadAndSync();
+    const handleSessionChange = (e: Event) => {
+      const custom = e as CustomEvent<OperatorSession | null>;
+      const active = custom.detail ?? getCurrentOperatorSession();
+      setSession(active);
+      if (active?.email === 'tcns@hcmute.edu.vn') setIsAdmin(true);
+    };
     window.addEventListener('vtvl-operator-changed', handleSessionChange);
     return () => window.removeEventListener('vtvl-operator-changed', handleSessionChange);
   }, []);

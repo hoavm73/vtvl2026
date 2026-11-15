@@ -10,6 +10,7 @@ import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { StaffTicketInlineForm } from '@/components/staff-portal/StaffTicketInlineForm';
 import { StaffMyTicketsList } from '@/components/staff-portal/StaffMyTicketsList';
 import { UnitTicketsReviewList } from '@/components/staff-portal/UnitTicketsReviewList';
+import { UnitVtvlLookupCard } from '@/components/staff-portal/UnitVtvlLookupCard';
 import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrintModal';
 import { StaffTicketDetailModal } from '@/components/staff-portal/StaffTicketDetailModal';
 import { StaffTicketRevisionModal } from '@/components/staff-portal/StaffTicketRevisionModal';
@@ -32,23 +33,26 @@ export default function StaffWorkTicketsPage() {
   const [activeTab, setActiveTab] = useState<'my' | 'pending' | 'unit'>('my');
 
   // Modals
-  const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null);
-  const [detailTicket, setDetailTicket] = useState<StaffWorkTicket | null>(null);
-  const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
-  const [revisionTicket, setRevisionTicket] = useState<StaffWorkTicket | null>(null);
-  const [mergeTicket, setMergeTicket] = useState<StaffWorkTicket | null>(null);
-  const [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
+  const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null), [detailTicket, setDetailTicket] = useState<StaffWorkTicket | null>(null);
+  const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null), [revisionTicket, setRevisionTicket] = useState<StaffWorkTicket | null>(null);
+  const [mergeTicket, setMergeTicket] = useState<StaffWorkTicket | null>(null), [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
 
   const lastLoadedKeyRef = useRef<string>('');
+  const isSyncingTokenRef = useRef(false);
 
-  const loadData = useCallback(async (op: OperatorSession) => {
-    setLoading(true);
+  const loadData = useCallback(async (op: OperatorSession, isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       let activeToken = op.accessToken;
-      if (!activeToken) {
-        await syncOperatorAccountWithServer(op);
-        const refreshed = getCurrentOperatorSession();
-        if (refreshed?.accessToken) activeToken = refreshed.accessToken;
+      if (!activeToken && !isSyncingTokenRef.current) {
+        isSyncingTokenRef.current = true;
+        try {
+          await syncOperatorAccountWithServer(op);
+          const refreshed = getCurrentOperatorSession();
+          if (refreshed?.accessToken) activeToken = refreshed.accessToken;
+        } finally {
+          isSyncingTokenRef.current = false;
+        }
       }
       const headers: Record<string, string> = { 'x-actor-email': op.email };
       if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
@@ -61,34 +65,43 @@ export default function StaffWorkTicketsPage() {
         setA1Missions(json.a1Missions || []);
         setC1Vtvls(json.c1Vtvls || []);
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const syncWithSession = useCallback((op: OperatorSession | null) => {
+  const syncWithSession = useCallback((op: OperatorSession | null, isInitial = false) => {
     if (!op) { router.replace('/login'); return; }
     setSession((prev) => { if (prev && prev.unitCode !== op.unitCode) setEditingTicket(null); return op; });
     setUnitNameVi(op.unitNameVi);
     const key = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
-    if (lastLoadedKeyRef.current !== key) { lastLoadedKeyRef.current = key; loadData(op); }
+    if (lastLoadedKeyRef.current !== key) {
+      lastLoadedKeyRef.current = key;
+      loadData(op, isInitial);
+    }
   }, [router, loadData]);
 
   useEffect(() => {
-    syncWithSession(getCurrentOperatorSession());
-    const onUp = () => { lastLoadedKeyRef.current = ''; syncWithSession(getCurrentOperatorSession()); };
+    syncWithSession(getCurrentOperatorSession(), true);
+    const onUp = () => {
+      const op = getCurrentOperatorSession();
+      if (!op) { router.replace('/login'); return; }
+      const key = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
+      if (lastLoadedKeyRef.current !== key) {
+        syncWithSession(op, false);
+      }
+    };
     window.addEventListener('vtvl-operator-changed', onUp);
-    window.addEventListener('storage', onUp);
-    return () => { window.removeEventListener('vtvl-operator-changed', onUp); window.removeEventListener('storage', onUp); };
-  }, [syncWithSession]);
+    return () => {
+      window.removeEventListener('vtvl-operator-changed', onUp);
+    };
+  }, [syncWithSession, router]);
 
   const isLeader = session?.role === 'unit_leader' || session?.role === 'admin';
-
-  // Số lượng phiếu chờ duyệt
-  const pendingCount = useMemo(() => {
-    return unitTickets.filter((t) => {
-      const c = toCanonicalStatus(t.status);
-      return c === 'submitted' || c === 'resubmitted';
-    }).length;
-  }, [unitTickets]);
+  const pendingCount = useMemo(() => unitTickets.filter((t) => {
+    const c = toCanonicalStatus(t.status);
+    return c === 'submitted' || c === 'resubmitted';
+  }).length, [unitTickets]);
 
   const sendPatchAction = async (payload: Record<string, unknown>) => {
     if (!session) return false;
@@ -105,19 +118,15 @@ export default function StaffWorkTicketsPage() {
     if (!window.confirm(`Xác nhận phê duyệt phiếu [${t.maCongViec} - ${t.tenCongViec}]?`)) return;
     await sendPatchAction({ ticketId: t.id, action: 'approve' });
   };
-
   const handleRevisionSubmit = async (t: StaffWorkTicket, reason: string) => {
     await sendPatchAction({ ticketId: t.id, action: 'changes_requested', reason });
   };
-
   const handleMergeSubmit = async (t: StaffWorkTicket) => {
     await sendPatchAction({ ticketId: t.id, action: 'merge' });
   };
-
   const handleSubmitMyTicket = async (t: StaffWorkTicket, isResubmit: boolean) => {
     const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
-    if (!window.confirm(msg)) return;
-    await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit' });
+    if (window.confirm(msg)) await sendPatchAction({ ticketId: t.id, action: isResubmit ? 'resubmit' : 'submit' });
   };
 
   const handleDelete = async (ticket: StaffWorkTicket) => {
@@ -153,12 +162,8 @@ export default function StaffWorkTicketsPage() {
             <Link href="/bang-tinh" className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5 shadow-2xs">
               <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" /> <span>Vào bảng tính đơn vị</span>
             </Link>
-            <button type="button" onClick={() => { setActiveTab('my'); setEditingTicket(null); }} className="h-10 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
-              <Plus className="w-4 h-4" /> <span>Tạo phiếu mới</span>
-            </button>
-            <button type="button" onClick={() => { clearCurrentOperatorSession(); router.push('/login'); }} className="h-10 px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#64748b] hover:text-red-600 cursor-pointer">
-              <LogOut className="w-4 h-4" />
-            </button>
+            <button type="button" onClick={() => { setActiveTab('my'); setEditingTicket(null); }} className="h-10 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"><Plus className="w-4 h-4" /> <span>Tạo phiếu mới</span></button>
+            <button type="button" onClick={() => { clearCurrentOperatorSession(); router.push('/login'); }} className="h-10 px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#64748b] hover:text-red-600 cursor-pointer" title="Đăng xuất"><LogOut className="w-4 h-4" /></button>
           </div>
         </div>
 
@@ -230,13 +235,20 @@ export default function StaffWorkTicketsPage() {
                 }}
               />
             </div>
-            <div className="xl:col-span-6 print:hidden">
+            <div className="xl:col-span-6 print:hidden space-y-5">
               <StaffMyTicketsList
                 tickets={myTickets} loading={loading}
                 onEditTicket={(t) => { setEditingTicket(t); setActiveTab('my'); }}
                 onPrintTicket={setPrintTicket} onViewTicket={setDetailTicket}
                 onCoordTicket={setCoordTicket} onDeleteTicket={handleDelete}
                 onSubmitTicket={handleSubmitMyTicket}
+              />
+              <UnitVtvlLookupCard
+                unitCode={session.unitCode}
+                c1Vtvls={c1Vtvls}
+                onSelectVtvl={(selectedCode) => {
+                  setEditingTicket((prev) => (prev ? { ...prev, maVtvl: selectedCode } : null));
+                }}
               />
             </div>
           </div>
@@ -248,9 +260,7 @@ export default function StaffWorkTicketsPage() {
               tickets={unitTickets} loading={loading} mode="pending"
               currentUserRole={session.role} currentUserEmail={session.email}
               onViewTicket={setDetailTicket} onPrintTicket={setPrintTicket}
-              onApproveTicket={handleApprove}
-              onRequestChanges={(t) => setRevisionTicket(t)}
-              onMergeTicket={(t) => setMergeTicket(t)}
+              onApproveTicket={handleApprove} onRequestChanges={setRevisionTicket} onMergeTicket={setMergeTicket}
             />
           </div>
         )}
@@ -262,15 +272,21 @@ export default function StaffWorkTicketsPage() {
               currentUserRole={session.role} currentUserEmail={session.email}
               onViewTicket={setDetailTicket} onPrintTicket={setPrintTicket}
               onApproveTicket={isLeader ? handleApprove : undefined}
-              onRequestChanges={isLeader ? (t) => setRevisionTicket(t) : undefined}
-              onMergeTicket={isLeader ? (t) => setMergeTicket(t) : undefined}
+              onRequestChanges={isLeader ? setRevisionTicket : undefined}
+              onMergeTicket={isLeader ? setMergeTicket : undefined}
             />
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <StaffTicketDetailModal ticket={detailTicket} unitNameVi={unitNameVi} onClose={() => setDetailTicket(null)} onPrint={setPrintTicket} />
+      <StaffTicketDetailModal
+        ticket={detailTicket} unitNameVi={unitNameVi}
+        currentUserRole={session.role} currentUserEmail={session.email}
+        onClose={() => setDetailTicket(null)} onPrint={setPrintTicket}
+        onApprove={isLeader ? async (t) => { setDetailTicket(null); await handleApprove(t); } : undefined}
+        onRequestChanges={isLeader ? (t) => { setDetailTicket(null); setRevisionTicket(t); } : undefined}
+      />
       <StaffTicketPrintModal ticket={printTicket} unitNameVi={unitNameVi} onClose={() => setPrintTicket(null)} />
       <StaffTicketRevisionModal ticket={revisionTicket} onClose={() => setRevisionTicket(null)} onSubmit={handleRevisionSubmit} />
       <StaffTicketMergePreviewModal ticket={mergeTicket} onClose={() => setMergeTicket(null)} onConfirmMerge={handleMergeSubmit} />

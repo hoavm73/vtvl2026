@@ -221,7 +221,6 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
       {!collapsed && (
         <div className="p-3 border-t border-[#e2ecf7] text-[11px] text-[#20446c] text-center bg-[#fafcff]">
           <div className="font-semibold text-[#004776]">HCM-UTE VTVL 360</div>
-          <div className="text-[10px] text-[#476885]">Chuẩn Hướng dẫn số 07-HD/BTCTW</div>
         </div>
       )}
     </aside>

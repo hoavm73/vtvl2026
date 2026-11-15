@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { StaffWorkTicket, TicketStatus, toDisplayStatus } from '@/types/staff-ticket';
+import { StaffWorkTicket, TicketStatus, toDisplayStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { recalculateGridFormulas } from '@/components/excel-grid/excel-grid-formulas';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
@@ -263,4 +263,16 @@ export function migrateTicketsForUnit(oldCode: string, newCode: string): number 
   }
   if (count > 0) persistTickets();
   return count;
+}
+
+export function getTicketCounts(): { approved: number; pending: number; draft: number; total: number } {
+  const store = loadTickets();
+  let approved = 0, pending = 0, draft = 0;
+  for (const t of store.values()) {
+    const s = toCanonicalStatus(t.status);
+    if (s === 'approved') approved++;
+    else if (s === 'submitted' || s === 'resubmitted') pending++;
+    else draft++;
+  }
+  return { approved, pending, draft, total: store.size };
 }

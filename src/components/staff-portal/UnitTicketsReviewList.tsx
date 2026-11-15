@@ -150,7 +150,7 @@ export function UnitTicketsReviewList({
 
       {/* Danh sách phiếu */}
       <div className="divide-y divide-[#f1f5f9]">
-        {loading ? (
+        {loading && tickets.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#64748b]">Đang tải dữ liệu phiếu...</div>
         ) : displayedTickets.length === 0 ? (
           <div className="p-6 text-center text-xs text-[#64748b]">

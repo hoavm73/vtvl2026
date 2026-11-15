@@ -116,7 +116,7 @@ export async function syncOperatorAccountWithServer(
         account.unitCode !== session.unitCode ||
         account.title !== session.title ||
         account.hasSelectedUnit !== session.hasSelectedUnit;
-      const needTokenUpdate = Boolean(json.sessionToken && json.sessionToken !== session.accessToken);
+      const needTokenUpdate = Boolean(json.sessionToken && !session.accessToken);
       if (changed || needTokenUpdate) {
         saveCurrentOperatorSession(account.email, account.unitCode, account.title, {
           displayName: account.displayName,

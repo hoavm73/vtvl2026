@@ -7,7 +7,7 @@ import {
   Building2, CheckCircle2, History, Clock, AlertTriangle, FileSpreadsheet, ArrowRight
 } from 'lucide-react';
 import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBanner';
-import { OverviewProcessAndLegal } from '@/components/overview/OverviewProcessAndLegal';
+import { SchoolOverviewDashboard } from '@/components/overview/SchoolOverviewDashboard';
 import { OverviewRoleActionCards } from '@/components/overview/OverviewRoleActionCards';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
@@ -91,11 +91,11 @@ export default function HomePage() {
       {/* 1. Banner chào mừng cá nhân hóa */}
       <OverviewWelcomeBanner session={operator} />
 
-      {/* 2. Danh mục việc cần làm theo từng nhóm quyền */}
-      <OverviewRoleActionCards currentRole={operator?.role || 'staff'} />
+      {/* 2. Dashboard gọn các con số của trường (ai cũng xem được, nằm dưới phần xin chào) */}
+      <SchoolOverviewDashboard />
 
-      {/* 3. Giới thiệu quy trình 5 bước & Căn cứ pháp lý */}
-      <OverviewProcessAndLegal />
+      {/* 3. Danh mục việc cần làm theo từng nhóm quyền */}
+      <OverviewRoleActionCards currentRole={operator?.role || 'staff'} />
 
       {/* 4. Tiến độ đơn vị & Nhật ký thao tác */}
       <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">

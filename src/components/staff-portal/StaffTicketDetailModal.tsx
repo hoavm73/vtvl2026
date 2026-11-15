@@ -1,45 +1,80 @@
 'use client';
 
 import React from 'react';
-import { X, CheckCircle2, Clock, AlertTriangle, RefreshCw, FileText, User, Building, Calendar, Layers } from 'lucide-react';
-import { StaffWorkTicket, toCanonicalStatus, toDisplayStatus } from '@/types/staff-ticket';
+import {
+  X, CheckCircle2, Clock, AlertTriangle, RefreshCw, Printer, Check, CornerDownLeft
+} from 'lucide-react';
+import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 interface StaffTicketDetailModalProps {
   ticket: StaffWorkTicket | null;
   unitNameVi?: string;
+  currentUserRole?: 'admin' | 'unit_leader' | 'staff';
+  currentUserEmail?: string;
   onClose: () => void;
   onPrint?: (t: StaffWorkTicket) => void;
+  onApprove?: (t: StaffWorkTicket) => void | Promise<void>;
+  onRequestChanges?: (t: StaffWorkTicket) => void;
 }
 
-export function StaffTicketDetailModal({ ticket, unitNameVi, onClose, onPrint }: StaffTicketDetailModalProps) {
+export function StaffTicketDetailModal({
+  ticket, unitNameVi, currentUserRole, currentUserEmail,
+  onClose, onPrint, onApprove, onRequestChanges
+}: StaffTicketDetailModalProps) {
   if (!ticket) return null;
+
   const canonical = toCanonicalStatus(ticket.status);
-  const hours = Math.round((((ticket.soSpNam * ticket.phutThucTe) / 60) + ticket.gioBoSung) * 10) / 10;
+  const isOwnTicket = ticket.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
+  const canReview = Boolean(
+    (currentUserRole === 'admin' || (currentUserRole === 'unit_leader' && !isOwnTicket)) &&
+    (canonical === 'submitted' || canonical === 'resubmitted') &&
+    onApprove && onRequestChanges
+  );
+
+  const soSp = Number(ticket.soSpNam) || 0;
+  const phut = Number(ticket.phutThucTe) || 0;
+  const gioBs = Number(ticket.gioBoSung) || 0;
+  const totalHoursSp = Math.round(((soSp * phut) / 60) * 10) / 10;
+  const totalHoursAll = Math.round((totalHoursSp + gioBs) * 10) / 10;
+
+  const unit = findHcmuteUnit(ticket.unitCode);
+  const displayUnitName = unitNameVi || unit.nameVi;
+  const today = new Date();
 
   const getStatusBadge = () => {
     switch (canonical) {
-      case 'approved':
-        return { cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2, label: 'Đã duyệt' };
-      case 'changes_requested':
-        return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
-      case 'resubmitted':
-        return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
-      case 'submitted':
-        return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
-      default:
-        return { cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: Clock, label: 'Nháp' };
+      case 'approved': return { cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2, label: 'Đã duyệt' };
+      case 'changes_requested': return { cls: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle, label: 'Yêu cầu bổ sung' };
+      case 'resubmitted': return { cls: 'bg-purple-50 text-purple-700 border-purple-300', icon: RefreshCw, label: 'Đã nộp lại' };
+      case 'submitted': return { cls: 'bg-blue-50 text-[#0072BC] border-blue-200', icon: Clock, label: 'Đã nộp' };
+      default: return { cls: 'bg-slate-100 text-slate-700 border-slate-300', icon: Clock, label: 'Nháp' };
     }
   };
 
   const badge = getStatusBadge();
   const StatusIcon = badge.icon;
 
+  const tableFields = [
+    { num: '1', label: 'Mã nhiệm vụ (Biểu A1)', val: ticket.maNhiemVu || '—' },
+    { num: '2', label: 'Mã công việc (tự sinh)', val: ticket.maCongViec, isCode: true },
+    { num: '3', label: 'Tên công việc cụ thể', val: ticket.tenCongViec, isBold: true },
+    { num: '4', label: 'Vị trí việc làm chính (Biểu C1)', val: ticket.maVtvl || '—' },
+    { num: '5', label: 'VTVL phối hợp (nếu có)', val: ticket.maVtvlPhoiHop || 'Không có' },
+    { num: '6', label: 'Sản phẩm đầu ra', val: ticket.sanPham || '—' },
+    { num: '7', label: 'Tiêu chuẩn chất lượng', val: ticket.chatLuong || '—' },
+    { num: '8', label: 'Căn cứ pháp lý & hồ sơ giải trình', val: ticket.canCu || '—' },
+    { num: '9', label: 'Số lượng SP / năm (Kỳ 2025–2026)', val: `${ticket.soSpNam} sản phẩm / năm${ticket.nguonSoLieu ? ` (Nguồn: ${ticket.nguonSoLieu})` : ''}` },
+    { num: '10', label: 'Thời gian trung bình / 1 SP', val: `${ticket.phutThucTe} phút / sản phẩm` },
+    { num: '11', label: 'Giờ bổ sung (giờ/năm)', val: `${ticket.gioBoSung || 0} giờ / năm` }
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-between gap-3">
-          <div className="space-y-1 min-w-0">
+    <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-5xl max-h-[96vh] flex flex-col overflow-hidden">
+        {/* Thanh công cụ tiêu đề & các nút hành động */}
+        <div className="px-4 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="space-y-0.5 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2.5 py-0.5 rounded-md">
                 {ticket.maCongViec}
@@ -54,130 +89,157 @@ export function StaffTicketDetailModal({ ticket, unitNameVi, onClose, onPrint }:
                 </span>
               )}
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-[#004776] truncate">
+            <h3 className="text-sm sm:text-base font-bold text-[#004776] truncate">
               {ticket.tenCongViec}
-            </h2>
+            </h3>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-[#64748b] hover:text-[#004776] hover:bg-[#e2e8f0] cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {canReview && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onApprove?.(ticket)}
+                  className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Duyệt phiếu</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRequestChanges?.(ticket)}
+                  className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <CornerDownLeft className="w-4 h-4" />
+                  <span>Yêu cầu bổ sung</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => onPrint ? onPrint(ticket) : window.print()}
+              className="h-9 px-3.5 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+            >
+              <Printer className="w-4 h-4" />
+              <span>In PDF (A4)</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-[#64748b] hover:bg-[#e2e8f0] cursor-pointer"
+              title="Đóng"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Body scroll */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-[13px] text-[#004776]">
-          {/* Cảnh báo lý do bổ sung */}
+        {/* Khung cuộn tài liệu A4 mô phỏng chuẩn Nghị định 30/2020/NĐ-CP */}
+        <div className="p-4 sm:p-6 overflow-y-auto bg-[#f1f5f9] flex flex-col items-center space-y-4">
           {ticket.revisionReason && (
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-800">
+            <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1 shadow-xs">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 text-xs sm:text-sm">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <span>Ý kiến / Lý do yêu cầu bổ sung từ Lãnh đạo:</span>
+                <span>Ý kiến / Lý do yêu cầu bổ sung từ Lãnh đạo đơn vị:</span>
               </div>
-              <p className="text-xs pl-5 whitespace-pre-wrap">{ticket.revisionReason}</p>
+              <p className="text-xs pl-5 whitespace-pre-wrap leading-relaxed">{ticket.revisionReason}</p>
               {ticket.revisionRequestedBy && (
                 <div className="text-[11px] text-amber-700 pl-5 pt-0.5">
-                  Người yêu cầu: {ticket.revisionRequestedBy} • {ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt).toLocaleString('vi-VN') : ''}
+                  Người yêu cầu: <strong>{ticket.revisionRequestedBy}</strong> • {ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt).toLocaleString('vi-VN') : ''}
                 </div>
               )}
             </div>
           )}
 
-          {/* Thông tin nhân sự & đơn vị */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-[#0072BC]" />
-              <div>
-                <span className="text-[#64748b]">Người kê khai: </span>
-                <strong>{ticket.ownerName}</strong> ({ticket.ownerTitle || ticket.ownerEmail})
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-[#0072BC]" />
-              <div>
-                <span className="text-[#64748b]">Đơn vị: </span>
-                <strong>{unitNameVi || ticket.unitCode}</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Vị trí & Nhiệm vụ */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-0.5">
-              <span className="text-[#64748b] text-[11px]">Mã nhiệm vụ (A1):</span>
-              <div className="font-semibold">{ticket.maNhiemVu}</div>
-            </div>
-            <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-0.5">
-              <span className="text-[#64748b] text-[11px]">Vị trí việc làm chính (C1):</span>
-              <div className="font-semibold">{ticket.maVtvl}</div>
-            </div>
-          </div>
-
-          {/* Nội dung chuyên môn */}
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-1">
-              <span className="text-[#64748b] text-[11px] font-semibold">Sản phẩm đầu ra:</span>
-              <p className="whitespace-pre-wrap">{ticket.sanPham || '—'}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-1">
-              <span className="text-[#64748b] text-[11px] font-semibold">Tiêu chuẩn chất lượng:</span>
-              <p className="whitespace-pre-wrap">{ticket.chatLuong || '—'}</p>
-            </div>
-            <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-1">
-              <span className="text-[#64748b] text-[11px] font-semibold">Căn cứ pháp lý & hồ sơ minh chứng:</span>
-              <p className="whitespace-pre-wrap">{ticket.canCu || '—'}</p>
-            </div>
-          </div>
-
-          {/* Định mức khối lượng */}
-          <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-[#f1f5f9] text-center">
-            <div>
-              <span className="text-[11px] text-[#64748b] block">Sản lượng năm</span>
-              <strong className="text-sm">{ticket.soSpNam} SP</strong>
-            </div>
-            <div>
-              <span className="text-[11px] text-[#64748b] block">Định mức thời gian</span>
-              <strong className="text-sm">{ticket.phutThucTe} phút/SP</strong>
-            </div>
-            <div>
-              <span className="text-[11px] text-[#64748b] block">Tổng giờ / năm</span>
-              <strong className="text-sm text-[#0072BC]">{hours} giờ</strong>
-            </div>
-          </div>
-
-          {/* Lịch sử phê duyệt */}
-          <div className="p-3 rounded-lg border border-[#e2e8f0] space-y-1 text-xs text-[#64748b]">
-            <div className="flex items-center gap-1.5 font-bold text-[#004776]">
-              <Calendar className="w-3.5 h-3.5 text-[#0072BC]" /> Lịch sử xử lý:
-            </div>
-            <div>Tạo phiếu: {new Date(ticket.createdAt).toLocaleString('vi-VN')}</div>
-            {ticket.submittedAt && <div>Nộp phiếu: {new Date(ticket.submittedAt).toLocaleString('vi-VN')}</div>}
-            {ticket.resubmittedAt && <div>Nộp lại: {new Date(ticket.resubmittedAt).toLocaleString('vi-VN')}</div>}
-            {ticket.approvedAt && <div>Duyệt bởi <strong>{ticket.approvedBy}</strong> lúc {new Date(ticket.approvedAt).toLocaleString('vi-VN')}</div>}
-            {ticket.mergedAt && <div>Gộp vào B1/B2 bởi <strong>{ticket.mergedBy}</strong> lúc {new Date(ticket.mergedAt).toLocaleString('vi-VN')}</div>}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-3.5 border-t border-[#e2e8f0] bg-[#f8fafc] flex justify-end gap-2">
-          {onPrint && (
-            <button
-              type="button"
-              onClick={() => onPrint(ticket)}
-              className="h-9 px-3.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] cursor-pointer"
-            >
-              In PDF (A4)
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold cursor-pointer"
+          {/* Tờ A4 chuẩn lề 2-2-3-2 cm */}
+          <div
+            id="vtvl-ticket-detail-a4-sheet"
+            className="bg-white w-full max-w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
-            Đóng
-          </button>
+            {/* Quốc hiệu & Tên đơn vị */}
+            <div className="grid grid-cols-12 gap-2 text-center mb-5">
+              <div className="col-span-5">
+                <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
+                <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+                <div className="text-[11px] font-bold uppercase mt-0.5">{displayUnitName}</div>
+                <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
+              </div>
+              <div className="col-span-7">
+                <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
+                <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
+              </div>
+            </div>
+
+            {/* Tiêu đề biểu mẫu */}
+            <div className="text-center mb-6">
+              <h2 className="text-[16px] sm:text-[18px] font-bold uppercase tracking-tight text-[#004776]">
+                PHIẾU KHẢO SÁT KHỐI LƯỢNG CÔNG VIỆC CÁ NHÂN
+              </h2>
+              <div className="text-[12px] italic text-[#476885] mt-0.5">
+                (Kỳ thống kê: Từ ngày 01/10/2025 đến ngày 30/9/2026 • Theo Hướng dẫn số 07-HD/BTCTW)
+              </div>
+            </div>
+
+            {/* Thông tin nhân sự */}
+            <div className="space-y-1.5 mb-5 text-[13px] border-b border-[#e2e8f0] pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div><strong>Họ và tên người lập phiếu:</strong> {ticket.ownerName} ({ticket.ownerEmail})</div>
+                <div><strong>Trạng thái:</strong> <span className="font-bold text-[#0072BC]">{badge.label}</span></div>
+              </div>
+              <div><strong>Chức danh / Chức vụ:</strong> {ticket.ownerTitle || 'Chuyên viên'} &nbsp;|&nbsp; <strong>Đơn vị:</strong> {displayUnitName} ({ticket.unitCode})</div>
+            </div>
+
+            {/* Bảng chi tiết 12 mục chuẩn */}
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full border-collapse border border-[#004776] text-[12.5px]">
+                <tbody>
+                  {tableFields.map((f) => (
+                    <tr key={f.num}>
+                      <td className="border border-[#004776] px-3 py-2 font-bold w-1/3 align-top">
+                        {f.num}. {f.label}
+                      </td>
+                      <td className={`border border-[#004776] px-3 py-2 leading-relaxed ${f.isCode ? 'font-bold text-[#0072BC]' : f.isBold ? 'font-semibold' : ''}`}>
+                        {f.val}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[#f8fafc]">
+                    <td className="border border-[#004776] px-3 py-2 font-bold align-top">
+                      12. Tổng thời gian quy đổi (Biểu B1)
+                    </td>
+                    <td className="border border-[#004776] px-3 py-2 font-bold text-[#0072BC] text-[13px]">
+                      {totalHoursAll} giờ/năm
+                      <span className="block font-normal text-[11px] text-[#476885] mt-0.5">
+                        (Quy đổi theo sản phẩm: {totalHoursSp} giờ + Giờ bổ sung: {gioBs} giờ)
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Bảng chữ ký theo thể thức Nghị định 30/2020/NĐ-CP */}
+            <div className="grid grid-cols-2 gap-4 text-center mt-8 pt-4">
+              <div>
+                <div className="font-bold text-[12.5px] uppercase">TRƯỞNG ĐƠN VỊ DUYỆT</div>
+                <div className="text-[11px] italic text-[#476885]">(Ký, ghi rõ họ tên và xác nhận)</div>
+                <div className="h-20" />
+                <div className="font-bold text-[13px]">{displayUnitName}</div>
+              </div>
+              <div>
+                <div className="text-[12px] italic mb-1 text-[#476885]">
+                  TP. Hồ Chí Minh, ngày {today.getDate()} tháng {today.getMonth() + 1} năm {today.getFullYear()}
+                </div>
+                <div className="font-bold text-[12.5px] uppercase">NGƯỜI KÊ KHAI PHIẾU</div>
+                <div className="text-[11px] italic text-[#476885]">(Ký và ghi rõ họ tên)</div>
+                <div className="h-16" />
+                <div className="font-bold text-[13px]">{ticket.ownerName}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

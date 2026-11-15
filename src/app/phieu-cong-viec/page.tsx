@@ -180,26 +180,26 @@ export default function StaffWorkTicketsPage() {
         </div>
 
         {/* Thanh chuyển đổi Tab */}
-        <div className="flex items-center gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-2 rounded-t-2xl print:hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-2 rounded-t-2xl print:hidden">
           <button
             type="button"
             onClick={() => setActiveTab('my')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer whitespace-nowrap transition-colors ${
               activeTab === 'my' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
             }`}
           >
-            <User className="w-4 h-4" /> <span>Phiếu của tôi ({myTickets.length})</span>
+            <User className="w-4 h-4 shrink-0" /> <span>Phiếu của tôi ({myTickets.length})</span>
           </button>
 
           {isLeader && (
             <button
               type="button"
               onClick={() => setActiveTab('pending')}
-              className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer whitespace-nowrap transition-colors ${
                 activeTab === 'pending' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
               }`}
             >
-              <Clock className="w-4 h-4" />
+              <Clock className="w-4 h-4 shrink-0" />
               <span>Chờ duyệt</span>
               {pendingCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white animate-pulse">
@@ -212,11 +212,11 @@ export default function StaffWorkTicketsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('unit')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 cursor-pointer whitespace-nowrap transition-colors ${
               activeTab === 'unit' ? 'border-[#0072BC] text-[#0072BC]' : 'border-transparent text-[#64748b] hover:text-[#004776]'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-4 h-4 shrink-0" />
             <span>{isLeader ? 'Toàn bộ phiếu đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} ({unitTickets.length})</span>
           </button>
         </div>
@@ -224,7 +224,7 @@ export default function StaffWorkTicketsPage() {
         {/* Nội dung Tab */}
         {activeTab === 'my' && (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start print:block">
-            <div className="xl:col-span-6 print:w-full">
+            <div className="xl:col-span-6 min-w-0 print:w-full">
               <StaffTicketInlineForm
                 unitCode={session.unitCode} ownerEmail={session.email}
                 ownerName={session.displayName || session.email.split('@')[0]} ownerTitle={session.title}
@@ -237,7 +237,7 @@ export default function StaffWorkTicketsPage() {
                 }}
               />
             </div>
-            <div className="xl:col-span-6 print:hidden space-y-5">
+            <div className="xl:col-span-6 min-w-0 print:hidden space-y-5">
               <StaffMyTicketsList
                 tickets={myTickets} loading={loading}
                 onEditTicket={(t) => { setEditingTicket(t); setActiveTab('my'); }}

@@ -237,6 +237,14 @@ runTest('Ca 9: Dòng thời gian lịch sử phê duyệt (buildDisplayApprovalE
   execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
 });
 
+runTest('Ca 10: Thanh công cụ và cột lưới trang Phiếu công việc chống tràn ngang ở mọi độ rộng màn hình', () => {
+  const toolbarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketToolbar.tsx'), 'utf8');
+
+  assert.ok(!toolbarCode.includes('flex-nowrap'), 'StaffTicketToolbar không được dùng flex-nowrap gây tràn ngang');
+  assert.ok(inlineFormCode.includes('grid-cols-2') && inlineFormCode.includes('Xem trước bản in A4'), 'StaffTicketInlineForm dùng grid-cols-2 cho bộ chuyển chế độ và giữ nhãn Xem trước bản in A4');
+  assert.ok(pageCode.includes('xl:col-span-6 min-w-0'), 'Các cột xl:col-span-6 tại trang phiếu công việc phải có min-w-0');
+});
+
 console.log('\n================================================================');
 console.log(` KẾT QUẢ KIỂM THỬ: ${passed} PASS, ${failed} FAIL`);
 console.log('================================================================\n');

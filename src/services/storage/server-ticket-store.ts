@@ -20,6 +20,11 @@ import {
   recordStatusHistoryInSupabase
 } from './server-ticket-db';
 import {
+  fetchStatusHistoryFromSupabase,
+  mergeTicketStatusHistory
+} from './server-ticket-history-db';
+import { getUserAccountByEmail, syncAccountsFromSupabase } from './server-account-store';
+import {
   getTicketVersions,
   getTicketMergeLinks,
   resetVersionMemoryStore
@@ -39,12 +44,25 @@ let memoryTickets: Map<string, StaffWorkTicket> | null = null;
 export function resetTicketMemoryStore(): void { memoryTickets = null; resetVersionMemoryStore(); }
 registerCacheInvalidator(() => { memoryTickets = null; });
 
+function resolveActorName(email?: string): string | undefined {
+  if (!email) return undefined;
+  return getUserAccountByEmail(email)?.displayName;
+}
+
 export function enrichTicket(ticket: StaffWorkTicket): StaffWorkTicket {
   const versions = getTicketVersions(ticket.id);
   const mergeLinks = getTicketMergeLinks(ticket.id);
   const latestVer = versions.length > 0 ? versions[versions.length - 1].versionNo : (ticket.currentVersionNo || 0);
+  const statusHistory = (ticket.statusHistory || []).map((h) => ({
+    ...h,
+    actorName: h.actorName || resolveActorName(h.actorId)
+  }));
   return {
     ...ticket,
+    approvedByName: ticket.approvedByName || resolveActorName(ticket.approvedBy),
+    revisionRequestedByName: ticket.revisionRequestedByName || resolveActorName(ticket.revisionRequestedBy),
+    mergedByName: ticket.mergedByName || resolveActorName(ticket.mergedBy),
+    statusHistory,
     currentVersionNo: latestVer,
     versions,
     mergeLinks
@@ -80,6 +98,8 @@ export async function syncTicketsFromSupabase(unitCode?: string): Promise<void> 
   const store = loadTickets();
   const remote = await fetchTicketsFromSupabase(unitCode);
   if (remote === null) return;
+  await syncAccountsFromSupabase().catch(() => {});
+  const remoteHistory = await fetchStatusHistoryFromSupabase(unitCode);
   if (unitCode) {
     const uc = unitCode.toUpperCase();
     for (const [id, t] of Array.from(store.entries())) {
@@ -91,7 +111,7 @@ export async function syncTicketsFromSupabase(unitCode?: string): Promise<void> 
     store.set(t.id, {
       ...existing,
       ...t,
-      statusHistory: existing?.statusHistory || t.statusHistory
+      statusHistory: mergeTicketStatusHistory(existing?.statusHistory || t.statusHistory, remoteHistory?.get(t.id))
     });
   }
   persistTickets();

@@ -195,7 +195,7 @@ export function UnitTicketsReviewList({
                   </div>
 
                   {/* Vùng phải: Trạng thái (trên), Tiến trình 4 bước (giữa) & Nghiệp vụ căn phải (dưới) */}
-                  <div className="lg:w-[395px] xl:w-[425px] shrink-0 flex flex-col lg:items-end justify-between gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#e8eff7] lg:pl-4">
+                  <div className="lg:w-[415px] xl:w-[450px] shrink-0 flex flex-col lg:items-end justify-between gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#e8eff7] lg:pl-4">
                     <div className="flex flex-wrap items-center lg:justify-end gap-1.5">
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
                         <StatusIcon className="w-3 h-3" />

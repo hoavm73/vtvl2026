@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import {
-  X, AlertTriangle, Printer, Check, CornerDownLeft, FileText, GitCompare
+  X, AlertTriangle, Printer, Check, CornerDownLeft, FileText, GitCompare, History
 } from 'lucide-react';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffTicketVersionDiffTab } from './StaffTicketVersionDiffTab';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
+import { TicketApprovalHistoryTimeline } from './TicketApprovalHistoryTimeline';
 
 interface StaffTicketDetailModalProps {
   ticket: StaffWorkTicket | null;
@@ -24,7 +25,7 @@ export function StaffTicketDetailModal({
   ticket, unitNameVi, currentUserRole, currentUserEmail,
   onClose, onPrint, onApprove, onRequestChanges
 }: StaffTicketDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'a4' | 'diff'>('a4');
+  const [activeTab, setActiveTab] = useState<'a4' | 'diff' | 'history'>('a4');
 
   if (!ticket) return null;
 
@@ -116,6 +117,16 @@ export function StaffTicketDetailModal({
                 <GitCompare className="w-3.5 h-3.5" />
                 <span>Thay đổi so với bản trước</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  activeTab === 'history' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                }`}
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>Lịch sử phê duyệt</span>
+              </button>
             </div>
 
             {canReview && (
@@ -172,7 +183,8 @@ export function StaffTicketDetailModal({
               <p className="text-xs pl-5 whitespace-pre-wrap leading-relaxed">{ticket.revisionReason}</p>
               {ticket.revisionRequestedBy && (
                 <div className="text-[11px] text-[#476885] pl-5 pt-0.5">
-                  Người yêu cầu: <strong>{ticket.revisionRequestedBy}</strong> •{' '}
+                  Người yêu cầu: <strong>{ticket.revisionRequestedByName || ticket.revisionRequestedBy}</strong>
+                  {ticket.revisionRequestedByName ? ` (${ticket.revisionRequestedBy})` : ''} •{' '}
                   {ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt).toLocaleString('vi-VN') : ''}
                 </div>
               )}
@@ -181,6 +193,13 @@ export function StaffTicketDetailModal({
 
           {activeTab === 'diff' ? (
             <StaffTicketVersionDiffTab ticket={ticket} />
+          ) : activeTab === 'history' ? (
+            <div className="w-full max-w-[210mm] bg-white rounded-2xl border border-[#cbd5e1] p-5 shadow-xs space-y-3">
+              <h4 className="text-sm font-bold text-[#004776] border-b border-[#e8eff7] pb-2">
+                Lịch sử phê duyệt &amp; phản hồi chi tiết
+              </h4>
+              <TicketApprovalHistoryTimeline ticket={ticket} />
+            </div>
           ) : (
             <div
               id="vtvl-ticket-detail-a4-sheet"

@@ -1,18 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Check,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  RefreshCw,
-  FileEdit,
-  Send,
-  Layers,
-  ShieldCheck
+  Check, CheckCircle2, Clock, AlertTriangle, RefreshCw, FileEdit, Send, Layers, ShieldCheck
 } from 'lucide-react';
 import { StaffWorkTicket, CanonicalTicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
+import {
+  TicketApprovalSummaryStrip,
+  TicketApprovalHistoryTimeline,
+  buildDisplayApprovalEvents
+} from './TicketApprovalHistoryTimeline';
 
 export interface TicketStatusMeta {
   canonical: CanonicalTicketStatus;
@@ -80,11 +77,14 @@ interface ProgressStep {
   Icon: React.ComponentType<{ className?: string }>;
 }
 
-function formatShortDate(iso?: string): string {
+function formatShortDate(iso?: string, withTime = false): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  const datePart = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  if (!withTime) return datePart;
+  const timePart = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return `${datePart} ${timePart}`;
 }
 
 function buildApprovalSteps(ticket: StaffWorkTicket): ProgressStep[] {
@@ -130,12 +130,12 @@ function buildApprovalSteps(ticket: StaffWorkTicket): ProgressStep[] {
   } else if (canonical === 'changes_requested') {
     step3State = 'warning';
     step3Label = 'Cần bổ sung';
-    step3Sub = formatShortDate(ticket.revisionRequestedAt) || 'Chỉnh sửa';
+    step3Sub = formatShortDate(ticket.revisionRequestedAt, true) || 'Chỉnh sửa';
     step3Icon = AlertTriangle;
   } else if (isApproved) {
     step3State = 'done';
     step3Label = 'Đã duyệt';
-    step3Sub = formatShortDate(ticket.approvedAt) || 'Đạt chuẩn';
+    step3Sub = formatShortDate(ticket.approvedAt, true) || 'Đạt chuẩn';
     step3Icon = CheckCircle2;
   }
 
@@ -152,7 +152,7 @@ function buildApprovalSteps(ticket: StaffWorkTicket): ProgressStep[] {
     key: 'merge',
     num: 4,
     label: isMerged ? 'Đã gộp' : 'Gộp B1/B2',
-    sub: isMerged ? formatShortDate(ticket.mergedAt) || 'Đồng bộ' : isApproved ? 'Sẵn sàng' : 'Sau duyệt',
+    sub: isMerged ? formatShortDate(ticket.mergedAt, true) || 'Đồng bộ' : isApproved ? 'Sẵn sàng' : 'Sau duyệt',
     state: isMerged ? 'done' : isApproved ? 'active' : 'upcoming',
     Icon: Layers
   };
@@ -183,7 +183,9 @@ interface TicketApprovalProgressProps {
  * Thanh tiến trình phê duyệt 4 bước trực quan theo chuẩn HCM-UTE S-Link V2.
  */
 export function TicketApprovalProgress({ ticket, variant = 'compact' }: TicketApprovalProgressProps) {
+  const [showHistory, setShowHistory] = useState(false);
   const steps = buildApprovalSteps(ticket);
+  const events = buildDisplayApprovalEvents(ticket);
   const isBanner = variant === 'banner';
 
   return (
@@ -216,23 +218,13 @@ export function TicketApprovalProgress({ ticket, variant = 'compact' }: TicketAp
           return (
             <div key={step.key} className="relative flex flex-col items-center text-center px-0.5">
               {idx > 0 && (
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-0 right-1/2 ${isBanner ? 'top-3.5' : 'top-3'} h-[2px] -translate-y-1/2 ${leftLineColor}`}
-                />
+                <span aria-hidden="true" className={`absolute left-0 right-1/2 ${isBanner ? 'top-3.5' : 'top-3'} h-[2px] -translate-y-1/2 ${leftLineColor}`} />
               )}
               {idx < steps.length - 1 && (
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-1/2 right-0 ${isBanner ? 'top-3.5' : 'top-3'} h-[2px] -translate-y-1/2 ${rightLineColor}`}
-                />
+                <span aria-hidden="true" className={`absolute left-1/2 right-0 ${isBanner ? 'top-3.5' : 'top-3'} h-[2px] -translate-y-1/2 ${rightLineColor}`} />
               )}
 
-              <div
-                className={`relative z-10 flex items-center justify-center rounded-full border transition-all ${
-                  isBanner ? 'w-7 h-7' : 'w-6 h-6'
-                } ${NODE_STYLE[step.state]}`}
-              >
+              <div className={`relative z-10 flex items-center justify-center rounded-full border transition-all ${isBanner ? 'w-7 h-7' : 'w-6 h-6'} ${NODE_STYLE[step.state]}`}>
                 {step.state === 'done' ? (
                   <Check className={isBanner ? 'w-3.5 h-3.5 stroke-[2.5]' : 'w-3 h-3 stroke-[2.5]'} />
                 ) : step.state === 'upcoming' ? (
@@ -242,24 +234,29 @@ export function TicketApprovalProgress({ ticket, variant = 'compact' }: TicketAp
                 )}
               </div>
 
-              <div
-                className={`mt-1.5 font-bold leading-tight ${
-                  isBanner ? 'text-[11px]' : 'text-[10.5px]'
-                } ${LABEL_STYLE[step.state]}`}
-              >
+              <div className={`mt-1.5 font-bold leading-tight ${isBanner ? 'text-[11px]' : 'text-[10.5px]'} ${LABEL_STYLE[step.state]}`}>
                 {step.label}
               </div>
-              <div
-                className={`mt-0.5 leading-tight text-[#20446c]/75 tabular-nums truncate max-w-full ${
-                  isBanner ? 'text-[10px]' : 'text-[9.5px]'
-                }`}
-              >
+              <div className={`mt-0.5 leading-tight text-[#20446c]/75 tabular-nums truncate max-w-full ${isBanner ? 'text-[10px]' : 'text-[9.5px]'}`}>
                 {step.sub}
               </div>
             </div>
           );
         })}
       </div>
+
+      <TicketApprovalSummaryStrip
+        ticket={ticket}
+        events={events}
+        expanded={showHistory}
+        onToggle={() => setShowHistory((v) => !v)}
+      />
+
+      {showHistory && events.length > 0 && (
+        <div className="mt-2 pt-2.5 border-t border-[#dbe8f5]">
+          <TicketApprovalHistoryTimeline ticket={ticket} compact={!isBanner} />
+        </div>
+      )}
     </div>
   );
 }

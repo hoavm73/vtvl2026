@@ -41,6 +41,7 @@ export interface WorkSurveyStatusHistory {
   action: string;
   reason?: string;
   actorId: string;
+  actorName?: string;
   actorRole: string;
   unitId: string;
   createdAt: string;
@@ -128,11 +129,14 @@ export interface StaffWorkTicket {
   resubmittedAt?: string;
   approvedAt?: string;
   approvedBy?: string;
+  approvedByName?: string;
   revisionReason?: string;
   revisionRequestedAt?: string;
   revisionRequestedBy?: string;
+  revisionRequestedByName?: string;
   mergedAt?: string;
   mergedBy?: string;
+  mergedByName?: string;
   a2RowId?: string;
   b1RowId?: string;
   b2RowId?: string;

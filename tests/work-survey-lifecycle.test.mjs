@@ -164,6 +164,79 @@ runTest('Ca 7: Bản in PDF A4 của phiếu công việc giữ nguyên định 
   assert.ok(printSheetCode.includes('print:block'), 'Bản in PDF hỗ trợ chế độ in A4');
 });
 
+runTest('Ca 9: Dòng thời gian lịch sử phê duyệt (buildDisplayApprovalEvents) giữ đủ người duyệt, phản hồi và thời gian qua nhiều vòng', () => {
+  const progressCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/TicketApprovalProgress.tsx'), 'utf8');
+  const ticketStoreCode = fs.readFileSync(path.join(root, 'src/services/storage/server-ticket-store.ts'), 'utf8');
+
+  assert.ok(detailModalCode.includes('Lịch sử phê duyệt') && detailModalCode.includes('TicketApprovalHistoryTimeline'), 'Modal chi tiết phải có tab Lịch sử phê duyệt');
+  assert.ok(progressCode.includes('TicketApprovalSummaryStrip') && progressCode.includes('TicketApprovalHistoryTimeline'), 'Thanh tiến trình duyệt phải gắn tóm tắt người duyệt và dòng lịch sử mở rộng');
+  assert.ok(ticketStoreCode.includes('fetchStatusHistoryFromSupabase') && ticketStoreCode.includes('mergeTicketStatusHistory'), 'Server ticket store phải đồng bộ và gộp lịch sử duyệt từ work_survey_status_history');
+
+  const tsxCode = `
+    import assert from 'assert';
+    import { buildDisplayApprovalEvents, formatApprovalDateTime } from './src/components/staff-portal/TicketApprovalHistoryTimeline';
+
+    const fullTicket = {
+      id: 'tkt-test-9',
+      unitCode: 'TCNS',
+      ownerEmail: 'cb@hcmute.edu.vn',
+      ownerName: 'Nguyễn Văn A',
+      ownerRole: 'Cán bộ',
+      missionCode: 'TCNS.NV01',
+      taskCode: 'TCNS.NV01.CV01',
+      vtvlCode: 'TCNS.CV01',
+      taskName: 'Tổng hợp hồ sơ',
+      productCountPerYear: 12,
+      minutesPerProduct: 60,
+      extraHoursPerYear: 0,
+      status: 'approved',
+      isMergedToB1B2: true,
+      createdAt: '2026-10-01T08:00:00Z',
+      updatedAt: '2026-10-05T10:00:00Z',
+      statusHistory: [
+        { id: 'h5', surveyId: 'tkt-test-9', toStatus: 'approved', action: 'MERGE_TO_SHEETS', actorId: 'truong.tcns@hcmute.edu.vn', actorName: 'Trần Thị Trưởng', actorRole: 'unit_leader', createdAt: '2026-10-05T10:30:00Z' },
+        { id: 'h2', surveyId: 'tkt-test-9', fromStatus: 'submitted', toStatus: 'changes_requested', action: 'REQUEST_CHANGES', reason: 'Cần bổ sung minh chứng số lượng hồ sơ', actorId: 'truong.tcns@hcmute.edu.vn', actorName: 'Trần Thị Trưởng', actorRole: 'unit_leader', createdAt: '2026-10-02T09:15:00Z' },
+        { id: 'h1', surveyId: 'tkt-test-9', fromStatus: 'draft', toStatus: 'submitted', action: 'SUBMIT', actorId: 'cb@hcmute.edu.vn', actorRole: 'staff', createdAt: '2026-10-01T09:00:00Z' },
+        { id: 'h4', surveyId: 'tkt-test-9', fromStatus: 'resubmitted', toStatus: 'approved', action: 'APPROVE', reason: 'Đã đối chiếu đạt định mức', actorId: 'truong.tcns@hcmute.edu.vn', actorName: 'Trần Thị Trưởng', actorRole: 'unit_leader', createdAt: '2026-10-04T14:20:00Z' },
+        { id: 'h3', surveyId: 'tkt-test-9', fromStatus: 'changes_requested', toStatus: 'resubmitted', action: 'RESUBMIT', reason: 'Đã đính kèm biên bản thống kê', actorId: 'cb@hcmute.edu.vn', actorRole: 'staff', createdAt: '2026-10-03T11:05:00Z' }
+      ]
+    };
+
+    const events = buildDisplayApprovalEvents(fullTicket);
+    assert.strictEqual(events.length, 5);
+    assert.deepStrictEqual(events.map((e) => e.action), ['SUBMIT', 'REQUEST_CHANGES', 'RESUBMIT', 'APPROVE', 'MERGE_TO_SHEETS']);
+    assert.strictEqual(events[0].actorName, 'Nguyễn Văn A');
+    assert.strictEqual(events[1].actorName, 'Trần Thị Trưởng');
+    assert.strictEqual(events[1].reason, 'Cần bổ sung minh chứng số lượng hồ sơ');
+    assert.strictEqual(events[3].actorName, 'Trần Thị Trưởng');
+    assert.strictEqual(events[3].reason, 'Đã đối chiếu đạt định mức');
+    assert.ok(formatApprovalDateTime(events[3].timestampIso).includes('·'));
+
+    const legacyTicket = {
+      ...fullTicket,
+      statusHistory: [],
+      submittedAt: '2026-10-01T09:00:00Z',
+      revisionRequestedAt: '2026-10-02T09:15:00Z',
+      revisionRequestedBy: 'truong.tcns@hcmute.edu.vn',
+      revisionRequestedByName: 'Trần Thị Trưởng',
+      revisionReason: 'Bổ sung minh chứng',
+      resubmittedAt: '2026-10-03T11:05:00Z',
+      lastChangeSummary: 'Đã cập nhật sản lượng',
+      approvedAt: '2026-10-04T14:20:00Z',
+      approvedBy: 'truong.tcns@hcmute.edu.vn',
+      approvedByName: 'Trần Thị Trưởng',
+      mergedAt: '2026-10-05T10:30:00Z',
+      mergedBy: 'truong.tcns@hcmute.edu.vn',
+      mergedByName: 'Trần Thị Trưởng'
+    };
+    const fallbackEvents = buildDisplayApprovalEvents(legacyTicket);
+    assert.strictEqual(fallbackEvents.length, 5);
+    assert.strictEqual(fallbackEvents[1].reason, 'Bổ sung minh chứng');
+    assert.strictEqual(fallbackEvents[3].actorName, 'Trần Thị Trưởng');
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
+});
+
 console.log('\n================================================================');
 console.log(` KẾT QUẢ KIỂM THỬ: ${passed} PASS, ${failed} FAIL`);
 console.log('================================================================\n');

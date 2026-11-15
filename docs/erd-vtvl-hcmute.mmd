@@ -3,7 +3,12 @@ erDiagram
     USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "lap_phieu_cong_viec"
     DON_VI ||--o{ STAFF_WORK_TICKETS : "luu_tru_phieu_don_vi"
     STAFF_WORK_TICKETS ||--o{ COORDINATED_TASKS : "chua_cong_viec_phoi_hop"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_VERSIONS : "luu_lich_su_phien_ban"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_STATUS_HISTORY : "ghi_lich_su_phe_duyet"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "gop_vao_bieu_A2_B1_B2"
     DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
+    DON_VI ||--o{ AUDIT_LOGS : "ghi_nhat_ky_he_thong"
+    USER_ACCOUNTS ||--o{ AUDIT_LOGS : "thuc_hien_thao_tac"
 
     A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
     STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
@@ -44,7 +49,7 @@ erDiagram
     DU_BAO_5_NAM ||--|| D2_PHUONG_AN : "dieu_chinh_nhu_cau_theo_nam"
 
     DON_VI {
-        string ma_don_vi PK "VD: FME, FIT, TCNS, TPC (51 don vi)"
+        string ma_don_vi PK "VD: FME, FIT, TCNS, TPC (39 don vi hoat dong)"
         string ten_don_vi_vi "Ten tieng Viet chuan HCM-UTE"
         string ten_don_vi_en "Ten tieng Anh chuan HCM-UTE"
         string khoi_don_vi "khoa-vien | phong-ban | trung-tam | dang-doanthe"
@@ -235,7 +240,7 @@ erDiagram
         string id PK "Ma phieu - tkt-[MA_DV]-..."
         string ma_don_vi FK "Lien ket DON_VI"
         string owner_email FK "Lien ket USER_ACCOUNTS"
-        string status "Nhap | Da nop"
+        string status "Nhap | Da nop | Yeu cau chinh sua | Da nop lai | Da phe duyet"
         string ma_nhiem_vu FK "Lien ket A1_NHIEM_VU"
         string ma_cong_viec FK "Lien ket A2_CONG_VIEC"
         string ma_vtvl FK "Lien ket C1_VTVL"
@@ -243,6 +248,17 @@ erDiagram
         int so_sp_nam "So SP tao ra trong nam"
         float phut_thuc_te "TB phut/SP do thuc te"
         float gio_bo_sung "Gio bo sung lien quan"
+        timestamp submitted_at "Thoi diem nop lan dau"
+        timestamp resubmitted_at "Thoi diem nop lai"
+        string approved_by FK "Email nguoi phe duyet"
+        timestamp approved_at "Thoi diem phe duyet"
+        string revision_requested_by FK "Email nguoi yeu cau chinh sua"
+        timestamp revision_requested_at "Thoi diem phan hoi chinh sua"
+        string revision_reason "Noi dung phan hoi / ly do chinh sua"
+        string merged_by FK "Email nguoi gop vao B1/B2"
+        timestamp merged_at "Thoi diem gop bieu"
+        int current_version_no "Phien ban hien hanh (v1, v2...)"
+        string last_change_summary "Tom tat thay doi khi nop lai"
     }
 
     COORDINATED_TASKS {
@@ -253,4 +269,50 @@ erDiagram
         string target_task_code "Ma cong viec ben don vi phoi hop"
         string role_in_task "Vai tro phoi hop"
         float estimated_hours "So gio dong gop"
+    }
+
+    WORK_SURVEY_VERSIONS {
+        string id PK "UUID phien ban"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        int version_no "So phien ban (1, 2, 3...)"
+        string action "CREATE_DRAFT | SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE"
+        string change_summary "Tom tat noi dung thay doi"
+        string created_by FK "Email nguoi tao phien ban"
+        timestamp created_at "Thoi diem luu snapshot"
+    }
+
+    WORK_SURVEY_STATUS_HISTORY {
+        string id PK "UUID su kien phe duyet"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        string from_status "Trang thai truoc"
+        string to_status "Trang thai sau"
+        string action "SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE_TO_SHEETS"
+        string reason "Phan hoi / ghi chu duyet"
+        string actor_id FK "Email nguoi thuc hien"
+        string actor_role "staff | unit_leader | admin"
+        string unit_id FK "Lien ket DON_VI"
+        timestamp created_at "Thoi diem duyet / phan hoi"
+    }
+
+    WORK_SURVEY_MERGE_LINKS {
+        string id PK "UUID lien ket gop bieu"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        string unit_id FK "Lien ket DON_VI"
+        string version_id FK "Lien ket WORK_SURVEY_VERSIONS"
+        string target_sheet "A2_CongViec | B1_KhoiLuong | B2_ThayDoi"
+        string target_row_key "Ma dong du lieu sau khi gop"
+        string merged_by FK "Email nguoi gop"
+        timestamp merged_at "Thoi diem gop bieu"
+    }
+
+    AUDIT_LOGS {
+        string id PK "UUID nhat ky kiem toan"
+        string unit_id FK "Lien ket DON_VI"
+        string actor_email FK "Email nguoi thao tac"
+        string actor_role "admin | unit_leader | staff"
+        string action "Hanh dong he thong"
+        string target_type "ticket | account | unit | lock"
+        string target_id "ID doi tuong tac dong"
+        string detail "Chi tiet thao tac JSON/Text"
+        timestamp created_at "Thoi diem ghi nhat ky"
     }

@@ -15,7 +15,12 @@ erDiagram
     USER_ACCOUNTS ||--o{ STAFF_WORK_TICKETS : "lap_phieu_cong_viec"
     DON_VI ||--o{ STAFF_WORK_TICKETS : "luu_tru_phieu_don_vi"
     STAFF_WORK_TICKETS ||--o{ COORDINATED_TASKS : "chua_cong_viec_phoi_hop"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_VERSIONS : "luu_lich_su_phien_ban"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_STATUS_HISTORY : "ghi_lich_su_phe_duyet"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "gop_vao_bieu_A2_B1_B2"
     DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
+    DON_VI ||--o{ AUDIT_LOGS : "ghi_nhat_ky_he_thong"
+    USER_ACCOUNTS ||--o{ AUDIT_LOGS : "thuc_hien_thao_tac"
 
     A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
     STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
@@ -58,7 +63,7 @@ erDiagram
     DU_BAO_5_NAM ||--|| D2_PHUONG_AN : "dieu_chinh_nhu_cau_theo_nam"
 
     DON_VI {
-        string ma_don_vi PK "VD: CK, CNTT, TCNS, THKTTH (48 don vi)"
+        string ma_don_vi PK "VD: CK, CNTT, TCNS, THKTTH (39 don vi hoat dong)"
         string ten_don_vi_vi "Ten tieng Viet chuan HCM-UTE"
         string ten_don_vi_en "Ten tieng Anh chuan HCM-UTE"
         string khoi_don_vi "khoa-vien | phong-ban | trung-tam | dang-doanthe"
@@ -259,7 +264,7 @@ erDiagram
         string id PK "Ma phieu - tkt-[MA_DV]-..."
         string ma_don_vi FK "Lien ket DON_VI"
         string owner_email FK "Lien ket USER_ACCOUNTS"
-        string status "Nhap | Da nop"
+        string status "Nhap | Da nop | Yeu cau chinh sua | Da nop lai | Da phe duyet"
         string ma_nhiem_vu FK "Lien ket A1_NHIEM_VU"
         string ma_cong_viec FK "Lien ket A2_CONG_VIEC"
         string ma_vtvl FK "Lien ket C1_VTVL"
@@ -267,6 +272,17 @@ erDiagram
         int so_sp_nam "So SP tao ra trong nam"
         float phut_thuc_te "TB phut/SP do thuc te"
         float gio_bo_sung "Gio bo sung lien quan"
+        timestamp submitted_at "Thoi diem nop lan dau"
+        timestamp resubmitted_at "Thoi diem nop lai"
+        string approved_by FK "Email nguoi phe duyet"
+        timestamp approved_at "Thoi diem phe duyet"
+        string revision_requested_by FK "Email nguoi yeu cau chinh sua"
+        timestamp revision_requested_at "Thoi diem phan hoi chinh sua"
+        string revision_reason "Noi dung phan hoi / ly do chinh sua"
+        string merged_by FK "Email nguoi gop vao B1/B2"
+        timestamp merged_at "Thoi diem gop bieu"
+        int current_version_no "Phien ban hien hanh (v1, v2...)"
+        string last_change_summary "Tom tat thay doi khi nop lai"
     }
 
     COORDINATED_TASKS {
@@ -278,6 +294,52 @@ erDiagram
         string role_in_task "Vai tro phoi hop"
         float estimated_hours "So gio dong gop"
     }
+
+    WORK_SURVEY_VERSIONS {
+        string id PK "UUID phien ban"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        int version_no "So phien ban (1, 2, 3...)"
+        string action "CREATE_DRAFT | SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE"
+        string change_summary "Tom tat noi dung thay doi"
+        string created_by FK "Email nguoi tao phien ban"
+        timestamp created_at "Thoi diem luu snapshot"
+    }
+
+    WORK_SURVEY_STATUS_HISTORY {
+        string id PK "UUID su kien phe duyet"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        string from_status "Trang thai truoc"
+        string to_status "Trang thai sau"
+        string action "SUBMIT | REQUEST_CHANGES | RESUBMIT | APPROVE | MERGE_TO_SHEETS"
+        string reason "Phan hoi / ghi chu duyet"
+        string actor_id FK "Email nguoi thuc hien"
+        string actor_role "staff | unit_leader | admin"
+        string unit_id FK "Lien ket DON_VI"
+        timestamp created_at "Thoi diem duyet / phan hoi"
+    }
+
+    WORK_SURVEY_MERGE_LINKS {
+        string id PK "UUID lien ket gop bieu"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        string unit_id FK "Lien ket DON_VI"
+        string version_id FK "Lien ket WORK_SURVEY_VERSIONS"
+        string target_sheet "A2_CongViec | B1_KhoiLuong | B2_ThayDoi"
+        string target_row_key "Ma dong du lieu sau khi gop"
+        string merged_by FK "Email nguoi gop"
+        timestamp merged_at "Thoi diem gop bieu"
+    }
+
+    AUDIT_LOGS {
+        string id PK "UUID nhat ky kiem toan"
+        string unit_id FK "Lien ket DON_VI"
+        string actor_email FK "Email nguoi thao tac"
+        string actor_role "admin | unit_leader | staff"
+        string action "Hanh dong he thong"
+        string target_type "ticket | account | unit | lock"
+        string target_id "ID doi tuong tac dong"
+        string detail "Chi tiet thao tac JSON/Text"
+        timestamp created_at "Thoi diem ghi nhat ky"
+    }
 ```
 
 ---
@@ -287,9 +349,13 @@ erDiagram
 | Thực thể trong ERD | Trang tính tương ứng trong Workbook `.xlsx` | Khóa chính (`PK`) & Khóa ngoại (`FK`) | Nguồn dữ liệu & Căn cứ pháp lý |
 | :--- | :--- | :--- | :--- |
 | `USER_ACCOUNTS` | `Tài khoản & Phân quyền` | `PK`: `email` · `FK`: `ma_don_vi` | Cổng thông tin HCM-UTE, Google Workspace, Phân quyền 3 nhóm (`admin`, `unit_leader`, `staff`) |
-| `STAFF_WORK_TICKETS` | `Phiếu công việc cá nhân` | `PK`: `id` · `FK`: `ma_don_vi`, `owner_email`, `ma_nhiem_vu`, `ma_cong_viec`, `ma_vtvl` | Kê khai công việc cá nhân, liên thông A1/A2/B1/C1, xuất PDF A4 |
+| `STAFF_WORK_TICKETS` | `Phiếu công việc cá nhân` | `PK`: `id` · `FK`: `ma_don_vi`, `owner_email`, `approved_by`, `revision_requested_by`, `merged_by`, `ma_nhiem_vu`, `ma_cong_viec`, `ma_vtvl` | Kê khai công việc cá nhân, theo dõi phê duyệt, liên thông A1/A2/B1/C1, xuất PDF A4 |
 | `COORDINATED_TASKS` | `Công việc phối hợp liên đơn vị` | `PK`: `id` · `FK`: `ticket_id`, `ma_don_vi`, `target_unit_code` | Danh mục nhiệm vụ/công việc phối hợp toàn trường HCM-UTE |
-| `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`CK`, `CNTT`, `TCNS`, `THKTTH`...) | Danh mục 48 đơn vị thuộc/trực thuộc **HCM-UTE** |
+| `WORK_SURVEY_VERSIONS` | `Lưu trữ phiên bản phiếu (DB)` | `PK`: `id` · `FK`: `survey_id`, `created_by` | Snapshot bất biến theo từng vòng nộp lại (`v1`, `v2`...) và tóm tắt chỉnh sửa |
+| `WORK_SURVEY_STATUS_HISTORY` | `Lịch sử phê duyệt & phản hồi (DB)` | `PK`: `id` · `FK`: `survey_id`, `actor_id`, `unit_id` | Chuỗi thời gian người nộp, người duyệt/phản hồi, lý do và mốc thời gian bất biến |
+| `WORK_SURVEY_MERGE_LINKS` | `Liên kết gộp biểu A2/B1/B2 (DB)` | `PK`: `id` · `FK`: `survey_id`, `unit_id`, `version_id`, `merged_by` | Truy vết chính xác dòng dữ liệu đã gộp sang Biểu `A2`, `B1`, `B2` |
+| `AUDIT_LOGS` | `Nhật ký kiểm toán hệ thống (DB)` | `PK`: `id` · `FK`: `unit_id`, `actor_email` | Theo dõi thao tác quản trị, phân quyền, khóa/mở khóa và phê duyệt |
+| `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`CK`, `CNTT`, `TCNS`, `THKTTH`...) | Danh mục 39 đơn vị hoạt động chuẩn thuộc/trực thuộc **HCM-UTE** |
 | `DM_VTVL_ND232` | `12. CHIA_VUNG_CAP_XA` (Bảng 1), `DM_THAM_SO` | `PK`: `ma_danh_muc_nd232` (`ND232-PL1-01`..`ND232-PL3-10`) · `FK`: `ma_so_chuc_danh` | **Nghị định 232/2026/NĐ-CP** (Phụ lục I, II, III — Bậc nghề nghiệp `Bậc 1–5`) |
 | `DM_CHUC_DANH_TT31` | `12. CHIA_VUNG_CAP_XA` (Bảng 2), `QUY_TAC_MA` | `PK`: `ma_so_chuc_danh` (28 mã: `V.07.01.01..V.09.02.11` + `V.07.01.23`) | **Thông tư 31/2026/TT-BGDĐT ngày 14/4/2026** (Điều 2, Điều 6–14, Khoản 5 Điều 15) |
 | `DM_SAN_PHAM` | `11. DM_SAN_PHAM`, `DM_06_NHOM` | `PK`: `ma_sp_chuan` (`SP-I-01`..`SP-VI-01`) | **Hướng dẫn 07-HD/BTCTW** (6 nhóm sản phẩm chuẩn La Mã `I–VI`) |

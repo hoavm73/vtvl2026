@@ -193,6 +193,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         fromStatus: curCanon,
         toStatus: 'approved',
         action: 'APPROVE',
+        reason: reasonText || undefined,
         actorId: caller.email,
         actorRole: caller.role,
         unitId: latest.unitCode

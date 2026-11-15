@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, RefreshCw
+  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, RefreshCw, BarChart3
 } from 'lucide-react';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -11,20 +11,21 @@ import { AdminSessionsTab } from '@/components/admin/AdminSessionsTab';
 import { AdminAccountsTab } from '@/components/admin/AdminAccountsTab';
 import { AdminSessionControlTab } from '@/components/admin/AdminSessionControlTab';
 import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
+import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
 import { AdminSkeletonLoading } from '@/components/admin/AdminSkeletonLoading';
 import { getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
 import { getAdminUnits } from '@/services/units/unit-management';
 
-type AdminTabKey = 'sessions' | 'accounts' | 'session-control' | 'units';
+type AdminTabKey = 'unit-monitor' | 'sessions' | 'accounts' | 'session-control' | 'units';
 
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<'admin' | 'unit_leader' | 'staff'>('admin');
-  const [activeTab, setActiveTab] = useState<AdminTabKey>('sessions');
+  const [activeTab, setActiveTab] = useState<AdminTabKey>('unit-monitor');
 
   const [sessionCount, setSessionCount] = useState(0);
   const [accountCount, setAccountCount] = useState(0);
@@ -36,7 +37,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tabParam = new URLSearchParams(window.location.search).get('tab');
-    if (tabParam === 'accounts' || tabParam === 'sessions' || tabParam === 'session-control' || tabParam === 'units') {
+    if (tabParam === 'unit-monitor' || tabParam === 'accounts' || tabParam === 'sessions' || tabParam === 'session-control' || tabParam === 'units') {
       setActiveTab(tabParam);
     }
   }, []);
@@ -184,6 +185,7 @@ export default function AdminPage() {
   const tabs: { key: AdminTabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
     ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accountCount})`, icon: Users }]
     : [
+        { key: 'unit-monitor', label: 'Dashboard theo dõi đơn vị', icon: BarChart3 },
         { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessionCount})`, icon: FileSpreadsheet },
         { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accountCount})`, icon: Users },
         { key: 'session-control', label: '3. Quản trị phiên', icon: UserCheck },
@@ -259,6 +261,7 @@ export default function AdminPage() {
           </div>
 
           <div className="p-4 sm:p-5">
+            {activeTab === 'unit-monitor' && !isLeader && <UnitMonitoringDashboard />}
             {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
             {activeTab === 'accounts' && <AdminAccountsTab />}
             {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}

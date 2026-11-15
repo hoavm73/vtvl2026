@@ -1,0 +1,78 @@
+export interface UnitSummaryRow {
+  unitCode: string;
+  unitNameVi: string;
+  group: string;
+  groupLabel: string;
+  totalTickets: number;
+  draftCount: number;
+  submittedCount: number;
+  resubmittedCount: number;
+  changesRequestedCount: number;
+  approvedCount: number;
+  mergedCount: number;
+  testTicketCount: number;
+  hasWorkbook: boolean;
+  workbookRevision: number;
+  populatedSheetsCount: number;
+  totalCoreSheets: number;
+  totalRows: number;
+  accountCount: number;
+  leaderCount: number;
+  staffCount: number;
+  progressPercent: number;
+  stageLabel: string;
+  lastUpdatedAt: string | null;
+}
+
+export interface MonitorTotals {
+  totalUnits: number;
+  unitsWithTickets: number;
+  unitsWithApproved: number;
+  totalTickets: number;
+  draftCount: number;
+  submittedCount: number;
+  resubmittedCount: number;
+  changesRequestedCount: number;
+  approvedCount: number;
+  mergedCount: number;
+  testTicketCount: number;
+  totalAccounts: number;
+}
+
+export interface MonitorTicketItem {
+  id: string;
+  unitCode: string;
+  unitNameVi: string;
+  maNhiemVu: string;
+  maCongViec: string;
+  tenCongViec: string;
+  maVtvl: string;
+  ownerEmail: string;
+  ownerName: string;
+  status: string;
+  canonicalStatus: string;
+  currentVersionNo: number;
+  isMergedToB1B2: boolean;
+  isTestData: boolean;
+  soSpNam: number;
+  phutThucTe: number;
+  gioBoSung: number;
+  totalHours: number;
+  revisionReason: string;
+  lastChangeSummary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonitorHistoryItem {
+  id: string;
+  unitCode: string;
+  unitNameVi: string;
+  category: 'ticket' | 'workbook' | 'audit';
+  actionLabel: string;
+  title: string;
+  details: string;
+  actorEmail: string;
+  statusBadge?: string;
+  timestampIso: string;
+}

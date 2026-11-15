@@ -11,7 +11,8 @@ import {
   BookOpen,
   Home,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 
@@ -39,6 +40,15 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         label: 'Trang chủ tổng quan',
         subLabel: 'Lộ trình 5 bước & Việc cần làm',
         icon: Home
+      },
+      {
+        href: '/?tab=unit-monitor',
+        label: 'Theo dõi đơn vị (TCNS)',
+        subLabel: 'Tiến trình, phiếu nháp/duyệt & lịch sử',
+        icon: BarChart3,
+        roles: ['admin'],
+        badge: 'TCNS',
+        badgeColor: 'bg-blue-50 text-[#0072BC] border-blue-200'
       }
     ]
   },

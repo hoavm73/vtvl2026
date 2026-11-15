@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Building2, CheckCircle2, History, Clock, AlertTriangle, FileSpreadsheet, ArrowRight
+  Building2, CheckCircle2, History, Clock, AlertTriangle, FileSpreadsheet, ArrowRight, BarChart3, LayoutDashboard
 } from 'lucide-react';
 import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBanner';
 import { SchoolOverviewDashboard } from '@/components/overview/SchoolOverviewDashboard';
 import { OverviewRoleActionCards } from '@/components/overview/OverviewRoleActionCards';
+import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
 import {
@@ -28,6 +29,7 @@ export default function HomePage() {
   });
   const [session, setSession] = useState<ActiveUnitSession>(() => getActiveUnitSession());
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'unit-monitor'>('overview');
 
   const syncState = () => {
     const oauth = consumeGoogleOAuthCallback();
@@ -43,6 +45,10 @@ export default function HomePage() {
     const hasHash = typeof window !== 'undefined' && window.location.hash.includes('access_token=');
     if (!cur && !hasHash) {
       router.replace('/login');
+    }
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam === 'unit-monitor') setActiveTab('unit-monitor');
     }
     window.addEventListener('vtvl-operator-changed', syncState);
     window.addEventListener('vtvl-unit-session-updated', syncState);
@@ -86,19 +92,60 @@ export default function HomePage() {
     );
   }
 
+  const isTcnsOrAdmin = Boolean(
+    operator?.role === 'admin' ||
+    operator?.unitCode?.toUpperCase() === 'TCNS' ||
+    operator?.email?.toLowerCase() === 'tcns@hcmute.edu.vn'
+  );
+
   return (
     <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-5 space-y-6">
       {/* 1. Banner chào mừng cá nhân hóa */}
       <OverviewWelcomeBanner session={operator} />
 
-      {/* 2. Dashboard gọn các con số của trường (ai cũng xem được, nằm dưới phần xin chào) */}
-      <SchoolOverviewDashboard />
+      {/* Thanh chuyển đổi Tab dành riêng cho Phòng Tổ chức - Nhân sự & Admin */}
+      {isTcnsOrAdmin && (
+        <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-[#d8e3ef] shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('overview')}
+            className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 cursor-pointer transition-all ${
+              activeTab === 'overview'
+                ? 'bg-[#0072BC] text-white shadow-xs'
+                : 'text-[#004776] hover:bg-[#eef5ff]'
+            }`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Tổng quan chung toàn trường</span>
+          </button>
 
-      {/* 3. Danh mục việc cần làm theo từng nhóm quyền */}
-      <OverviewRoleActionCards currentRole={operator?.role || 'staff'} />
+          <button
+            type="button"
+            onClick={() => setActiveTab('unit-monitor')}
+            className={`h-10 px-4 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 cursor-pointer transition-all ${
+              activeTab === 'unit-monitor'
+                ? 'bg-[#0072BC] text-white shadow-xs'
+                : 'text-[#004776] hover:bg-[#eef5ff]'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Dashboard theo dõi đơn vị (Phòng TCNS &amp; Admin)</span>
+          </button>
+        </div>
+      )}
 
-      {/* 4. Tiến độ đơn vị & Nhật ký thao tác */}
-      <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
+      {isTcnsOrAdmin && activeTab === 'unit-monitor' ? (
+        <UnitMonitoringDashboard />
+      ) : (
+        <>
+          {/* 2. Dashboard gọn các con số của trường (ai cũng xem được, nằm dưới phần xin chào) */}
+          <SchoolOverviewDashboard />
+
+          {/* 3. Danh mục việc cần làm theo từng nhóm quyền */}
+          <OverviewRoleActionCards currentRole={operator?.role || 'staff'} />
+
+          {/* 4. Tiến độ đơn vị & Nhật ký thao tác */}
+          <section className="bg-white rounded-3xl border border-[#d8e3ef] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e2ecf7] pb-4">
           <div className="space-y-1">
             <span className="text-xs font-bold text-[#006cee] uppercase tracking-wider">
@@ -190,6 +237,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+        </>
+      )}
     </div>
   );
 }

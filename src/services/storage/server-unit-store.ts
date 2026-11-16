@@ -1,16 +1,17 @@
 import fs from 'fs';
 import path from 'path';
-import { HcmuteUnit } from '@/types/vtvl';
+import { HcmuteUnit, UnitGroupKind } from '@/types/vtvl';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const UNITS_FILE = path.join(DATA_DIR, 'custom_units.json');
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-// Thao tác đặc quyền server-side: Bắt buộc duy nhất SUPABASE_SERVICE_ROLE_KEY ở mọi môi trường
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const getSupaUrl = () => (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+const getSupaKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+const VALID_UNIT_GROUPS = new Set<UnitGroupKind>(['khoa-vien', 'phong-ban', 'trung-tam', 'dang-doanthe']);
 
 export function assertUnitDbConfigured(operation: string): void {
-  if (!SUPABASE_URL || !SERVICE_KEY) {
+  if (!getSupaUrl() || !getSupaKey()) {
     if (process.env.NODE_ENV === 'production') {
       const err = new Error(`[DB_SERVICE_UNAVAILABLE] Dịch vụ CSDL máy chủ chưa được cấu hình cho thao tác ${operation}.`);
       (err as unknown as { code: string; status: number }).code = 'DB_SERVICE_UNAVAILABLE';
@@ -24,11 +25,8 @@ let memoryUnits: HcmuteUnit[] | null = null;
 let lastSupabaseSyncAt = 0;
 
 function getSupabaseHeaders(): Record<string, string> {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    'Content-Type': 'application/json'
-  };
+  const k = getSupaKey();
+  return { apikey: k, Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' };
 }
 
 export const DELETED_UNIT_CODES = new Set([
@@ -48,13 +46,11 @@ export const LEGACY_UNIT_MAP: Record<string, string> = {
 export function normalizeRemoteUnits(remoteUnits: HcmuteUnit[]): HcmuteUnit[] {
   const seenCodes = new Set<string>();
   const normalized: HcmuteUnit[] = [];
-
   for (const raw of remoteUnits) {
     if (!raw || !raw.code) continue;
     const rawCode = String(raw.code).trim().toUpperCase();
     if (DELETED_UNIT_CODES.has(rawCode)) continue;
     const targetCanonical = LEGACY_UNIT_MAP[rawCode];
-
     let effectiveUnit: HcmuteUnit;
     if (targetCanonical) {
       const canonicalMatch = HCMUTE_UNITS.find((u) => u.code.toUpperCase() === targetCanonical);
@@ -62,16 +58,70 @@ export function normalizeRemoteUnits(remoteUnits: HcmuteUnit[]): HcmuteUnit[] {
     } else {
       effectiveUnit = { ...raw };
     }
-
     const normCode = effectiveUnit.code.trim().toUpperCase();
-    if (DELETED_UNIT_CODES.has(normCode)) continue;
-    if (!seenCodes.has(normCode)) {
-      seenCodes.add(normCode);
-      normalized.push(effectiveUnit);
-    }
+    if (DELETED_UNIT_CODES.has(normCode) || seenCodes.has(normCode)) continue;
+    seenCodes.add(normCode);
+    normalized.push(effectiveUnit);
   }
-
   return normalized;
+}
+
+function mapDmDonViRowToUnit(r: Record<string, unknown>): HcmuteUnit {
+  const code = String(r.ma_don_vi || '').trim().toUpperCase();
+  const base = HCMUTE_UNITS.find((u) => u.code.toUpperCase() === code);
+  const rawGroup = String(r.khoi_don_vi || base?.group || 'phong-ban') as UnitGroupKind;
+  return {
+    code,
+    nameVi: String(r.ten_don_vi_vi || base?.nameVi || code).trim(),
+    nameEn: String(r.ten_don_vi_en || base?.nameEn || r.ten_don_vi_vi || code).trim(),
+    group: VALID_UNIT_GROUPS.has(rawGroup) ? rawGroup : 'phong-ban',
+    domain: base?.domain || `${code.toLowerCase()}.hcmute.edu.vn`,
+    headTitleVi: String(r.chuc_danh_thu_truong_vi || base?.headTitleVi || 'Trưởng đơn vị'),
+    headTitleEn: String(r.chuc_danh_thu_truong_en || base?.headTitleEn || 'Head of Department'),
+    defaultStaffCount: Number(r.so_nhan_su_mac_dinh ?? base?.defaultStaffCount ?? 10)
+  };
+}
+
+function mapUnitToDmDonViRow(u: HcmuteUnit) {
+  const code = u.code.trim().toUpperCase();
+  const group: UnitGroupKind = VALID_UNIT_GROUPS.has(u.group) ? u.group : 'phong-ban';
+  return {
+    ma_don_vi: code,
+    ten_don_vi_vi: (u.nameVi || code).trim(),
+    ten_don_vi_en: (u.nameEn || u.nameVi || code).trim(),
+    khoi_don_vi: group,
+    linh_vuc: u.domain || null,
+    chuc_danh_thu_truong_vi: u.headTitleVi || 'Trưởng đơn vị',
+    chuc_danh_thu_truong_en: u.headTitleEn || 'Head of Department',
+    so_nhan_su_mac_dinh: Math.max(0, Number(u.defaultStaffCount) || 10),
+    is_active: true,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function upsertUnitsToDmDonVi(units: HcmuteUnit[]): Promise<boolean> {
+  const url = getSupaUrl(), key = getSupaKey();
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key || units.length === 0) return false;
+  const rows = units.filter((u) => u.code && !DELETED_UNIT_CODES.has(u.code.toUpperCase())).map(mapUnitToDmDonViRow);
+  if (rows.length === 0) return false;
+  const res = await fetch(`${url}/rest/v1/dm_don_vi?on_conflict=ma_don_vi`, {
+    method: 'POST',
+    headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(rows)
+  });
+  return res.ok;
+}
+
+async function deactivateUnitInDmDonVi(code: string): Promise<boolean> {
+  const url = getSupaUrl(), key = getSupaKey();
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return false;
+  const norm = code.trim().toUpperCase();
+  const res = await fetch(`${url}/rest/v1/dm_don_vi?ma_don_vi=eq.${encodeURIComponent(norm)}`, {
+    method: 'PATCH',
+    headers: { ...getSupabaseHeaders(), Prefer: 'return=minimal' },
+    body: JSON.stringify({ is_active: false, updated_at: new Date().toISOString() })
+  });
+  return res.ok;
 }
 
 function persistLocalUnits(): void {
@@ -79,34 +129,24 @@ function persistLocalUnits(): void {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(UNITS_FILE, JSON.stringify(memoryUnits, null, 2), 'utf8');
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 async function persistUnitsToSupabase(units: HcmuteUnit[]): Promise<boolean> {
   assertUnitDbConfigured('persist_units');
-  if (!SUPABASE_URL || !SERVICE_KEY) return false;
+  const url = getSupaUrl(), key = getSupaKey();
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return false;
   try {
-    const existingRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json,phien_ban`,
-      { headers: getSupabaseHeaders(), cache: 'no-store' }
-    );
+    await upsertUnitsToDmDonVi(units);
+    const existingRes = await fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json,phien_ban`, { headers: getSupabaseHeaders(), cache: 'no-store' });
     const existingRows = existingRes.ok ? await existingRes.json() : [];
     const existingRow = Array.isArray(existingRows) && existingRows[0] ? existingRows[0] : null;
-
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
+    const res = await fetch(`${url}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
       method: 'POST',
       headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({
-        ma_don_vi: 'TCNS',
-        ten_don_vi: 'Phòng Tổ chức - Nhân sự',
-        phien_ban: existingRow?.phien_ban || 'v1',
-        du_lieu_ho_so_json: {
-          ...(existingRow?.du_lieu_ho_so_json || {}),
-          customUnits: units,
-          unitsUpdatedAt: new Date().toISOString()
-        }
+        ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: existingRow?.phien_ban || 'v1',
+        du_lieu_ho_so_json: { ...(existingRow?.du_lieu_ho_so_json || {}), customUnits: units, unitsUpdatedAt: new Date().toISOString() }
       })
     });
     return res.ok;
@@ -121,52 +161,60 @@ export function loadServerUnits(): HcmuteUnit[] {
   if (memoryUnits && memoryUnits.length > 0) return memoryUnits;
   try {
     if (fs.existsSync(UNITS_FILE)) {
-      const raw = fs.readFileSync(UNITS_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        memoryUnits = parsed;
-        return memoryUnits;
-      }
+      const parsed = JSON.parse(fs.readFileSync(UNITS_FILE, 'utf8'));
+      if (Array.isArray(parsed) && parsed.length > 0) { memoryUnits = parsed; return memoryUnits; }
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   memoryUnits = [...HCMUTE_UNITS];
   return memoryUnits;
 }
 
-export function getServerUnits(): HcmuteUnit[] {
-  return loadServerUnits();
+export function getServerUnits(): HcmuteUnit[] { return loadServerUnits(); }
+
+export function resetUnitMemoryStore(): void {
+  memoryUnits = null;
+  lastSupabaseSyncAt = 0;
 }
 
 export async function syncUnitsFromSupabase(force = false): Promise<HcmuteUnit[]> {
   const now = Date.now();
-  if (!force && now - lastSupabaseSyncAt < 30000 && memoryUnits && memoryUnits.length > 0) {
-    return memoryUnits;
-  }
+  if (!force && now - lastSupabaseSyncAt < 30000 && memoryUnits && memoryUnits.length > 0) return memoryUnits;
   assertUnitDbConfigured('sync_units');
-  if (!SUPABASE_URL || !SERVICE_KEY) return loadServerUnits();
+  const url = getSupaUrl(), key = getSupaKey();
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return loadServerUnits();
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json`,
-      { headers: getSupabaseHeaders(), cache: 'no-store' }
-    );
-    if (res.ok) {
-      const rows = await res.json();
-      const tcnsRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
-      const remoteUnits = tcnsRow?.du_lieu_ho_so_json?.customUnits;
-      if (Array.isArray(remoteUnits) && remoteUnits.length > 0) {
-        memoryUnits = normalizeRemoteUnits(remoteUnits);
-        persistLocalUnits();
-        lastSupabaseSyncAt = now;
-        return memoryUnits;
-      }
+    const [dmRes, tdRes] = await Promise.all([
+      fetch(`${url}/rest/v1/dm_don_vi?order=ma_don_vi.asc`, { headers: getSupabaseHeaders(), cache: 'no-store' }),
+      fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json`, { headers: getSupabaseHeaders(), cache: 'no-store' })
+    ]);
+    const dmRows = dmRes.ok ? ((await dmRes.json()) as Record<string, unknown>[]) : [];
+    const tdRows = tdRes.ok ? await tdRes.json() : [];
+    const tcnsCustom = Array.isArray(tdRows) && tdRows[0]?.du_lieu_ho_so_json?.customUnits ? normalizeRemoteUnits(tdRows[0].du_lieu_ho_so_json.customUnits) : [];
+
+    if (Array.isArray(dmRows) && dmRows.length > 0) {
+      const inactiveCodeSet = new Set(dmRows.filter((r) => r.is_active === false).map((r) => String(r.ma_don_vi || '').trim().toUpperCase()));
+      const dmUnits = dmRows.filter((r) => r.is_active !== false).map(mapDmDonViRowToUnit);
+      const dmCodeSet = new Set(dmUnits.map((u) => u.code));
+      const missingFromDm = tcnsCustom.filter((u) => {
+        const c = u.code.toUpperCase();
+        return !dmCodeSet.has(c) && !inactiveCodeSet.has(c);
+      });
+      if (missingFromDm.length > 0) await upsertUnitsToDmDonVi(missingFromDm).catch(() => {});
+      memoryUnits = normalizeRemoteUnits([...dmUnits, ...missingFromDm]);
+      persistLocalUnits();
+      lastSupabaseSyncAt = now;
+      return memoryUnits;
+    }
+    if (tcnsCustom.length > 0) {
+      memoryUnits = tcnsCustom;
+      persistLocalUnits();
+      lastSupabaseSyncAt = now;
+      return memoryUnits;
     }
   } catch (err: unknown) {
     const errObj = err as { code?: string; status?: number };
     if (errObj?.code === 'DB_SERVICE_UNAVAILABLE' || errObj?.status === 503) throw err;
-    // Lỗi mạng dev/local: fallback bộ nhớ cục bộ an toàn
   }
   lastSupabaseSyncAt = now;
   return loadServerUnits();
@@ -179,41 +227,33 @@ export async function saveServerUnitsList(units: HcmuteUnit[]): Promise<HcmuteUn
   return memoryUnits;
 }
 
-export async function upsertServerUnit(
-  unit: HcmuteUnit,
-  originalCode?: string
-): Promise<{ units: HcmuteUnit[]; oldUnit: HcmuteUnit | null }> {
+export async function upsertServerUnit(unit: HcmuteUnit, originalCode?: string): Promise<{ units: HcmuteUnit[]; oldUnit: HcmuteUnit | null }> {
   const current = [...getServerUnits()];
   const normCode = unit.code.trim().toUpperCase();
   const clean: HcmuteUnit = {
     ...unit,
     code: normCode,
     nameVi: unit.nameVi.trim(),
-    nameEn: unit.nameEn.trim(),
+    nameEn: (unit.nameEn || unit.nameVi).trim(),
     domain: unit.domain?.trim() || `${normCode.toLowerCase()}.hcmute.edu.vn`,
     headTitleVi: unit.headTitleVi?.trim() || 'Trưởng đơn vị',
     headTitleEn: unit.headTitleEn?.trim() || 'Head of Department',
     defaultStaffCount: Number(unit.defaultStaffCount) || 10
   };
-
   const lookupCode = (originalCode || normCode).toUpperCase();
   const idx = current.findIndex((u) => u.code.toUpperCase() === lookupCode);
   const oldUnit = idx >= 0 ? current[idx] : null;
-
-  if (idx >= 0) {
-    current[idx] = clean;
-  } else {
-    current.unshift(clean);
-  }
-
+  if (idx >= 0) current[idx] = clean;
+  else current.unshift(clean);
   await saveServerUnitsList(current);
+  if (originalCode && lookupCode !== normCode) await deactivateUnitInDmDonVi(lookupCode).catch(() => {});
   return { units: current, oldUnit };
 }
 
 export async function deleteServerUnit(code: string): Promise<HcmuteUnit[]> {
-  const current = getServerUnits();
   const norm = code.trim().toUpperCase();
-  const filtered = current.filter((u) => u.code.toUpperCase() !== norm);
+  const filtered = getServerUnits().filter((u) => u.code.toUpperCase() !== norm);
+  await deactivateUnitInDmDonVi(norm).catch(() => {});
   await saveServerUnitsList(filtered);
   return filtered;
 }

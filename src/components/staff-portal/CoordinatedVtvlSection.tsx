@@ -244,7 +244,11 @@ export function CoordinatedVtvlPreviewPanel({
               key={item.id}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e1edf8] border border-[#bfdbfe] text-[11px] font-semibold text-[#004776]"
             >
-              <span>[{item.targetUnitCode}] {item.maVtvl}{item.tenVtvl ? ` — ${item.tenVtvl}` : ''}</span>
+              <span>
+                [{item.targetUnitCode}] {item.maVtvl}
+                {item.tenVtvl ? ` — ${item.tenVtvl}` : ''}
+                {item.note ? ` (${item.note})` : ''}
+              </span>
               <button
                 type="button"
                 onClick={() => onChangeCoordinatedVtvls(coordinatedVtvls.filter((c) => c.id !== item.id))}

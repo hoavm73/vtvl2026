@@ -3,12 +3,13 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentOperatorSession, clearCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
-import { ProposedCoordinatedTaskItem, StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { ProposedCoordinatedTaskItem, StaffWorkTicket, WorkRelationshipItem, toCanonicalStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { StaffTicketInlineForm } from '@/components/staff-portal/StaffTicketInlineForm';
 import { ChangesRequestedAlertBanner, StaffPortalHeaderBanner, StaffTicketsTabBar, StaffTicketsTabKey } from '@/components/staff-portal/StaffTicketsTabBar';
 import { ProposedCoordinatedTasksTab } from '@/components/staff-portal/ProposedCoordinatedTasksTab';
 import { ProposedCoordinatedSideCard } from '@/components/staff-portal/ProposedCoordinatedSideCard';
+import { WorkRelationshipsTab } from '@/components/staff-portal/WorkRelationshipsTab';
 import { StaffMyTicketsList } from '@/components/staff-portal/StaffMyTicketsList';
 import { UnitTicketsReviewList } from '@/components/staff-portal/UnitTicketsReviewList';
 import { UnitVtvlLookupCard } from '@/components/staff-portal/UnitVtvlLookupCard';
@@ -30,9 +31,9 @@ export default function StaffWorkTicketsPage() {
   const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState<StaffTicketsTabKey>('my');
-  const [proposedItems, setProposedItems] = useState<ProposedCoordinatedTaskItem[]>([]);
+  const [proposedItems, setProposedItems] = useState<ProposedCoordinatedTaskItem[]>([]), [relationships, setRelationships] = useState<WorkRelationshipItem[]>([]);
   const [myVtvlAssignments, setMyVtvlAssignments] = useState<{ id: string; unitCode: string; maVtvl: string; tenVtvl?: string }[]>([]);
-  const [pickedVtvl, setPickedVtvl] = useState<{ code: string; seq: number } | null>(null);
+  const [pickedVtvl, setPickedVtvl] = useState<{ code: string; seq: number } | null>(null), [activeVtvlCode, setActiveVtvlCode] = useState('');
 
   const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null), [detailTicket, setDetailTicket] = useState<StaffWorkTicket | null>(null);
   const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
@@ -60,7 +61,7 @@ export default function StaffWorkTicketsPage() {
       if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
       const [res, coordRes] = await Promise.all([
         fetch(`/api/tickets?email=${encodeURIComponent(op.email)}&unitCode=${encodeURIComponent(op.unitCode)}`, { headers, cache: 'no-store' }),
-        fetch('/api/tickets/coordinated', { headers, cache: 'no-store' })
+        fetch('/api/tickets/coordinated?scope=unit', { headers, cache: 'no-store' })
       ]);
       if (res.ok) {
         const json = await res.json();
@@ -73,6 +74,7 @@ export default function StaffWorkTicketsPage() {
       if (coordRes.ok) {
         const cJson = await coordRes.json();
         setProposedItems(cJson.items || []);
+        setRelationships(cJson.relationships || []);
         setMyVtvlAssignments(cJson.myAssignments || []);
       }
     } finally {
@@ -109,6 +111,7 @@ export default function StaffWorkTicketsPage() {
       else if (tabParam === 'approved') setActiveTab('approved');
       else if (tabParam === 'unit') setActiveTab('unit');
       else if (tabParam === 'proposed') setActiveTab('proposed');
+      else if (tabParam === 'relationships') setActiveTab('relationships');
     }
     const onUp = () => {
       const op = getCurrentOperatorSession();
@@ -116,16 +119,10 @@ export default function StaffWorkTicketsPage() {
       const key = `${op.email.toLowerCase()}__${op.unitCode.toUpperCase()}`;
       if (lastLoadedKeyRef.current !== key) syncWithSession(op, false);
     };
-    const onFocus = () => {
-      const cur = getCurrentOperatorSession();
-      if (cur) loadData(cur, false);
-    };
+    const onFocus = () => { const cur = getCurrentOperatorSession(); if (cur) loadData(cur, false); };
     window.addEventListener('vtvl-operator-changed', onUp);
     window.addEventListener('focus', onFocus);
-    return () => {
-      window.removeEventListener('vtvl-operator-changed', onUp);
-      window.removeEventListener('focus', onFocus);
-    };
+    return () => { window.removeEventListener('vtvl-operator-changed', onUp); window.removeEventListener('focus', onFocus); };
   }, [syncWithSession, loadData, router]);
 
   const isLeader = session?.role === 'unit_leader' || session?.role === 'admin';
@@ -203,7 +200,7 @@ export default function StaffWorkTicketsPage() {
         <StaffTicketsTabBar
           activeTab={activeTab} onSelectTab={selectTab} draftCount={myDraftTickets.length}
           pendingCount={pendingCount} approvedCount={approvedCount}
-          unitCount={unitTickets.length} proposedCount={proposedItems.length} isLeader={Boolean(isLeader)}
+          unitCount={unitTickets.length} proposedCount={proposedItems.length} relationshipsCount={relationships.length} isLeader={Boolean(isLeader)}
         />
 
         {activeTab === 'my' && (
@@ -222,7 +219,7 @@ export default function StaffWorkTicketsPage() {
                   ownerName={session.displayName || session.email.split('@')[0]} ownerTitle={session.title}
                   editingTicket={editingTicket?.unitCode === session.unitCode ? editingTicket : null}
                   pickedVtvl={pickedVtvl} a1Missions={a1Missions} c1Vtvls={c1Vtvls}
-                  onCancelEdit={() => setEditingTicket(null)}
+                  onActiveVtvlChange={setActiveVtvlCode} onCancelEdit={() => setEditingTicket(null)}
                   onSaved={(st?: StaffWorkTicket) => {
                     if (st) setMyTickets((p) => p.some((t) => t.id === st.id) ? p.map((t) => t.id === st.id ? st : t) : [st, ...p]);
                     loadData(session);
@@ -244,11 +241,12 @@ export default function StaffWorkTicketsPage() {
                   unitCode={session.unitCode} c1Vtvls={c1Vtvls}
                   onSelectVtvl={(code) => {
                     setPickedVtvl({ code, seq: Date.now() });
+                    setActiveVtvlCode(code);
                     setEditingTicket((prev) => (prev ? { ...prev, maVtvl: code } : null));
                   }}
                 />
                 <ProposedCoordinatedSideCard
-                  items={proposedItems} myAssignments={myVtvlAssignments}
+                  items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode}
                   loading={loading} onOpenFullTab={() => selectTab('proposed')}
                 />
               </div>
@@ -275,9 +273,8 @@ export default function StaffWorkTicketsPage() {
           </div>
         )}
 
-        {activeTab === 'proposed' && (
-          <div className="print:hidden"><ProposedCoordinatedTasksTab items={proposedItems} myAssignments={myVtvlAssignments} loading={loading} /></div>
-        )}
+        {activeTab === 'proposed' && <div className="print:hidden"><ProposedCoordinatedTasksTab items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode} loading={loading} /></div>}
+        {activeTab === 'relationships' && <div className="print:hidden"><WorkRelationshipsTab relationships={relationships} unitCode={session.unitCode} userRole={session.role || 'staff'} selectedVtvl={activeVtvlCode} loading={loading} onRefresh={() => loadData(session)} /></div>}
       </div>
 
       <StaffTicketDetailModal

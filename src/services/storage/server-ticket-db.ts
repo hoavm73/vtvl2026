@@ -53,106 +53,54 @@ export function createSchemaOrDbError(table: string, status: number, detailText:
 }
 
 export interface DbTicketRow {
-  id: string;
-  unit_code: string;
-  unit_id?: string;
-  owner_email: string;
-  owner_id?: string;
-  owner_name?: string;
-  owner_title?: string;
-  status?: string;
-  ma_nhiem_vu?: string;
-  ma_cong_viec: string;
-  ma_vtvl?: string;
-  ma_vtvl_phoi_hop?: string;
-  ten_cong_viec: string;
-  san_pham?: string;
-  chat_luong?: string;
-  can_cu?: string;
-  so_sp_nam?: number;
-  phut_thuc_te?: number;
-  gio_bo_sung?: number;
-  nguon_so_lieu?: string;
-  coordination_note?: string | null; coordinated_vtvls?: unknown;
-  coordinated_tasks?: unknown;
-  source_ticket_id?: string | null;
-  submitted_at?: string | null;
-  resubmitted_at?: string | null;
-  approved_at?: string | null;
-  approved_by?: string | null;
-  revision_reason?: string | null;
-  revision_requested_at?: string | null;
-  revision_requested_by?: string | null;
-  merged_at?: string | null;
-  merged_by?: string | null;
-  a2_row_id?: string | null;
-  b1_row_id?: string | null;
-  b2_row_id?: string | null;
-  is_merged_to_b1_b2?: boolean;
-  current_version_no?: number;
-  last_change_summary?: string | null;
-  is_test_data?: boolean;
-  is_archived?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  id: string; unit_code: string; unit_id?: string; owner_email: string; owner_id?: string;
+  owner_name?: string; owner_title?: string; status?: string; ma_nhiem_vu?: string;
+  ma_cong_viec: string; ma_vtvl?: string; ma_vtvl_phoi_hop?: string; ten_cong_viec: string;
+  san_pham?: string; chat_luong?: string; can_cu?: string; so_sp_nam?: number;
+  phut_thuc_te?: number; gio_bo_sung?: number; nguon_so_lieu?: string;
+  coordination_note?: string | null; coordinated_vtvls?: unknown; coordinated_tasks?: unknown;
+  source_ticket_id?: string | null; submitted_at?: string | null; resubmitted_at?: string | null;
+  approved_at?: string | null; approved_by?: string | null; revision_reason?: string | null;
+  revision_requested_at?: string | null; revision_requested_by?: string | null;
+  merged_at?: string | null; merged_by?: string | null; a2_row_id?: string | null;
+  b1_row_id?: string | null; b2_row_id?: string | null; is_merged_to_b1_b2?: boolean;
+  current_version_no?: number; last_change_summary?: string | null; is_test_data?: boolean;
+  is_archived?: boolean; created_at?: string; updated_at?: string;
 }
 
 export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
   const normEmail = normalizeEmail(row.owner_email || '');
   return {
-    id: row.id,
-    unitCode: row.unit_code || 'CNTT',
-    unitId: row.unit_id || row.unit_code,
-    ownerEmail: normEmail,
-    ownerId: row.owner_id || normEmail,
-    ownerName: row.owner_name || normEmail.split('@')[0],
-    ownerTitle: row.owner_title || 'Cán bộ – Giảng viên',
-    status: toDisplayStatus(row.status) as TicketStatus,
-    maNhiemVu: row.ma_nhiem_vu || '',
-    maCongViec: row.ma_cong_viec,
-    tenCongViec: row.ten_cong_viec,
-    maVtvl: row.ma_vtvl || '',
+    id: row.id, unitCode: row.unit_code || 'CNTT', unitId: row.unit_id || row.unit_code,
+    ownerEmail: normEmail, ownerId: row.owner_id || normEmail,
+    ownerName: row.owner_name || normEmail.split('@')[0], ownerTitle: row.owner_title || 'Cán bộ – Giảng viên',
+    status: toDisplayStatus(row.status) as TicketStatus, maNhiemVu: row.ma_nhiem_vu || '',
+    maCongViec: row.ma_cong_viec, tenCongViec: row.ten_cong_viec, maVtvl: row.ma_vtvl || '',
     maVtvlPhoiHop: row.ma_vtvl_phoi_hop || '',
     coordinatedVtvls: Array.isArray(row.coordinated_vtvls) ? (row.coordinated_vtvls as StaffWorkTicket['coordinatedVtvls']) : undefined,
     coordinationNote: row.coordination_note || undefined,
-    sanPham: row.san_pham || '',
-    chatLuong: row.chat_luong || '',
-    canCu: row.can_cu || '',
-    soSpNam: Number(row.so_sp_nam) || 0,
-    nguonSoLieu: row.nguon_so_lieu || '',
-    phutThucTe: Number(row.phut_thuc_te) || 0,
-    gioBoSung: Number(row.gio_bo_sung) || 0,
+    sanPham: row.san_pham || '', chatLuong: row.chat_luong || '', canCu: row.can_cu || '',
+    soSpNam: Number(row.so_sp_nam) || 0, nguonSoLieu: row.nguon_so_lieu || '',
+    phutThucTe: Number(row.phut_thuc_te) || 0, gioBoSung: Number(row.gio_bo_sung) || 0,
     coordinatedTasks: Array.isArray(row.coordinated_tasks) ? row.coordinated_tasks : [],
     sourceTicketId: row.source_ticket_id || row.id,
-    submittedAt: row.submitted_at || undefined,
-    resubmittedAt: row.resubmitted_at || undefined,
-    approvedAt: row.approved_at || undefined,
-    approvedBy: row.approved_by || undefined,
+    submittedAt: row.submitted_at || undefined, resubmittedAt: row.resubmitted_at || undefined,
+    approvedAt: row.approved_at || undefined, approvedBy: row.approved_by || undefined,
     revisionReason: row.revision_reason || undefined,
-    revisionRequestedAt: row.revision_requested_at || undefined,
-    revisionRequestedBy: row.revision_requested_by || undefined,
-    mergedAt: row.merged_at || undefined,
-    mergedBy: row.merged_by || undefined,
-    a2RowId: row.a2_row_id || undefined,
-    b1RowId: row.b1_row_id || undefined,
-    b2RowId: row.b2_row_id || undefined,
-    isMergedToB1B2: Boolean(row.is_merged_to_b1_b2),
-    currentVersionNo: Number(row.current_version_no) || 0,
-    lastChangeSummary: row.last_change_summary || undefined,
-    isTestData: Boolean(row.is_test_data),
+    revisionRequestedAt: row.revision_requested_at || undefined, revisionRequestedBy: row.revision_requested_by || undefined,
+    mergedAt: row.merged_at || undefined, mergedBy: row.merged_by || undefined,
+    a2RowId: row.a2_row_id || undefined, b1RowId: row.b1_row_id || undefined, b2RowId: row.b2_row_id || undefined,
+    isMergedToB1B2: Boolean(row.is_merged_to_b1_b2), currentVersionNo: Number(row.current_version_no) || 0,
+    lastChangeSummary: row.last_change_summary || undefined, isTestData: Boolean(row.is_test_data),
     isArchived: Boolean(row.is_archived),
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at || new Date().toISOString()
+    createdAt: row.created_at || new Date().toISOString(), updatedAt: row.updated_at || new Date().toISOString()
   };
 }
 
 export async function fetchTicketsFromSupabase(unitCode?: string): Promise<StaffWorkTicket[] | null> {
   if (!assertTicketDbConfigured('fetchTickets')) return null;
   const filter = unitCode ? `?unit_code=eq.${encodeURIComponent(unitCode)}&order=updated_at.desc` : '?order=updated_at.desc';
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets${filter}`, {
-    headers: getServiceHeaders(),
-    cache: 'no-store'
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets${filter}`, { headers: getServiceHeaders(), cache: 'no-store' });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     throw createSchemaOrDbError('staff_work_tickets', res.status, detail);
@@ -173,48 +121,25 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
   }
 
   const payload: DbTicketRow = {
-    id: ticket.id,
-    unit_code: ticket.unitCode,
-    unit_id: ticket.unitId || ticket.unitCode,
-    owner_email: normEmail,
-    owner_id: ticket.ownerId || normEmail,
-    owner_name: ticket.ownerName,
-    owner_title: ticket.ownerTitle,
-    status: toCanonicalStatus(ticket.status),
-    ma_nhiem_vu: ticket.maNhiemVu,
-    ma_cong_viec: ticket.maCongViec,
-    ma_vtvl: ticket.maVtvl,
-    ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '',
-    coordinated_vtvls: ticket.coordinatedVtvls || [],
-    coordination_note: ticket.coordinationNote || '',
-    ten_cong_viec: ticket.tenCongViec,
-    san_pham: ticket.sanPham || '',
-    chat_luong: ticket.chatLuong || '',
-    can_cu: ticket.canCu || '',
-    so_sp_nam: Number(ticket.soSpNam) || 0,
-    phut_thuc_te: Number(ticket.phutThucTe) || 0,
-    gio_bo_sung: Number(ticket.gioBoSung) || 0,
-    nguon_so_lieu: ticket.nguonSoLieu || '',
-    coordinated_tasks: ticket.coordinatedTasks || [],
-    source_ticket_id: ticket.sourceTicketId || ticket.id,
-    submitted_at: ticket.submittedAt ?? null,
-    resubmitted_at: ticket.resubmittedAt ?? null,
-    approved_at: ticket.approvedAt ?? null,
-    approved_by: ticket.approvedBy ?? null,
-    revision_reason: ticket.revisionReason ?? null,
-    revision_requested_at: ticket.revisionRequestedAt ?? null,
-    revision_requested_by: ticket.revisionRequestedBy ?? null,
-    merged_at: ticket.mergedAt ?? null,
-    merged_by: ticket.mergedBy ?? null,
-    a2_row_id: ticket.a2RowId ?? null,
-    b1_row_id: ticket.b1RowId ?? null,
-    b2_row_id: ticket.b2RowId ?? null,
-    is_merged_to_b1_b2: Boolean(ticket.isMergedToB1B2),
-    current_version_no: Number(ticket.currentVersionNo) || 0,
-    last_change_summary: ticket.lastChangeSummary ?? null,
-    is_test_data: Boolean(ticket.isTestData),
-    is_archived: Boolean(ticket.isArchived),
-    created_at: ticket.createdAt,
+    id: ticket.id, unit_code: ticket.unitCode, unit_id: ticket.unitId || ticket.unitCode,
+    owner_email: normEmail, owner_id: ticket.ownerId || normEmail,
+    owner_name: ticket.ownerName, owner_title: ticket.ownerTitle, status: toCanonicalStatus(ticket.status),
+    ma_nhiem_vu: ticket.maNhiemVu, ma_cong_viec: ticket.maCongViec, ma_vtvl: ticket.maVtvl,
+    ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '', coordinated_vtvls: ticket.coordinatedVtvls || [],
+    coordination_note: ticket.coordinationNote || '', ten_cong_viec: ticket.tenCongViec,
+    san_pham: ticket.sanPham || '', chat_luong: ticket.chatLuong || '', can_cu: ticket.canCu || '',
+    so_sp_nam: Number(ticket.soSpNam) || 0, phut_thuc_te: Number(ticket.phutThucTe) || 0,
+    gio_bo_sung: Number(ticket.gioBoSung) || 0, nguon_so_lieu: ticket.nguonSoLieu || '',
+    coordinated_tasks: ticket.coordinatedTasks || [], source_ticket_id: ticket.sourceTicketId || ticket.id,
+    submitted_at: ticket.submittedAt ?? null, resubmitted_at: ticket.resubmittedAt ?? null,
+    approved_at: ticket.approvedAt ?? null, approved_by: ticket.approvedBy ?? null,
+    revision_reason: ticket.revisionReason ?? null, revision_requested_at: ticket.revisionRequestedAt ?? null,
+    revision_requested_by: ticket.revisionRequestedBy ?? null, merged_at: ticket.mergedAt ?? null,
+    merged_by: ticket.mergedBy ?? null, a2_row_id: ticket.a2RowId ?? null,
+    b1_row_id: ticket.b1RowId ?? null, b2_row_id: ticket.b2RowId ?? null,
+    is_merged_to_b1_b2: Boolean(ticket.isMergedToB1B2), current_version_no: Number(ticket.currentVersionNo) || 0,
+    last_change_summary: ticket.lastChangeSummary ?? null, is_test_data: Boolean(ticket.isTestData),
+    is_archived: Boolean(ticket.isArchived), created_at: ticket.createdAt,
     updated_at: ticket.updatedAt || new Date().toISOString()
   };
 
@@ -228,7 +153,30 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
     const detail = await res.text().catch(() => '');
     throw createSchemaOrDbError('staff_work_tickets', res.status, detail);
   }
+  await syncCoordinatedTasksToTable(ticket).catch(() => {});
   return true;
+}
+
+async function syncCoordinatedTasksToTable(ticket: StaffWorkTicket): Promise<void> {
+  if (!assertTicketDbConfigured('syncCoordinatedTasks')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/coordinated_tasks?ticket_id=eq.${encodeURIComponent(ticket.id)}`, {
+    method: 'DELETE', headers: { ...getServiceHeaders(), Prefer: 'return=minimal' }
+  });
+  const list = Array.isArray(ticket.coordinatedTasks) ? ticket.coordinatedTasks : [];
+  if (list.length === 0) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/coordinated_tasks?on_conflict=id`, {
+    method: 'POST',
+    headers: { ...getServiceHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(list.map((c) => ({
+      id: c.id || `coord-${ticket.id}-${c.targetUnitCode}-${c.targetTaskCode}`,
+      ticket_id: ticket.id,
+      unit_code: ticket.unitCode,
+      target_unit_code: String(c.targetUnitCode || ticket.unitCode).trim().toUpperCase(),
+      target_task_code: c.targetTaskCode,
+      target_task_name: c.targetTaskName || null,
+      notes: c.note || null
+    })))
+  });
 }
 
 export async function deleteTicketFromSupabase(ticketId: string): Promise<boolean> {

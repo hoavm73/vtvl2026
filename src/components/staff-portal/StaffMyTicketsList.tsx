@@ -12,6 +12,7 @@ import {
   Send
 } from 'lucide-react';
 import { StaffWorkTicket } from '@/types/staff-ticket';
+import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 
 interface StaffMyTicketsListProps {
@@ -58,6 +59,7 @@ export function StaffMyTicketsList({
             const meta = getTicketStatusMeta(t);
             const StatusIcon = meta.Icon;
             const canonical = meta.canonical;
+            const coordBadges = getTicketCoordinatedVtvlBadges(t);
             const canEdit = canonical === 'draft' || canonical === 'changes_requested';
             const canDelete = canonical === 'draft';
             const canSubmit = canonical === 'draft';
@@ -132,6 +134,16 @@ export function StaffMyTicketsList({
                       </span>
                     )}
                   </div>
+                  {coordBadges.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                      {coordBadges.map((b) => (
+                        <span key={b.key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#eef5ff] border border-[#bfdbfe] text-[#004776] font-medium">
+                          <Link2 className="w-3 h-3 text-[#006cee] shrink-0" />
+                          <span>Phối hợp: <strong>{b.label}</strong>{b.note ? ` (${b.note})` : ''}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Thanh tiến trình phê duyệt 4 bước */}

@@ -165,3 +165,46 @@ export function appendCoordinatedVtvlDiffs(
     }
   }
 }
+
+export type CoordinatedVtvlSource = Pick<
+  Partial<WorkSurveySnapshot>,
+  'unitCode' | 'unitNameSnapshot' | 'maVtvlPhoiHop' | 'tenVtvlPhoiHopSnapshot' | 'coordinationNote' | 'coordinatedVtvls'
+>;
+
+export function formatTicketCoordinatedVtvlsText(
+  source: CoordinatedVtvlSource,
+  vtvlOptions?: { value: string; label: string }[]
+): string {
+  const effective = extractEffectiveCoordinatedVtvls(source, source.unitCode);
+  if (effective.length === 0) return 'Không có';
+  return effective
+    .map((item) => {
+      const opt = vtvlOptions?.find((v) => v.value === item.maVtvl);
+      const dashIdx = opt?.label.indexOf('—') ?? -1;
+      const optName = opt ? (dashIdx >= 0 ? opt.label.slice(dashIdx + 1).trim() : opt.label.trim()) : '';
+      const resolvedOptName = optName && optName !== item.maVtvl ? optName : '';
+      const vtvlName = resolvedOptName || item.tenVtvl || '';
+      const unitPrefix = item.targetUnitName ? `[${item.targetUnitCode} - ${item.targetUnitName}]` : `[${item.targetUnitCode}]`;
+      const vtvlPart = vtvlName ? `${item.maVtvl} — ${vtvlName}` : item.maVtvl;
+      const notePart = item.note ? ` (Nội dung phối hợp: ${item.note})` : '';
+      return `${unitPrefix} ${vtvlPart}${notePart}`;
+    })
+    .join('\n');
+}
+
+export function getTicketCoordinatedVtvlBadges(
+  source: CoordinatedVtvlSource
+): { key: string; label: string; note?: string }[] {
+  return extractEffectiveCoordinatedVtvls(source, source.unitCode).map((item) => ({
+    key: makeCompositeVtvlKey(item.targetUnitCode, item.maVtvl) || item.id,
+    label: `[${item.targetUnitCode}] ${item.maVtvl}${item.tenVtvl ? ` — ${item.tenVtvl}` : ''}`,
+    note: item.note
+  }));
+}
+
+export function formatCoordinatedVtvlCodesForA2(source: CoordinatedVtvlSource): string {
+  return extractEffectiveCoordinatedVtvls(source, source.unitCode)
+    .map((item) => item.maVtvl.trim())
+    .filter(Boolean)
+    .join(', ');
+}

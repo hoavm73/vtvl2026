@@ -71,36 +71,26 @@ function loadStore(): Map<string, ServerWorkbook> {
     ensureDataDir();
     if (fs.existsSync(STORE_FILE)) {
       const list: ServerWorkbook[] = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
-      list.forEach((wb) => {
-        if (deleted.has(wb.id) || deleted.has(wb.unitId)) wb.isDeleted = true;
-        memoryWorkbooks!.set(wb.id, wb);
-      });
+      list.forEach((wb) => { if (deleted.has(wb.id) || deleted.has(wb.unitId)) wb.isDeleted = true; memoryWorkbooks!.set(wb.id, wb); });
     }
   } catch { /* ignore */ }
   if (memoryWorkbooks.size === 0 && !process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
     try {
-      getInitialSeedWorkbooks().forEach((wb) => {
-        if (!deleted.has(wb.id) && !deleted.has(wb.unitId)) memoryWorkbooks!.set(wb.id, wb);
-      });
+      getInitialSeedWorkbooks().forEach((wb) => { if (!deleted.has(wb.id) && !deleted.has(wb.unitId)) memoryWorkbooks!.set(wb.id, wb); });
       persistStore();
     } catch { /* ignore */ }
   }
   return memoryWorkbooks;
 }
-
 function findLatestUnitWorkbook(store: Map<string, ServerWorkbook>, unitCode: string): ServerWorkbook | null {
   const target = unitCode.trim().toUpperCase();
-  return Array.from(store.values())
-    .filter((w) => !w.isDeleted && w.unitId.toUpperCase() === target)
-    .sort((a, b) => (b.currentRevision || 0) - (a.currentRevision || 0))[0] || null;
+  return Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === target).sort((a, b) => (b.currentRevision || 0) - (a.currentRevision || 0))[0] || null;
 }
 
 export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Promise<void> {
-  const store = loadStore();
-  const deleted = loadDeletedWbIds();
+  const store = loadStore(), deleted = loadDeletedWbIds();
   try {
-    const supaWorkbooks = await fetchWorkbooksFromSupabase(forceRefresh);
-    for (const sw of supaWorkbooks) {
+    for (const sw of await fetchWorkbooksFromSupabase(forceRefresh)) {
       if (!sw.id || deleted.has(sw.id) || deleted.has(sw.unitId) || store.get(sw.id)?.isDeleted) continue;
       const sameUnit = Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === sw.unitId.toUpperCase());
       const maxRev = sameUnit.reduce((m, w) => Math.max(m, w.currentRevision || 0), 0);
@@ -116,41 +106,21 @@ export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Pro
 export function getOrCreateWorkbook(
   unitId: string, reportingPeriod = '01/10/2025–30/9/2026', email = 'tcns@hcmute.edu.vn', roleLabel = 'Chuyên viên'
 ): ServerWorkbook {
-  const store = loadStore();
-  const normEmail = normalizeEmail(email);
-  const existing = findLatestUnitWorkbook(store, unitId);
-  const now = new Date().toLocaleString('vi-VN');
+  const store = loadStore(), normEmail = normalizeEmail(email), existing = findLatestUnitWorkbook(store, unitId), now = new Date().toLocaleString('vi-VN');
   if (existing) {
     if (!existing.participants.some((x) => x.emailNormalized === normEmail)) {
-      existing.participants.push({
-        id: `part_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, sessionId: `sess_${Date.now()}`,
-        workbookId: existing.id, displayName: roleLabel, email, emailNormalized: normEmail, roleLabel, startedAt: now, updatedAt: now
-      });
+      existing.participants.push({ id: `part_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, sessionId: `sess_${Date.now()}`, workbookId: existing.id, displayName: roleLabel, email, emailNormalized: normEmail, roleLabel, startedAt: now, updatedAt: now });
       persistStore();
     }
     return existing;
   }
-
-  const unit = findHcmuteUnit(unitId);
-  const id = `wb_${unitId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const defaultData = buildDefaultGridWorkbook(unitId);
+  const unit = findHcmuteUnit(unitId), id = `wb_${unitId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, defaultData = buildDefaultGridWorkbook(unitId);
   const newWorkbook: ServerWorkbook = {
-    id, unitId, unitNameVi: unit.nameVi, reportingPeriod, status: 'draft',
-    currentRevision: 1, data: defaultData, touchedCells: [], createdAt: now, updatedAt: now,
-    participants: [{
-      id: `part_${Date.now()}`, sessionId: `sess_${Date.now()}`, workbookId: id,
-      displayName: roleLabel, email, emailNormalized: normEmail,
-      roleLabel, startedAt: now, updatedAt: now
-    }],
-    revisions: [{
-      id: `rev_${id}_1`, workbookId: id, revision: 1, data: defaultData,
-      actorEmail: normEmail, actorTitle: roleLabel, changeSummary: 'Khởi tạo hồ sơ ban đầu',
-      createdAt: now
-    }]
+    id, unitId, unitNameVi: unit.nameVi, reportingPeriod, status: 'draft', currentRevision: 1, data: defaultData, touchedCells: [], createdAt: now, updatedAt: now,
+    participants: [{ id: `part_${Date.now()}`, sessionId: `sess_${Date.now()}`, workbookId: id, displayName: roleLabel, email, emailNormalized: normEmail, roleLabel, startedAt: now, updatedAt: now }],
+    revisions: [{ id: `rev_${id}_1`, workbookId: id, revision: 1, data: defaultData, actorEmail: normEmail, actorTitle: roleLabel, changeSummary: 'Khởi tạo hồ sơ ban đầu', createdAt: now }]
   };
-  store.set(id, newWorkbook);
-  persistStore();
-  persistWorkbookToSupabase(newWorkbook).catch(() => {});
+  store.set(id, newWorkbook); persistStore(); persistWorkbookToSupabase(newWorkbook).catch(() => {});
   return newWorkbook;
 }
 
@@ -207,41 +177,43 @@ export function saveServerWorkbook(params: {
 
   let p = wb.participants.find((x) => x.emailNormalized === normEmail);
   if (!p) {
-    p = {
-      id: `part_${Date.now()}`, sessionId: `sess_${Date.now()}`, workbookId: wb.id,
-      displayName: params.actorTitle || 'Chuyên viên', email: params.actorEmail,
-      emailNormalized: normEmail, roleLabel: params.actorTitle || 'Chuyên viên',
-      startedAt: now, updatedAt: now
-    };
+    p = { id: `part_${Date.now()}`, sessionId: `sess_${Date.now()}`, workbookId: wb.id, displayName: params.actorTitle || 'Chuyên viên', email: params.actorEmail, emailNormalized: normEmail, roleLabel: params.actorTitle || 'Chuyên viên', startedAt: now, updatedAt: now };
     wb.participants.push(p);
   } else {
     p.updatedAt = now;
     if (params.actorTitle) p.roleLabel = params.actorTitle;
   }
 
-  wb.revisions.unshift({
-    id: `rev_${wb.id}_${nextRev}`, workbookId: wb.id, revision: nextRev,
-    data: params.data, actorEmail: normEmail, actorTitle: params.actorTitle,
-    changeSummary: params.changeSummary || `Cập nhật lần ${nextRev}`, createdAt: now
-  });
+  wb.revisions.unshift({ id: `rev_${wb.id}_${nextRev}`, workbookId: wb.id, revision: nextRev, data: params.data, actorEmail: normEmail, actorTitle: params.actorTitle, changeSummary: params.changeSummary || `Cập nhật lần ${nextRev}`, createdAt: now });
   if (wb.revisions.length > 15) wb.revisions = wb.revisions.slice(0, 15);
-
   persistStore();
   persistWorkbookToSupabase(wb).catch(() => {});
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
 export async function saveServerWorkbookAndPersist(
-  params: Parameters<typeof saveServerWorkbook>[0]
+  params: Parameters<typeof saveServerWorkbook>[0] & { simulateTxError?: boolean; requireAtomicRpc?: boolean }
 ): Promise<ReturnType<typeof saveServerWorkbook>> {
+  const store = loadStore();
+  const prev = store.get(params.workbookId) || getWorkbookById(params.workbookId);
+  const prevClone = prev ? (JSON.parse(JSON.stringify(prev)) as ServerWorkbook) : null;
   const res = saveServerWorkbook(params);
-  if (res.success && res.serverWorkbook) await persistWorkbookToSupabase(res.serverWorkbook);
+  if (res.success && res.serverWorkbook) {
+    try {
+      await persistWorkbookToSupabase(res.serverWorkbook, undefined, { simulateTxError: params.simulateTxError, requireAtomicRpc: params.requireAtomicRpc });
+    } catch (err) {
+      if (prevClone) store.set(prevClone.id, prevClone);
+      else store.delete(res.serverWorkbook.id);
+      persistStore();
+      throw err;
+    }
+  }
   return res;
 }
 
 export function rollbackServerWorkbookRevision(
-  workbookId: string, targetRevision: number, actorEmail: string
-): { success: boolean; currentRevision?: number } {
+  workbookId: string, targetRevision: number, actorEmail: string, reason?: string
+): { success: boolean; currentRevision?: number; serverWorkbook?: ServerWorkbook } {
   const store = loadStore();
   const wb = store.get(workbookId);
   if (!wb || wb.isDeleted) return { success: false };
@@ -250,17 +222,33 @@ export function rollbackServerWorkbookRevision(
 
   const now = new Date().toLocaleString('vi-VN');
   const nextRev = wb.currentRevision + 1;
-  wb.currentRevision = nextRev;
-  wb.data = targetRevItem.data;
-  wb.updatedAt = now;
+  wb.currentRevision = nextRev; wb.data = targetRevItem.data; wb.updatedAt = now;
   wb.revisions.unshift({
     id: `rev_${wb.id}_${nextRev}`, workbookId: wb.id, revision: nextRev,
     data: targetRevItem.data, actorEmail: normalizeEmail(actorEmail),
-    changeSummary: `Khôi phục từ phiên bản #${targetRevision}`, createdAt: now
+    changeSummary: reason?.trim() ? `Khôi phục từ phiên bản #${targetRevision}: ${reason.trim()}` : `Khôi phục từ phiên bản #${targetRevision}`,
+    createdAt: now
   });
   persistStore();
-  persistWorkbookToSupabase(wb).catch(() => {});
-  return { success: true, currentRevision: nextRev };
+  return { success: true, currentRevision: nextRev, serverWorkbook: wb };
+}
+
+export async function rollbackServerWorkbookRevisionAndPersist(
+  workbookId: string, targetRevision: number, actorEmail: string, reason?: string, options?: { simulateTxError?: boolean; requireAtomicRpc?: boolean }
+): Promise<{ success: boolean; currentRevision?: number; serverWorkbook?: ServerWorkbook }> {
+  const store = loadStore();
+  const prev = store.get(workbookId);
+  const prevClone = prev ? (JSON.parse(JSON.stringify(prev)) as ServerWorkbook) : null;
+  const res = rollbackServerWorkbookRevision(workbookId, targetRevision, actorEmail, reason);
+  if (res.success && res.serverWorkbook) {
+    try {
+      await persistWorkbookToSupabase(res.serverWorkbook, undefined, options);
+    } catch (err) {
+      if (prevClone) { store.set(prevClone.id, prevClone); persistStore(); }
+      throw err;
+    }
+  }
+  return res;
 }
 
 export async function deleteServerWorkbook(workbookId: string): Promise<boolean> {
@@ -270,8 +258,7 @@ export async function deleteServerWorkbook(workbookId: string): Promise<boolean>
   wb.isDeleted = true;
   const deleted = loadDeletedWbIds();
   [wb.id, wb.unitId, workbookId].forEach((k) => deleted.add(k));
-  persistDeletedWbIds();
-  persistStore();
+  persistDeletedWbIds(); persistStore();
   await deleteWorkbookFromSupabase(wb.unitId);
   return true;
 }
@@ -282,16 +269,10 @@ export function removeParticipantFromAllWorkbooks(email: string): void {
   if (!norm) return;
   let changed = false;
   for (const wb of store.values()) {
-    if (Array.isArray(wb.participants)) {
-      const orig = wb.participants.length;
-      wb.participants = wb.participants.filter(
-        (p) => p.emailNormalized !== norm && normalizeEmail(p.email) !== norm
-      );
-      if (wb.participants.length !== orig) {
-        changed = true;
-        persistWorkbookToSupabase(wb).catch(() => {});
-      }
-    }
+    if (!Array.isArray(wb.participants)) continue;
+    const orig = wb.participants.length;
+    wb.participants = wb.participants.filter((p) => p.emailNormalized !== norm && normalizeEmail(p.email) !== norm);
+    if (wb.participants.length !== orig) { changed = true; persistWorkbookToSupabase(wb).catch(() => {}); }
   }
   if (changed) persistStore();
 }

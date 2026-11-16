@@ -21,12 +21,13 @@ interface StaffTicketInlineFormProps {
   pickedVtvl?: { code: string; seq: number } | null;
   a1Missions: GenericGridRow[];
   c1Vtvls: GenericGridRow[];
+  onActiveVtvlChange?: (maVtvl: string) => void;
   onCancelEdit: () => void;
   onSaved: (ticket?: StaffWorkTicket) => void;
 }
 
 export function StaffTicketInlineForm({
-  unitCode, ownerEmail, ownerName, ownerTitle, editingTicket, pickedVtvl, a1Missions, c1Vtvls, onCancelEdit, onSaved
+  unitCode, ownerEmail, ownerName, ownerTitle, editingTicket, pickedVtvl, a1Missions, c1Vtvls, onActiveVtvlChange, onCancelEdit, onSaved
 }: StaffTicketInlineFormProps) {
   const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
   const [maNhiemVu, setMaNhiemVu] = useState('');
@@ -83,11 +84,8 @@ export function StaffTicketInlineForm({
     }
   }, [editingTicket, unitCode]);
 
-  useEffect(() => {
-    if (pickedVtvl?.code) {
-      setMaVtvl(pickedVtvl.code);
-    }
-  }, [pickedVtvl]);
+  useEffect(() => { if (pickedVtvl?.code) setMaVtvl(pickedVtvl.code); }, [pickedVtvl]);
+  useEffect(() => { onActiveVtvlChange?.(maVtvl); }, [maVtvl, onActiveVtvlChange]);
 
   const handleMissionChange = async (nextMission: string) => {
     setMaNhiemVu(nextMission);

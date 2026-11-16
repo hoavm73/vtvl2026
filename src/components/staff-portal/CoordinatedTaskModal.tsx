@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Link2, Plus, Trash2 } from 'lucide-react';
 import { StaffWorkTicket, CoordinatedTaskLink } from '@/types/staff-ticket';
 import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 interface CoordinatedTaskModalProps {
@@ -27,7 +28,10 @@ export function CoordinatedTaskModal({ ticket, onClose, onSaved }: CoordinatedTa
 
   useEffect(() => {
     if (!ticket || !targetUnitCode) return;
-    fetch(`/api/tickets?unitCode=${encodeURIComponent(targetUnitCode)}`)
+    const op = getCurrentOperatorSession();
+    const headers: Record<string, string> = {};
+    if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+    fetch(`/api/tickets?unitCode=${encodeURIComponent(targetUnitCode)}`, { headers })
       .then((res) => res.json())
       .then((json) => {
         const list = (json.unitA2Tasks || []).map((r: any) => ({
@@ -73,9 +77,12 @@ export function CoordinatedTaskModal({ ticket, onClose, onSaved }: CoordinatedTa
   const handleSaveLinks = async () => {
     setSaving(true);
     try {
+      const op = getCurrentOperatorSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
       await fetch('/api/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...ticket,
           coordinatedTasks: links

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import {
-  getWorkbookById,
-  rollbackServerWorkbookRevision
-} from '@/services/storage/server-workbook-store';
+import { getWorkbookById, rollbackServerWorkbookRevisionAndPersist, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 
 interface RouteContext {
@@ -11,64 +9,50 @@ interface RouteContext {
 
 export async function GET(req: Request, context: RouteContext) {
   const caller = await getCallerSession(req);
-  if (!caller.isAuthenticated) {
-    return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
-  }
-
+  if (!caller.isAuthenticated) return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   try {
     const { id } = await context.params;
+    await syncServerWorkbooksFromSupabase(true);
     const workbook = getWorkbookById(id);
-
-    if (!workbook) {
-      return NextResponse.json({ error: 'Không tìm thấy hồ sơ.', code: 'NOT_FOUND' }, { status: 404 });
-    }
-
+    if (!workbook) return NextResponse.json({ error: 'Không tìm thấy hồ sơ.', code: 'NOT_FOUND' }, { status: 404 });
     if (!caller.isAdmin && workbook.unitId.toUpperCase() !== caller.unitCode.toUpperCase()) {
       return NextResponse.json({ error: 'Không có quyền truy cập lịch sử đơn vị khác.', code: 'FORBIDDEN' }, { status: 403 });
     }
-
-    return NextResponse.json({
-      workbookId: id,
-      currentRevision: workbook.currentRevision || 1,
-      revisions: workbook.revisions || []
-    });
+    return NextResponse.json({ workbookId: id, currentRevision: workbook.currentRevision || 1, revisions: workbook.revisions || [] });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Lỗi hệ thống' }, { status: 500 });
   }
 }
 
 export async function POST(req: Request, context: RouteContext) {
   const caller = await getCallerSession(req);
-  if (!caller.isAuthenticated) {
-    return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  if (!caller.isAuthenticated) return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!caller.isAdmin && !caller.isUnitLeader) {
     return NextResponse.json({ error: 'Chỉ Lãnh đạo đơn vị hoặc Quản trị viên mới có quyền khôi phục phiên bản.', code: 'FORBIDDEN' }, { status: 403 });
   }
-
   try {
     const { id } = await context.params;
+    await syncServerWorkbooksFromSupabase(true);
     const workbook = getWorkbookById(id);
     if (workbook && !caller.isAdmin && workbook.unitId.toUpperCase() !== caller.unitCode.toUpperCase()) {
       return NextResponse.json({ error: 'Không thể khôi phục phiên bản đơn vị khác.', code: 'FORBIDDEN' }, { status: 403 });
     }
-
-    const body = await req.json();
-    const { targetRevision, reason } = body;
-
+    const { targetRevision, reason } = await req.json();
     if (typeof targetRevision !== 'number') {
       return NextResponse.json({ error: 'Thiếu số phiên bản cần khôi phục (targetRevision).' }, { status: 400 });
     }
-
-    const updated = rollbackServerWorkbookRevision(id, targetRevision, reason);
-    if (!updated) {
+    const updated = await rollbackServerWorkbookRevisionAndPersist(id, targetRevision, caller.email, typeof reason === 'string' ? reason : undefined);
+    if (!updated.success || !updated.serverWorkbook) {
       return NextResponse.json({ error: 'Không thể khôi phục phiên bản đã chọn.' }, { status: 400 });
     }
-
-    return NextResponse.json({ success: true, workbook: updated });
+    const audit = appendAuditLog({
+      workbookId: id, unitCode: updated.serverWorkbook.unitId, unitName: updated.serverWorkbook.unitNameVi,
+      action: 'KHÔI_PHỤC_PHIÊN_BẢN', details: `Khôi phục phiên bản #${targetRevision}${reason ? `: ${reason}` : ''}`,
+      actorEmail: caller.email, actorRole: caller.role
+    });
+    await persistAuditLogToSupabase(audit);
+    return NextResponse.json({ success: true, currentRevision: updated.currentRevision, workbook: updated.serverWorkbook });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Lỗi hệ thống' }, { status: 500 });
   }
 }

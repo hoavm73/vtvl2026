@@ -4,9 +4,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileSpreadsheet, AlertCircle } from 'lucide-react';
 import {
-  EmailSessionRecord, getAllEmailSessions,
+  EmailSessionRecord, getAllEmailSessions, getCurrentOperatorSession,
   saveCurrentOperatorSession, loadSessionData
 } from '@/services/telemetry/operator-session';
+
+function getSessionAuthHeaders(): Record<string, string> {
+  const op = getCurrentOperatorSession();
+  const h: Record<string, string> = {};
+  if (op?.accessToken) h.Authorization = `Bearer ${op.accessToken}`;
+  return h;
+}
 import { exportUserWorkbookToExcel } from '@/services/excel-export/user-workbook-exporter';
 import { AdminSheetDataModal } from './AdminSheetDataModal';
 import { AdminLocalDraftsCard } from './AdminLocalDraftsCard';
@@ -37,7 +44,7 @@ export function AdminSessionsTab() {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch('/api/admin/sessions');
+      const res = await fetch('/api/admin/sessions', { headers: getSessionAuthHeaders() });
       if (res.ok) {
         const json = await res.json();
         setSessions(json.workbooks || []);
@@ -122,7 +129,7 @@ export function AdminSessionsTab() {
     setExportingEmail(session.email);
     try {
       if (session.id) {
-        const res = await fetch(`/api/workbooks/${session.id}`);
+        const res = await fetch(`/api/workbooks/${session.id}`, { headers: getSessionAuthHeaders() });
         if (res.ok) {
           const json = await res.json();
           if (json.workbook?.data) {
@@ -157,7 +164,7 @@ export function AdminSessionsTab() {
     setViewingId(key);
     try {
       if (session.id) {
-        const res = await fetch(`/api/workbooks/${session.id}`);
+        const res = await fetch(`/api/workbooks/${session.id}`, { headers: getSessionAuthHeaders() });
         if (res.ok) {
           const json = await res.json();
           if (json.workbook?.data) {
@@ -178,7 +185,7 @@ export function AdminSessionsTab() {
     if (!session.id) return;
     if (confirm(`Bạn có chắc chắn muốn xóa hồ sơ máy chủ của [${session.email}] - đơn vị [${session.unitCode}]?`)) {
       try {
-        const res = await fetch(`/api/admin/sessions?id=${session.id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/admin/sessions?id=${session.id}`, { method: 'DELETE', headers: getSessionAuthHeaders() });
         if (res.ok) loadSessions();
         else alert('Không thể xóa hồ sơ máy chủ.');
       } catch {

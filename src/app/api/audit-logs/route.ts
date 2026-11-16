@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
-import { appendAuditLog, getAuditLogs } from '@/services/storage/server-audit-store';
+import { appendAuditLog, getAuditLogs, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
+import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
 export async function POST(req: Request) {
+  const caller = await getCallerSession(req);
+  if (!caller.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Yêu cầu đăng nhập để ghi nhật ký thao tác.', code: 'UNAUTHORIZED' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const { unitCode, unitName, action, details, actorEmail, actorTitle, workbookId } = body;
+    const { unitCode, unitName, action, details, actorEmail, workbookId } = body;
 
     if (!unitCode || !action || !details) {
       return NextResponse.json(
@@ -14,18 +24,37 @@ export async function POST(req: Request) {
       );
     }
 
-    // Làm sạch details nếu người dùng hoặc client cũ lỡ ghép email
+    const headerSpoof = normalizeEmail(req.headers.get('x-actor-email') || '');
+    const bodySpoof = normalizeEmail(actorEmail || '');
+    if (
+      (headerSpoof && headerSpoof !== normalizeEmail(caller.email)) ||
+      (bodySpoof && bodySpoof !== normalizeEmail(caller.email))
+    ) {
+      return NextResponse.json(
+        { error: 'Không được phép giả mạo danh tính người thực hiện.', code: 'FORBIDDEN_ACTOR_SPOOFING' },
+        { status: 403 }
+      );
+    }
+
+    if (!caller.isAdmin && String(unitCode).trim().toUpperCase() !== caller.unitCode.toUpperCase()) {
+      return NextResponse.json(
+        { error: 'Không được phép ghi nhật ký cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
+        { status: 403 }
+      );
+    }
+
     const cleanDetails = String(details).replace(/\s*\[Người thực hiện:\s*[^\]]+\]/g, '').trim();
 
     const log = appendAuditLog({
-      unitCode: String(unitCode),
+      unitCode: String(unitCode).trim().toUpperCase(),
       unitName: String(unitName || unitCode),
       action: String(action),
       details: cleanDetails,
-      actorEmail: actorEmail ? String(actorEmail).toLowerCase().trim() : undefined,
-      actorRole: actorTitle ? String(actorTitle) : undefined,
+      actorEmail: caller.email,
+      actorRole: caller.role,
       workbookId: workbookId ? String(workbookId) : undefined
     });
+    await persistAuditLogToSupabase(log);
 
     return NextResponse.json({ success: true, log }, { status: 201 });
   } catch (error) {
@@ -35,7 +64,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const isAuth = await getServerAdminAuth();
+  const caller = await getCallerSession(req);
+  const isAuth = caller.isAdmin || (await getServerAdminAuth());
   if (!isAuth) {
     return NextResponse.json(
       { error: 'Yêu cầu quyền Quản trị viên để xem nhật ký kiểm toán hệ thống.' },
@@ -56,4 +86,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
-

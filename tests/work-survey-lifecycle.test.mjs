@@ -163,7 +163,10 @@ runTest('Ca 6: Modal chi tiết phiếu hiển thị đầy đủ lịch sử ph
 });
 
 runTest('Ca 7: Bản in PDF A4 của phiếu công việc giữ nguyên định dạng chuẩn hành chính HCM-UTE', () => {
-  assert.ok(printSheetCode.includes('TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM'), 'Bản in PDF có quốc hiệu và tên trường chuẩn');
+  const printModalCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketPrintModal.tsx'), 'utf8');
+  assert.ok(!printSheetCode.includes('BỘ GIÁO DỤC VÀ ĐÀO TẠO') && !detailModalCode.includes('BỘ GIÁO DỤC VÀ ĐÀO TẠO') && !printModalCode.includes('BỘ GIÁO DỤC VÀ ĐÀO TẠO'), 'Đã bỏ dòng BỘ GIÁO DỤC VÀ ĐÀO TẠO');
+  assert.ok(printSheetCode.includes('font-normal whitespace-nowrap">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>'), 'Tên trường không in đậm và nằm trên cùng 1 hàng');
+  assert.ok(printSheetCode.includes('font-bold uppercase mt-0.5">{props.unitNameVi}</div>'), 'Tên đơn vị in đậm bên dưới tên trường');
   assert.ok(printSheetCode.includes('print:block'), 'Bản in PDF hỗ trợ chế độ in A4');
 });
 
@@ -254,12 +257,12 @@ runTest('Ca 11: Phân tách 5 tab (có Đã duyệt & Chờ duyệt gồm Yêu c
   const sideCardCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedSideCard.tsx'), 'utf8');
 
   assert.ok(
-    tabBarCode.includes("export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed';"),
-    'StaffTicketsTabBar phải khai báo đủ 5 tab trong đó có tab approved'
+    tabBarCode.includes("export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed' | 'relationships';"),
+    'StaffTicketsTabBar phải khai báo đủ 6 tab gồm proposed và relationships'
   );
   assert.ok(
-    tabBarCode.includes('Chờ duyệt') && tabBarCode.includes('Đã duyệt') && tabBarCode.includes('Nhiệm vụ được đề xuất phối hợp'),
-    'StaffTicketsTabBar phải hiển thị nhãn Chờ duyệt, Đã duyệt và Nhiệm vụ được đề xuất phối hợp'
+    tabBarCode.includes('Chờ duyệt') && tabBarCode.includes('Đã duyệt') && tabBarCode.includes('Nhiệm vụ được đề xuất phối hợp') && tabBarCode.includes('Mối quan hệ công việc'),
+    'StaffTicketsTabBar phải hiển thị nhãn Chờ duyệt, Đã duyệt, Nhiệm vụ được đề xuất phối hợp và Mối quan hệ công việc'
   );
   assert.ok(
     reviewListCode.includes("c === 'submitted' || c === 'resubmitted' || c === 'changes_requested'"),
@@ -1005,6 +1008,516 @@ runTest('Ca 21: Bấm Duyệt phiếu tự động đưa vào Danh sách Biểu 
         assert.strictEqual(wbGetRes.status, 200);
         const wbGetJson = await wbGetRes.json();
         assert.ok((wbGetJson.workbook.data.A2 || []).some((r) => r.sourceTicketId === t2.id), 'GET /api/workbooks phải tự đối soát đưa phiếu Đã duyệt còn thiếu vào A2');
+      })().catch((e) => { console.error(e); process.exit(1); });
+    `;
+    execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, {
+      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      stdio: 'pipe'
+    });
+  } finally {
+    for (const [name, content] of backups.entries()) {
+      const p = path.join(dataDir, name);
+      if (content === null) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+      else fs.writeFileSync(p, content, 'utf8');
+    }
+  }
+});
+
+runTest('Ca 22: Hiển thị đầy đủ coordinatedVtvls & ghi chú phối hợp trên bản in A4, thẻ phiếu và Biểu A2', () => {
+  const printModalCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketPrintModal.tsx'), 'utf8');
+  assert.ok(printSheetCode.includes('formatTicketCoordinatedVtvlsText'), 'StaffTicketA4Preview phải dùng formatTicketCoordinatedVtvlsText');
+  assert.ok(detailModalCode.includes('formatTicketCoordinatedVtvlsText'), 'StaffTicketDetailModal phải dùng formatTicketCoordinatedVtvlsText');
+  assert.ok(printModalCode.includes('formatTicketCoordinatedVtvlsText'), 'StaffTicketPrintModal phải dùng formatTicketCoordinatedVtvlsText');
+  assert.ok(myListCode.includes('getTicketCoordinatedVtvlBadges'), 'StaffMyTicketsList phải hiển thị badge từ getTicketCoordinatedVtvlBadges');
+  assert.ok(reviewListCode.includes('getTicketCoordinatedVtvlBadges'), 'UnitTicketsReviewList phải hiển thị badge từ getTicketCoordinatedVtvlBadges');
+
+  const tsxCode = `
+    const assert = require('assert');
+    const {
+      formatTicketCoordinatedVtvlsText,
+      getTicketCoordinatedVtvlBadges,
+      formatCoordinatedVtvlCodesForA2
+    } = require('./src/services/tickets/vtvl-coordination-helpers');
+
+    const crossUnitTicket = {
+      unitCode: 'TCNS',
+      maVtvlPhoiHop: '',
+      coordinatedVtvls: [
+        {
+          id: 'cvtvl-QTTHTT-QTTHTT.HT46',
+          targetUnitCode: 'QTTHTT',
+          targetUnitName: 'Phòng Quản trị thương hiệu và Truyền thông',
+          maVtvl: 'QTTHTT.HT46',
+          tenVtvl: 'Quản trị mạng, hệ thống phần mềm, hạ tầng số',
+          note: 'phần mềm'
+        }
+      ]
+    };
+
+    const a4Text = formatTicketCoordinatedVtvlsText(crossUnitTicket);
+    assert.ok(a4Text.includes('[QTTHTT - Phòng Quản trị thương hiệu và Truyền thông]'), 'Bản A4 phải hiển thị đơn vị phối hợp');
+    assert.ok(a4Text.includes('QTTHTT.HT46 — Quản trị mạng, hệ thống phần mềm, hạ tầng số'), 'Bản A4 phải hiển thị mã & tên VTVL phối hợp');
+    assert.ok(a4Text.includes('phần mềm'), 'Bản A4 phải hiển thị ghi chú riêng của VTVL phối hợp');
+
+    const badges = getTicketCoordinatedVtvlBadges(crossUnitTicket);
+    assert.strictEqual(badges.length, 1);
+    assert.ok(badges[0].label.includes('[QTTHTT] QTTHTT.HT46'));
+    assert.strictEqual(badges[0].note, 'phần mềm');
+
+    assert.strictEqual(formatCoordinatedVtvlCodesForA2(crossUnitTicket), 'QTTHTT.HT46');
+    assert.strictEqual(formatTicketCoordinatedVtvlsText({ unitCode: 'TCNS', maVtvlPhoiHop: '', coordinatedVtvls: [] }), 'Không có');
+  `;
+  execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
+});
+
+runTest('Ca 23: Hiển thị đề xuất phối hợp theo Đơn vị, highlight khi chọn mã VTVL & tab Mối quan hệ công việc', () => {
+  const dataDir = path.join(root, '.data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const backupNames = ['server_workbooks.json', 'server_accounts.json', 'accounts.json', 'audit-logs.json', 'audit_logs.json', 'staff_tickets.json', 'work_survey_versions.json', 'work_survey_merge_links.json', 'user_vtvl_assignments.json', 'work_survey_coordinated_vtvls.json', 'work_relationships.json'];
+  const backups = new Map();
+  for (const name of backupNames) {
+    const p = path.join(dataDir, name);
+    backups.set(name, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+  }
+  try {
+    const sideCardSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedSideCard.tsx'), 'utf8');
+    const relTabSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/WorkRelationshipsTab.tsx'), 'utf8');
+    const migSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
+    assert.ok(sideCardSrc.includes('Đang chọn VTVL:') && sideCardSrc.includes('Đã được kê khai'), 'ProposedCoordinatedSideCard phải highlight & hiện nhãn theo VTVL đang chọn');
+    assert.ok(relTabSrc.includes('Mối quan hệ công việc phối hợp') && relTabSrc.includes('Đã được lãnh đạo 2 đơn vị duyệt'), 'WorkRelationshipsTab phải có nhãn phê duyệt 2 phía & TCNS');
+    assert.ok(migSql.includes('CREATE TABLE IF NOT EXISTS public.work_relationships'), 'Migration phải tạo bảng work_relationships');
+
+    const tsxCode = `
+      const assert = require('assert');
+      const { NextRequest } = require('next/server');
+      const { POST: postTicket, PATCH: patchTicket } = require('./src/app/api/tickets/route');
+      const { GET: getCoord, PATCH: patchCoord } = require('./src/app/api/tickets/coordinated/route');
+      const { generateUserSessionToken } = require('./src/services/storage/server-auth-guard');
+      const { upsertUserAccount } = require('./src/services/storage/server-account-store');
+
+      (async () => {
+        await upsertUserAccount({ email: 'tcns@hcmute.edu.vn', displayName: 'Phòng TCNS', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức – Nhân sự', title: 'Quản trị viên', role: 'admin', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: 'staff.tcns.23@hcmute.edu.vn', displayName: 'Chuyên viên TCNS', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức – Nhân sự', title: 'Chuyên viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: 'staff.qtthtt.23@hcmute.edu.vn', displayName: 'Nhân sự QTTHTT', unitCode: 'QTTHTT', unitNameVi: 'Phòng Quản trị thương hiệu và Truyền thông', title: 'Chuyên viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: 'leader.qtthtt.23@hcmute.edu.vn', displayName: 'Trưởng phòng QTTHTT', unitCode: 'QTTHTT', unitNameVi: 'Phòng Quản trị thương hiệu và Truyền thông', title: 'Lãnh đạo đơn vị', role: 'unit_leader', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+
+        const tokTcnsStaff = generateUserSessionToken({ email: 'staff.tcns.23@hcmute.edu.vn', role: 'staff', unitCode: 'TCNS' });
+        const tokAdmin = generateUserSessionToken({ email: 'tcns@hcmute.edu.vn', role: 'admin', unitCode: 'TCNS' });
+        const tokQtStaff = generateUserSessionToken({ email: 'staff.qtthtt.23@hcmute.edu.vn', role: 'staff', unitCode: 'QTTHTT' });
+        const tokQtLeader = generateUserSessionToken({ email: 'leader.qtthtt.23@hcmute.edu.vn', role: 'unit_leader', unitCode: 'QTTHTT' });
+
+        // 1. TCNS nộp phiếu đề xuất phối hợp với QTTHTT.HT46 (chưa gán cứng user_vtvl_assignments cho QTTHTT)
+        const r1 = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST', headers: { authorization: 'Bearer ' + tokTcnsStaff, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            unitCode: 'TCNS', ownerEmail: 'staff.tcns.23@hcmute.edu.vn', action: 'submit',
+            maNhiemVu: 'TCNS.NV01', maCongViec: 'TCNS.NV01.CV88', tenCongViec: 'Phối hợp quản trị hạ tầng số',
+            maVtvl: 'TCNS.QL33', coordinatedVtvls: [{ id: 'cvtvl-QTTHTT-QTTHTT.HT46', targetUnitCode: 'QTTHTT', maVtvl: 'QTTHTT.HT46', note: 'phần mềm' }],
+            sanPham: 'Hệ thống vận hành', chatLuong: 'Đạt', canCu: 'QĐ 2266', soSpNam: 4, nguonSoLieu: 'TCNS', phutThucTe: 60
+          })
+        }));
+        assert.strictEqual(r1.status, 200);
+        const srcTicket = (await r1.json()).ticket;
+
+        // 2. Tài khoản QTTHTT chưa được gán cứng vẫn nhận đề xuất về đơn vị QTTHTT
+        const q1 = await (await getCoord(new NextRequest('http://localhost:3360/api/tickets/coordinated?scope=unit', {
+          headers: { authorization: 'Bearer ' + tokQtStaff }
+        }))).json();
+        const foundProposal = q1.items.find((i) => i.surveyId === srcTicket.id);
+        assert.ok(foundProposal, 'Tài khoản QTTHTT không gắn cứng vẫn phải thấy đề xuất QTTHTT.HT46');
+        assert.strictEqual(foundProposal.isDeclaredByTargetUnit, false);
+        assert.strictEqual(q1.relationships.some((r) => r.sourceSurveyId === srcTicket.id), false, 'Chưa bên nào duyệt -> chưa vào tab Mối quan hệ công việc');
+
+        // 3. Lãnh đạo TCNS (Admin) duyệt phiếu nguồn -> xuất hiện trong Mối quan hệ công việc với nhãn Mới 1 bên lãnh đạo duyệt + Phòng TCNS
+        await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PATCH', headers: { authorization: 'Bearer ' + tokAdmin, 'content-type': 'application/json' },
+          body: JSON.stringify({ ticketId: srcTicket.id, action: 'approve', unitCode: 'TCNS' })
+        }));
+        const q2 = await (await getCoord(new NextRequest('http://localhost:3360/api/tickets/coordinated?scope=unit', {
+          headers: { authorization: 'Bearer ' + tokQtStaff }
+        }))).json();
+        const rel1 = q2.relationships.find((r) => r.sourceSurveyId === srcTicket.id);
+        assert.ok(rel1, 'Sau khi 1 bên duyệt phải hiện trong Mối quan hệ công việc');
+        assert.strictEqual(rel1.hostLeaderApproved, true);
+        assert.strictEqual(rel1.targetLeaderApproved, false);
+
+        // 4. Nhân sự QTTHTT kê khai phiếu với mã QTTHTT.HT46 -> isDeclaredByTargetUnit = true; Lãnh đạo QTTHTT duyệt -> cả 2 đơn vị duyệt
+        const r2 = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST', headers: { authorization: 'Bearer ' + tokQtStaff, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            unitCode: 'QTTHTT', ownerEmail: 'staff.qtthtt.23@hcmute.edu.vn', action: 'submit',
+            maNhiemVu: 'QTTHTT.NV01', maCongViec: 'QTTHTT.NV01.CV88', tenCongViec: 'Phối hợp quản trị hạ tầng số phía QTTHTT',
+            maVtvl: 'QTTHTT.HT46', sanPham: 'Nhật ký vận hành', chatLuong: 'Đạt', canCu: 'QĐ 2266', soSpNam: 4, nguonSoLieu: 'QTTHTT', phutThucTe: 45
+          })
+        }));
+        const tgtTicket = (await r2.json()).ticket;
+        await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PATCH', headers: { authorization: 'Bearer ' + tokQtLeader, 'content-type': 'application/json' },
+          body: JSON.stringify({ ticketId: tgtTicket.id, action: 'approve', unitCode: 'QTTHTT' })
+        }));
+        const p3 = await patchCoord(new NextRequest('http://localhost:3360/api/tickets/coordinated', {
+          method: 'PATCH', headers: { authorization: 'Bearer ' + tokAdmin, 'content-type': 'application/json' },
+          body: JSON.stringify({ relationshipId: rel1.id, side: 'tcns', approved: true })
+        }));
+        assert.strictEqual(p3.status, 200);
+        const relFinal = (await p3.json()).relationship;
+        assert.strictEqual(relFinal.isDeclaredByTargetUnit, true);
+        assert.strictEqual(relFinal.hostLeaderApproved, true);
+        assert.strictEqual(relFinal.targetLeaderApproved, true);
+        assert.strictEqual(relFinal.tcnsApproved, true);
+        assert.ok(relFinal.approvalLabel.includes('Đã được lãnh đạo 2 đơn vị'));
+      })().catch((e) => { console.error(e); process.exit(1); });
+    `;
+    execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, {
+      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      stdio: 'pipe'
+    });
+  } finally {
+    for (const [name, content] of backups.entries()) {
+      const p = path.join(dataDir, name);
+      if (content === null) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+      else fs.writeFileSync(p, content, 'utf8');
+    }
+  }
+});
+
+runTest('Ca 24: Chuẩn hóa luồng lưu dữ liệu UI/CTA -> API -> Supabase (Unit Store, Workbook Relational Sync, Revision Restore, Auth Headers & Migration)', () => {
+  const dataDir = path.join(root, '.data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const backupNames = [
+    'server_workbooks.json', 'deleted_workbooks.json', 'server_accounts.json', 'accounts.json',
+    'audit-logs.json', 'audit_logs.json', 'staff_tickets.json', 'work_survey_versions.json',
+    'work_survey_merge_links.json', 'user_vtvl_assignments.json', 'work_survey_coordinated_vtvls.json',
+    'work_relationships.json', 'custom_units.json'
+  ];
+  const backups = new Map();
+  for (const name of backupNames) {
+    const p = path.join(dataDir, name);
+    backups.set(name, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+  }
+  try {
+    const migSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
+    const rollbackSql = fs.readFileSync(path.join(root, 'supabase/rollbacks/20261116210000_rollback_work_relationships.sql'), 'utf8');
+    const relSyncSrc = fs.readFileSync(path.join(root, 'src/services/storage/server-workbook-relational-sync.ts'), 'utf8');
+    const vtvlSyncSrc = fs.readFileSync(path.join(root, 'src/services/supabase/vtvl-sync.ts'), 'utf8');
+    const coordModalSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/CoordinatedTaskModal.tsx'), 'utf8');
+    const adminSessionsSrc = fs.readFileSync(path.join(root, 'src/components/admin/AdminSessionsTab.tsx'), 'utf8');
+    const revRouteSrc = fs.readFileSync(path.join(root, 'src/app/api/workbooks/[id]/revisions/route.ts'), 'utf8');
+
+    for (const fkName of [
+      'fk_work_rel_source_survey', 'fk_work_rel_target_survey', 'fk_work_rel_host_unit',
+      'fk_work_rel_target_unit', 'fk_tickets_approved_by', 'fk_tickets_revision_requested_by', 'fk_tickets_merged_by'
+    ]) {
+      assert.ok(migSql.includes(fkName), `Migration thiếu khóa ngoại ${fkName}`);
+      assert.ok(migSql.includes(`VALIDATE CONSTRAINT ${fkName}`), `Migration phải VALIDATE CONSTRAINT ${fkName}`);
+    }
+    assert.ok(migSql.includes('migration_20261116210000_data_backup'), 'Migration phải tạo bảng sao lưu migration_20261116210000_data_backup trước khi sửa email/mồ côi');
+    assert.ok(migSql.includes('BACKUP_ACTOR_EMAILS') && migSql.includes('QUARANTINE_ORPHAN_WORK_REL'), 'Migration phải sao lưu email gốc và bản ghi mồ côi trước khi cập nhật');
+    assert.ok(migSql.includes('SNAPSHOT_RLS_FLAGS') && migSql.includes('SNAPSHOT_RLS_POLICY'), 'Migration phải chụp trạng thái RLS và policy trước khi thay đổi');
+    assert.ok(migSql.includes('c.convalidated') && migSql.includes('pg_get_constraintdef(c.oid)'), 'Postflight phải kiểm tra convalidated = TRUE và định nghĩa pg_get_constraintdef của cả 7 FK');
+    assert.ok(migSql.includes('CREATE OR REPLACE FUNCTION public.rpc_sync_workbook_atomic'), 'Migration phải định nghĩa RPC giao dịch nguyên tử rpc_sync_workbook_atomic');
+    assert.ok(migSql.includes("du_lieu_ho_so_json -> 'workRelationships'") && migSql.includes('ON CONFLICT (id) DO UPDATE'), 'Migration phải backfill work_relationships từ JSONB idempotent');
+
+    const rollbackExecutableSql = rollbackSql.replace(/--.*$/gm, '');
+    assert.ok(!/DROP\s+TABLE/i.test(rollbackExecutableSql), 'Rollback SQL tuyệt đối không được dùng DROP TABLE');
+    assert.ok(rollbackSql.includes('BACKUP_ACTOR_EMAILS') && rollbackSql.includes('QUARANTINE_ORPHAN_WORK_REL'), 'Rollback SQL phải khôi phục dữ liệu gốc từ bảng backup');
+    assert.ok(rollbackSql.includes('SNAPSHOT_RLS_POLICY') && rollbackSql.includes('SNAPSHOT_RLS_FLAGS'), 'Rollback SQL phải khôi phục đúng policy và cờ RLS trước migration');
+
+    for (const table of ['a1_nhiem_vu', 'a2_cong_viec', 'b1_khoi_luong', 'b2_ct_tac_dong', 'b2_thay_doi', 'c1_vtvl', 'c2_nang_luc', 'c3_nhu_cau', 'd1_nhan_luc', 'du_bao_5_nam', 'd2_phuong_an', 'k_kiem_tra', 'can_cu_goi_y', 'workbooks', 'workbook_sessions', 'session_participants', 'workbook_revisions']) {
+      assert.ok(relSyncSrc.includes(table), `Relational sync phải hỗ trợ đồng bộ bảng ${table}`);
+    }
+    assert.ok(relSyncSrc.includes('rpc_sync_workbook_atomic'), 'Relational sync phải gọi RPC nguyên tử rpc_sync_workbook_atomic');
+    assert.ok(vtvlSyncSrc.includes('Authorization') && vtvlSyncSrc.includes('Bearer') && !vtvlSyncSrc.includes('x-actor-email'), 'vtvl-sync.ts chỉ gửi Bearer token, không dùng x-actor-email');
+    assert.ok(coordModalSrc.includes('Authorization') && coordModalSrc.includes('Bearer') && !coordModalSrc.includes('x-actor-email'), 'CoordinatedTaskModal.tsx chỉ gửi Bearer token, không dùng x-actor-email');
+    assert.ok(adminSessionsSrc.includes('Authorization') && adminSessionsSrc.includes('Bearer') && !adminSessionsSrc.includes('x-actor-email'), 'AdminSessionsTab.tsx chỉ gửi Bearer token, không dùng x-actor-email');
+    assert.ok(revRouteSrc.includes('rollbackServerWorkbookRevisionAndPersist'), 'Route revisions phải gọi rollbackServerWorkbookRevisionAndPersist');
+
+    const tsxCode = `
+      const assert = require('assert');
+      const { NextRequest } = require('next/server');
+      const { POST: postTicket } = require('./src/app/api/tickets/route');
+      const { POST: postAuditLog } = require('./src/app/api/audit-logs/route');
+      const { POST: postSyncSplit } = require('./src/app/api/sync/split/route');
+      const { generateUserSessionToken } = require('./src/services/storage/server-auth-guard');
+      const { upsertUserAccount } = require('./src/services/storage/server-account-store');
+      const { upsertServerUnit, deleteServerUnit, resetServerUnits, resetUnitMemoryStore, getServerUnits } = require('./src/services/storage/server-unit-store');
+      const { findHcmuteUnit, getActiveHcmuteUnits } = require('./src/configs/hcmute-units');
+      const { saveServerWorkbook, saveServerWorkbookAndPersist, rollbackServerWorkbookRevisionAndPersist, getWorkbookById } = require('./src/services/storage/server-workbook-store');
+      const { buildWorkbookRelationalPayload } = require('./src/services/storage/server-workbook-relational-sync');
+
+      (async () => {
+        // 1. Tạo đơn vị mới LAB_QA -> tạo tài khoản -> tạo phiếu thành công -> ngừng hoạt động đơn vị
+        await upsertServerUnit({
+          code: 'LAB_QA',
+          nameVi: 'Trung tâm Đảm bảo chất lượng Thử nghiệm',
+          nameEn: 'QA Testing Center',
+          group: 'trung-tam',
+          domain: 'qa.hcmute.edu.vn',
+          headTitleVi: 'Giám đốc',
+          headTitleEn: 'Director',
+          defaultStaffCount: 5
+        });
+        assert.strictEqual(getActiveHcmuteUnits().some((u) => u.code === 'LAB_QA'), true, 'getActiveHcmuteUnits phải nhận đơn vị mới LAB_QA');
+        assert.strictEqual(findHcmuteUnit('LAB_QA').code, 'LAB_QA', 'findHcmuteUnit phải trả về đúng mã LAB_QA');
+
+        await upsertUserAccount({
+          email: 'staff.labqa@hcmute.edu.vn',
+          displayName: 'Chuyên viên LAB_QA',
+          unitCode: 'LAB_QA',
+          unitNameVi: 'Trung tâm Đảm bảo chất lượng Thử nghiệm',
+          title: 'Chuyên viên',
+          role: 'staff',
+          authProvider: 'email',
+          status: 'active',
+          hasSelectedUnit: true
+        }, true);
+        const tokLabQa = generateUserSessionToken({ email: 'staff.labqa@hcmute.edu.vn', role: 'staff', unitCode: 'LAB_QA' });
+        const tRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tokLabQa, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            unitCode: 'LAB_QA',
+            ownerEmail: 'staff.labqa@hcmute.edu.vn',
+            action: 'submit',
+            maNhiemVu: 'LAB_QA.NV01',
+            maCongViec: 'LAB_QA.NV01.CV01',
+            tenCongViec: 'Kiểm thử luồng tạo phiếu đơn vị mới',
+            maVtvl: 'LAB_QA.CV01',
+            sanPham: 'Báo cáo thử nghiệm',
+            chatLuong: 'Đạt',
+            canCu: 'QĐ 2266',
+            soSpNam: 6,
+            nguonSoLieu: 'LAB_QA',
+            phutThucTe: 45
+          })
+        }));
+        assert.strictEqual(tRes.status, 200, 'Tạo phiếu cho đơn vị mới LAB_QA phải thành công');
+        const tBody = await tRes.json();
+        assert.strictEqual(tBody.ticket.unitCode, 'LAB_QA');
+
+        // 2. Xác minh x-actor-email không được tin cậy; actor luôn lấy từ phiên xác thực trên server
+        const unauthAudit = await postAuditLog(new NextRequest('http://localhost:3360/api/audit-logs', {
+          method: 'POST',
+          headers: { 'x-actor-email': 'tcns@hcmute.edu.vn', 'content-type': 'application/json' },
+          body: JSON.stringify({ unitCode: 'TCNS', action: 'TEST', details: 'Giả mạo không token' })
+        }));
+        assert.strictEqual(unauthAudit.status, 401, 'Gửi x-actor-email không có token phải bị từ chối 401');
+
+        const spoofHeaderAudit = await postAuditLog(new NextRequest('http://localhost:3360/api/audit-logs', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tokLabQa, 'x-actor-email': 'tcns@hcmute.edu.vn', 'content-type': 'application/json' },
+          body: JSON.stringify({ unitCode: 'LAB_QA', action: 'TEST', details: 'Giả mạo header x-actor-email' })
+        }));
+        assert.strictEqual(spoofHeaderAudit.status, 403, 'Gửi header x-actor-email khác phiên xác thực phải bị chặn 403');
+        assert.strictEqual((await spoofHeaderAudit.json()).code, 'FORBIDDEN_ACTOR_SPOOFING');
+
+        const spoofBodySplit = await postSyncSplit(new NextRequest('http://localhost:3360/api/sync/split', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tokLabQa, 'content-type': 'application/json' },
+          body: JSON.stringify({ summary: { unitCode: 'LAB_QA', actorEmail: 'tcns@hcmute.edu.vn' } })
+        }));
+        assert.strictEqual(spoofBodySplit.status, 403, 'Giả mạo actorEmail trong /api/sync/split phải bị chặn 403');
+
+        const validAudit = await postAuditLog(new NextRequest('http://localhost:3360/api/audit-logs', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tokLabQa, 'content-type': 'application/json' },
+          body: JSON.stringify({ unitCode: 'LAB_QA', action: 'BAM_GIO', details: 'Lưu phiên hợp lệ' })
+        }));
+        assert.strictEqual(validAudit.status, 201);
+        assert.strictEqual((await validAudit.json()).log.actorEmail, 'staff.labqa@hcmute.edu.vn', 'Actor phải lấy từ phiên server đã xác thực');
+
+        // 3. Lưu bảng tính, kiểm tra payload can_cu_goi_y/sessions/participants, lỗi giữa giao dịch (rollback) & khôi phục phiên bản
+        const s1 = saveServerWorkbook({
+          workbookId: 'wb_LAB_QA_24',
+          unitCode: 'LAB_QA',
+          baseRevision: 0,
+          actorEmail: 'staff.labqa@hcmute.edu.vn',
+          actorTitle: 'Chuyên viên',
+          touchedCells: ['B1:b1-1:soSpNam'],
+          data: {
+            A1: [{ id: 'a1-rev1', maNhiemVu: 'LAB_QA.NV01', tenNhiemVu: 'Nhiệm vụ bản 1' }],
+            C1: [{ id: 'c1-rev1', maVtvl: 'LAB_QA.CV01', tenVtvl: 'Chuyên viên thử nghiệm' }],
+            A2: [{ id: 'a2-rev1', maCongViec: 'LAB_QA.NV01.CV01', maNhiemVu: 'LAB_QA.NV01', maVtvl: 'LAB_QA.CV01', tenCongViec: 'Công việc 1', sanPham: 'Báo cáo' }],
+            B1: [{ id: 'b1-1', maCongViec: 'LAB_QA.NV01.CV01', maVtvl: 'LAB_QA.CV01', soSpNam: 10, phutThucTe: 60 }]
+          }
+        });
+        assert.strictEqual(s1.success, true);
+        const wbId = s1.serverWorkbook.id;
+        const rev1 = s1.currentRevision;
+
+        const relPayload = buildWorkbookRelationalPayload(s1.serverWorkbook);
+        assert.strictEqual(relPayload.can_cu_goi_y.length, 1, 'Phải ánh xạ can_cu_goi_y từ A2 + B1');
+        assert.strictEqual(relPayload.can_cu_goi_y[0].da_sua_thuc_te, true, 'Phải ghi nhận da_sua_thuc_te từ touchedCells');
+        assert.ok(relPayload.workbook_sessions.length >= 1 && relPayload.session_participants.length >= 1, 'Phải ánh xạ workbook_sessions và session_participants');
+
+        // Kiểm thử lỗi giữa giao dịch (simulateTxError = true) -> phải rollback toàn bộ, không lưu dở dang
+        let txFailed = false;
+        try {
+          await saveServerWorkbookAndPersist({
+            workbookId: wbId,
+            unitCode: 'LAB_QA',
+            baseRevision: rev1,
+            actorEmail: 'staff.labqa@hcmute.edu.vn',
+            data: { A1: [{ id: 'a1-corrupt', maNhiemVu: 'LAB_QA.NV01', tenNhiemVu: 'Dữ liệu lỗi giữa giao dịch' }] },
+            simulateTxError: true
+          });
+        } catch (err) {
+          txFailed = String(err.message || err).includes('TX_ABORTED_MIDWAY');
+        }
+        assert.strictEqual(txFailed, true, 'Lỗi giữa giao dịch phải ném ngoại lệ TX_ABORTED_MIDWAY');
+        const wbAfterAbort = getWorkbookById(wbId);
+        assert.strictEqual(wbAfterAbort.currentRevision, rev1, 'Sau lỗi giữa giao dịch, currentRevision phải được rollback về rev1');
+        assert.strictEqual(wbAfterAbort.data.A1[0].tenNhiemVu, 'Nhiệm vụ bản 1', 'Dữ liệu không được lưu dở dang khi giao dịch thất bại');
+
+        const s2 = saveServerWorkbook({
+          workbookId: wbId,
+          unitCode: 'LAB_QA',
+          baseRevision: rev1,
+          actorEmail: 'staff.labqa@hcmute.edu.vn',
+          data: { A1: [{ id: 'a1-rev2', maNhiemVu: 'LAB_QA.NV01', tenNhiemVu: 'Nhiệm vụ bản 2 bị sai' }] }
+        });
+        assert.strictEqual(s2.success, true);
+
+        const rb = await rollbackServerWorkbookRevisionAndPersist(wbId, rev1, 'admin.audit@hcmute.edu.vn', 'Khôi phục dữ liệu đúng chuẩn');
+        assert.strictEqual(rb.success, true, 'Khôi phục phiên bản bảng tính phải thành công');
+        assert.strictEqual(rb.serverWorkbook.data.A1[0].tenNhiemVu, 'Nhiệm vụ bản 1', 'Dữ liệu sau khôi phục phải khớp phiên bản đích');
+        assert.strictEqual(rb.serverWorkbook.revisions[0].actorEmail, 'admin.audit@hcmute.edu.vn', 'Lịch sử khôi phục phải ghi đúng tác nhân');
+        assert.ok(rb.serverWorkbook.revisions[0].changeSummary.includes('Khôi phục dữ liệu đúng chuẩn'), 'Lịch sử khôi phục phải ghi đúng lý do');
+
+        // 4. Ngừng hoạt động đơn vị mới LAB_QA VÀ ngừng hoạt động đơn vị chuẩn TYT -> đảm bảo TYT không bị cấu hình 39 đơn vị tự thêm lại
+        await deleteServerUnit('LAB_QA');
+        assert.strictEqual(getServerUnits().some((u) => u.code === 'LAB_QA'), false);
+        assert.strictEqual(getActiveHcmuteUnits().some((u) => u.code === 'LAB_QA'), false);
+
+        await deleteServerUnit('TYT');
+        resetUnitMemoryStore(); // Xóa RAM cache để buộc đọc lại từ đĩa
+        assert.strictEqual(getServerUnits().some((u) => u.code === 'TYT'), false, 'Đơn vị chuẩn TYT sau khi ngừng hoạt động không được còn trong getServerUnits()');
+        assert.strictEqual(getActiveHcmuteUnits().some((u) => u.code === 'TYT'), false, 'Đơn vị chuẩn TYT sau khi ngừng hoạt động không được bị cấu hình 39 đơn vị tự thêm lại');
+        assert.strictEqual(getActiveHcmuteUnits().length, 38, 'Số đơn vị hoạt động sau khi ngừng TYT phải đúng 38');
+
+        // Khôi phục lại danh mục 39 đơn vị chuẩn
+        await resetServerUnits();
+        assert.strictEqual(getActiveHcmuteUnits().length, 39, 'Sau resetServerUnits phải khôi phục đủ 39 đơn vị chuẩn');
+
+        // 5. Kiểm thử RPC nguyên tử trên DB mock, backfill workRelationships từ JSONB & chống tự thêm lại TYT khi is_active=false trên dm_don_vi
+        const origFetch = global.fetch;
+        const origIso = process.env.VTVL_ISOLATED_LOCAL_STORE;
+        const origUrl = process.env.SUPABASE_URL;
+        const origKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        try {
+          process.env.VTVL_ISOLATED_LOCAL_STORE = 'false';
+          process.env.SUPABASE_URL = 'https://mock-supabase.local';
+          process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
+
+          const rpcCalls = [];
+          const mockWorkRelDb = new Map();
+          let simulateDbRpcAbort = false;
+
+          global.fetch = async (url, init = {}) => {
+            const u = String(url);
+            if (u.includes('/rest/v1/rpc/rpc_sync_workbook_atomic')) {
+              const body = JSON.parse(init.body || '{}');
+              rpcCalls.push(body);
+              if (body.p_simulate_error || simulateDbRpcAbort) {
+                return new Response(JSON.stringify({ message: 'TX_ABORTED_MIDWAY' }), { status: 500 });
+              }
+              return new Response(JSON.stringify({ success: true, atomic_tx: true }), { status: 200 });
+            }
+            if (u.includes('/rest/v1/t_tien_do?ma_don_vi=eq.TCNS')) {
+              return new Response(JSON.stringify([{
+                ma_don_vi: 'TCNS',
+                phien_ban: 'v1',
+                du_lieu_ho_so_json: {
+                  customUnits: [
+                    { code: 'TYT', nameVi: 'Trạm Y tế', group: 'phong-ban' },
+                    { code: 'TCNS', nameVi: 'Phòng Tổ chức - Nhân sự', group: 'phong-ban' }
+                  ],
+                  workRelationships: [{
+                    id: 'wrel-jsonb-1',
+                    sourceSurveyId: 'tk-src-1',
+                    sourceTaskCode: 'TCNS.NV01.CV01',
+                    sourceTaskName: 'Phối hợp JSONB',
+                    sourceMissionCode: 'TCNS.NV01',
+                    hostUnitCode: 'TCNS',
+                    hostUnitName: 'Phòng Tổ chức - Nhân sự',
+                    hostVtvlCode: 'TCNS.QL01',
+                    targetUnitCode: 'QTTHTT',
+                    targetUnitName: 'Phòng Quản trị thương hiệu và Truyền thông',
+                    targetVtvlCode: 'QTTHTT.HT46',
+                    hostLeaderApproved: true,
+                    hostApprovedBy: 'tcns@hcmute.edu.vn',
+                    targetLeaderApproved: true,
+                    targetApprovedBy: 'leader.qtthtt@hcmute.edu.vn',
+                    tcnsApproved: true,
+                    tcnsApprovedBy: 'tcns@hcmute.edu.vn',
+                    approvalLevel: 'both_units_and_tcns',
+                    updatedAt: '2026-11-16T10:00:00.000Z'
+                  }]
+                }
+              }]), { status: 200 });
+            }
+            if (u.includes('/rest/v1/work_relationships')) {
+              if (!init.method || init.method === 'GET') {
+                return new Response(JSON.stringify(Array.from(mockWorkRelDb.values())), { status: 200 });
+              }
+              if (init.method === 'POST') {
+                const rows = JSON.parse(init.body || '[]');
+                for (const r of rows) mockWorkRelDb.set(r.id, r);
+                return new Response('', { status: 201 });
+              }
+            }
+            if (u.includes('/rest/v1/dm_don_vi?order=ma_don_vi.asc')) {
+              return new Response(JSON.stringify([
+                { ma_don_vi: 'TCNS', ten_don_vi_vi: 'Phòng Tổ chức - Nhân sự', khoi_don_vi: 'phong-ban', is_active: true },
+                { ma_don_vi: 'TYT', ten_don_vi_vi: 'Trạm Y tế', khoi_don_vi: 'phong-ban', is_active: false }
+              ]), { status: 200 });
+            }
+            return new Response('[]', { status: 200 });
+          };
+
+          const { syncWorkbookAtomicOrFallback } = require('./src/services/storage/server-workbook-relational-sync');
+          const { syncWorkRelationshipsFromSupabase, resetWorkRelationshipsMemoryStore, getWorkRelationshipById } = require('./src/services/storage/server-work-relationship-store');
+          const { syncUnitsFromSupabase } = require('./src/services/storage/server-unit-store');
+
+          // 5a. Gọi syncWorkbookAtomicOrFallback thành công qua 1 RPC duy nhất
+          const wbCur = getWorkbookById(wbId);
+          const okSync = await syncWorkbookAtomicOrFallback(wbCur, { ma_don_vi: 'LAB_QA', ten_don_vi: 'LAB_QA', phien_ban: 'v2' });
+          assert.strictEqual(okSync.ok, true);
+          assert.strictEqual(okSync.atomicRpcUsed, true, 'Phải thực thi qua RPC nguyên tử rpc_sync_workbook_atomic');
+          assert.strictEqual(rpcCalls.length, 1, 'Chỉ gọi đúng 1 request RPC cho toàn bộ snapshot + 16 bảng quan hệ');
+
+          // 5b. Giả lập lỗi giữa giao dịch trên DB RPC -> ném lỗi TX_ABORTED_MIDWAY
+          simulateDbRpcAbort = true;
+          let dbRpcThrew = false;
+          try {
+            await syncWorkbookAtomicOrFallback(wbCur, { ma_don_vi: 'LAB_QA' }, undefined, { requireAtomicRpc: true });
+          } catch (e) {
+            dbRpcThrew = String(e.message || e).includes('TX_ABORTED_MIDWAY');
+          }
+          assert.strictEqual(dbRpcThrew, true, 'Khi DB RPC lỗi giữa giao dịch phải ném TX_ABORTED_MIDWAY');
+
+          // 5c. Backfill workRelationships từ JSONB sang bảng work_relationships: chạy 2 lần liên tiếp không trùng, giữ nguyên trạng thái duyệt
+          resetWorkRelationshipsMemoryStore();
+          await syncWorkRelationshipsFromSupabase();
+          await syncWorkRelationshipsFromSupabase();
+          assert.strictEqual(mockWorkRelDb.size, 1, 'Chạy backfill 2 lần không được tạo bản ghi trùng');
+          const backfilled = mockWorkRelDb.get('wrel-jsonb-1');
+          assert.strictEqual(backfilled.host_leader_approved, true);
+          assert.strictEqual(backfilled.target_leader_approved, true);
+          assert.strictEqual(backfilled.tcns_approved, true);
+          assert.strictEqual(getWorkRelationshipById('wrel-jsonb-1').tcnsApproved, true);
+
+          // 5d. Khi TYT có is_active=false trên dm_don_vi nhưng vẫn còn trong t_tien_do.customUnits -> không được tự thêm lại
+          resetUnitMemoryStore();
+          const syncedUnits = await syncUnitsFromSupabase(true);
+          assert.strictEqual(syncedUnits.some((u) => u.code === 'TYT'), false, 'Đơn vị is_active=false trên dm_don_vi không được bị backfill từ customUnits thêm lại');
+          await resetServerUnits();
+        } finally {
+          global.fetch = origFetch;
+          process.env.VTVL_ISOLATED_LOCAL_STORE = origIso;
+          if (origUrl === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = origUrl;
+          if (origKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = origKey;
+        }
       })().catch((e) => { console.error(e); process.exit(1); });
     `;
     execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, {

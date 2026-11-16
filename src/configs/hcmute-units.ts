@@ -173,9 +173,19 @@ export function getActiveHcmuteUnits(): HcmuteUnit[] {
     } catch { /* fallback */ }
   }
   if (!list || list.length === 0) return HCMUTE_UNITS;
-  const activeSet = new Set(HCMUTE_UNITS.map((u) => u.code));
-  const filtered = list.filter((u) => u && u.code && activeSet.has(u.code.toUpperCase()) && !DELETED_UNIT_CODES.has(u.code.toUpperCase()));
-  return filtered.length === HCMUTE_UNITS.length ? filtered : HCMUTE_UNITS;
+  const canonicalSet = new Set(HCMUTE_UNITS.map((u) => u.code.toUpperCase()));
+  const hasStaleLegacyCode = list.some((u) => {
+    const code = u?.code?.trim().toUpperCase();
+    return Boolean(code && (DELETED_UNIT_CODES.has(code) || (!canonicalSet.has(code) && UNIT_CODE_ALIASES[code])));
+  });
+  if (hasStaleLegacyCode) return HCMUTE_UNITS;
+  const filtered = list.filter((u) => {
+    const code = u?.code?.trim().toUpperCase();
+    if (!code || DELETED_UNIT_CODES.has(code)) return false;
+    return canonicalSet.has(code) || !UNIT_CODE_ALIASES[code];
+  });
+  if (filtered.length === 0) return HCMUTE_UNITS;
+  return filtered.map((u) => ({ ...u, code: u.code.trim().toUpperCase() }));
 }
 
 export function findHcmuteUnit(codeOrName?: string): HcmuteUnit {

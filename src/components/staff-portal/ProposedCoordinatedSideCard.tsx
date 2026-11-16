@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, CalendarClock, Eye, Handshake, Lock, Search, ShieldAlert, UserCheck } from 'lucide-react';
+import { ArrowRight, CalendarClock, CheckCircle2, Eye, Handshake, Lock, Search, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
-import { PROPOSED_TAB_EMPTY_MESSAGE, UNASSIGNED_VIEWER_HINT } from '@/services/tickets/vtvl-coordination-helpers';
+import { normalizeCode, PROPOSED_TAB_EMPTY_MESSAGE } from '@/services/tickets/vtvl-coordination-helpers';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
 import { ProposedCoordinatedDetailModal } from './ProposedCoordinatedDetailModal';
 
@@ -17,6 +17,8 @@ interface ViewerVtvlBadge {
 interface ProposedCoordinatedSideCardProps {
   items: ProposedCoordinatedTaskItem[];
   myAssignments: ViewerVtvlBadge[];
+  unitCode?: string;
+  selectedVtvl?: string;
   loading: boolean;
   onOpenFullTab: () => void;
 }
@@ -31,6 +33,8 @@ function getBadgeCls(canonical: string): string {
 export function ProposedCoordinatedSideCard({
   items,
   myAssignments,
+  unitCode,
+  selectedVtvl,
   loading,
   onOpenFullTab
 }: ProposedCoordinatedSideCardProps) {
@@ -39,16 +43,26 @@ export function ProposedCoordinatedSideCard({
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [detailError, setDetailError] = useState('');
 
+  const normSel = normalizeCode(selectedVtvl);
+
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) =>
-      [item.maNhiemVu, item.tenNhiemVu, item.maCongViec, item.tenCongViec, item.proposerName, item.hostUnitCode, item.hostUnitName]
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [items, search]);
+    const list = !q
+      ? items
+      : items.filter((item) =>
+          [item.maNhiemVu, item.tenNhiemVu, item.maCongViec, item.tenCongViec, item.proposerName, item.hostUnitCode, item.hostUnitName, ...item.matchedVtvls.map((m) => m.maVtvl)]
+            .join(' ')
+            .toLowerCase()
+            .includes(q)
+        );
+    return [...list].sort((a, b) => {
+      const aMatch = normSel && a.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel) ? 2 : 0;
+      const bMatch = normSel && b.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel) ? 2 : 0;
+      const aDecl = a.isDeclaredByTargetUnit ? 1 : 0;
+      const bDecl = b.isDeclaredByTargetUnit ? 1 : 0;
+      return (bMatch + bDecl) - (aMatch + aDecl) || b.submittedAt.localeCompare(a.submittedAt);
+    });
+  }, [items, search, normSel]);
 
   const handleOpenDetail = async (item: ProposedCoordinatedTaskItem) => {
     setDetailError('');
@@ -59,7 +73,7 @@ export function ProposedCoordinatedSideCard({
       if (op?.email) headers['x-actor-email'] = op.email;
       if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
       const res = await fetch(
-        `/api/tickets/coordinated?surveyId=${encodeURIComponent(item.surveyId)}&taskRowId=${encodeURIComponent(item.taskRowId)}`,
+        `/api/tickets/coordinated?surveyId=${encodeURIComponent(item.surveyId)}&taskRowId=${encodeURIComponent(item.taskRowId)}&scope=unit`,
         { headers }
       );
       const json = await res.json().catch(() => ({}));
@@ -101,25 +115,23 @@ export function ProposedCoordinatedSideCard({
         </div>
       </div>
 
-      {myAssignments.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#476b8e]">
-            <Lock className="w-3 h-3 text-[#006cee]" /> VTVL của bạn:
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        {unitCode && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f1f6fc] border border-[#dbe8f5] text-[#004776] font-semibold">
+            Đề xuất gửi về đơn vị [{unitCode}]
           </span>
-          {myAssignments.map((a) => (
-            <span
-              key={a.id}
-              className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] text-[11px] font-bold text-[#004776]"
-            >
-              [{a.unitCode}] {a.maVtvl}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs font-medium text-amber-700 bg-amber-50/70 border border-amber-200 rounded-xl px-3 py-2">
-          {UNASSIGNED_VIEWER_HINT}
-        </p>
-      )}
+        )}
+        {selectedVtvl && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#006cee] text-white font-bold">
+            <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+          </span>
+        )}
+        {myAssignments.length > 0 && myAssignments.map((a) => (
+          <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] font-bold text-[#004776]">
+            <Lock className="w-2.5 h-2.5 text-[#006cee]" /> [{a.unitCode}] {a.maVtvl}
+          </span>
+        ))}
+      </div>
 
       {items.length > 0 && (
         <div className="relative">
@@ -128,7 +140,7 @@ export function ProposedCoordinatedSideCard({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Lọc nhanh theo mã nhiệm vụ, công việc, đơn vị chủ trì..."
+            placeholder="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì..."
             className="w-full h-9 pl-8 pr-3 text-xs rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-[#004776] focus:border-[#006cee] focus:bg-white outline-none"
           />
         </div>
@@ -151,28 +163,41 @@ export function ProposedCoordinatedSideCard({
           <p className="text-xs font-bold text-[#004776]">{PROPOSED_TAB_EMPTY_MESSAGE}</p>
         </div>
       ) : (
-        <div className="max-h-[380px] overflow-y-auto space-y-2.5 pr-0.5">
+        <div className="max-h-[400px] overflow-y-auto space-y-2.5 pr-0.5">
           {filteredItems.map((task) => {
             const submittedVi = task.submittedAt
               ? new Date(task.submittedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
               : '—';
             const isBusy = detailLoadingId === task.proposalKey;
+            const matchesSelected = Boolean(normSel && task.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel));
+            const isHighlighted = matchesSelected || Boolean(task.isDeclaredByTargetUnit);
             return (
               <div
                 key={task.proposalKey}
-                className="p-3 rounded-xl border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd] transition-colors space-y-1.5"
+                className={`p-3 rounded-xl transition-all space-y-1.5 ${
+                  isHighlighted
+                    ? 'border-2 border-[#006cee] bg-[#eef6ff] ring-2 ring-[#006cee]/20 shadow-xs'
+                    : 'border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd]'
+                }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-md bg-[#eff8ff] border border-[#bfdbfe] text-[#006cee] text-[11px] font-bold font-mono">
+                    <span className="px-2 py-0.5 rounded-md bg-white border border-[#bfdbfe] text-[#006cee] text-[11px] font-bold font-mono">
                       [{task.hostUnitCode}] {task.maCongViec}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#20446c] text-[11px] font-bold">
                       NV: {task.maNhiemVu}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white border border-[#cbd5e1] text-[#20446c] text-[11px] font-bold">
-                      v{task.versionNo}
-                    </span>
+                    {matchesSelected && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#006cee] text-white text-[10.5px] font-bold">
+                        <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+                      </span>
+                    )}
+                    {task.isDeclaredByTargetUnit && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10.5px] font-bold">
+                        <CheckCircle2 className="w-3 h-3" /> Đã được kê khai ({task.targetDeclaredTicketCode})
+                      </span>
+                    )}
                   </div>
                   <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${getBadgeCls(task.canonicalStatus)}`}>
                     {task.sourceStatus}
@@ -182,6 +207,23 @@ export function ProposedCoordinatedSideCard({
                 <p className="text-xs sm:text-[13px] font-bold text-[#004776] leading-snug break-words">
                   {task.tenCongViec}
                 </p>
+
+                <div className="flex flex-wrap items-center gap-1.5 text-[10.5px]">
+                  {task.hostApprovalLabel && (
+                    <span className={`px-2 py-0.5 rounded-md border font-semibold ${
+                      task.hostUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      {task.hostApprovalLabel}
+                    </span>
+                  )}
+                  {task.targetApprovalLabel && (
+                    <span className={`px-2 py-0.5 rounded-md border font-semibold ${
+                      task.targetUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      {task.targetApprovalLabel}
+                    </span>
+                  )}
+                </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#20446c]">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">

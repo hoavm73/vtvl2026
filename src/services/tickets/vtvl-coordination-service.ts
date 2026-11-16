@@ -8,6 +8,7 @@ import {
 } from '@/types/staff-ticket';
 import { loadTickets } from '@/services/storage/server-ticket-store';
 import { ensureLegacyBaselineVersion } from '@/services/storage/server-ticket-version-store';
+import { getUserAccountByEmail } from '@/services/storage/server-account-store';
 import {
   getAssignmentsForEmail,
   resolveUnitVtvlName
@@ -142,12 +143,16 @@ export function compensateRemoveCoordinationProjection(surveyId: string, version
 function buildMinimizedProposalForViewer(
   ticket: StaffWorkTicket,
   latestVer: WorkSurveyVersion,
-  viewerKeys: Set<string>
+  filter: { viewerKeys?: Set<string>; targetUnitCode?: string; includeAllUnits?: boolean }
 ): ProposedCoordinatedTaskItem | null {
   const snap = latestVer.snapshot;
   const hostUnitCode = resolveUnitCodeSafe(snap.unitCode || ticket.unitCode);
   const effective = extractEffectiveCoordinatedVtvls(snap, hostUnitCode);
-  const matched = effective.filter((item) => viewerKeys.has(makeCompositeVtvlKey(item.targetUnitCode, item.maVtvl)));
+  const matched = effective.filter((item) => {
+    if (filter.includeAllUnits) return true;
+    if (filter.targetUnitCode) return resolveUnitCodeSafe(item.targetUnitCode) === filter.targetUnitCode;
+    return Boolean(filter.viewerKeys?.has(makeCompositeVtvlKey(item.targetUnitCode, item.maVtvl)));
+  });
   if (matched.length === 0) return null;
 
   const taskRowId = ticket.sourceTicketId || ticket.id;
@@ -184,16 +189,29 @@ function buildMinimizedProposalForViewer(
   };
 }
 
-export function queryProposedTasksForUser(callerEmail: string): {
+export function queryProposedTasksForUser(
+  callerEmail: string,
+  options?: { unitCode?: string; scope?: string }
+): {
   items: ProposedCoordinatedTaskItem[];
   myAssignments: UserVtvlAssignment[];
 } {
   const myAssignments = getAssignmentsForEmail(callerEmail);
-  if (myAssignments.length === 0) {
+  const callerAccount = getUserAccountByEmail(callerEmail);
+  const scope = (options?.scope || '').trim().toLowerCase();
+  const includeAllUnits = scope === 'all_units' && callerAccount?.role === 'admin';
+  const useUnitScope = scope === 'unit' || myAssignments.length === 0;
+  const targetUnitCode = resolveUnitCodeSafe(options?.unitCode || callerAccount?.unitCode || '');
+
+  if (!includeAllUnits && useUnitScope && !targetUnitCode) {
+    return { items: [], myAssignments };
+  }
+  if (!includeAllUnits && !useUnitScope && myAssignments.length === 0) {
     return { items: [], myAssignments: [] };
   }
 
   const viewerKeys = new Set(myAssignments.map((a) => makeCompositeVtvlKey(a.unitCode, a.maVtvl)));
+  const filter = includeAllUnits ? { includeAllUnits: true } : useUnitScope ? { targetUnitCode } : { viewerKeys };
   const items: ProposedCoordinatedTaskItem[] = [];
 
   for (const ticket of loadTickets().values()) {
@@ -201,8 +219,7 @@ export function queryProposedTasksForUser(callerEmail: string): {
     if (toCanonicalStatus(ticket.status) === 'draft') continue;
     const versions = ensureLegacyBaselineVersion(ticket);
     if (versions.length === 0) continue;
-    const latestVer = versions[versions.length - 1];
-    const item = buildMinimizedProposalForViewer(ticket, latestVer, viewerKeys);
+    const item = buildMinimizedProposalForViewer(ticket, versions[versions.length - 1], filter);
     if (item) items.push(item);
   }
 
@@ -213,7 +230,8 @@ export function queryProposedTasksForUser(callerEmail: string): {
 export function queryProposedTaskDetailForUser(
   callerEmail: string,
   surveyId: string,
-  taskRowId?: string
+  taskRowId?: string,
+  options?: { unitCode?: string; scope?: string }
 ):
   | { ok: true; status: 200; item: ProposedCoordinatedTaskItem }
   | { ok: false; status: 403 | 404; code: string; error: string } {
@@ -227,20 +245,31 @@ export function queryProposedTaskDetailForUser(
   }
 
   const myAssignments = getAssignmentsForEmail(callerEmail);
+  const callerAccount = getUserAccountByEmail(callerEmail);
+  const scope = (options?.scope || '').trim().toLowerCase();
+  const includeAllUnits = scope === 'all_units' && callerAccount?.role === 'admin';
+  const useUnitScope = scope === 'unit' || myAssignments.length === 0;
+  const targetUnitCode = resolveUnitCodeSafe(options?.unitCode || callerAccount?.unitCode || '');
   const viewerKeys = new Set(myAssignments.map((a) => makeCompositeVtvlKey(a.unitCode, a.maVtvl)));
+  const filter = includeAllUnits
+    ? { includeAllUnits: true }
+    : useUnitScope
+      ? { targetUnitCode }
+      : { viewerKeys };
+
   const versions = ensureLegacyBaselineVersion(ticket);
   if (versions.length === 0) {
     return { ok: false, status: 404, code: 'PROPOSAL_NOT_FOUND', error: 'Phiếu chưa có phiên bản nộp chính thức.' };
   }
 
   const latestVer = versions[versions.length - 1];
-  const item = buildMinimizedProposalForViewer(ticket, latestVer, viewerKeys);
+  const item = buildMinimizedProposalForViewer(ticket, latestVer, filter);
   if (!item) {
     return {
       ok: false,
       status: 403,
       code: 'FORBIDDEN_NOT_COORDINATED_RECIPIENT',
-      error: 'Bạn không thuộc vị trí việc làm được đề xuất phối hợp của công việc này.'
+      error: 'Bạn không thuộc đơn vị hoặc vị trí việc làm được đề xuất phối hợp của công việc này.'
     };
   }
 

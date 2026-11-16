@@ -6,6 +6,7 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
 import {
+  normalizeCode,
   PROPOSED_TAB_EMPTY_MESSAGE,
   UNASSIGNED_VIEWER_HINT
 } from '@/services/tickets/vtvl-coordination-helpers';
@@ -22,12 +23,16 @@ interface ViewerVtvlBadge {
 interface ProposedCoordinatedTasksTabProps {
   items: ProposedCoordinatedTaskItem[];
   myAssignments: ViewerVtvlBadge[];
+  unitCode?: string;
+  selectedVtvl?: string;
   loading: boolean;
 }
 
 export function ProposedCoordinatedTasksTab({
   items,
   myAssignments,
+  unitCode,
+  selectedVtvl,
   loading
 }: ProposedCoordinatedTasksTabProps) {
   const [search, setSearch] = useState('');
@@ -58,26 +63,25 @@ export function ProposedCoordinatedTasksTab({
     ];
   }, [items]);
 
+  const normSel = normalizeCode(selectedVtvl);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter((item) => {
+    const list = items.filter((item) => {
       if (hostUnitFilter && item.hostUnitCode !== hostUnitFilter) return false;
       if (statusFilter && item.sourceStatus !== statusFilter) return false;
       if (!q) return true;
-      const hay = [
-        item.maNhiemVu,
-        item.tenNhiemVu,
-        item.maCongViec,
-        item.tenCongViec,
-        item.proposerName,
-        item.hostUnitCode,
-        item.hostUnitName
-      ]
+      const hay = [item.maNhiemVu, item.tenNhiemVu, item.maCongViec, item.tenCongViec, item.proposerName, item.hostUnitCode, item.hostUnitName]
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [items, search, hostUnitFilter, statusFilter]);
+    return [...list].sort((a, b) => {
+      const aScore = (normSel && a.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel) ? 2 : 0) + (a.isDeclaredByTargetUnit ? 1 : 0);
+      const bScore = (normSel && b.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel) ? 2 : 0) + (b.isDeclaredByTargetUnit ? 1 : 0);
+      return bScore - aScore || b.submittedAt.localeCompare(a.submittedAt);
+    });
+  }, [items, search, hostUnitFilter, statusFilter, normSel]);
 
   const groupedByUnit = useMemo(() => {
     const unitMap = new Map<
@@ -128,7 +132,7 @@ export function ProposedCoordinatedTasksTab({
       if (op?.email) headers['x-actor-email'] = op.email;
       if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
       const res = await fetch(
-        `/api/tickets/coordinated?surveyId=${encodeURIComponent(item.surveyId)}&taskRowId=${encodeURIComponent(item.taskRowId)}`,
+        `/api/tickets/coordinated?surveyId=${encodeURIComponent(item.surveyId)}&taskRowId=${encodeURIComponent(item.taskRowId)}&scope=unit`,
         { headers }
       );
       const json = await res.json().catch(() => ({}));
@@ -150,22 +154,25 @@ export function ProposedCoordinatedTasksTab({
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#004776]">
             <Lock className="w-3.5 h-3.5 text-[#006cee]" />
-            <span>Vị trí việc làm được phân công của bạn (Chế độ chỉ đọc)</span>
+            <span>Đề xuất phối hợp gửi về đơn vị [{unitCode || 'của bạn'}] (Chế độ xem tham khảo)</span>
           </div>
-          {myAssignments.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {myAssignments.map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] text-[11px] font-bold text-[#004776]"
-                >
-                  <span>[{a.unitCode}] {a.maVtvl}{a.tenVtvl ? ` — ${a.tenVtvl}` : ''}</span>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-amber-700 font-semibold">{UNASSIGNED_VIEWER_HINT}</p>
-          )}
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {selectedVtvl && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#006cee] text-white text-[11px] font-bold">
+                Đang lọc/làm nổi bật theo VTVL: {selectedVtvl}
+              </span>
+            )}
+            {myAssignments.length > 0 ? myAssignments.map((a) => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] text-[11px] font-bold text-[#004776]"
+              >
+                <span>[{a.unitCode}] {a.maVtvl}{a.tenVtvl ? ` — ${a.tenVtvl}` : ''}</span>
+              </span>
+            )) : (
+              <p className="text-xs text-[#476b8e] font-medium">{UNASSIGNED_VIEWER_HINT}</p>
+            )}
+          </div>
         </div>
         <span className="text-[11px] font-semibold text-[#20446c] bg-white px-2.5 py-1 rounded-full border border-[#dbeafe]">
           Hiển thị {filtered.length}/{items.length} đề xuất
@@ -234,6 +241,7 @@ export function ProposedCoordinatedTasksTab({
                         <ProposedCoordinatedTaskCard
                           key={task.proposalKey}
                           task={task}
+                          selectedVtvl={selectedVtvl}
                           loadingDetail={detailLoadingId === task.proposalKey}
                           onOpenDetail={handleOpenDetail}
                         />

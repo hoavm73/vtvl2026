@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { formatTicketCoordinatedVtvlsText } from '@/services/tickets/vtvl-coordination-helpers';
 import { StaffTicketVersionDiffTab } from './StaffTicketVersionDiffTab';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 import { TicketApprovalHistoryTimeline } from './TicketApprovalHistoryTimeline';
@@ -54,7 +55,7 @@ export function StaffTicketDetailModal({
     { num: '2', label: 'Mã công việc (tự sinh)', val: ticket.maCongViec, isCode: true },
     { num: '3', label: 'Tên công việc cụ thể', val: ticket.tenCongViec, isBold: true },
     { num: '4', label: 'Vị trí việc làm chính (Biểu C1)', val: ticket.maVtvl || '—' },
-    { num: '5', label: 'VTVL phối hợp (nếu có)', val: ticket.maVtvlPhoiHop || 'Không có' },
+    { num: '5', label: 'VTVL phối hợp (nếu có)', val: formatTicketCoordinatedVtvlsText(ticket) },
     { num: '6', label: 'Sản phẩm đầu ra', val: ticket.sanPham || '—' },
     { num: '7', label: 'Tiêu chuẩn chất lượng', val: ticket.chatLuong || '—' },
     { num: '8', label: 'Căn cứ pháp lý & hồ sơ giải trình', val: ticket.canCu || '—' },
@@ -206,14 +207,13 @@ export function StaffTicketDetailModal({
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <div className="grid grid-cols-12 gap-2 text-center mb-5">
-                <div className="col-span-5">
-                  <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
-                  <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+                <div className="col-span-6">
+                  <div className="text-[11px] uppercase font-normal whitespace-nowrap">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
                   <div className="text-[11px] font-bold uppercase mt-0.5">{displayUnitName}</div>
                   <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
                 </div>
-                <div className="col-span-7">
-                  <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div className="col-span-6">
+                  <div className="text-[11px] font-bold uppercase whitespace-nowrap">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                   <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
                   <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
                 </div>

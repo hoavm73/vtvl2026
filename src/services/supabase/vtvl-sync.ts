@@ -5,6 +5,14 @@ import {
   SplitResultSummary,
   UnitScaleMetrics
 } from '@/types/vtvl';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+
+function getSyncHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const op = getCurrentOperatorSession();
+  if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+  return headers;
+}
 
 /**
  * Ghi nhật ký thao tác người dùng lên máy chủ (qua API bảo mật)
@@ -20,15 +28,8 @@ export async function syncActivityToSupabase(
   try {
     const res = await fetch('/api/audit-logs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        unitCode,
-        unitName,
-        action,
-        details: detail,
-        actorEmail,
-        actorTitle
-      })
+      headers: getSyncHeaders(),
+      body: JSON.stringify({ unitCode, unitName, action, details: detail, actorEmail, actorTitle })
     });
     return res.ok;
   } catch {
@@ -38,7 +39,6 @@ export async function syncActivityToSupabase(
 
 /**
  * Đồng bộ kết quả phân tách tệp của đơn vị qua API máy chủ
- * Thay thế hoàn toàn cơ chế gọi trực tiếp PostgREST từ trình duyệt
  * Đồng bộ lên các bảng: c1_vtvl, a1_nhiem_vu, c3_nhu_cau, sldv_quy_mo_don_vi, sldv_phan_bo_ngach, t_tien_do
  */
 export async function syncUnitSplitToSupabase(
@@ -52,7 +52,7 @@ export async function syncUnitSplitToSupabase(
   try {
     const res = await fetch('/api/sync/split', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getSyncHeaders(),
       body: JSON.stringify({ summary, extra })
     });
     return res.ok;
@@ -73,7 +73,7 @@ export async function syncAuditResultToSupabase(
   try {
     const res = await fetch('/api/sync/audit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getSyncHeaders(),
       body: JSON.stringify({ report, unitCode })
     });
     return res.ok;

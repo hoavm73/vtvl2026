@@ -1,6 +1,7 @@
 import { ServerWorkbook } from './server-workbook-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
+import { syncWorkbookAtomicOrFallback } from './server-workbook-relational-sync';
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
 const SUPABASE_KEY = (
@@ -127,7 +128,14 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
   }
 }
 
-export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: string): Promise<boolean> {
+export async function persistWorkbookToSupabase(
+  wb: ServerWorkbook,
+  userToken?: string,
+  options?: { simulateTxError?: boolean; requireAtomicRpc?: boolean }
+): Promise<boolean> {
+  if (options?.simulateTxError && process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') {
+    throw new Error('TX_ABORTED_MIDWAY: Lỗi giả lập giữa giao dịch đồng bộ bảng tính.');
+  }
   if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return true;
   if (!SUPABASE_URL || !SUPABASE_KEY) return false;
   invalidateSupabaseCache();
@@ -172,17 +180,10 @@ export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: 
       }
     };
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
-      method: 'POST',
-      headers: {
-        ...getHeaders(userToken),
-        Prefer: 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    return res.ok;
-  } catch {
+    const syncRes = await syncWorkbookAtomicOrFallback(wb, payload, userToken, options);
+    return syncRes.ok;
+  } catch (err) {
+    if (options?.simulateTxError || options?.requireAtomicRpc) throw err;
     return false;
   }
 }

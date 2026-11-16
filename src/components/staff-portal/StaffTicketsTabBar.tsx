@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
   Handshake,
   LogOut,
+  Network,
   Plus,
   User,
   Users
@@ -18,7 +19,7 @@ import {
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 
-export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed';
+export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed' | 'relationships';
 
 interface StaffPortalHeaderBannerProps {
   unitCode: string;
@@ -83,6 +84,7 @@ interface StaffTicketsTabBarProps {
   approvedCount: number;
   unitCount: number;
   proposedCount: number;
+  relationshipsCount?: number;
   isLeader: boolean;
 }
 
@@ -94,6 +96,7 @@ export function StaffTicketsTabBar({
   approvedCount,
   unitCount,
   proposedCount,
+  relationshipsCount = 0,
   isLeader
 }: StaffTicketsTabBarProps) {
   const baseBtn =
@@ -171,6 +174,22 @@ export function StaffTicketsTabBar({
           }`}
         >
           {proposedCount}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onSelectTab('relationships')}
+        className={`${baseBtn} ${activeTab === 'relationships' ? activeCls : inactiveCls}`}
+      >
+        <Network className="w-4 h-4 shrink-0" />
+        <span>Mối quan hệ công việc</span>
+        <span
+          className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${
+            relationshipsCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'
+          }`}
+        >
+          {relationshipsCount}
         </span>
       </button>
     </div>

@@ -14,6 +14,7 @@ import {
   withUnitWorkbookLock
 } from './server-workbook-store';
 import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
+import { formatCoordinatedVtvlCodesForA2 } from '@/services/tickets/vtvl-coordination-helpers';
 import { persistTicketToSupabase } from './server-ticket-db';
 import { getTicketVersions, recordIdempotentMergeLinks } from './server-ticket-version-store';
 import { loadTickets, persistTickets, enrichTicket } from './server-ticket-store';
@@ -77,7 +78,7 @@ export async function mergeApprovedTicketToUnitWorkbook(
       maCongViec: existing.maCongViec,
       maNhiemVu: existing.maNhiemVu,
       maVtvl: existing.maVtvl,
-      maVtvlPhoiHop: existing.maVtvlPhoiHop || '',
+      maVtvlPhoiHop: formatCoordinatedVtvlCodesForA2(existing),
       tenCongViec: existing.tenCongViec,
       sanPham: existing.sanPham,
       dvt: 'Sản phẩm / Hồ sơ',

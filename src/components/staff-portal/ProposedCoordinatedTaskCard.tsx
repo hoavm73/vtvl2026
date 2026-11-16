@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { CalendarClock, Eye, FileText, PackageCheck, UserCheck } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Clock, Eye, FileText, PackageCheck, Sparkles, UserCheck } from 'lucide-react';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
+import { normalizeCode } from '@/services/tickets/vtvl-coordination-helpers';
 
 function formatViDate(iso?: string): string {
   if (!iso) return '—';
@@ -20,20 +21,32 @@ function getStatusBadgeClass(canonical: string): string {
 
 interface ProposedCoordinatedTaskCardProps {
   task: ProposedCoordinatedTaskItem;
+  selectedVtvl?: string;
   loadingDetail: boolean;
   onOpenDetail: (task: ProposedCoordinatedTaskItem) => void;
 }
 
 export function ProposedCoordinatedTaskCard({
   task,
+  selectedVtvl,
   loadingDetail,
   onOpenDetail
 }: ProposedCoordinatedTaskCardProps) {
+  const normSel = normalizeCode(selectedVtvl);
+  const matchesSelected = Boolean(normSel && task.matchedVtvls.some((m) => normalizeCode(m.maVtvl) === normSel));
+  const isHighlighted = matchesSelected || Boolean(task.isDeclaredByTargetUnit);
+
   return (
-    <div className="p-3.5 rounded-xl border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd] transition-colors flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+    <div
+      className={`p-3.5 rounded-xl transition-all flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 ${
+        isHighlighted
+          ? 'border-2 border-[#006cee] bg-[#eef6ff] ring-2 ring-[#006cee]/20 shadow-xs'
+          : 'border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd]'
+      }`}
+    >
       <div className="space-y-1.5 min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-md bg-[#eff8ff] border border-[#bfdbfe] text-[#006cee] text-[11px] font-bold">
+          <span className="px-2 py-0.5 rounded-md bg-white border border-[#bfdbfe] text-[#006cee] text-[11px] font-bold">
             {task.maCongViec}
           </span>
           <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${getStatusBadgeClass(task.canonicalStatus)}`}>
@@ -42,6 +55,20 @@ export function ProposedCoordinatedTaskCard({
           <span className="px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#20446c] text-[11px] font-bold">
             v{task.versionNo}
           </span>
+          {matchesSelected && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#006cee] text-white text-[11px] font-bold">
+              <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+            </span>
+          )}
+          {task.isDeclaredByTargetUnit ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold">
+              <CheckCircle2 className="w-3 h-3" /> Đã được kê khai ({task.targetDeclaredTicketCode})
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#cbd5e1] text-[#476885] text-[11px] font-semibold">
+              <Clock className="w-3 h-3" /> Chưa kê khai tại đơn vị tôi
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-[11px] text-[#476b8e]">
             <CalendarClock className="w-3 h-3" />
             <span>{formatViDate(task.submittedAt)}</span>
@@ -57,7 +84,7 @@ export function ProposedCoordinatedTaskCard({
           </span>
           <span>VTVL chủ trì: <strong>{task.hostPrimaryVtvlCode}</strong></span>
           <span>
-            VTVL phối hợp của bạn:{' '}
+            VTVL phối hợp:{' '}
             <strong className="text-[#006cee]">{task.matchedVtvls.map((m) => m.maVtvl).join(', ')}</strong>
           </span>
         </div>
@@ -73,6 +100,30 @@ export function ProposedCoordinatedTaskCard({
             <FileText className="w-3.5 h-3.5 text-[#006cee] shrink-0 mt-0.5" />
             <span>Phối hợp: {task.coordinationNote}</span>
           </p>
+        )}
+
+        {(task.hostApprovalLabel || task.targetApprovalLabel) && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+            {task.hostApprovalLabel && (
+              <span className={`px-2 py-0.5 rounded-md border font-semibold ${
+                task.hostUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}>
+                {task.hostApprovalLabel}
+              </span>
+            )}
+            {task.targetApprovalLabel && (
+              <span className={`px-2 py-0.5 rounded-md border font-semibold ${
+                task.targetUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}>
+                {task.targetApprovalLabel}
+              </span>
+            )}
+            {task.approvalBadgeText && (
+              <span className="px-2 py-0.5 rounded-md border border-[#bfdbfe] bg-white text-[#004776] font-bold">
+                {task.approvalBadgeText}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

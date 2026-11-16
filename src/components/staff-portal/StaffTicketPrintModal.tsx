@@ -3,6 +3,7 @@
 import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { StaffWorkTicket } from '@/types/staff-ticket';
+import { formatTicketCoordinatedVtvlsText } from '@/services/tickets/vtvl-coordination-helpers';
 
 interface StaffTicketPrintModalProps {
   ticket: StaffWorkTicket | null;
@@ -84,14 +85,13 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
           >
             {/* Quốc hiệu & Tên đơn vị */}
             <div className="grid grid-cols-12 gap-2 text-center mb-5">
-              <div className="col-span-5">
-                <div className="text-[11px] uppercase font-normal">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
-                <div className="text-[11px] font-bold uppercase">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+              <div className="col-span-6">
+                <div className="text-[11px] uppercase font-normal whitespace-nowrap">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
                 <div className="text-[11px] font-bold uppercase mt-0.5">{unitNameVi}</div>
                 <div className="w-24 h-[1px] bg-[#004776] mx-auto mt-1" />
               </div>
-              <div className="col-span-7">
-                <div className="text-[11px] font-bold uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+              <div className="col-span-6">
+                <div className="text-[11px] font-bold uppercase whitespace-nowrap">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                 <div className="text-[12px] font-bold">Độc lập – Tự do – Hạnh phúc</div>
                 <div className="w-32 h-[1px] bg-[#004776] mx-auto mt-1" />
               </div>
@@ -130,8 +130,8 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
                   <td className="border border-[#004776] px-2.5 py-1.5">{ticket.maVtvl}</td>
                 </tr>
                 <tr>
-                  <td className="border border-[#004776] px-2.5 py-1.5 font-bold">3b. Mã vị trí việc làm phối hợp</td>
-                  <td className="border border-[#004776] px-2.5 py-1.5">{ticket.maVtvlPhoiHop || 'Không có'}</td>
+                  <td className="border border-[#004776] px-2.5 py-1.5 font-bold align-top">3b. Mã vị trí việc làm phối hợp</td>
+                  <td className="border border-[#004776] px-2.5 py-1.5 whitespace-pre-line leading-relaxed">{formatTicketCoordinatedVtvlsText(ticket)}</td>
                 </tr>
                 <tr>
                   <td className="border border-[#004776] px-2.5 py-1.5 font-bold">4. Sản phẩm đầu ra</td>

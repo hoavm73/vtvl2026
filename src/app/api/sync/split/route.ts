@@ -24,6 +24,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Mã đơn vị không hợp lệ.' }, { status: 400 });
     }
 
+    const headerSpoof = (req.headers.get('x-actor-email') || '').trim().toLowerCase();
+    const bodySpoof = (summary.actorEmail || '').trim().toLowerCase();
+    if (
+      (headerSpoof && headerSpoof !== caller.email.toLowerCase()) ||
+      (bodySpoof && bodySpoof !== caller.email.toLowerCase())
+    ) {
+      return NextResponse.json(
+        { error: 'Không được phép giả mạo danh tính người thực hiện.', code: 'FORBIDDEN_ACTOR_SPOOFING' },
+        { status: 403 }
+      );
+    }
+
     if (!caller.isAdmin && summary.unitCode.toUpperCase() !== caller.unitCode.toUpperCase()) {
       return NextResponse.json(
         { error: 'Bạn không có quyền đồng bộ hồ sơ cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
@@ -136,13 +148,13 @@ export async function POST(req: Request) {
         so_cong_viec_a2: summary.taskCount,
         so_vtvl_c1: summary.vtvlCount,
         tong_fte_c3: summary.totalStandardFte,
-        email_nguoi_thuc_hien: summary.actorEmail || null,
-        chuc_vu_nguoi_thuc_hien: summary.actorTitle || null,
+        email_nguoi_thuc_hien: caller.email,
+        chuc_vu_nguoi_thuc_hien: summary.actorTitle || caller.role,
         trang_thai_ra_soat: 'Đã khởi tạo và đồng bộ qua API máy chủ',
         du_lieu_ho_so_json: {
           unitFileName: summary.unitFileName,
-          actorEmail: summary.actorEmail || '',
-          actorTitle: summary.actorTitle || '',
+          actorEmail: caller.email,
+          actorTitle: summary.actorTitle || caller.role,
           positionBreakdown: summary.positionBreakdown
         }
       },

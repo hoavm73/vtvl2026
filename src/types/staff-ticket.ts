@@ -90,6 +90,61 @@ export interface ProposedCoordinatedTaskItem {
   versionNo: number;
   sourceStatus: DisplayTicketStatus;
   canonicalStatus: CanonicalTicketStatus;
+  isDeclaredByTargetUnit?: boolean;
+  targetDeclaredTicketCode?: string;
+  targetDeclaredStatus?: string;
+  hostUnitApproved?: boolean;
+  targetUnitApproved?: boolean;
+  tcnsApproved?: boolean;
+  hostApprovalLabel?: string;
+  targetApprovalLabel?: string;
+  approvalBadgeText?: string;
+  relationshipId?: string;
+}
+
+export type WorkRelationshipApprovalLevel =
+  | 'both_units_and_tcns'
+  | 'tcns_approved'
+  | 'both_units_approved'
+  | 'one_unit_approved'
+  | 'unapproved';
+
+export interface WorkRelationshipItem {
+  id: string;
+  sourceSurveyId: string;
+  sourceTaskCode: string;
+  sourceTaskName: string;
+  sourceMissionCode: string;
+  hostUnitCode: string;
+  hostUnitName: string;
+  hostVtvlCode: string;
+  hostVtvlName?: string;
+  proposerName: string;
+  targetUnitCode: string;
+  targetUnitName: string;
+  targetVtvlCode: string;
+  targetVtvlName?: string;
+  coordinationNote?: string;
+  sanPham?: string;
+  isDeclaredByTargetUnit: boolean;
+  targetDeclaredTicketId?: string;
+  targetDeclaredTicketCode?: string;
+  targetDeclaredTaskName?: string;
+  targetDeclaredStatus?: string;
+  hostLeaderApproved: boolean;
+  hostApprovedBy?: string;
+  hostApprovedAt?: string;
+  targetLeaderApproved: boolean;
+  targetApprovedBy?: string;
+  targetApprovedAt?: string;
+  tcnsApproved: boolean;
+  tcnsApprovedBy?: string;
+  tcnsApprovedAt?: string;
+  approvalLevel: WorkRelationshipApprovalLevel;
+  approvalLabel: string;
+  hostApprovalLabel: string;
+  targetApprovalLabel: string;
+  updatedAt: string;
 }
 
 export interface WorkSurveyStatusHistory {

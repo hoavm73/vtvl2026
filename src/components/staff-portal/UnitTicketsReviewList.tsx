@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { User, Link2 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
+import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 import { UnitTicketActionButtons } from './UnitTicketActionButtons';
 import {
@@ -121,6 +122,7 @@ export function UnitTicketsReviewList({
             const meta = getTicketStatusMeta(t);
             const StatusIcon = meta.Icon;
             const canonical = meta.canonical;
+            const coordBadges = getTicketCoordinatedVtvlBadges(t);
             const isOwnTicket = t.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
             const isOwnLeaderTicket = currentUserRole === 'unit_leader' && isOwnTicket;
             const submittedDateIso = t.resubmittedAt || t.submittedAt;
@@ -186,6 +188,16 @@ export function UnitTicketsReviewList({
                         </span>
                       )}
                     </div>
+                    {coordBadges.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {coordBadges.map((b) => (
+                          <span key={b.key} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#eef5ff] border border-[#bfdbfe] text-[#004776] font-medium">
+                            <Link2 className="w-3 h-3 text-[#006cee] shrink-0" />
+                            <span>Phối hợp: <strong>{b.label}</strong>{b.note ? ` (${b.note})` : ''}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {t.revisionReason && canonical === 'changes_requested' && (
                       <div className="p-2.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-xs text-[#004776]">

@@ -115,6 +115,7 @@ export function ExcelDataCell({
           ariaDescribedBy={isEmptyRequired ? errorId : undefined}
           size={isCompact ? 'cell-compact' : 'cell-comfortable'}
           placeholder="Chọn"
+          allowCustom={Boolean(col.allowCustom)}
           displayValue={['maVtvl', 'maNhiemVu', 'maCongViec', 'maSpChuan'].includes(col.field)}
           onFocus={() => { setIsFocused(true); onCellTouch?.(cellKey); }}
           onBlur={() => { setIsFocused(false); setHasBlurred(true); }}

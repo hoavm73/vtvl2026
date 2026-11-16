@@ -3,10 +3,11 @@
 import React, { useState, useMemo } from 'react';
 import { ExcelSheetMeta, GenericGridRow } from './excel-grid-types';
 import {
-  Pencil, Trash2, Copy, Plus, X, Search, ChevronRight,
-  ArrowLeft, ArrowRight
+  Pencil, Trash2, Copy, X, ChevronRight, ArrowLeft, ArrowRight
 } from 'lucide-react';
 import { ShadcnSelect, ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
+import { ListPaginationBar } from '@/components/ui/ListPaginationBar';
+import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 
 interface ExcelRowCardEditorProps {
   meta: ExcelSheetMeta;
@@ -16,33 +17,40 @@ interface ExcelRowCardEditorProps {
   touchedCells?: Set<string>;
   onCellTouch?: (cellKey: string) => void;
   onCellChange: (rowId: string, field: string, value: string | number) => void;
-  onAddRow: () => void;
+  onAddRow?: () => void;
   onSplitRow?: (rowId: string) => void;
   onDeleteRow: (rowId: string) => void;
 }
 
+const getPrimaryCode = (r: GenericGridRow) => String(r.maNhiemVu || r.maCongViec || r.maVtvl || r.maSpChuan || r.stt || '');
+const getPrimaryTitle = (r: GenericGridRow) => String(r.tenNhiemVu || r.tenCongViec || r.tenVtvl || r.tenSanPham || r.noiDung || '');
+const getSecondaryInfo = (r: GenericGridRow) => String(r.donViChuTri || r.sanPhamChuan || r.tenNgach || r.phuongAn2026 || r.canCu || '');
+
 export function ExcelRowCardEditor({
   meta, rows, dynamicOptionsMap, isC1Locked, touchedCells,
-  onCellTouch, onCellChange, onAddRow, onSplitRow, onDeleteRow
+  onCellTouch, onCellChange, onSplitRow, onDeleteRow
 }: ExcelRowCardEditorProps) {
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const { state: listState, setField, highlightedId, saveScrollAnchor, restoreAnchorNow } = usePersistedListState(
+    `excel-cards-${meta.key}`,
+    { limit: 10 },
+    { readyToScroll: rows.length > 0 }
+  );
 
-  const filteredRows = useMemo(() => {
-    if (!searchTerm.trim()) return rows;
-    const term = searchTerm.toLowerCase();
-    return rows.filter((r) => Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(term)));
-  }, [rows, searchTerm]);
+  const visibleRows = useMemo(() => rows.slice(0, listState.limit), [rows, listState.limit]);
+  const editingRowIndex = useMemo(() => (editingRowId ? rows.findIndex((r) => r.id === editingRowId) : -1), [rows, editingRowId]);
+  const editingRow = editingRowIndex >= 0 ? rows[editingRowIndex] || null : null;
 
-  const editingRowIndex = useMemo(() => {
-    if (!editingRowId) return -1;
-    return rows.findIndex((r) => r.id === editingRowId);
-  }, [rows, editingRowId]);
+  const openRowEditor = (rowId: string) => {
+    saveScrollAnchor(rowId);
+    setEditingRowId(rowId);
+  };
 
-  const editingRow = useMemo(() => {
-    if (editingRowIndex < 0) return null;
-    return rows[editingRowIndex] || null;
-  }, [rows, editingRowIndex]);
+  const closeRowEditor = () => {
+    const targetId = editingRowId || undefined;
+    setEditingRowId(null);
+    restoreAnchorNow(targetId);
+  };
 
   const handlePrevRow = () => {
     if (editingRowIndex > 0) setEditingRowId(rows[editingRowIndex - 1].id);
@@ -52,126 +60,107 @@ export function ExcelRowCardEditor({
     if (editingRowIndex < rows.length - 1) setEditingRowId(rows[editingRowIndex + 1].id);
   };
 
-  const getPrimaryCode = (r: GenericGridRow) => String(r.maNhiemVu || r.maCongViec || r.maVtvl || r.maSpChuan || r.stt || '');
-  const getPrimaryTitle = (r: GenericGridRow) => String(r.tenNhiemVu || r.tenCongViec || r.tenVtvl || r.tenSanPham || r.noiDung || '');
-  const getSecondaryInfo = (r: GenericGridRow) => String(r.donViChuTri || r.sanPhamChuan || r.tenNgach || r.phuongAn2026 || r.canCu || '');
-
   return (
-    <div className="w-full space-y-3">
-      {/* Mobile Search & Add bar */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-[#64748b]" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`Tìm trong ${rows.length} dòng...`}
-            className="w-full pl-9 pr-8 min-h-[44px] text-xs rounded-xl border border-[#cbd5e1] focus:ring-2 focus:ring-[#004776] outline-hidden text-[#004776] bg-white font-medium"
-          />
-          {searchTerm && (
-            <button type="button" onClick={() => setSearchTerm('')} className="absolute right-2.5 top-3 text-[#94a3b8] p-1">
-              <X className="w-4 h-4" />
-            </button>
-          )}
+    <div className="w-full space-y-2.5">
+      {visibleRows.length === 0 ? (
+        <div className="p-8 text-center bg-white rounded-xl border border-dashed border-[#cbd5e1] text-xs text-[#476885]">
+          Không có dữ liệu phù hợp trong biểu này.
         </div>
-        {!isC1Locked && (
-          <button
-            type="button"
-            onClick={onAddRow}
-            className="inline-flex items-center gap-1 min-h-[44px] px-3.5 rounded-xl bg-[#004776] text-white text-xs font-bold shrink-0 hover:bg-[#00385c] active:scale-95 shadow-2xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /><span>Thêm</span>
-          </button>
-        )}
-      </div>
-
-      {/* Row Cards List */}
-      <div className="space-y-2.5">
-        {filteredRows.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-xl border border-dashed border-[#cbd5e1] text-xs text-[#64748b]">
-            {searchTerm ? 'Không tìm thấy dòng khớp.' : 'Chưa có dòng dữ liệu nào.'}
-          </div>
-        ) : (
-          filteredRows.map((row) => {
-            const rowNumber = rows.findIndex((r) => r.id === row.id) + 1;
+      ) : (
+        <div className="space-y-2.5">
+          {visibleRows.map((row, idx) => {
             const primaryCode = getPrimaryCode(row);
             const primaryTitle = getPrimaryTitle(row);
             const secondary = getSecondaryInfo(row);
+            const isHighlighted = highlightedId === row.id;
 
             return (
-              <div key={row.id} className="bg-white rounded-xl border border-[#cbd5e1] hover:border-[#004776]/50 p-3.5 shadow-2xs space-y-2.5 transition-all">
-                {/* Header card: Dòng X/{rows.length} + Mã + Action */}
+              <div
+                key={row.id}
+                data-row-anchor={row.id}
+                style={{ contentVisibility: 'auto' }}
+                className={`rounded-xl border p-3.5 shadow-2xs space-y-2.5 transition-all ${
+                  isHighlighted ? 'bg-[#e6f1ff] border-[#006cee] ring-2 ring-[#006cee]/40' : 'bg-white border-[#cbd5e1] hover:border-[#004776]/50'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2 border-b border-[#f1f5f9] pb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-[#004776]/10 text-[#004776]">
-                      Dòng {rowNumber}/{rows.length}
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#004776]/10 text-[#004776] tabular-nums shrink-0">
+                      Dòng {idx + 1}/{rows.length}
                     </span>
                     {primaryCode && (
-                      <span className="text-xs font-bold text-[#004776] bg-slate-100 px-2 py-0.5 rounded">
+                      <span className="text-xs font-bold text-[#004776] bg-slate-100 px-2 py-0.5 rounded truncate">
                         {primaryCode}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    {meta.key === 'A1' && (
-                      <button type="button" onClick={() => onSplitRow?.(row.id)} title="Tách nhiệm vụ" className="min-h-[38px] min-w-[38px] inline-flex items-center justify-center text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer">
+                  <div className="flex items-center gap-1 shrink-0">
+                    {meta.key === 'A1' && !isC1Locked && (
+                      <button type="button" onClick={() => onSplitRow?.(row.id)} aria-label={`Tách nhiệm vụ dòng ${idx + 1}`} title="Tách nhiệm vụ" className="min-h-[38px] min-w-[38px] inline-flex items-center justify-center text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer">
                         <Copy className="w-4 h-4" />
                       </button>
                     )}
                     {!isC1Locked && (
-                      <button type="button" onClick={() => onDeleteRow(row.id)} title="Xóa dòng" className="min-h-[38px] min-w-[38px] inline-flex items-center justify-center text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer">
+                      <button type="button" onClick={() => onDeleteRow(row.id)} aria-label={`Xóa dòng ${idx + 1} ${primaryCode}`} title="Xóa dòng" className="min-h-[38px] min-w-[38px] inline-flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* 2-3 trường chính hiển thị trước */}
-                <div className="cursor-pointer space-y-1" onClick={() => setEditingRowId(row.id)}>
-                  <p className="text-xs font-bold text-[#004776] leading-snug line-clamp-3">
+                <div className="cursor-pointer space-y-1" onClick={() => openRowEditor(row.id)}>
+                  <p className="text-[13px] font-bold text-[#004776] leading-snug line-clamp-3">
                     {primaryTitle || '(Chưa nhập tiêu đề)'}
                   </p>
-                  {secondary && <p className="text-[11px] text-[#64748b] line-clamp-2">{secondary}</p>}
+                  {secondary && <p className="text-[11px] text-[#476885] line-clamp-2">{secondary}</p>}
                 </div>
 
-                {/* Nút Xem thêm & Chỉnh sửa */}
                 <div className="pt-1 flex items-center justify-between border-t border-[#f8fafc]">
-                  <span className="text-[11px] text-[#94a3b8]">{meta.columns.length} trường</span>
+                  <span className="text-[11px] text-[#476885]">{meta.columns.length} trường dữ liệu</span>
                   <button
                     type="button"
-                    onClick={() => setEditingRowId(row.id)}
-                    className="inline-flex items-center gap-1 min-h-[44px] px-3.5 py-1 text-xs font-bold text-[#004776] bg-blue-50 hover:bg-[#004776] hover:text-white rounded-xl transition-all cursor-pointer"
+                    onClick={() => openRowEditor(row.id)}
+                    className="inline-flex items-center gap-1 min-h-[40px] px-3.5 py-1 text-xs font-bold text-[#004776] bg-blue-50 hover:bg-[#004776] hover:text-white rounded-xl transition-all cursor-pointer"
                   >
-                    <Pencil className="w-3.5 h-3.5" /><span>Chỉnh sửa chi tiết</span><ChevronRight className="w-3.5 h-3.5" />
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>{isC1Locked ? 'Xem chi tiết' : 'Chỉnh sửa chi tiết'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             );
-          })
-        )}
+          })}
+        </div>
+      )}
+
+      <div className="rounded-xl overflow-hidden border border-[#e2e8f0] bg-white">
+        <ListPaginationBar
+          totalCount={rows.length}
+          visibleCount={listState.limit}
+          step={10}
+          unitLabel="dòng"
+          onChangeVisibleCount={(n) => setField('limit', n)}
+        />
       </div>
 
       {/* Mobile Detail Editor Drawer */}
       {editingRow && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs select-none p-0 sm:p-4" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#004776]/55 backdrop-blur-xs select-none p-0 sm:p-4" role="dialog" aria-modal="true" onClick={closeRowEditor}>
           <div className="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col shadow-2xl border border-[#cbd5e1] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            {/* Header Drawer */}
             <div className="flex items-center justify-between px-4 py-3 bg-[#005fa3] text-white border-b border-[#004776]">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-xs font-extrabold bg-[#004776] text-white">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="px-2 py-0.5 rounded text-xs font-extrabold bg-[#004776] text-white shrink-0">
                   Dòng {editingRowIndex + 1}/{rows.length}
                 </span>
-                <h3 className="text-sm font-bold text-white truncate max-w-[180px]">
+                <h3 className="text-sm font-bold text-white truncate">
                   {meta.sheetName} — {getPrimaryCode(editingRow) || 'Chi tiết'}
                 </h3>
               </div>
-              <button type="button" onClick={() => setEditingRowId(null)} className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-[#004776] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <button type="button" onClick={closeRowEditor} aria-label="Đóng" className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-[#004776] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Fields list */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
               {meta.columns.map((col) => {
                 const val = editingRow[col.field];
@@ -199,6 +188,7 @@ export function ExcelRowCardEditor({
                         onValueChange={(v) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, v); }}
                         options={[{ value: '', label: 'Chọn' }, ...selectOpts.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))]}
                         placeholder="Chọn"
+                        allowCustom={Boolean(col.allowCustom)}
                         displayValue={col.field === 'maVtvl'}
                         size="md"
                       />
@@ -213,7 +203,7 @@ export function ExcelRowCardEditor({
                           const raw = e.target.value;
                           onCellChange(editingRow.id, col.field, raw === '' ? '' : Number(raw));
                         }}
-                        className={`${inputCls} text-right placeholder:text-left placeholder:text-xs placeholder:text-[#94a3b8]`}
+                        className={`${inputCls} text-right placeholder:text-left placeholder:text-xs placeholder:text-[#476885]`}
                       />
                     ) : (
                       <textarea rows={3} value={String(val ?? '')} onFocus={() => onCellTouch?.(cellKey)} onChange={(e) => { onCellTouch?.(cellKey); onCellChange(editingRow.id, col.field, e.target.value); }} className={inputCls} placeholder="Nhập nội dung" />
@@ -223,32 +213,16 @@ export function ExcelRowCardEditor({
               })}
             </div>
 
-            {/* Footer Drawer: Dòng trước, Dòng sau & Đóng */}
             <div className="p-3 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handlePrevRow}
-                  disabled={editingRowIndex <= 0}
-                  className="inline-flex items-center gap-1 min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] disabled:opacity-40 cursor-pointer"
-                >
+                <button type="button" onClick={handlePrevRow} disabled={editingRowIndex <= 0} className="inline-flex items-center gap-1 min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] disabled:opacity-40 cursor-pointer">
                   <ArrowLeft className="w-3.5 h-3.5" /><span>Trước</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleNextRow}
-                  disabled={editingRowIndex >= rows.length - 1}
-                  className="inline-flex items-center gap-1 min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] disabled:opacity-40 cursor-pointer"
-                >
+                <button type="button" onClick={handleNextRow} disabled={editingRowIndex >= rows.length - 1} className="inline-flex items-center gap-1 min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] disabled:opacity-40 cursor-pointer">
                   <span>Tiếp</span><ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setEditingRowId(null)}
-                className="min-h-[44px] px-5 rounded-xl bg-[#004776] text-white text-xs font-bold hover:bg-[#00385c] cursor-pointer shadow-xs"
-              >
+              <button type="button" onClick={closeRowEditor} className="min-h-[44px] px-5 rounded-xl bg-[#004776] text-white text-xs font-bold hover:bg-[#00385c] cursor-pointer shadow-xs">
                 Xong &amp; Đóng
               </button>
             </div>

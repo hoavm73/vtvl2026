@@ -7,7 +7,7 @@ import { PL1_VTVL_CATALOG, Pl1VtvlItem } from './hcmute-pl1-catalog';
 export function findPl1Item(codeOrPrefixed: string): Pl1VtvlItem | undefined {
   if (!codeOrPrefixed) return undefined;
   const parts = codeOrPrefixed.split('.');
-  const rawCode = (parts[parts.length - 1] || codeOrPrefixed).toUpperCase().trim();
+  const rawCode = (parts[parts.length - 1] || codeOrPrefixed).toUpperCase().trim().replace(/-\d+$/, '');
   return PL1_VTVL_CATALOG.find((item) => item.pl1Code.toUpperCase() === rawCode);
 }
 

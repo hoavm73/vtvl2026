@@ -188,7 +188,7 @@ export function AdminSessionsTab() {
   };
 
   return (
-    <div className="space-y-3 min-w-0">
+    <div className="space-y-3 w-full max-w-full min-w-0">
       <AdminSessionFilterBar
         search={params.sq}
         onSearchChange={(val) => setParam('sq', val)}

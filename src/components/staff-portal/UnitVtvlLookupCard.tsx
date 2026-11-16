@@ -32,15 +32,26 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
   // Chuẩn hóa danh sách VTVL từ Biểu C1 hoặc cấu hình mẫu NĐ 232 của đơn vị
   const vtvlList = useMemo<UnitVtvlItem[]>(() => {
     if (c1Vtvls && c1Vtvls.length > 0) {
-      return c1Vtvls.map((row) => ({
-        maVtvl: String(row.maVtvl || row.maVTVL || row.stt || '').trim(),
-        tenVtvl: String(row.tenVtvl || row.tenVTVL || row.viTriViecLam || 'Vị trí chưa đặt tên').trim(),
-        nhomVtvl: String(row.nhomVtvl || row.nhom || 'Chuyên môn, nghiệp vụ').trim(),
-        ngachCode: String(row.ngachCode || row.maNgach || '').trim(),
-        dinhMucGio: Number(row.dinhMucGio || row.dinhMuc || 1904),
-        careerLevel: String(row.careerLevel || row.bacNgheNghiep || '').trim(),
-        soNguoi: Number(row.soNguoi || row.staffCount || 1)
-      })).filter((item) => item.maVtvl || item.tenVtvl);
+      return c1Vtvls.map((row) => {
+        const maVtvl = String(row.maVtvl || row.maVTVL || row.stt || '').trim();
+        const rawGroup = String(row.nhomVtvl || row.nhom || '').trim();
+        const inferredGroup = rawGroup || (
+          maVtvl.toUpperCase().includes('.QL') || maVtvl.toUpperCase().startsWith('QL')
+            ? 'Quản lý'
+            : maVtvl.toUpperCase().includes('.HT') || maVtvl.toUpperCase().startsWith('HT')
+              ? 'Hỗ trợ & phục vụ'
+              : 'Chuyên môn, nghiệp vụ'
+        );
+        return {
+          maVtvl,
+          tenVtvl: String(row.tenVtvl || row.tenVTVL || row.viTriViecLam || 'Vị trí chưa đặt tên').trim(),
+          nhomVtvl: inferredGroup,
+          ngachCode: String(row.ngachCode || row.maNgach || '').trim(),
+          dinhMucGio: Number(row.gioChuanPp2 || row.dinhMucGio || row.dinhMuc || 1904),
+          careerLevel: String(row.careerLevel || row.bacNgheNghiep || '').trim(),
+          soNguoi: Number(row.soNguoi || row.staffCount || 1)
+        };
+      }).filter((item) => item.maVtvl || item.tenVtvl);
     }
 
     // Dự phòng chuẩn từ khung 38 VTVL NĐ 232 cho đơn vị

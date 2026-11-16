@@ -26,6 +26,7 @@ export interface ShadcnSelectProps {
   className?: string;
   searchable?: boolean;
   searchableThreshold?: number;
+  allowCustom?: boolean;
   displayValue?: boolean;
   onBlur?: () => void;
   onFocus?: () => void;
@@ -46,6 +47,7 @@ export function ShadcnSelect({
   className = '',
   searchable,
   searchableThreshold = 8,
+  allowCustom = false,
   displayValue = false,
   onBlur,
   onFocus
@@ -168,7 +170,17 @@ export function ShadcnSelect({
       ? 'border-[#004776] ring-2 ring-[#004776]/20 bg-white text-[#004776]'
       : 'border-[#cbd5e1] bg-white hover:border-[#004776]/50 text-[#004776]';
 
-  const showSearch = searchable ?? options.length >= searchableThreshold;
+  const showSearch = Boolean(allowCustom) || (searchable ?? options.length >= searchableThreshold);
+  const trimmedSearch = search.trim();
+  const hasExactCustomMatch = Boolean(trimmedSearch) && options.some((o) => o.value.toUpperCase() === trimmedSearch.toUpperCase());
+
+  const commitSelect = (nextVal: string) => {
+    onChange?.(nextVal);
+    onValueChange?.(nextVal);
+    setOpen(false);
+    setSearch('');
+    onBlur?.();
+  };
 
   const handleToggle = () => {
     if (disabled) return;
@@ -211,7 +223,16 @@ export function ShadcnSelect({
         </div>
       )}
       <div className="overflow-y-auto py-0.5 max-h-68 divide-y divide-[#f1f5f9]">
-        {filteredOptions.length === 0 ? (
+        {allowCustom && trimmedSearch && !hasExactCustomMatch && (
+          <button
+            type="button"
+            onClick={() => commitSelect(trimmedSearch)}
+            className="w-full text-left px-3 py-2 text-xs font-bold text-[#0072BC] bg-[#f0f7ff] hover:bg-[#e1edf8] flex items-center justify-between gap-2 cursor-pointer"
+          >
+            <span>Sử dụng mã: {trimmedSearch.toUpperCase()}</span>
+          </button>
+        )}
+        {filteredOptions.length === 0 && !(allowCustom && trimmedSearch) ? (
           <div className="px-3 py-2 text-xs text-[#64748b] text-center">Không có kết quả</div>
         ) : (
           filteredOptions.map((opt) => {
@@ -224,13 +245,7 @@ export function ShadcnSelect({
                 aria-selected={isSelected}
                 disabled={opt.disabled}
                 title={opt.label}
-                onClick={() => {
-                  onChange?.(opt.value);
-                  onValueChange?.(opt.value);
-                  setOpen(false);
-                  setSearch('');
-                  onBlur?.();
-                }}
+                onClick={() => commitSelect(opt.value)}
                 className={`w-full text-left px-3 py-2 text-xs flex items-start justify-between gap-2.5 transition-colors cursor-pointer ${
                   isSelected
                     ? 'bg-[#eef5ff] text-[#004776] font-semibold'

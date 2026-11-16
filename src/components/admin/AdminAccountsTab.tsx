@@ -6,7 +6,11 @@ import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Button } from '@/components/ui/Button';
 import { AdminAccountCreateForm } from '@/components/admin/AdminAccountCreateForm';
 import { AdminAccountRow } from '@/components/admin/AdminAccountRow';
+import { AccountVtvlAssignModal } from '@/components/admin/AccountVtvlAssignModal';
+import { ListPaginationBar } from '@/components/ui/ListPaginationBar';
+import { UserVtvlAssignment } from '@/types/staff-ticket';
 import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
+import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 import { getCurrentOperatorSession, saveCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import {
   UserRole,
@@ -24,6 +28,9 @@ export function AdminAccountsTab() {
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [assignmentsByEmail, setAssignmentsByEmail] = useState<Record<string, UserVtvlAssignment[]>>({});
+  const [assigningAccount, setAssigningAccount] = useState<UserAccountRecord | null>(null);
+  const { state: listState, setField: setListField } = usePersistedListState('admin-accounts-list', { limit: 10 });
 
   const unitOptions = useMemo(() => getFlatHcmuteUnitOptions(), []);
 
@@ -36,13 +43,25 @@ export function AdminAccountsTab() {
       if (cur?.accessToken) headers.Authorization = `Bearer ${cur.accessToken}`;
       if (cur?.email) headers['x-actor-email'] = cur.email;
 
-      const res = await fetch('/api/admin/accounts', { headers, cache: 'no-store' });
+      const [res, assignRes] = await Promise.all([
+        fetch('/api/admin/accounts', { headers, cache: 'no-store' }),
+        fetch('/api/vtvl-assignments?mode=accounts', { headers, cache: 'no-store' })
+      ]);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(json.error || 'Không thể tải danh sách tài khoản.');
         setAccounts([]);
       } else {
         setAccounts(json.accounts || []);
+      }
+      if (assignRes.ok) {
+        const aJson = await assignRes.json().catch(() => ({}));
+        const grouped: Record<string, UserVtvlAssignment[]> = {};
+        for (const item of (aJson.assignments || []) as UserVtvlAssignment[]) {
+          const key = item.userEmail.toLowerCase();
+          grouped[key] = [...(grouped[key] || []), item];
+        }
+        setAssignmentsByEmail(grouped);
       }
     } catch {
       setError('Lỗi kết nối mạng khi tải danh sách tài khoản.');
@@ -97,6 +116,9 @@ export function AdminAccountsTab() {
       return;
     }
     setAccounts((prev) => prev.map((a) => (a.email === res.account!.email ? res.account! : a)));
+    if (patch.unitCode && patch.unitCode !== target.unitCode) {
+      await loadAccounts();
+    }
     if (cur && cur.email === res.account.email) {
       saveCurrentOperatorSession(res.account.email, res.account.unitCode, res.account.title, {
         displayName: res.account.displayName,
@@ -157,22 +179,22 @@ export function AdminAccountsTab() {
         onError={(msg) => { setFeedback(null); setError(msg); }}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 w-full min-w-0">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
+          <div className="relative w-full sm:flex-1 sm:max-w-sm min-w-0">
             <Search className="w-4 h-4 text-[#476885] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setListField('limit', e.target.value.trim() ? filteredAccounts.length || 100 : 10); }}
               placeholder="Tìm theo email, họ tên, mã đơn vị..."
               className="w-full h-10 pl-9 pr-3 text-xs bg-white border border-[#cbd5e1] rounded-xl text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
             />
           </div>
-          <div className="w-60">
+          <div className="w-full sm:w-60 min-w-0">
             <ShadcnSelect
               value={roleFilter}
-              onValueChange={setRoleFilter}
+              onValueChange={(v) => { setRoleFilter(v); setListField('limit', 10); }}
               options={[
                 { value: 'all', label: `Tất cả vai trò (${accounts.length})` },
                 ...ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))
@@ -181,7 +203,7 @@ export function AdminAccountsTab() {
             />
           </div>
         </div>
-        <Button type="button" variant="outline" size="default" onClick={loadAccounts} disabled={loading}>
+        <Button type="button" variant="outline" size="default" onClick={loadAccounts} disabled={loading} className="w-full sm:w-auto">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới</span>
         </Button>
@@ -207,40 +229,62 @@ export function AdminAccountsTab() {
           <p className="text-sm font-bold text-[#004776]">Chưa có tài khoản phù hợp với bộ lọc.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs lg:overflow-visible overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-[#cbd5e1] bg-[#f8fafc] text-[#004776]">
-                <th className="p-3 font-bold w-12 text-center border-r border-[#e2e8f0]">STT</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0]">Tài khoản cán bộ</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[200px]">Đơn vị công tác</th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[220px]">
-                  <span className="inline-flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Vai trò / Chức danh</span>
-                  </span>
-                </th>
-                <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[140px]">Trạng thái</th>
-                <th className="p-3 font-bold text-center w-16">Xóa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccounts.map((acc, idx) => (
-                <AdminAccountRow
-                  key={acc.email}
-                  account={acc}
-                  index={idx}
-                  unitOptions={unitOptions}
-                  isUpdating={updatingEmail === acc.email}
-                  currentUserRole={getCurrentOperatorSession()?.role}
-                  onUpdate={handleUpdateAccount}
-                  onDelete={handleDeleteAccount}
-                />
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs w-full max-w-full min-w-0 overflow-hidden">
+          <div className="w-full max-w-full overflow-x-auto lg:overflow-visible">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[#cbd5e1] bg-[#f8fafc] text-[#004776]">
+                  <th className="p-3 font-bold w-12 text-center border-r border-[#e2e8f0]">STT</th>
+                  <th className="p-3 font-bold border-r border-[#e2e8f0]">Tài khoản cán bộ</th>
+                  <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[200px]">Đơn vị công tác</th>
+                  <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[180px]">Mã VTVL phân công</th>
+                  <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[220px]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Vai trò / Chức danh</span>
+                    </span>
+                  </th>
+                  <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[140px]">Trạng thái</th>
+                  <th className="p-3 font-bold text-center w-16">Xóa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAccounts.slice(0, listState.limit).map((acc, idx) => (
+                  <AdminAccountRow
+                    key={acc.email}
+                    account={acc}
+                    index={idx}
+                    unitOptions={unitOptions}
+                    assignedVtvls={assignmentsByEmail[acc.email.toLowerCase()] || []}
+                    isUpdating={updatingEmail === acc.email}
+                    currentUserRole={getCurrentOperatorSession()?.role}
+                    onUpdate={handleUpdateAccount}
+                    onOpenAssignVtvl={setAssigningAccount}
+                    onDelete={handleDeleteAccount}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ListPaginationBar
+            totalCount={filteredAccounts.length}
+            visibleCount={listState.limit}
+            step={10}
+            unitLabel="tài khoản"
+            onChangeVisibleCount={(n) => setListField('limit', n)}
+          />
         </div>
       )}
+
+      <AccountVtvlAssignModal
+        account={assigningAccount}
+        initialAssignments={assigningAccount ? (assignmentsByEmail[assigningAccount.email.toLowerCase()] || []) : []}
+        onClose={() => setAssigningAccount(null)}
+        onSaved={(email, updated) => {
+          setAssignmentsByEmail((prev) => ({ ...prev, [email.toLowerCase()]: updated }));
+          setFeedback(`Đã cập nhật phân công VTVL cho ${email} (${updated.length} mã).`);
+        }}
+      />
     </div>
   );
 }

@@ -27,7 +27,9 @@ const dataFilesToBackup = [
   'audit_logs.json',
   'server_workbooks.json',
   'deleted_workbooks.json',
-  'custom_units.json'
+  'custom_units.json',
+  'user_vtvl_assignments.json',
+  'work_survey_coordinated_vtvls.json'
 ];
 
 const backups = new Map();
@@ -574,7 +576,7 @@ async function main() {
       patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
         method: 'PATCH',
         headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
-        body: JSON.stringify({ ticketId: qaTicketId, action: 'approve' })
+        body: JSON.stringify({ ticketId: qaTicketId, action: 'approve', autoMerge: false })
       })),
       patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
         method: 'PATCH',

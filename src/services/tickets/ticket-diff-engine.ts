@@ -8,6 +8,7 @@ import {
 import { findHcmuteUnit, QD2266_UNIT_NAMES } from '@/configs/hcmute-units';
 import { getQd2266A1RowsForUnit } from '@/configs/hcmute-qd2266-missions';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
+import { appendCoordinatedVtvlDiffs, normalizeCoordinatedVtvls } from './vtvl-coordination-helpers';
 
 export const DELETED_CONTENT_LABEL = 'Đã xóa nội dung';
 export const FIRST_VERSION_LABEL = 'Phiên bản nộp đầu tiên';
@@ -106,6 +107,8 @@ export function buildTicketSnapshot(
     maVtvlPhoiHop: maVtvlPhoiHop || undefined,
     tenVtvlPhoiHopSnapshot:
       overrides?.tenVtvlPhoiHopSnapshot ?? (maVtvlPhoiHop ? resolveVtvlName(maVtvlPhoiHop) : undefined),
+    coordinationNote: normalizeText(ticket.coordinationNote) || undefined,
+    coordinatedVtvls: normalizeCoordinatedVtvls(ticket.coordinatedVtvls, unitCode),
     sanPham: normalizeText(ticket.sanPham),
     chatLuong: normalizeText(ticket.chatLuong),
     canCu: normalizeText(ticket.canCu),
@@ -281,5 +284,6 @@ export function computeTicketVersionDiff(
     }
   }
 
+  appendCoordinatedVtvlDiffs(diffs, prevSnapshot, currSnapshot);
   return diffs;
 }

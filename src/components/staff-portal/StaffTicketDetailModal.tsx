@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import {
-  X, AlertTriangle, Printer, Check, CornerDownLeft, FileText, GitCompare, History
+  X, AlertTriangle, Printer, Check, CornerDownLeft, FileText, GitCompare, History, RotateCcw, Trash2
 } from 'lucide-react';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
@@ -19,11 +19,13 @@ interface StaffTicketDetailModalProps {
   onPrint?: (t: StaffWorkTicket) => void;
   onApprove?: (t: StaffWorkTicket) => void | Promise<void>;
   onRequestChanges?: (t: StaffWorkTicket) => void;
+  onRevokeApproval?: (t: StaffWorkTicket) => void;
+  onCancelTicket?: (t: StaffWorkTicket) => void;
 }
 
 export function StaffTicketDetailModal({
   ticket, unitNameVi, currentUserRole, currentUserEmail,
-  onClose, onPrint, onApprove, onRequestChanges
+  onClose, onPrint, onApprove, onRequestChanges, onRevokeApproval, onCancelTicket
 }: StaffTicketDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'a4' | 'diff' | 'history'>('a4');
 
@@ -33,11 +35,8 @@ export function StaffTicketDetailModal({
   const canonical = badge.canonical;
   const StatusIcon = badge.Icon;
   const isOwnTicket = ticket.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
-  const canReview = Boolean(
-    (currentUserRole === 'admin' || (currentUserRole === 'unit_leader' && !isOwnTicket)) &&
-    (canonical === 'submitted' || canonical === 'resubmitted') &&
-    onApprove && onRequestChanges
-  );
+  const canModerate = currentUserRole === 'admin' || (currentUserRole === 'unit_leader' && !isOwnTicket);
+  const canReview = Boolean(canModerate && (canonical === 'submitted' || canonical === 'resubmitted') && onApprove && onRequestChanges);
 
   const soSp = Number(ticket.soSpNam) || 0;
   const phut = Number(ticket.phutThucTe) || 0;
@@ -131,23 +130,23 @@ export function StaffTicketDetailModal({
 
             {canReview && (
               <>
-                <button
-                  type="button"
-                  onClick={() => onApprove?.(ticket)}
-                  className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Duyệt phiếu</span>
+                <button type="button" onClick={() => onApprove?.(ticket)} className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
+                  <Check className="w-4 h-4" /><span>Duyệt phiếu</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onRequestChanges?.(ticket)}
-                  className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                >
-                  <CornerDownLeft className="w-4 h-4" />
-                  <span>Yêu cầu bổ sung</span>
+                <button type="button" onClick={() => onRequestChanges?.(ticket)} className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
+                  <CornerDownLeft className="w-4 h-4" /><span>Yêu cầu bổ sung</span>
                 </button>
               </>
+            )}
+            {canModerate && canonical === 'approved' && onRevokeApproval && (
+              <button type="button" onClick={() => onRevokeApproval(ticket)} className="h-9 px-3 rounded-xl border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+                <RotateCcw className="w-3.5 h-3.5 text-[#d97706]" /><span>Thu hồi duyệt</span>
+              </button>
+            )}
+            {canModerate && canonical !== 'draft' && onCancelTicket && (
+              <button type="button" onClick={() => onCancelTicket(ticket)} className="h-9 px-3 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" /><span>Xóa phiếu</span>
+              </button>
             )}
 
             <button
@@ -272,8 +271,7 @@ export function StaffTicketDetailModal({
                 <div>
                   <div className="font-bold text-[12.5px] uppercase">TRƯỞNG ĐƠN VỊ DUYỆT</div>
                   <div className="text-[11px] italic text-[#476885]">(Ký, ghi rõ họ tên và xác nhận)</div>
-                  <div className="h-20" />
-                  <div className="font-bold text-[13px]">{displayUnitName}</div>
+                  <div className="h-24" />
                 </div>
                 <div>
                   <div className="text-[12px] italic mb-1 text-[#476885]">
@@ -281,8 +279,7 @@ export function StaffTicketDetailModal({
                   </div>
                   <div className="font-bold text-[12.5px] uppercase">NGƯỜI KÊ KHAI PHIẾU</div>
                   <div className="text-[11px] italic text-[#476885]">(Ký và ghi rõ họ tên)</div>
-                  <div className="h-16" />
-                  <div className="font-bold text-[13px]">{ticket.ownerName}</div>
+                  <div className="h-20" />
                 </div>
               </div>
             </div>

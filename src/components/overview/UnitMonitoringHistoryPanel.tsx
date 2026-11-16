@@ -3,7 +3,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { FileText, History, Clock, CheckCircle2, AlertTriangle, RefreshCw, ExternalLink, User } from 'lucide-react';
-import { MonitorTicketItem, MonitorHistoryItem, formatCompactTime } from './UnitMonitoringTypes';
+import { MonitorTicketItem, MonitorHistoryItem, formatCompactTime, matchesMonitorSearch } from './UnitMonitoringTypes';
+import { MonitorSearchInput } from './MonitorSearchInput';
 
 interface UnitMonitoringHistoryPanelProps {
   selectedUnit: string;
@@ -54,46 +55,74 @@ export function UnitMonitoringHistoryPanel({
   onSelectUnit
 }: UnitMonitoringHistoryPanelProps) {
   const [ticketStatusFilter, setTicketStatusFilter] = useState<string>('ALL');
+  const [ticketSearch, setTicketSearch] = useState<string>('');
   const [historyCatFilter, setHistoryCatFilter] = useState<'ALL' | 'ticket' | 'workbook' | 'audit'>('ALL');
+  const [historySearch, setHistorySearch] = useState<string>('');
 
   useEffect(() => {
     if (externalStatusSync !== undefined) setTicketStatusFilter(externalStatusSync);
   }, [externalStatusSync]);
 
-  const ticketTabCounts = useMemo(() => ({
-    ALL: tickets.length,
-    pending: tickets.filter((t) => t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted').length,
-    changes_requested: tickets.filter((t) => t.canonicalStatus === 'changes_requested').length,
-    approved: tickets.filter((t) => t.canonicalStatus === 'approved').length,
-    merged: tickets.filter((t) => t.isMergedToB1B2).length,
-    draft: tickets.filter((t) => t.canonicalStatus === 'draft').length
-  }), [tickets]);
+  const searchedTickets = useMemo(
+    () =>
+      tickets.filter((t) =>
+        matchesMonitorSearch(
+          [t.unitCode, t.unitNameVi, t.maNhiemVu, t.maCongViec, t.tenCongViec, t.maVtvl, t.ownerName, t.ownerEmail, t.status, t.revisionReason, t.lastChangeSummary],
+          ticketSearch
+        )
+      ),
+    [tickets, ticketSearch]
+  );
 
-  const filteredTickets = useMemo(() => tickets.filter((t) => {
+  const ticketTabCounts = useMemo(() => ({
+    ALL: searchedTickets.length,
+    pending: searchedTickets.filter((t) => t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted').length,
+    changes_requested: searchedTickets.filter((t) => t.canonicalStatus === 'changes_requested').length,
+    approved: searchedTickets.filter((t) => t.canonicalStatus === 'approved').length,
+    merged: searchedTickets.filter((t) => t.isMergedToB1B2).length,
+    draft: searchedTickets.filter((t) => t.canonicalStatus === 'draft').length
+  }), [searchedTickets]);
+
+  const filteredTickets = useMemo(() => searchedTickets.filter((t) => {
     if (ticketStatusFilter === 'ALL') return true;
     if (ticketStatusFilter === 'merged') return t.isMergedToB1B2;
     if (ticketStatusFilter === 'pending') return t.canonicalStatus === 'submitted' || t.canonicalStatus === 'resubmitted';
     return t.canonicalStatus === ticketStatusFilter;
-  }), [tickets, ticketStatusFilter]);
+  }), [searchedTickets, ticketStatusFilter]);
 
   const filteredHistory = useMemo(
-    () => history.filter((h) => (historyCatFilter === 'ALL' ? true : h.category === historyCatFilter)),
-    [history, historyCatFilter]
+    () =>
+      history.filter(
+        (h) =>
+          (historyCatFilter === 'ALL' ? true : h.category === historyCatFilter) &&
+          matchesMonitorSearch([h.unitCode, h.unitNameVi, h.actionLabel, h.title, h.details, h.actorEmail], historySearch)
+      ),
+    [history, historyCatFilter, historySearch]
   );
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-w-0">
       {/* Cột trái: Danh sách phiếu khảo sát phẳng, vạch màu trạng thái */}
-      <div className="xl:col-span-7 bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
         <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
-            <h3 className="text-sm font-bold text-[#004776] truncate">
-              Phiếu khảo sát hiện có ({filteredTickets.length})
-            </h3>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">
-              {selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
+              <h3 className="text-sm font-bold text-[#004776]">
+                Phiếu khảo sát hiện có ({filteredTickets.length})
+              </h3>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">
+                {selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}
+              </span>
+            </div>
+
+            <MonitorSearchInput
+              value={ticketSearch}
+              onChange={setTicketSearch}
+              placeholder="Tìm mã CV, tên việc…"
+              ariaLabel="Tìm kiếm phiếu khảo sát"
+              className="w-full sm:w-[236px]"
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -196,11 +225,20 @@ export function UnitMonitoringHistoryPanel({
       </div>
 
       {/* Cột phải: Dòng thời gian lịch sử hoạt động (Vertical Timeline) */}
-      <div className="xl:col-span-5 bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
         <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#006cee] shrink-0" />
-            <h3 className="text-sm font-bold text-[#004776]">Nhật ký tiến trình &amp; lịch sử ({filteredHistory.length})</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <History className="w-4 h-4 text-[#006cee] shrink-0" />
+              <h3 className="text-sm font-bold text-[#004776]">Nhật ký tiến trình &amp; lịch sử ({filteredHistory.length})</h3>
+            </div>
+            <MonitorSearchInput
+              value={historySearch}
+              onChange={setHistorySearch}
+              placeholder="Tìm đơn vị, nội dung…"
+              ariaLabel="Tìm kiếm nhật ký tiến trình và lịch sử"
+              className="w-full sm:w-[236px]"
+            />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {HISTORY_TABS.map((c) => (

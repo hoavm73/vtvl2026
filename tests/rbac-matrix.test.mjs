@@ -20,6 +20,8 @@ const dataFilesToBackup = [
   'staff_tickets.json',
   'work_survey_versions.json',
   'work_survey_merge_links.json',
+  'work_survey_coordinated_vtvls.json',
+  'user_vtvl_assignments.json',
   'audit-logs.json',
   'audit_logs.json',
   'server_workbooks.json',

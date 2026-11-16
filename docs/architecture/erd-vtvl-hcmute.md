@@ -21,6 +21,10 @@ erDiagram
     DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
     DON_VI ||--o{ AUDIT_LOGS : "ghi_nhat_ky_he_thong"
     USER_ACCOUNTS ||--o{ AUDIT_LOGS : "thuc_hien_thao_tac"
+    USER_ACCOUNTS ||--o{ USER_VTVL_ASSIGNMENTS : "phan_cong_ma_vtvl"
+    DON_VI ||--o{ USER_VTVL_ASSIGNMENTS : "pham_vi_vtvl_don_vi"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "de_xuat_phoi_hop_vtvl"
+    DON_VI ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "don_vi_nhan_phoi_hop"
 
     A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
     STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
@@ -340,6 +344,26 @@ erDiagram
         string detail "Chi tiet thao tac JSON/Text"
         timestamp created_at "Thoi diem ghi nhat ky"
     }
+
+    USER_VTVL_ASSIGNMENTS {
+        string id PK "UUID phan cong"
+        string user_email FK "Email tai khoan"
+        string unit_code FK "Ma don vi"
+        string ma_vtvl "Ma VTVL C1 tuong minh"
+        boolean is_active "Dang hieu luc"
+        string assigned_by "Nguoi phan cong"
+    }
+
+    WORK_SURVEY_COORDINATED_VTVLS {
+        string id PK "UUID de xuat"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        int version_no "Phien ban da nop"
+        string task_row_id "ID dong cong viec on dinh"
+        string host_unit_code FK "Don vi chu tri"
+        string target_unit_code FK "Don vi phoi hop"
+        string target_vtvl_code "Ma VTVL nhan phoi hop"
+        boolean is_latest_submitted "Phien ban da nop moi nhat"
+    }
 ```
 
 ---
@@ -354,6 +378,8 @@ erDiagram
 | `WORK_SURVEY_VERSIONS` | `Lưu trữ phiên bản phiếu (DB)` | `PK`: `id` · `FK`: `survey_id`, `created_by` | Snapshot bất biến theo từng vòng nộp lại (`v1`, `v2`...) và tóm tắt chỉnh sửa |
 | `WORK_SURVEY_STATUS_HISTORY` | `Lịch sử phê duyệt & phản hồi (DB)` | `PK`: `id` · `FK`: `survey_id`, `actor_id`, `unit_id` | Chuỗi thời gian người nộp, người duyệt/phản hồi, lý do và mốc thời gian bất biến |
 | `WORK_SURVEY_MERGE_LINKS` | `Liên kết gộp biểu A2/B1/B2 (DB)` | `PK`: `id` · `FK`: `survey_id`, `unit_id`, `version_id`, `merged_by` | Truy vết chính xác dòng dữ liệu đã gộp sang Biểu `A2`, `B1`, `B2` |
+| `USER_VTVL_ASSIGNMENTS` | `Phân công mã VTVL tài khoản (DB)` | `PK`: `id` · `FK`: `user_email`, `unit_code` | Quan hệ tường minh nhiều-nhiều Người dùng ↔ `(unit_code, ma_vtvl)` |
+| `WORK_SURVEY_COORDINATED_VTVLS` | `Đề xuất phối hợp VTVL theo phiên bản (DB)` | `PK`: `id` · `FK`: `survey_id`, `host_unit_code`, `target_unit_code` | Chiếu đề xuất phối hợp đọc từ snapshot phiên bản đã nộp mới nhất (`is_latest_submitted`) |
 | `AUDIT_LOGS` | `Nhật ký kiểm toán hệ thống (DB)` | `PK`: `id` · `FK`: `unit_id`, `actor_email` | Theo dõi thao tác quản trị, phân quyền, khóa/mở khóa và phê duyệt |
 | `DON_VI` | `HUONG_DAN` | `PK`: `ma_don_vi` (`CK`, `CNTT`, `TCNS`, `THKTTH`...) | Danh mục 39 đơn vị hoạt động chuẩn thuộc/trực thuộc **HCM-UTE** |
 | `DM_VTVL_ND232` | `12. CHIA_VUNG_CAP_XA` (Bảng 1), `DM_THAM_SO` | `PK`: `ma_danh_muc_nd232` (`ND232-PL1-01`..`ND232-PL3-10`) · `FK`: `ma_so_chuc_danh` | **Nghị định 232/2026/NĐ-CP** (Phụ lục I, II, III — Bậc nghề nghiệp `Bậc 1–5`) |

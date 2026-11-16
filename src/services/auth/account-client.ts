@@ -2,6 +2,7 @@
 
 import {
   OperatorSession,
+  getCurrentOperatorSession,
   saveCurrentOperatorSession
 } from '@/services/telemetry/operator-session';
 
@@ -110,19 +111,25 @@ export async function syncOperatorAccountWithServer(
       if (account.hasSelectedUnit || account.role === 'unit_leader' || account.role === 'admin') {
         markEmailAsOnboarded(account.email);
       }
+      const latest = getCurrentOperatorSession();
+      const baseSession = latest && latest.email === account.email ? latest : session;
+      const effectiveUnitCode =
+        account.role === 'admin' && baseSession.unitCode
+          ? baseSession.unitCode
+          : account.unitCode;
       const changed =
-        account.role !== session.role ||
-        (account.displayName && account.displayName !== session.displayName) ||
-        account.unitCode !== session.unitCode ||
-        account.title !== session.title ||
-        account.hasSelectedUnit !== session.hasSelectedUnit;
-      const needTokenUpdate = Boolean(json.sessionToken && !session.accessToken);
+        account.role !== baseSession.role ||
+        (account.displayName && account.displayName !== baseSession.displayName) ||
+        effectiveUnitCode !== baseSession.unitCode ||
+        account.title !== baseSession.title ||
+        account.hasSelectedUnit !== baseSession.hasSelectedUnit;
+      const needTokenUpdate = Boolean(json.sessionToken && !baseSession.accessToken);
       if (changed || needTokenUpdate) {
-        saveCurrentOperatorSession(account.email, account.unitCode, account.title, {
+        saveCurrentOperatorSession(account.email, effectiveUnitCode, account.title, {
           displayName: account.displayName,
-          avatarUrl: account.avatarUrl || session.avatarUrl,
-          authProvider: session.authProvider,
-          accessToken: json.sessionToken || session.accessToken,
+          avatarUrl: account.avatarUrl || baseSession.avatarUrl,
+          authProvider: baseSession.authProvider,
+          accessToken: json.sessionToken || baseSession.accessToken,
           role: account.role,
           hasSelectedUnit: account.hasSelectedUnit ?? true
         });

@@ -196,7 +196,6 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
                 <div className="font-bold uppercase mt-0.5">NGƯỜI LẬP PHIẾU</div>
                 <div className="text-[11.5px] italic">(Ký, ghi rõ họ tên)</div>
                 <div className="h-20" />
-                <div className="font-bold">{ticket.ownerName}</div>
               </div>
             </div>
           </div>

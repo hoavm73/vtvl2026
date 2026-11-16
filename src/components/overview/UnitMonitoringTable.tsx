@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { Search, FileSpreadsheet, ExternalLink, ArrowUpDown, X, FlaskConical } from 'lucide-react';
+import { FileSpreadsheet, ExternalLink, ArrowUpDown, FlaskConical } from 'lucide-react';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { SHORT_UNIT_GROUP_LABELS, StageFilterKey, UnitSummaryRow } from './UnitMonitoringTypes';
+import { MonitorSearchInput } from './MonitorSearchInput';
+import { UnitMonitoringMobileCards } from './UnitMonitoringMobileCards';
+import { ListPaginationBar } from '@/components/ui/ListPaginationBar';
+import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 
 interface UnitMonitoringTableProps {
   selectedUnit: string;
@@ -36,9 +40,7 @@ function renderCountPill(value: number, activeClass: string) {
   );
 }
 
-/**
- * Bảng theo dõi tiến trình 39 đơn vị thiết kế phẳng, tối ưu mật độ & ưu tiên đơn vị đang triển khai.
- */
+/** Bảng & danh sách thẻ theo dõi tiến trình 39 đơn vị (tải từng phần 10 dòng, giữ nguyên vị trí cuộn & bộ lọc). */
 export function UnitMonitoringTable({
   selectedUnit,
   selectedGroup,
@@ -52,8 +54,13 @@ export function UnitMonitoringTable({
   onChangeSearch,
   onToggleIncludeTest
 }: UnitMonitoringTableProps) {
-  const [activityMode, setActivityMode] = useState<ActivityMode>('all');
-  const [sortByActivity, setSortByActivity] = useState<boolean>(true);
+  const { state, setField, patchFields, highlightedId, saveScrollAnchor } = usePersistedListState(
+    'unit-monitor-table',
+    { mode: 'all', sortAct: true, limit: 10 },
+    { readyToScroll: filteredUnitRows.length > 0 }
+  );
+  const activityMode = (state.mode === 'active' || state.mode === 'empty' ? state.mode : 'all') as ActivityMode;
+  const sortByActivity = Boolean(state.sortAct);
 
   const displayRows = useMemo(() => {
     const byMode = filteredUnitRows.filter((u) => {
@@ -74,14 +81,16 @@ export function UnitMonitoringTable({
     });
   }, [filteredUnitRows, activityMode, sortByActivity]);
 
+  const visibleRows = useMemo(() => displayRows.slice(0, state.limit), [displayRows, state.limit]);
+
   return (
-    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden">
-      {/* Thanh công cụ 1 dòng gọn gàng */}
-      <div className="px-4 py-3 border-b border-[#e8eff7] bg-[#fafcff] flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden min-w-0">
+      {/* Thanh công cụ lọc nhóm & tìm kiếm */}
+      <div className="px-3 sm:px-4 py-3 border-b border-[#e8eff7] bg-[#fafcff] flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           <button
             type="button"
-            onClick={() => onSelectGroup('ALL')}
+            onClick={() => { onSelectGroup('ALL'); setField('limit', 10); }}
             className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
               selectedGroup === 'ALL' ? 'bg-[#004776] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
             }`}
@@ -92,7 +101,7 @@ export function UnitMonitoringTable({
             <button
               key={g.id}
               type="button"
-              onClick={() => onSelectGroup(g.id)}
+              onClick={() => { onSelectGroup(g.id); setField('limit', 10); }}
               className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
                 selectedGroup === g.id ? 'bg-[#004776] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
               }`}
@@ -102,14 +111,14 @@ export function UnitMonitoringTable({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center p-0.5 rounded-full bg-[#eef4fb] border border-[#dbe8f5]">
+        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto min-w-0">
+          <div className="inline-flex items-center p-0.5 rounded-full bg-[#eef4fb] border border-[#dbe8f5] max-w-full overflow-x-auto no-scrollbar">
             {([{ id: 'all', label: 'Tất cả' }, { id: 'active', label: 'Có dữ liệu' }, { id: 'empty', label: 'Chưa kê khai' }] as const).map((m) => (
               <button
                 key={m.id}
                 type="button"
-                onClick={() => setActivityMode(m.id)}
-                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all ${
+                onClick={() => patchFields({ mode: m.id, limit: 10 })}
+                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${
                   activityMode === m.id ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#20446c] hover:text-[#004776]'
                 }`}
               >
@@ -118,26 +127,13 @@ export function UnitMonitoringTable({
             ))}
           </div>
 
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#20446c]/60 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onChangeSearch(e.target.value)}
-              placeholder="Tìm mã hoặc tên đơn vị…"
-              className="h-9 pl-8 pr-7 w-48 sm:w-52 rounded-full border border-[#cbd5e1] bg-white text-xs text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                aria-label="Xóa từ khóa tìm kiếm"
-                onClick={() => onChangeSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#20446c]/60 hover:text-[#004776] cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <MonitorSearchInput
+            value={searchQuery}
+            onChange={(q) => { onChangeSearch(q); if (q.trim()) setField('limit', 39); else setField('limit', 10); }}
+            placeholder="Tìm mã hoặc tên đơn vị…"
+            ariaLabel="Tìm kiếm mã hoặc tên đơn vị"
+            className="w-full sm:w-60 min-w-0"
+          />
 
           <button
             type="button"
@@ -153,15 +149,25 @@ export function UnitMonitoringTable({
       </div>
 
       {stageFilter !== 'ALL' && (
-        <div className="px-4 py-2 bg-[#f4f9ff] border-b border-[#dbe8f5] flex items-center justify-between text-xs text-[#004776]">
+        <div className="px-4 py-2 bg-[#f4f9ff] border-b border-[#dbe8f5] flex items-center justify-between gap-2 text-xs text-[#004776]">
           <span>Đang lọc theo thẻ KPI — hiển thị <strong>{displayRows.length}</strong> đơn vị phù hợp.</span>
-          <button type="button" onClick={onResetStageFilter} className="font-semibold text-[#006cee] hover:underline cursor-pointer">
+          <button type="button" onClick={onResetStageFilter} className="font-semibold text-[#006cee] hover:underline cursor-pointer shrink-0">
             Hiển thị tất cả đơn vị
           </button>
         </div>
       )}
 
-      <div className="overflow-x-auto max-h-[420px]">
+      {/* Mobile: Thẻ đơn vị vừa khít 390px */}
+      <UnitMonitoringMobileCards
+        rows={visibleRows}
+        selectedUnit={selectedUnit}
+        highlightedId={highlightedId}
+        onSelectUnit={onSelectUnit}
+        onAnchorClick={saveScrollAnchor}
+      />
+
+      {/* Desktop / Tablet: Bảng tổng hợp đầy đủ cột */}
+      <div className="hidden md:block overflow-x-auto max-h-[480px]">
         <table className="w-full text-left border-collapse text-xs">
           <thead className="bg-[#f4f8fc] text-[#004776] sticky top-0 z-10 border-b border-[#dbe8f5] text-[11.5px] font-semibold">
             <tr>
@@ -170,7 +176,7 @@ export function UnitMonitoringTable({
                   <span>Đơn vị ({displayRows.length})</span>
                   <button
                     type="button"
-                    onClick={() => setSortByActivity(!sortByActivity)}
+                    onClick={() => setField('sortAct', !sortByActivity)}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#d8e3ef] text-[10.5px] font-semibold text-[#20446c] hover:text-[#006cee] cursor-pointer"
                     title="Đổi cách sắp xếp danh sách đơn vị"
                   >
@@ -191,17 +197,25 @@ export function UnitMonitoringTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eef3f8]">
-            {displayRows.length === 0 ? (
+            {visibleRows.length === 0 ? (
               <tr>
                 <td colSpan={10} className="py-10 text-center text-xs text-[#20446c]">Không có đơn vị nào phù hợp với điều kiện lọc hiện tại.</td>
               </tr>
             ) : (
-              displayRows.map((u) => {
+              visibleRows.map((u) => {
                 const isSelected = selectedUnit === u.unitCode;
+                const isHighlighted = highlightedId === u.unitCode;
                 return (
                   <tr
                     key={u.unitCode}
-                    className={`transition-colors ${isSelected ? 'bg-[#eef6ff]/90 shadow-[inset_3px_0_0_0_#006cee]' : 'bg-white hover:bg-[#f7fbff]'}`}
+                    data-row-anchor={u.unitCode}
+                    className={`transition-colors ${
+                      isHighlighted
+                        ? 'bg-[#e6f1ff] shadow-[inset_3px_0_0_0_#006cee]'
+                        : isSelected
+                          ? 'bg-[#eef6ff]/90 shadow-[inset_3px_0_0_0_#006cee]'
+                          : 'bg-white hover:bg-[#f7fbff]'
+                    }`}
                   >
                     <td className="py-2.5 px-4">
                       <button type="button" onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)} className="text-left group cursor-pointer flex items-start gap-2">
@@ -238,15 +252,15 @@ export function UnitMonitoringTable({
                       <div className="inline-flex items-center gap-1.5">
                         <Link
                           href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`}
-                          onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
+                          onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
                           className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors"
                         >
                           <span>Phiếu</span>
                           <ExternalLink className="w-3 h-3 text-[#006cee]" />
                         </Link>
                         <Link
-                          href="/bang-tinh"
-                          onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
+                          href={`/bang-tinh?unit=${encodeURIComponent(u.unitCode)}`}
+                          onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }}
                           className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors"
                         >
                           <FileSpreadsheet className="w-3 h-3 text-[#006cee]" />
@@ -261,6 +275,14 @@ export function UnitMonitoringTable({
           </tbody>
         </table>
       </div>
+
+      <ListPaginationBar
+        totalCount={displayRows.length}
+        visibleCount={state.limit}
+        step={10}
+        unitLabel="đơn vị"
+        onChangeVisibleCount={(n) => setField('limit', n)}
+      />
     </div>
   );
 }

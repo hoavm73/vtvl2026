@@ -3,13 +3,18 @@
 import React from 'react';
 import { Sparkles, HelpCircle } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
+import { CoordinatedVtvlEntry } from '@/types/staff-ticket';
+import { CoordinatedVtvlPreviewPanel } from '@/components/staff-portal/CoordinatedVtvlSection';
 
 interface StaffTicketModernFormProps {
+  unitCode: string;
   maNhiemVu: string;
   maCongViec: string;
   tenCongViec: string;
   maVtvl: string;
   maVtvlPhoiHop: string;
+  coordinationNote: string;
+  coordinatedVtvls: CoordinatedVtvlEntry[];
   sanPham: string;
   chatLuong: string;
   canCu: string;
@@ -23,6 +28,8 @@ interface StaffTicketModernFormProps {
   onChangeTenCongViec: (val: string) => void;
   onChangeVtvl: (val: string) => void;
   onChangeVtvlPhoiHop: (val: string) => void;
+  onChangeCoordinationNote: (val: string) => void;
+  onChangeCoordinatedVtvls: (items: CoordinatedVtvlEntry[]) => void;
   onChangeSanPham: (val: string) => void;
   onChangeChatLuong: (val: string) => void;
   onChangeCanCu: (val: string) => void;
@@ -112,9 +119,21 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             </label>
             <ShadcnSelect
               value={props.maVtvlPhoiHop}
-              options={props.vtvlOptions}
-              placeholder="-- Chọn VTVL phối hợp (nếu có) --"
+              options={[{ value: '', label: '— Không chọn VTVL phối hợp —' }, ...props.vtvlOptions]}
+              placeholder="Chọn VTVL phối hợp (nếu có)"
               onChange={props.onChangeVtvlPhoiHop}
+            />
+          </div>
+
+          <div className="sm:col-span-12">
+            <CoordinatedVtvlPreviewPanel
+              unitCode={props.unitCode}
+              maVtvlPhoiHop={props.maVtvlPhoiHop}
+              coordinationNote={props.coordinationNote}
+              coordinatedVtvls={props.coordinatedVtvls}
+              vtvlOptions={props.vtvlOptions}
+              onChangeCoordinationNote={props.onChangeCoordinationNote}
+              onChangeCoordinatedVtvls={props.onChangeCoordinatedVtvls}
             />
           </div>
         </div>

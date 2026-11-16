@@ -31,6 +31,8 @@ Ngày cập nhật: 15/11/2026
 | `phut_thuc_te` | `NUMERIC` | `NOT NULL DEFAULT 0` | Thời gian trung bình hoàn thành 1 sản phẩm (phút) |
 | `gio_bo_sung` | `NUMERIC` | `NOT NULL DEFAULT 0` | Giờ bổ sung (Nếu có) |
 | `coordinated_tasks` | `JSONB` | Default `'[]'` | Danh mục công việc phối hợp liên đơn vị (so sánh theo `id` ổn định) |
+| `coordination_note` | `TEXT` | Nullable | Nội dung phối hợp ngắn kèm theo mã VTVL phối hợp (nếu có) |
+| `coordinated_vtvls` | `JSONB` | Default `'[]'` | Danh sách mở rộng các mã VTVL phối hợp cùng/khác đơn vị |
 | `current_version_no` | `INTEGER` | `NOT NULL DEFAULT 0` | Số phiên bản nộp hiện hành (`0` khi còn ở `draft`, tăng `1, 2, 3...` mỗi lần nộp/nộp lại) |
 | `last_change_summary` | `TEXT` | Nullable | Giải trình nội dung cập nhật gần nhất khi nộp lại |
 | `source_ticket_id` | `VARCHAR(100)` | Nullable | Khóa nguồn chống gộp trùng |
@@ -119,3 +121,39 @@ Ngày cập nhật: 15/11/2026
 | `new_values` | `JSONB` | Nullable | Giá trị sau thay đổi (đã lọc bỏ mật khẩu, token, secret) |
 | `metadata` | `JSONB` | Default `'{}'` | Thông tin ngữ cảnh bổ sung |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT NOW()` | Thời điểm ghi nhận nhật ký |
+
+---
+
+## 6. Bảng `public.user_vtvl_assignments` (Phân công tường minh Tài khoản ↔ Mã VTVL)
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Ý nghĩa nghiệp vụ |
+|---|---|---|---|
+| `id` | `UUID` | `PRIMARY KEY DEFAULT gen_random_uuid()` | Khóa chính phân công |
+| `user_email` | `VARCHAR(255)` | `NOT NULL REFERENCES user_accounts(email) ON DELETE CASCADE` | Email tài khoản cán bộ được phân công |
+| `unit_code` | `VARCHAR(50)` | `NOT NULL REFERENCES dm_don_vi(ma_don_vi)` | Đơn vị chứa mã VTVL (chống trùng mã giữa 2 đơn vị) |
+| `ma_vtvl` | `VARCHAR(80)` | `NOT NULL CHECK (length(trim(ma_vtvl)) > 0)` | Mã VTVL từ Biểu C1 của đơn vị |
+| `ten_vtvl` | `TEXT` | Nullable | Tên VTVL tại thời điểm phân công |
+| `is_active` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Cờ hiệu lực phân công |
+| `assigned_by` | `VARCHAR(255)` | Nullable | Email Admin / Lãnh đạo thực hiện phân công |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT NOW()` | Thời điểm phân công |
+| `updated_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT NOW()` | Thời điểm cập nhật |
+| *(Ràng buộc Unique)* | — | `UNIQUE (user_email, unit_code, ma_vtvl)` | Cho phép gán nhiều VTVL/người và nhiều người/VTVL mà không trùng lặp |
+
+---
+
+## 7. Bảng `public.work_survey_coordinated_vtvls` (Đề xuất phối hợp theo phiên bản đã nộp)
+
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Ý nghĩa nghiệp vụ |
+|---|---|---|---|
+| `id` | `UUID` | `PRIMARY KEY DEFAULT gen_random_uuid()` | Khóa chính bản ghi đề xuất |
+| `survey_id` | `VARCHAR(100)` | `NOT NULL REFERENCES staff_work_tickets(id) ON DELETE CASCADE` | Mã phiếu khảo sát nguồn |
+| `version_no` | `INTEGER` | `NOT NULL CHECK (version_no >= 1)` | Phiên bản đã nộp (`v1`, `v2`...) |
+| `task_row_id` | `VARCHAR(120)` | `NOT NULL` | Định danh dòng công việc ổn định (`sourceTicketId || ticket.id`) |
+| `host_unit_code` | `VARCHAR(50)` | `NOT NULL REFERENCES dm_don_vi(ma_don_vi)` | Đơn vị chủ trì đề xuất phối hợp |
+| `target_unit_code` | `VARCHAR(50)` | `NOT NULL REFERENCES dm_don_vi(ma_don_vi)` | Đơn vị chứa mã VTVL phối hợp |
+| `target_vtvl_code` | `VARCHAR(80)` | `NOT NULL CHECK (length(trim(target_vtvl_code)) > 0)` | Mã VTVL nhận đề xuất phối hợp |
+| `target_vtvl_name` | `TEXT` | Nullable | Tên VTVL tại thời điểm nộp |
+| `coordination_note` | `TEXT` | Nullable | Nội dung phối hợp đề xuất (nếu có) |
+| `is_latest_submitted` | `BOOLEAN` | `NOT NULL DEFAULT TRUE` | Đánh dấu phiên bản đã nộp mới nhất (danh sách hiện hành chỉ đọc cờ `TRUE`, cô lập bản nháp đang sửa) |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL DEFAULT NOW()` | Thời điểm ghi nhận đề xuất |
+| *(Ràng buộc Unique)* | — | `UNIQUE (survey_id, version_no, task_row_id, target_unit_code, target_vtvl_code)` | Khóa chống trùng lặp quan hệ phối hợp theo phiên bản |

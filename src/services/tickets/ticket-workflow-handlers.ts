@@ -4,8 +4,10 @@ import {
   upsertTicketAndSyncUnit,
   mergeApprovedTicketToUnitWorkbook,
   appendTicketStatusHistory,
-  restoreTicketInMemory
+  restoreTicketInMemory,
+  syncTicketsFromSupabase
 } from '@/services/storage/server-ticket-store';
+import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
 import {
   withSurveySubmissionLock,
   createImmutableSurveyVersion,
@@ -16,6 +18,10 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { CallerAuthContext } from '@/services/storage/server-auth-guard';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
+import {
+  compensateRemoveCoordinationProjection,
+  syncSubmittedCoordinationProjection
+} from './vtvl-coordination-service';
 
 export async function executePatchTicketAction(caller: CallerAuthContext, body: Record<string, unknown>) {
   const { id, ticketId, action, note, reason, revisionNotes, changeSummary } = body;
@@ -31,11 +37,15 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
   const act = String(action || '').trim();
 
   if (!targetId) return NextResponse.json({ error: 'Thiếu mã phiếu.', code: 'INVALID_ID' }, { status: 400 });
-  if (!['approve', 'return', 'changes_requested', 'request_changes', 'submit', 'resubmit', 'merge'].includes(act)) {
+  if (!['approve', 'return', 'changes_requested', 'request_changes', 'submit', 'resubmit', 'merge', 'revoke_approval', 'cancel_ticket'].includes(act)) {
     return NextResponse.json({ error: 'Hành động không hợp lệ.', code: 'INVALID_ACTION' }, { status: 400 });
   }
 
-  const target: StaffWorkTicket | null = getTicketById(targetId);
+  let target: StaffWorkTicket | null = getTicketById(targetId);
+  if (!target) {
+    await syncTicketsFromSupabase(typeof body.unitCode === 'string' ? body.unitCode : undefined).catch(() => {});
+    target = getTicketById(targetId);
+  }
   if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
 
   // 1. SUBMIT / RESUBMIT bởi chủ sở hữu phiếu
@@ -99,6 +109,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
           actorRole: caller.role,
           unitId: latest.unitCode
         });
+        await syncSubmittedCoordinationProjection(updated.ticket, ver);
 
         const audit = appendAuditLog({
           unitCode: latest.unitCode,
@@ -116,7 +127,10 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
 
         return NextResponse.json({ ok: true, ticket: getTicketById(latest.id) || updated.ticket });
       } catch (txErr) {
-        if (createdVersionNo !== null) compensateRemoveSurveyVersion(latest.id, createdVersionNo);
+        if (createdVersionNo !== null) {
+          compensateRemoveSurveyVersion(latest.id, createdVersionNo);
+          compensateRemoveCoordinationProjection(latest.id, createdVersionNo);
+        }
         restoreTicketInMemory(latest, latest.id);
         throw txErr;
       }
@@ -135,6 +149,10 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
     const latest = getTicketById(target.id) || target;
     const nowIso = new Date().toISOString();
     const curCanon = toCanonicalStatus(latest.status);
+
+    if (act === 'revoke_approval' || act === 'cancel_ticket') {
+      return await executeRevokeOrCancelTicket(caller, latest, act, reasonText);
+    }
 
     // 2. MERGE vào biểu A2 & B1 (và B2 khi có dữ liệu B2_CT thực tế)
     if (act === 'merge') {
@@ -198,6 +216,13 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         actorRole: caller.role,
         unitId: latest.unitCode
       });
+      if (body.autoMerge !== false && !result.ticket.isTestData && !result.ticket.isArchived) {
+        const mergeRes = await mergeApprovedTicketToUnitWorkbook(latest.id, caller.email, Boolean(body._simulateMergeFailure || process.env.VTVL_SIMULATE_MERGE_FAILURE === 'true'));
+        await appendTicketStatusHistory(mergeRes.ticket, {
+          surveyId: latest.id, fromStatus: 'approved', toStatus: 'approved', action: 'MERGE_TO_SHEETS',
+          reason: 'Tự động đưa vào Biểu A2 & B1 khi duyệt phiếu', actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
+        });
+      }
       const audit = appendAuditLog({
         unitCode: latest.unitCode,
         unitName: findHcmuteUnit(latest.unitCode).nameVi,

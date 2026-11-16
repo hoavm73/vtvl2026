@@ -14,8 +14,11 @@ import {
   syncUnitsWithServer
 } from '@/services/units/unit-management';
 import { AdminUnitEditModal } from './AdminUnitEditModal';
+import { AdminUnitMobileCards } from './AdminUnitMobileCards';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
+import { ListPaginationBar } from '@/components/ui/ListPaginationBar';
 import { useQueryFilter } from '@/services/query/use-query-filter';
+import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 
 const GROUP_LABELS: Record<UnitGroupKind, string> = {
   'khoa-vien': 'Khoa - Viện đào tạo',
@@ -65,9 +68,24 @@ export function AdminUnitsTab() {
       })
   });
 
+  const { state: listState, setField, highlightedId, saveScrollAnchor, restoreAnchorNow } = usePersistedListState(
+    'admin-units-list',
+    { limit: 10 },
+    { readyToScroll: units.length > 0 }
+  );
+
+  const visibleUnits = filtered.slice(0, listState.limit);
+
   const handleEdit = (unit: HcmuteUnit) => {
+    saveScrollAnchor(unit.code);
     setEditingUnit(unit);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    const code = editingUnit?.code;
+    setIsModalOpen(false);
+    restoreAnchorNow(code);
   };
 
   const handleCreate = () => {
@@ -90,25 +108,25 @@ export function AdminUnitsTab() {
   };
 
   return (
-    <div className="space-y-3 min-w-0">
+    <div className="space-y-3 w-full max-w-full min-w-0">
       {/* 5. Command bar gộp Tìm kiếm, Bộ lọc và Thao tác */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 min-h-[48px] sm:min-h-[52px]">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[220px] w-full sm:w-auto">
-          <div className="relative flex-1 min-w-[180px] sm:max-w-md w-full sm:w-auto">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 min-h-[48px] sm:min-h-[52px] min-w-0">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
+          <div className="relative flex-1 min-w-0 sm:max-w-md w-full sm:w-auto">
             <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={params.uq}
-              onChange={(e) => setParam('uq', e.target.value)}
+              onChange={(e) => { setParam('uq', e.target.value); setField('limit', e.target.value.trim() ? 39 : 10); }}
               placeholder="Tìm theo mã đơn vị hoặc tên đơn vị..."
               className="w-full h-10 pl-9 pr-3 text-sm sm:text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#004776] font-medium focus:ring-2 focus:ring-[#004776] focus:outline-none"
             />
           </div>
 
-          <div className="relative flex items-center w-full sm:w-56">
+          <div className="relative flex items-center w-full sm:w-56 min-w-0">
             <ShadcnSelect
               value={params.ugroup}
-              onValueChange={(v) => setParam('ugroup', v)}
+              onValueChange={(v) => { setParam('ugroup', v); setField('limit', 10); }}
               options={[
                 { value: 'all', label: `Tất cả các khối (${units.length})` },
                 { value: 'khoa-vien', label: 'Khoa & Viện đào tạo' },
@@ -121,7 +139,7 @@ export function AdminUnitsTab() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end min-w-0">
           <button
             type="button"
             onClick={handleResetToDefault}
@@ -144,10 +162,10 @@ export function AdminUnitsTab() {
       </div>
 
       {/* 6. Status row rút gọn mỏng ngay phía trên bảng */}
-      <div className="flex items-center justify-between gap-2 px-1 py-1 text-xs text-[#004776] min-h-[32px] sm:min-h-[36px]">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1 text-xs text-[#004776] min-h-[32px] sm:min-h-[36px] min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span className="text-xs font-medium text-[#004776]">
+          <span className="text-xs font-medium text-[#004776] truncate">
             Đồng bộ thời gian thực với dropdown và công thức của 15 bảng tính
           </span>
         </div>
@@ -156,9 +174,16 @@ export function AdminUnitsTab() {
         </span>
       </div>
 
-      {/* 7. Ưu tiên Bảng dữ liệu: Đưa lên cao, sticky header, row height 48-52px */}
-      <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto max-h-[650px] relative">
+      {/* 7. Danh sách thẻ (< 768px) & Bảng dữ liệu (>= 768px) */}
+      <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs overflow-hidden w-full max-w-full min-w-0">
+        <AdminUnitMobileCards
+          units={visibleUnits}
+          highlightedId={highlightedId}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+
+        <div className="hidden md:block overflow-x-auto max-h-[650px] relative">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-[#f8fafc] shadow-2xs">
               <tr className="border-b border-[#cbd5e1]">
@@ -172,8 +197,14 @@ export function AdminUnitsTab() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u, idx) => (
-                <tr key={u.code} className="h-[48px] sm:h-[50px] border-b border-[#cbd5e1]/70 hover:bg-blue-50/30 transition-colors">
+              {visibleUnits.map((u, idx) => (
+                <tr
+                  key={u.code}
+                  data-row-anchor={u.code}
+                  className={`h-[48px] sm:h-[50px] border-b border-[#cbd5e1]/70 transition-colors ${
+                    highlightedId === u.code ? 'bg-[#e6f1ff]' : 'hover:bg-blue-50/30'
+                  }`}
+                >
                   <td className="p-2.5 text-center text-[#64748b] font-medium border-r border-[#cbd5e1] bg-[#f8fafc]/50">
                     {idx + 1}
                   </td>
@@ -225,14 +256,22 @@ export function AdminUnitsTab() {
             </tbody>
           </table>
         </div>
+
+        <ListPaginationBar
+          totalCount={filtered.length}
+          visibleCount={listState.limit}
+          step={10}
+          unitLabel="đơn vị"
+          onChangeVisibleCount={(n) => setField('limit', n)}
+        />
       </div>
 
       {/* Modal Thêm / Chỉnh sửa */}
       <AdminUnitEditModal
         isOpen={isModalOpen}
         unit={editingUnit}
-        onClose={() => setIsModalOpen(false)}
-        onSaved={loadUnits}
+        onClose={handleCloseModal}
+        onSaved={() => { loadUnits(); handleCloseModal(); }}
       />
     </div>
   );

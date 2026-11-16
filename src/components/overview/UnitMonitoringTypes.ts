@@ -107,3 +107,30 @@ export function formatCompactTime(iso?: string | null): string {
   const yyyy = d.getFullYear();
   return `${hh}:${mm} · ${dd}/${mo}/${yyyy}`;
 }
+
+/**
+ * Chuẩn hóa chuỗi tiếng Việt về dạng chữ thường không dấu để tìm kiếm linh hoạt.
+ */
+export function normalizeViSearch(value?: string | number | null): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Kiểm tra chuỗi tìm kiếm (hỗ trợ nhiều từ khóa, có/không dấu) khớp trên tập trường dữ liệu.
+ */
+export function matchesMonitorSearch(
+  fields: Array<string | number | undefined | null>,
+  query: string
+): boolean {
+  const cleanQuery = normalizeViSearch(query);
+  if (!cleanQuery) return true;
+  const haystack = normalizeViSearch(fields.filter((f) => f !== undefined && f !== null).join(' '));
+  return cleanQuery.split(' ').every((token) => haystack.includes(token));
+}

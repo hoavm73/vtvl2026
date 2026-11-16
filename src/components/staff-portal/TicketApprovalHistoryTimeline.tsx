@@ -12,7 +12,14 @@ import {
 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 
-export type ApprovalActionType = 'SUBMIT' | 'REQUEST_CHANGES' | 'RESUBMIT' | 'APPROVE' | 'MERGE_TO_SHEETS';
+export type ApprovalActionType =
+  | 'SUBMIT'
+  | 'REQUEST_CHANGES'
+  | 'RESUBMIT'
+  | 'APPROVE'
+  | 'MERGE_TO_SHEETS'
+  | 'REVOKE_APPROVAL'
+  | 'CANCEL_TICKET';
 
 export interface ApprovalTimelineEvent {
   id: string;
@@ -55,11 +62,25 @@ const ACTION_META: Record<ApprovalActionType, { label: string; dotCls: string; b
     dotCls: 'bg-[#008f5d] ring-[#e6f9f1]',
     badgeCls: 'bg-[#e6f9f1] text-[#008f5d]',
     boxCls: 'bg-[#f1f9f5] border-[#a7f3d0]'
+  },
+  REVOKE_APPROVAL: {
+    label: 'Thu hồi phê duyệt (yêu cầu sửa lại)',
+    dotCls: 'bg-[#d97706] ring-[#fff4e5]',
+    badgeCls: 'bg-[#fff8eb] text-[#b45309]',
+    boxCls: 'bg-[#fff8eb] border-[#fcd34d]'
+  },
+  CANCEL_TICKET: {
+    label: 'Hủy / xóa phiếu kê khai sai',
+    dotCls: 'bg-[#e11d48] ring-[#ffe4e6]',
+    badgeCls: 'bg-rose-50 text-rose-700',
+    boxCls: 'bg-rose-50 border-rose-200'
   }
 };
 
 function normalizeActionType(rawAction?: string, toStatus?: string): ApprovalActionType {
   const act = (rawAction || '').toUpperCase().trim();
+  if (act === 'REVOKE_APPROVAL') return 'REVOKE_APPROVAL';
+  if (act === 'CANCEL_TICKET') return 'CANCEL_TICKET';
   if (act === 'APPROVE') return 'APPROVE';
   if (act === 'REQUEST_CHANGES' || act === 'CHANGES_REQUESTED' || act === 'RETURN') return 'REQUEST_CHANGES';
   if (act === 'RESUBMIT') return 'RESUBMIT';

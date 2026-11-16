@@ -94,7 +94,16 @@ export function recalculateGridFormulas(
   next.B2 = updatedB2;
 
   // 3. Sync positions from C1 into C3, DU_BAO, D2
-  const c1Positions = next.C1 || [];
+  const c1Positions: GenericGridRow[] = (next.C1 || []).map((c): GenericGridRow => {
+    const mode = String(c.cheDoLamViec || '').trim();
+    const resolvedStd = mode === 'Đặc thù' ? 1760 : mode.startsWith('Phổ biến') ? 1904 : (Number(c.gioChuanPp2) || 1904);
+    return {
+      ...c,
+      gioChuanPp2: resolvedStd,
+      kiemTra: resolvedStd > 0 ? 'ĐẠT' : 'LỖI'
+    };
+  });
+  next.C1 = c1Positions;
   const c3Map = new Map((next.C3 || []).map((r) => [String(r.maVtvl), r]));
   const updatedC3: GenericGridRow[] = c1Positions.map((c, idx) => {
     const vCode = String(c.maVtvl);

@@ -20,6 +20,10 @@ erDiagram
     STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_MERGE_LINKS : "merges (liên kết gộp chính thức A2/B1/B2)"
     USER_ACCOUNTS ||--o{ AUDIT_LOGS : "performs (người thực hiện thao tác)"
     DM_DON_VI ||--o{ AUDIT_LOGS : "scopes (phạm vi đơn vị bị tác động)"
+    USER_ACCOUNTS ||--o{ USER_VTVL_ASSIGNMENTS : "assigned_to (phân công mã VTVL tường minh)"
+    DM_DON_VI ||--o{ USER_VTVL_ASSIGNMENTS : "scopes (khớp đồng thời đơn vị + mã VTVL)"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "proposes (đề xuất phối hợp theo phiên bản nộp)"
+    DM_DON_VI ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "targets (đơn vị nhận phối hợp)"
 
     AUTH_USERS {
         uuid id PK "Khóa chính Supabase Auth"
@@ -142,6 +146,29 @@ erDiagram
         timestamp updated_at "Thời điểm cập nhật"
     }
 
+    USER_VTVL_ASSIGNMENTS {
+        uuid id PK "Khóa chính UUID"
+        string user_email FK "Email tài khoản (FK user_accounts.email)"
+        string unit_code FK "Mã đơn vị công tác (FK dm_don_vi.ma_don_vi)"
+        string ma_vtvl "Mã VTVL Biểu C1 — UNIQUE(user_email, unit_code, ma_vtvl)"
+        string ten_vtvl "Tên VTVL snapshot"
+        boolean is_active "Đang hiệu lực"
+        string assigned_by "Email Admin/Lãnh đạo phân công"
+        timestamp updated_at "Thời điểm cập nhật"
+    }
+
+    WORK_SURVEY_COORDINATED_VTVLS {
+        uuid id PK "Khóa chính UUID"
+        string survey_id FK "Mã phiếu nguồn (FK staff_work_tickets.id)"
+        integer version_no "Số phiên bản đã nộp (1, 2, 3...)"
+        string task_row_id "ID dòng công việc ổn định"
+        string host_unit_code FK "Đơn vị chủ trì"
+        string target_unit_code FK "Đơn vị nhận phối hợp"
+        string target_vtvl_code "Mã VTVL nhận phối hợp"
+        string coordination_note "Nội dung đề xuất phối hợp"
+        boolean is_latest_submitted "TRUE cho phiên bản đã nộp mới nhất"
+    }
+
     AUDIT_LOGS {
         uuid id PK "Khóa chính UUID"
         string actor_email "Email người thao tác"
@@ -172,4 +199,6 @@ erDiagram
 | `WORK_SURVEY_VERSIONS` | `public.work_survey_versions` | Bảng lưu snapshot phiên bản bất biến (`v1, v2, v3...`) phục vụ đối chiếu thay đổi từng trường |
 | `WORK_SURVEY_STATUS_HISTORY` | `public.work_survey_status_history` | Nhật ký chuyển đổi 5 trạng thái vòng đời của phiếu cá nhân (bất biến) |
 | `WORK_SURVEY_MERGE_LINKS` | `public.work_survey_merge_links` | Khóa liên kết nguồn idempotent `UNIQUE(survey_id, target_sheet, target_record_id)` ngăn chặn gộp trùng vào biểu A2/B1/B2 |
+| `USER_VTVL_ASSIGNMENTS` | `public.user_vtvl_assignments` | Quan hệ tường minh nhiều-nhiều Người dùng ↔ `(unit_code, ma_vtvl)`, tránh suy đoán người nhận và tránh trùng mã VTVL khác đơn vị |
+| `WORK_SURVEY_COORDINATED_VTVLS` | `public.work_survey_coordinated_vtvls` | Chiếu đề xuất phối hợp theo từng phiên bản đã nộp (`is_latest_submitted`), cô lập dữ liệu nháp chưa nộp lại |
 | `AUDIT_LOGS` | `public.audit_logs` | Nhật ký kiểm toán bảo mật bất biến, tự động lọc mật khẩu/token/secret |

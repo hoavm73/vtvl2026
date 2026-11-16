@@ -84,3 +84,24 @@ erDiagram
    - Ở chế độ lưu trữ cục bộ (`.data/`), `withUnitWorkbookLock` ([server-file-lock.ts](file:///Users/macaz/Documents/0.%20App/VTVL%20/src/services/storage/server-file-lock.ts)) sử dụng cơ chế tạo tệp khóa nguyên tử `fs.openSync(..., 'wx')` kết hợp xóa bộ nhớ đệm để tuần tự hóa các tiến trình gộp đồng thời, đồng thời kiểm tra `baseRevision` và loại bỏ việc gán đè `wb.data = snapshotWbData` trong khối `catch`.
    - Ở chế độ cơ sở dữ liệu Supabase, hàm `rpc_merge_work_survey_to_b1_b2` khóa cả dòng phiếu (`staff_work_tickets FOR UPDATE`) và dòng bảng tính đơn vị (`workbooks FOR UPDATE`), kiểm tra `p_expected_wb_revision` và dùng `PERFORM set_config('app.actor_id', ..., true)` (`SET LOCAL`) trong cùng một giao dịch.
 
+## 5. Phân quyền danh mục VTVL (Biểu C1) & chế độ xem mặc định theo vai trò
+
+1. **Phân quyền quản trị VTVL tại `3. C1_VTVL` và cổng phiếu công việc:**
+   - **Quản trị viên hệ thống (`admin`):** Mở khóa trực tiếp `Biểu C1` trên toàn bộ **39 đơn vị**, được **thêm, sửa, xoá** mã/tên VTVL và chuyển đổi đơn vị công tác trên `/bang-tinh` (hoặc qua `?unit=MÃ_ĐV`).
+   - **Lãnh đạo đơn vị (`unit_leader`):** Mở khóa trực tiếp `Biểu C1` trong phạm vi **đơn vị mình** (`caller.unitCode`), được **thêm, sửa, xoá** VTVL tại đơn vị và bị chặn `403 FORBIDDEN_CROSS_UNIT` khi thao tác sang đơn vị khác.
+   - **Cán bộ – Giảng viên – Nhân viên (`staff`):** Ở chế độ **chỉ xem** trên `/bang-tinh` (`403 FORBIDDEN_VIEWER_WRITE` nếu gọi API sửa bảng tính); trên `/phieu-cong-viec`, nút **"Bảng tính toàn đơn vị"** trỏ mặc định tới `/bang-tinh?sheet=A2` (`2. A2_CongViec`) và mục chọn VTVL lấy trực tiếp từ danh mục `C1` mới nhất do Lãnh đạo đơn vị / Quản trị viên cập nhật.
+   - Khi xóa một VTVL ở `Biểu C1`, `validateRowDeletion` chỉ chặn khi đã có phiếu công việc thực tế (`sourceTicketId`) gắn với mã VTVL đó tại `A2`/`B1`; đồng thời dọn sạch dữ liệu liên kết mẫu tại `C2`, `C3`, `D1`, `DU_BAO`, `D2`.
+
+## 6. Cơ chế Thu hồi phê duyệt & Hủy/Xóa phiếu kê khai sai (tự động gỡ gộp A2/B1)
+
+1. **Thu hồi phê duyệt (`action: 'revoke_approval'`):**
+   - Áp dụng cho **Lãnh đạo đơn vị** (trong đơn vị mình, không tự thu hồi phiếu cá nhân của chính Lãnh đạo) và **Quản trị viên (`admin`)** khi phiếu đã ở trạng thái `Đã duyệt` nhưng phát hiện sai sót cần nhân viên sửa lại.
+   - Yêu cầu nhập lý do thu hồi bắt buộc; hệ thống tự động gọi `unmergeTicketFromUnitWorkbook` ([server-ticket-unmerge.ts](file:///Users/macaz/Documents/0.%20App/VTVL%20/src/services/storage/server-ticket-unmerge.ts)) để gỡ dòng gắn `sourceTicketId` của phiếu khỏi `Biểu A2` và `Biểu B1` (giữ nguyên dòng của các cán bộ khác) và tính lại công thức đơn vị.
+   - Phiếu chuyển về **`Yêu cầu bổ sung` (`changes_requested`)** để nhân viên chỉnh sửa và nộp lại phiên bản mới (`v2`, `v3`...), giữ nguyên lịch sử kiểm toán (`REVOKE_APPROVAL`).
+
+2. **Hủy / xóa phiếu kê khai sai (`action: 'cancel_ticket'`):**
+   - **Lãnh đạo đơn vị** hoặc **Quản trị viên (`admin`)** có thể hủy phiếu đã nộp hoặc đã duyệt do kê khai nhầm/trùng kèm lý do bắt buộc.
+   - Hệ thống tự động gỡ gộp khỏi `Biểu A2/B1` (nếu đã gộp), xóa dữ liệu đề xuất phối hợp; xóa vật lý nếu là `Nháp` chưa có lịch sử, hoặc gắn cờ lưu trữ hủy (`isArchived = true`) để ẩn khỏi mọi danh sách & bộ đếm thống kê mà vẫn bảo toàn trigger bất biến của `work_survey_versions` và `work_survey_status_history`.
+
+
+

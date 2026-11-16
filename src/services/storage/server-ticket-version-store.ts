@@ -242,6 +242,11 @@ export function getTicketMergeLinks(surveyId: string): WorkSurveyMergeLink[] {
   return store[surveyId] ? [...store[surveyId]] : [];
 }
 
+export function clearLocalMergeLinks(surveyId: string): void {
+  const store = loadLocalMergeLinks();
+  if (store[surveyId]) { delete store[surveyId]; persistLocalMergeLinks(); }
+}
+
 export async function recordIdempotentMergeLinks(
   surveyId: string,
   links: { targetSheet: 'A2' | 'B1' | 'B2'; targetRecordId: string; sourceVersion: number; mergedBy: string }[]
@@ -251,26 +256,13 @@ export async function recordIdempotentMergeLinks(
   const now = new Date().toISOString();
 
   for (const item of links) {
-    const idx = current.findIndex(
-      (l) => l.surveyId === surveyId && l.targetSheet === item.targetSheet && l.targetRecordId === item.targetRecordId
-    );
-    if (idx >= 0) {
-      current[idx] = {
-        ...current[idx],
-        sourceVersion: item.sourceVersion,
-        mergedBy: item.mergedBy,
-        updatedAt: now
-      };
-    } else {
+    const idx = current.findIndex((l) => l.surveyId === surveyId && l.targetSheet === item.targetSheet && l.targetRecordId === item.targetRecordId);
+    if (idx >= 0) current[idx] = { ...current[idx], sourceVersion: item.sourceVersion, mergedBy: item.mergedBy, updatedAt: now };
+    else {
       current.push({
         id: `ml-${surveyId}-${item.targetSheet}-${item.targetRecordId}`,
-        surveyId,
-        targetSheet: item.targetSheet,
-        targetRecordId: item.targetRecordId,
-        sourceVersion: item.sourceVersion,
-        mergedBy: item.mergedBy,
-        mergedAt: now,
-        updatedAt: now
+        surveyId, targetSheet: item.targetSheet, targetRecordId: item.targetRecordId,
+        sourceVersion: item.sourceVersion, mergedBy: item.mergedBy, mergedAt: now, updatedAt: now
       });
     }
   }
@@ -279,17 +271,10 @@ export async function recordIdempotentMergeLinks(
     await fetch(`${SUPABASE_URL}/rest/v1/work_survey_merge_links?on_conflict=survey_id,target_sheet,target_record_id`, {
       method: 'POST',
       headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(
-        links.map((item) => ({
-          survey_id: surveyId,
-          target_sheet: item.targetSheet,
-          target_record_id: item.targetRecordId,
-          source_version: item.sourceVersion,
-          merged_by: item.mergedBy,
-          merged_at: now,
-          updated_at: now
-        }))
-      )
+      body: JSON.stringify(links.map((item) => ({
+        survey_id: surveyId, target_sheet: item.targetSheet, target_record_id: item.targetRecordId,
+        source_version: item.sourceVersion, merged_by: item.mergedBy, merged_at: now, updated_at: now
+      })))
     }).catch(() => {});
   }
 

@@ -1,32 +1,44 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  CheckCircle2, AlertTriangle, Eye, Printer, Users, Layers, Search, User, Link2
-} from 'lucide-react';
+import { User, Link2 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
+import { UnitTicketActionButtons } from './UnitTicketActionButtons';
+import {
+  ApprovedSubFilter,
+  PendingSubFilter,
+  UnitReviewMode,
+  UnitTicketsFilterBar
+} from './UnitTicketsFilterBar';
 
 interface UnitTicketsReviewListProps {
   tickets: StaffWorkTicket[];
   loading: boolean;
   currentUserRole?: 'admin' | 'unit_leader' | 'staff';
   currentUserEmail?: string;
-  mode?: 'pending' | 'all';
+  mode?: UnitReviewMode;
   onViewTicket: (ticket: StaffWorkTicket) => void;
   onPrintTicket: (ticket: StaffWorkTicket) => void;
+  onEditTicket?: (ticket: StaffWorkTicket) => void;
+  onCoordTicket?: (ticket: StaffWorkTicket) => void;
+  onSubmitTicket?: (ticket: StaffWorkTicket, isResubmit: boolean) => void;
   onApproveTicket?: (ticket: StaffWorkTicket) => Promise<void>;
   onRequestChanges?: (ticket: StaffWorkTicket) => void;
   onMergeTicket?: (ticket: StaffWorkTicket) => void;
+  onRevokeApproval?: (ticket: StaffWorkTicket) => void;
+  onCancelTicket?: (ticket: StaffWorkTicket) => void;
 }
 
 export function UnitTicketsReviewList({
   tickets, loading, currentUserRole, currentUserEmail, mode = 'all',
-  onViewTicket, onPrintTicket, onApproveTicket, onRequestChanges, onMergeTicket
+  onViewTicket, onPrintTicket, onEditTicket, onCoordTicket, onSubmitTicket,
+  onApproveTicket, onRequestChanges, onMergeTicket, onRevokeApproval, onCancelTicket
 }: UnitTicketsReviewListProps) {
   const isLeader = currentUserRole === 'unit_leader' || currentUserRole === 'admin';
-  const onReviewTicket = onApproveTicket;
   const [search, setSearch] = useState('');
+  const [pendingSubFilter, setPendingSubFilter] = useState<PendingSubFilter>('ALL');
+  const [approvedSubFilter, setApprovedSubFilter] = useState<ApprovedSubFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [ownerFilter, setOwnerFilter] = useState('ALL');
   const [missionFilter, setMissionFilter] = useState('ALL');
@@ -34,89 +46,83 @@ export function UnitTicketsReviewList({
   const owners = useMemo(() => Array.from(new Set(tickets.map((t) => t.ownerName || t.ownerEmail))), [tickets]);
   const missions = useMemo(() => Array.from(new Set(tickets.map((t) => t.maNhiemVu).filter(Boolean))), [tickets]);
 
+  const { waitingCount, changesCount, unmergedCount, mergedCount } = useMemo(() => {
+    let waitingCount = 0, changesCount = 0, unmergedCount = 0, mergedCount = 0;
+    for (const t of tickets) {
+      const c = toCanonicalStatus(t.status);
+      if (c === 'submitted' || c === 'resubmitted') waitingCount += 1;
+      else if (c === 'changes_requested') changesCount += 1;
+      else if (c === 'approved') { if (t.isMergedToB1B2) mergedCount += 1; else unmergedCount += 1; }
+    }
+    return { waitingCount, changesCount, unmergedCount, mergedCount };
+  }, [tickets]);
+
   const displayedTickets = useMemo(() => {
     let list = [...tickets];
     if (mode === 'pending') {
       list = list.filter((t) => {
         const c = toCanonicalStatus(t.status);
-        return c === 'submitted' || c === 'resubmitted';
+        if (pendingSubFilter === 'WAITING') return c === 'submitted' || c === 'resubmitted';
+        if (pendingSubFilter === 'CHANGES') return c === 'changes_requested';
+        return c === 'submitted' || c === 'resubmitted' || c === 'changes_requested';
       });
-      list.sort((a, b) => (b.resubmittedAt || b.submittedAt || b.updatedAt).localeCompare(a.resubmittedAt || a.submittedAt || a.updatedAt));
-      return list;
+      list.sort((a, b) => (b.revisionRequestedAt || b.resubmittedAt || b.submittedAt || b.updatedAt).localeCompare(a.revisionRequestedAt || a.resubmittedAt || a.submittedAt || a.updatedAt));
+    } else if (mode === 'approved') {
+      list = list.filter((t) => {
+        if (toCanonicalStatus(t.status) !== 'approved') return false;
+        if (approvedSubFilter === 'UNMERGED') return !t.isMergedToB1B2;
+        if (approvedSubFilter === 'MERGED') return Boolean(t.isMergedToB1B2);
+        return true;
+      });
+      list.sort((a, b) => (b.approvedAt || b.updatedAt).localeCompare(a.approvedAt || a.updatedAt));
+    } else {
+      if (statusFilter !== 'ALL') list = list.filter((t) => toCanonicalStatus(t.status) === statusFilter);
+      if (ownerFilter !== 'ALL') list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
+      if (missionFilter !== 'ALL') list = list.filter((t) => t.maNhiemVu === missionFilter);
     }
-    if (statusFilter !== 'ALL') list = list.filter((t) => toCanonicalStatus(t.status) === statusFilter);
-    if (ownerFilter !== 'ALL') list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
-    if (missionFilter !== 'ALL') list = list.filter((t) => t.maNhiemVu === missionFilter);
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((t) =>
-        t.tenCongViec.toLowerCase().includes(q) ||
-        t.maCongViec.toLowerCase().includes(q) ||
-        t.ownerName.toLowerCase().includes(q) ||
-        t.ownerEmail.toLowerCase().includes(q)
+        t.tenCongViec.toLowerCase().includes(q) || t.maCongViec.toLowerCase().includes(q) ||
+        (t.maNhiemVu || '').toLowerCase().includes(q) || t.ownerName.toLowerCase().includes(q) || t.ownerEmail.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [tickets, mode, statusFilter, ownerFilter, missionFilter, search]);
+  }, [tickets, mode, pendingSubFilter, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
+
+  const emptyText = mode === 'pending'
+    ? 'Hiện tại không có phiếu nào đang chờ duyệt hoặc yêu cầu bổ sung.'
+    : mode === 'approved' ? 'Chưa có phiếu nào được phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.';
 
   return (
     <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
-      <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#006cee]" />
-          <h2 className="text-base font-bold text-[#004776]">
-            {mode === 'pending' ? 'Phiếu chờ phê duyệt' : 'Toàn bộ phiếu của đơn vị'} ({displayedTickets.length})
-          </h2>
-        </div>
-      </div>
-
-      {mode === 'all' && (
-        <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm theo tên việc, mã, người..."
-              className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
-            />
-          </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="submitted">Đã nộp</option>
-            <option value="resubmitted">Đã nộp lại</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="changes_requested">Yêu cầu bổ sung</option>
-            <option value="draft">Nháp</option>
-          </select>
-          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
-            <option value="ALL">Tất cả người kê khai</option>
-            {owners.map((o) => (<option key={o} value={o}>{o}</option>))}
-          </select>
-          <select value={missionFilter} onChange={(e) => setMissionFilter(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
-            <option value="ALL">Tất cả nhiệm vụ (A1)</option>
-            {missions.map((m) => (<option key={m} value={m}>{m}</option>))}
-          </select>
-        </div>
-      )}
+      <UnitTicketsFilterBar
+        mode={mode} isLeader={isLeader} displayedCount={displayedTickets.length}
+        search={search} onSearchChange={setSearch}
+        pendingSubFilter={pendingSubFilter} onPendingSubFilterChange={setPendingSubFilter}
+        waitingCount={waitingCount} changesCount={changesCount}
+        approvedSubFilter={approvedSubFilter} onApprovedSubFilterChange={setApprovedSubFilter}
+        unmergedCount={unmergedCount} mergedCount={mergedCount}
+        statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
+        ownerFilter={ownerFilter} onOwnerFilterChange={setOwnerFilter}
+        missionFilter={missionFilter} onMissionFilterChange={setMissionFilter}
+        owners={owners} missions={missions}
+      />
 
       <div className="divide-y divide-[#eef3f8]">
         {loading && tickets.length === 0 ? (
           <div className="p-8 text-center text-xs text-[#20446c]">Đang tải dữ liệu phiếu...</div>
         ) : displayedTickets.length === 0 ? (
-          <div className="p-6 text-center text-xs text-[#20446c]">
-            {mode === 'pending' ? 'Hiện tại không có phiếu nào cần phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.'}
-          </div>
+          <div className="p-6 text-center text-xs text-[#20446c]">{emptyText}</div>
         ) : (
           displayedTickets.map((t) => {
             const hours = Math.round((((t.soSpNam * t.phutThucTe) / 60) + t.gioBoSung) * 10) / 10;
             const meta = getTicketStatusMeta(t);
             const StatusIcon = meta.Icon;
             const canonical = meta.canonical;
-            const isOwnLeaderTicket = currentUserRole === 'unit_leader' && t.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
-            const canReview = isLeader && (canonical === 'submitted' || canonical === 'resubmitted');
-            const canMerge = isLeader && canonical === 'approved';
+            const isOwnTicket = t.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
+            const isOwnLeaderTicket = currentUserRole === 'unit_leader' && isOwnTicket;
             const submittedDateIso = t.resubmittedAt || t.submittedAt;
 
             return (
@@ -124,7 +130,6 @@ export function UnitTicketsReviewList({
                 <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${meta.stripeCls}`} />
 
                 <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-4">
-                  {/* Vùng trái: Thông tin định danh, nội dung & định mức */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2.5">
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -194,7 +199,6 @@ export function UnitTicketsReviewList({
                     )}
                   </div>
 
-                  {/* Vùng phải: Trạng thái (trên), Tiến trình 4 bước (giữa) & Nghiệp vụ căn phải (dưới) */}
                   <div className="lg:w-[415px] xl:w-[450px] shrink-0 flex flex-col lg:items-end justify-between gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#e8eff7] lg:pl-4">
                     <div className="flex flex-wrap items-center lg:justify-end gap-1.5">
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
@@ -210,51 +214,15 @@ export function UnitTicketsReviewList({
 
                     <TicketApprovalProgress ticket={t} />
 
-                    <div className="flex flex-wrap items-center lg:justify-end gap-1.5 w-full">
-                      <button type="button" onClick={() => onViewTicket(t)} className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors">
-                        <Eye className="w-3.5 h-3.5 text-[#006cee]" /> Xem chi tiết
-                      </button>
-
-                      <button type="button" onClick={() => onPrintTicket(t)} className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors">
-                        <Printer className="w-3.5 h-3.5 text-[#006cee]" /> In PDF
-                      </button>
-
-                      {isLeader && onReviewTicket && canReview && (
-                        isOwnLeaderTicket ? (
-                          <span className="text-[11px] font-medium text-[#b45309] bg-[#fff8eb] px-2.5 py-1 rounded-lg border border-[#fcd34d]">
-                            Phiếu cá nhân của Lãnh đạo (Cần TCNS duyệt)
-                          </span>
-                        ) : (
-                          <>
-                            {onRequestChanges && (
-                              <button type="button" onClick={() => onRequestChanges(t)} className="h-8 px-3 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors">
-                                <AlertTriangle className="w-3.5 h-3.5 text-[#f99c00]" /> Yêu cầu bổ sung
-                              </button>
-                            )}
-                            {onApproveTicket && (
-                              <button type="button" onClick={() => onApproveTicket(t)} className="h-8 px-3 rounded-lg bg-[#00a86b] hover:bg-[#008f5d] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Duyệt phiếu
-                              </button>
-                            )}
-                          </>
-                        )
-                      )}
-
-                      {canMerge && onMergeTicket && (
-                        <button
-                          type="button"
-                          onClick={() => onMergeTicket(t)}
-                          className={`h-8 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors ${
-                            t.isMergedToB1B2
-                              ? 'border border-[#a7f3d0] bg-[#e6f9f1] text-[#008f5d] hover:bg-[#d1fae5]'
-                              : 'bg-[#006cee] hover:bg-[#005ecc] text-white'
-                          }`}
-                        >
-                          <Layers className="w-3.5 h-3.5" />
-                          <span>{t.isMergedToB1B2 ? 'Cập nhật gộp B1/B2' : 'Gộp vào B1/B2'}</span>
-                        </button>
-                      )}
-                    </div>
+                    <UnitTicketActionButtons
+                      ticket={t} canonical={canonical} isLeader={isLeader}
+                      isOwnTicket={isOwnTicket} isOwnLeaderTicket={isOwnLeaderTicket}
+                      onViewTicket={onViewTicket} onPrintTicket={onPrintTicket}
+                      onEditTicket={onEditTicket} onCoordTicket={onCoordTicket}
+                      onSubmitTicket={onSubmitTicket} onApproveTicket={onApproveTicket}
+                      onRequestChanges={onRequestChanges} onMergeTicket={onMergeTicket}
+                      onRevokeApproval={onRevokeApproval} onCancelTicket={onCancelTicket}
+                    />
                   </div>
                 </div>
               </div>

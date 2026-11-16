@@ -181,29 +181,38 @@ export default function AdminPage() {
     );
   }
 
+  const selectAdminTab = (tabKey: AdminTabKey) => {
+    setActiveTab(tabKey);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabKey);
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  };
+
   const isLeader = currentRole === 'unit_leader';
-  const tabs: { key: AdminTabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
-    ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accountCount})`, icon: Users }]
+  const tabs: { key: AdminTabKey; label: string; shortLabel: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
+    ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accountCount})`, shortLabel: `Tài khoản ĐV (${accountCount})`, icon: Users }]
     : [
-        { key: 'unit-monitor', label: 'Dashboard theo dõi đơn vị', icon: BarChart3 },
-        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessionCount})`, icon: FileSpreadsheet },
-        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accountCount})`, icon: Users },
-        { key: 'session-control', label: '3. Quản trị phiên', icon: UserCheck },
-        { key: 'units', label: `4. Quản trị đơn vị (${unitCount})`, icon: Building2 }
+        { key: 'unit-monitor', label: 'Dashboard theo dõi đơn vị', shortLabel: 'Theo dõi ĐV', icon: BarChart3 },
+        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessionCount})`, shortLabel: `1. Hồ sơ (${sessionCount})`, icon: FileSpreadsheet },
+        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accountCount})`, shortLabel: `2. Tài khoản (${accountCount})`, icon: Users },
+        { key: 'session-control', label: '3. Quản trị phiên', shortLabel: '3. Phiên', icon: UserCheck },
+        { key: 'units', label: `4. Quản trị đơn vị (${unitCount})`, shortLabel: `4. Đơn vị (${unitCount})`, icon: Building2 }
       ];
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] py-3 sm:py-5 px-3 sm:px-5 lg:px-6">
-      <div className="max-w-[1680px] mx-auto min-w-0">
-        <div className="bg-white rounded-[14px] border border-[#e2e8f0] shadow-2xs overflow-visible min-w-0 max-w-full">
+    <div className="w-full max-w-full min-w-0 bg-[#f8fafc] py-2.5 sm:py-5 px-2.5 sm:px-5 lg:px-6 overflow-x-hidden">
+      <div className="max-w-[1680px] mx-auto w-full min-w-0">
+        <div className="bg-white rounded-[14px] border border-[#e2e8f0] shadow-2xs w-full max-w-full min-w-0 overflow-x-clip">
           <AdminHeader
             onLogout={handleLogout}
             onOpenOrgTree={isLeader ? undefined : () => setIsOrgTreeModalOpen(true)}
           />
 
-          <div className="px-4 sm:px-5 py-2.5 bg-slate-50/50 border-b border-[#f1f5f9] flex flex-wrap items-center gap-2 min-w-0">
+          <div className="px-3 sm:px-5 py-2.5 bg-slate-50/50 border-b border-[#f1f5f9] flex flex-wrap items-center gap-2 w-full min-w-0">
             {!isLeader && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
+              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
                 <FileSpreadsheet className="w-3.5 h-3.5 text-[#004776] shrink-0" />
                 <span>{sessionCount} hồ sơ</span>
                 <button
@@ -217,13 +226,13 @@ export default function AdminPage() {
               </div>
             )}
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-[#004776] border border-sky-200/70">
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-[#004776] border border-sky-200/70">
               <Users className="w-3.5 h-3.5 text-[#004776] shrink-0" />
               <span>{accountCount} tài khoản {isLeader ? 'thuộc đơn vị' : ''}</span>
             </div>
 
             <div
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 max-w-[calc(100vw-3rem)] sm:max-w-md truncate min-w-0"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 max-w-full sm:max-w-md truncate min-w-0"
               title={activeUnitCode}
             >
               <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
@@ -231,14 +240,14 @@ export default function AdminPage() {
             </div>
 
             {!isLeader && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
+              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
                 <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
                 <span>{unitCount} đơn vị</span>
               </div>
             )}
           </div>
 
-          <div className="px-3 sm:px-6 border-b border-[#e2e8f0] flex items-center gap-1 sm:gap-2 bg-white overflow-x-auto no-scrollbar">
+          <div className="w-full max-w-full min-w-0 px-2.5 sm:px-6 border-b border-[#e2e8f0] flex items-center gap-1 sm:gap-2 bg-white overflow-x-auto no-scrollbar">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
@@ -246,21 +255,22 @@ export default function AdminPage() {
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`h-[50px] inline-flex items-center gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-3 sm:px-4 whitespace-nowrap ${
+                  onClick={() => selectAdminTab(tab.key)}
+                  className={`h-[46px] sm:h-[50px] inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2.5 sm:px-4 whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-[#004776] border-[#004776] bg-blue-50/40'
                       : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span>{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="p-4 sm:p-5">
+          <div className="p-3 sm:p-5 w-full max-w-full min-w-0">
             {activeTab === 'unit-monitor' && !isLeader && <UnitMonitoringDashboard />}
             {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
             {activeTab === 'accounts' && <AdminAccountsTab />}
@@ -277,6 +287,6 @@ export default function AdminPage() {
           />
         )}
       </div>
-    </main>
+    </div>
   );
 }

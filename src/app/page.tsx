@@ -126,30 +126,38 @@ export default function HomePage() {
 
       {/* Thanh chuyển đổi Tab dành riêng cho Phòng Tổ chức - Nhân sự & Admin */}
       {isTcnsOrAdmin && (
-        <div className="inline-flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-full border border-[#dbe8f5] shadow-2xs">
+        <div
+          role="tablist"
+          aria-label="Chế độ xem tổng quan"
+          className="inline-flex flex-wrap items-center gap-1 bg-white p-1 rounded-full border border-[#d8e3ef] shadow-[0_2px_8px_-2px_rgba(0,71,118,0.08)]"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'overview'}
             onClick={() => handleSwitchTab('overview')}
-            className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
+            className={`h-9 px-3.5 sm:px-4 rounded-full text-xs sm:text-[13px] font-semibold inline-flex items-center gap-1.5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006cee] focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none ${
               activeTab === 'overview'
                 ? 'bg-[#006cee] text-white shadow-xs'
                 : 'text-[#004776] hover:bg-[#eef5ff]'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
+            <LayoutDashboard className="w-4 h-4 stroke-[2] shrink-0" />
             <span>Tổng quan toàn trường</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'unit-monitor'}
             onClick={() => handleSwitchTab('unit-monitor')}
-            className={`h-9.5 px-4 rounded-full text-xs sm:text-sm font-semibold inline-flex items-center gap-2 cursor-pointer transition-all ${
+            className={`h-9 px-3.5 sm:px-4 rounded-full text-xs sm:text-[13px] font-semibold inline-flex items-center gap-1.5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006cee] focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none ${
               activeTab === 'unit-monitor'
                 ? 'bg-[#006cee] text-white shadow-xs'
                 : 'text-[#004776] hover:bg-[#eef5ff]'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4 stroke-[2] shrink-0" />
             <span>Theo dõi đơn vị</span>
           </button>
         </div>

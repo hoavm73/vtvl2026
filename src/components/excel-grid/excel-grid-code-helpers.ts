@@ -204,11 +204,22 @@ export function handleSyncDeleteRow(
 
   if (sheetKey === 'C1') {
     const targetRow = (prev.C1 || []).find((r) => r.id === rowId);
-    if (targetRow?.maVtvl) {
-      next.C2 = (prev.C2 || []).filter((c) => c.maVtvl !== targetRow.maVtvl);
-      next.C3 = (prev.C3 || []).filter((c) => c.maVtvl !== targetRow.maVtvl);
-      next.DU_BAO = (prev.DU_BAO || []).filter((db) => db.maVtvl !== targetRow.maVtvl);
-      next.D2 = (prev.D2 || []).filter((d) => d.maVtvl !== targetRow.maVtvl);
+    const vUpper = String(targetRow?.maVtvl || '').trim().toUpperCase();
+    const stillExistsInC1 = vUpper && currentSheetRows.some((r) => String(r.maVtvl || '').trim().toUpperCase() === vUpper);
+    if (vUpper && !stillExistsInC1) {
+      const notTargetVtvl = (r: GenericGridRow) => String(r.maVtvl || '').trim().toUpperCase() !== vUpper;
+      const sampleA2Codes = new Set(
+        (prev.A2 || []).filter((a) => !a.sourceTicketId && !notTargetVtvl(a)).map((a) => String(a.maCongViec || '').trim())
+      );
+      next.A2 = (prev.A2 || []).filter((a) => Boolean(a.sourceTicketId) || notTargetVtvl(a));
+      next.B1 = (prev.B1 || []).filter((b) => Boolean(b.sourceTicketId) || (notTargetVtvl(b) && !sampleA2Codes.has(String(b.maCongViec || '').trim())));
+      next.B2_CT = (prev.B2_CT || []).filter((c) => notTargetVtvl(c) && !sampleA2Codes.has(String(c.maCongViec || '').trim()));
+      next.B2 = (prev.B2 || []).filter((b) => notTargetVtvl(b) && !sampleA2Codes.has(String(b.maCongViec || '').trim()));
+      next.C2 = (prev.C2 || []).filter(notTargetVtvl);
+      next.C3 = (prev.C3 || []).filter(notTargetVtvl);
+      next.D1 = (prev.D1 || []).filter(notTargetVtvl);
+      next.DU_BAO = (prev.DU_BAO || []).filter(notTargetVtvl);
+      next.D2 = (prev.D2 || []).filter(notTargetVtvl);
     }
   }
 

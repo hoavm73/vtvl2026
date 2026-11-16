@@ -3,6 +3,8 @@ import {
   getTicketsByOwner, getTicketsByUnit, getTicketById, upsertTicketAndSyncUnit, deleteTicketAndSyncUnit,
   allocateNextTaskCode, syncTicketsFromWorkbook, syncTicketsFromSupabase, appendTicketStatusHistory, restoreTicketInMemory
 } from '@/services/storage/server-ticket-store';
+import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
+import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
 import {
   withSurveySubmissionLock, createImmutableSurveyVersion, compensateRemoveSurveyVersion, ensureLegacyBaselineVersion
 } from '@/services/storage/server-ticket-version-store';
@@ -12,6 +14,11 @@ import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { executePatchTicketAction } from '@/services/tickets/ticket-workflow-handlers';
+import {
+  compensateRemoveCoordinationProjection,
+  syncSubmittedCoordinationProjection
+} from '@/services/tickets/vtvl-coordination-service';
+import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
 
 function handleRouteError(err: unknown, defaultMessage: string) {
   const errObj = err as { code?: string; status?: number; message?: string };
@@ -34,8 +41,9 @@ export async function GET(req: NextRequest) {
 
   const singleTicketId = (req.nextUrl.searchParams.get('id') || '').trim();
   if (singleTicketId) {
-    const found = getTicketById(singleTicketId);
-    if (!found) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
+    let found = getTicketById(singleTicketId);
+    if (!found) { await syncTicketsFromSupabase().catch(() => {}); found = getTicketById(singleTicketId); }
+    if (!found || (found.isArchived && !caller.isAdmin)) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
     if (!caller.isAdmin && found.unitCode.toUpperCase() !== caller.unitCode.toUpperCase()) {
       return NextResponse.json({ error: 'Bạn không có quyền xem phiếu hoặc lịch sử phiên bản của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
     }
@@ -54,9 +62,11 @@ export async function GET(req: NextRequest) {
   const unit = findHcmuteUnit(effectiveUnit);
 
   await syncTicketsFromSupabase(unit.code);
-  await syncServerWorkbooksFromSupabase();
+  await syncServerWorkbooksFromSupabase(true);
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
   await syncTicketsFromWorkbook(wb.data, unit.code);
+  await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0);
+  const latestWb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
 
   const myTickets = getTicketsByOwner(caller.email, unit.code);
   const rawUnitTickets = getTicketsByUnit(unit.code);
@@ -69,11 +79,11 @@ export async function GET(req: NextRequest) {
     unitTickets,
     unitCode: unit.code,
     unitNameVi: unit.nameVi,
-    a1Missions: wb.data.A1 || [],
-    c1Vtvls: wb.data.C1 || [],
-    unitA2Tasks: wb.data.A2 || [],
-    unitB1Volumes: wb.data.B1 || []
-  });
+    a1Missions: latestWb.data.A1 || [],
+    c1Vtvls: latestWb.data.C1 || [],
+    unitA2Tasks: latestWb.data.A2 || [],
+    unitB1Volumes: latestWb.data.B1 || []
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {
@@ -106,6 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     const effectiveUnit = caller.isAdmin && reqUnit ? String(reqUnit).toUpperCase() : caller.unitCode;
+    if (body.id) await syncTicketsFromSupabase(effectiveUnit).catch(() => {});
     const existing = body.id ? getTicketById(String(body.id)) : null;
 
     if (existing) {
@@ -151,24 +162,17 @@ export async function POST(req: NextRequest) {
 
       try {
         const result = await upsertTicketAndSyncUnit({
-          id: body.id,
-          unitCode: effectiveUnit,
-          ownerEmail: caller.email,
+          id: body.id, unitCode: effectiveUnit, ownerEmail: caller.email,
           ownerName: body.ownerName || caller.email.split('@')[0],
           ownerTitle: body.ownerTitle || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Cán bộ – Giảng viên'),
           status: resolvedStatus,
-          maNhiemVu: String(body.maNhiemVu),
-          maCongViec: String(body.maCongViec || ''),
-          tenCongViec: String(body.tenCongViec),
-          maVtvl: String(body.maVtvl),
-          maVtvlPhoiHop: body.maVtvlPhoiHop ? String(body.maVtvlPhoiHop) : '',
-          sanPham: String(body.sanPham || ''),
-          chatLuong: String(body.chatLuong || ''),
-          canCu: String(body.canCu || ''),
-          soSpNam: Number(body.soSpNam) || 0,
-          nguonSoLieu: String(body.nguonSoLieu || ''),
-          phutThucTe: Number(body.phutThucTe) || 0,
-          gioBoSung: Number(body.gioBoSung) || 0,
+          maNhiemVu: String(body.maNhiemVu), maCongViec: String(body.maCongViec || ''), tenCongViec: String(body.tenCongViec),
+          maVtvl: String(body.maVtvl), maVtvlPhoiHop: body.maVtvlPhoiHop ? String(body.maVtvlPhoiHop) : '',
+          coordinationNote: typeof body.coordinationNote === 'string' ? body.coordinationNote.trim() : '',
+          coordinatedVtvls: normalizeCoordinatedVtvls(body.coordinatedVtvls, effectiveUnit),
+          sanPham: String(body.sanPham || ''), chatLuong: String(body.chatLuong || ''), canCu: String(body.canCu || ''),
+          soSpNam: Number(body.soSpNam) || 0, nguonSoLieu: String(body.nguonSoLieu || ''),
+          phutThucTe: Number(body.phutThucTe) || 0, gioBoSung: Number(body.gioBoSung) || 0,
           coordinatedTasks: Array.isArray(body.coordinatedTasks) ? body.coordinatedTasks : [],
           submittedAt: isSubmitting ? (latestExisting?.submittedAt || nowIso) : latestExisting?.submittedAt,
           resubmittedAt: isResubmitting ? nowIso : latestExisting?.resubmittedAt,
@@ -178,46 +182,30 @@ export async function POST(req: NextRequest) {
 
         if (isSubmitting || isResubmitting) {
           const ver = await createImmutableSurveyVersion({
-            surveyId: result.ticket.id,
-            ticket: result.ticket,
-            submittedBy: caller.email,
-            submittedAt: nowIso,
-            changeSummary,
-            simulateFailure: Boolean(body._simulateVersionFailure)
+            surveyId: result.ticket.id, ticket: result.ticket, submittedBy: caller.email, submittedAt: nowIso,
+            changeSummary, simulateFailure: Boolean(body._simulateVersionFailure)
           });
           createdVersionNo = ver.versionNo;
-
+          await syncSubmittedCoordinationProjection(result.ticket, ver);
           await appendTicketStatusHistory(result.ticket, {
-            surveyId: result.ticket.id,
-            fromStatus: latestExisting ? toCanonicalStatus(latestExisting.status) : 'draft',
-            toStatus: isResubmitting ? 'resubmitted' : 'submitted',
-            action: isResubmitting ? 'RESUBMIT' : 'SUBMIT',
-            reason: changeSummary,
-            actorId: caller.email,
-            actorRole: caller.role,
-            unitId: effectiveUnit
+            surveyId: result.ticket.id, fromStatus: latestExisting ? toCanonicalStatus(latestExisting.status) : 'draft',
+            toStatus: isResubmitting ? 'resubmitted' : 'submitted', action: isResubmitting ? 'RESUBMIT' : 'SUBMIT',
+            reason: changeSummary, actorId: caller.email, actorRole: caller.role, unitId: effectiveUnit
           });
-
           const audit = appendAuditLog({
-            unitCode: effectiveUnit,
-            unitName: findHcmuteUnit(effectiveUnit).nameVi,
-            action: isResubmitting ? 'NỘP_LẠI_PHIẾU' : 'NỘP_PHIẾU',
-            targetId: result.ticket.id,
-            targetEntity: 'staff_work_tickets',
+            unitCode: effectiveUnit, unitName: findHcmuteUnit(effectiveUnit).nameVi,
+            action: isResubmitting ? 'NỘP_LẠI_PHIẾU' : 'NỘP_PHIẾU', targetId: result.ticket.id, targetEntity: 'staff_work_tickets',
             details: `${isResubmitting ? 'Nộp lại' : 'Nộp'} phiếu ${result.ticket.maCongViec} (v${ver.versionNo})`,
-            actorEmail: caller.email,
-            actorRole: caller.role,
+            actorEmail: caller.email, actorRole: caller.role,
             oldValues: latestExisting ? { status: toCanonicalStatus(latestExisting.status), versionNo: latestExisting.currentVersionNo || 0 } : null,
             newValues: { status: isResubmitting ? 'resubmitted' : 'submitted', versionNo: ver.versionNo, changeSummary }
           });
           await persistAuditLogToSupabase(audit);
         }
-
-        const finalTicket = getTicketById(result.ticket.id) || result.ticket;
-        return NextResponse.json({ ok: true, ticket: finalTicket, unitWorkbookRevision: result.unitWorkbookRevision });
+        return NextResponse.json({ ok: true, ticket: getTicketById(result.ticket.id) || result.ticket, unitWorkbookRevision: result.unitWorkbookRevision });
       } catch (txErr) {
         if (savedTicketId) {
-          if (createdVersionNo !== null) compensateRemoveSurveyVersion(savedTicketId, createdVersionNo);
+          if (createdVersionNo !== null) { compensateRemoveSurveyVersion(savedTicketId, createdVersionNo); compensateRemoveCoordinationProjection(savedTicketId, createdVersionNo); }
           restoreTicketInMemory(latestExisting || undefined, savedTicketId);
         }
         throw txErr;
@@ -236,14 +224,22 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id') || '';
   if (!id) return NextResponse.json({ error: 'Thiếu mã phiếu cần xóa.', code: 'MISSING_ID' }, { status: 400 });
 
-  const target = getTicketById(id);
+  let target = getTicketById(id);
+  if (!target) { await syncTicketsFromSupabase().catch(() => {}); target = getTicketById(id); }
   if (!target) {
     return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
+  }
+  const isUnitReviewer = caller.isAdmin || (caller.isUnitLeader && target.unitCode.toUpperCase() === caller.unitCode.toUpperCase());
+  const isDraft = toCanonicalStatus(target.status) === 'draft';
+  if (!isDraft && isUnitReviewer) {
+    return await executeRevokeOrCancelTicket(
+      caller, target, 'cancel_ticket', req.nextUrl.searchParams.get('reason') || 'Hủy / xóa phiếu kê khai sai'
+    );
   }
   if (normalizeEmail(target.ownerEmail) !== normalizeEmail(caller.email) && !caller.isAdmin) {
     return NextResponse.json({ error: 'Bạn không có quyền xóa phiếu của người khác.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
   }
-  if (toCanonicalStatus(target.status) !== 'draft' && !caller.isAdmin) {
+  if (!isDraft && !caller.isAdmin) {
     return NextResponse.json({ error: 'Chỉ phiếu Nháp mới được phép xóa.', code: 'FORBIDDEN_DELETE_NON_DRAFT' }, { status: 403 });
   }
 
@@ -270,7 +266,7 @@ export async function PUT(req: NextRequest) {
   const maNhiemVu = String(body.maNhiemVu || '').trim();
   if (!maNhiemVu) return NextResponse.json({ nextTaskCode: '' });
 
-  await syncServerWorkbooksFromSupabase();
+  await syncServerWorkbooksFromSupabase(true);
   const wb = getOrCreateWorkbook(requestedUnit, '01/10/2025–30/9/2026', caller.email, caller.role);
   const unitTickets = getTicketsByUnit(requestedUnit, true);
   const nextTaskCode = allocateNextTaskCode(requestedUnit, maNhiemVu, wb.data.A2 || [], unitTickets, body.excludeTicketId);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { LayoutList, Printer } from 'lucide-react';
-import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
+import { CoordinatedVtvlEntry, StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
@@ -18,6 +18,7 @@ interface StaffTicketInlineFormProps {
   ownerName: string;
   ownerTitle: string;
   editingTicket: StaffWorkTicket | null;
+  pickedVtvl?: { code: string; seq: number } | null;
   a1Missions: GenericGridRow[];
   c1Vtvls: GenericGridRow[];
   onCancelEdit: () => void;
@@ -25,7 +26,7 @@ interface StaffTicketInlineFormProps {
 }
 
 export function StaffTicketInlineForm({
-  unitCode, ownerEmail, ownerName, ownerTitle, editingTicket, a1Missions, c1Vtvls, onCancelEdit, onSaved
+  unitCode, ownerEmail, ownerName, ownerTitle, editingTicket, pickedVtvl, a1Missions, c1Vtvls, onCancelEdit, onSaved
 }: StaffTicketInlineFormProps) {
   const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
   const [maNhiemVu, setMaNhiemVu] = useState('');
@@ -33,6 +34,8 @@ export function StaffTicketInlineForm({
   const [tenCongViec, setTenCongViec] = useState('');
   const [maVtvl, setMaVtvl] = useState('');
   const [maVtvlPhoiHop, setMaVtvlPhoiHop] = useState('');
+  const [coordinationNote, setCoordinationNote] = useState('');
+  const [coordinatedVtvls, setCoordinatedVtvls] = useState<CoordinatedVtvlEntry[]>([]);
   const [sanPham, setSanPham] = useState('');
   const [chatLuong, setChatLuong] = useState('');
   const [canCu, setCanCu] = useState('');
@@ -50,6 +53,7 @@ export function StaffTicketInlineForm({
 
   const resetForm = () => {
     setMaNhiemVu(''); setMaCongViec(''); setTenCongViec(''); setMaVtvl(''); setMaVtvlPhoiHop('');
+    setCoordinationNote(''); setCoordinatedVtvls([]);
     setSanPham(''); setChatLuong(''); setCanCu(''); setSoSpNam('0'); setNguonSoLieu('');
     setPhutThucTe('0'); setGioBoSung('0'); setChangeSummary('');
   };
@@ -64,6 +68,8 @@ export function StaffTicketInlineForm({
       setTenCongViec(t.tenCongViec || '');
       setMaVtvl(replaceUnitCodePrefix(t.maVtvl, t.unitCode, cleanUnit) || '');
       setMaVtvlPhoiHop(t.maVtvlPhoiHop ? replaceUnitCodePrefix(t.maVtvlPhoiHop, t.unitCode, cleanUnit) : '');
+      setCoordinationNote(t.coordinationNote || '');
+      setCoordinatedVtvls(t.coordinatedVtvls || []);
       setSanPham(t.sanPham || '');
       setChatLuong(t.chatLuong || '');
       setCanCu(t.canCu || '');
@@ -76,6 +82,12 @@ export function StaffTicketInlineForm({
       resetForm();
     }
   }, [editingTicket, unitCode]);
+
+  useEffect(() => {
+    if (pickedVtvl?.code) {
+      setMaVtvl(pickedVtvl.code);
+    }
+  }, [pickedVtvl]);
 
   const handleMissionChange = async (nextMission: string) => {
     setMaNhiemVu(nextMission);
@@ -138,6 +150,8 @@ export function StaffTicketInlineForm({
           action: effectiveAction, status: effectiveStatus,
           changeSummary: changeSummary.trim() || undefined,
           maNhiemVu, maCongViec, tenCongViec: tenCongViec.trim(), maVtvl, maVtvlPhoiHop,
+          coordinationNote: coordinationNote.trim() || undefined,
+          coordinatedVtvls,
           sanPham: sanPham.trim(), chatLuong: chatLuong.trim(), canCu: canCu.trim(),
           soSpNam: Number(soSpNam) || 0, nguonSoLieu: nguonSoLieu.trim(),
           phutThucTe: Number(phutThucTe) || 0, gioBoSung: Number(gioBoSung) || 0,
@@ -163,32 +177,51 @@ export function StaffTicketInlineForm({
     }
   };
 
-  const missionOptions = a1Missions.map((m) => ({
-    value: String(m.maNhiemVu || ''),
-    label: `${m.maNhiemVu} — ${String(m.tenNhiemVu || '')}`
-  }));
+  const missionOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of a1Missions) {
+      const code = String(m.maNhiemVu || '').trim();
+      if (!code) continue;
+      const name = String(m.tenNhiemVu || '').trim();
+      if (!map.has(code) || (!map.get(code)?.includes('—') && name)) {
+        map.set(code, name ? `${code} — ${name}` : code);
+      }
+    }
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [a1Missions]);
 
-  const vtvlOptions = c1Vtvls.map((v) => ({
-    value: String(v.maVtvl || ''),
-    label: `${v.maVtvl} — ${String(v.tenVtvl || '')}`
-  }));
+  const vtvlOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const v of c1Vtvls) {
+      const code = String(v.maVtvl || '').trim();
+      if (!code) continue;
+      const name = String(v.tenVtvl || '').trim();
+      if (!map.has(code) || (!map.get(code)?.includes('—') && name)) {
+        map.set(code, name ? `${code} — ${name}` : code);
+      }
+    }
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [c1Vtvls]);
 
   const draftTicketCandidate: Partial<StaffWorkTicket> = useMemo(
     () => ({
       unitCode, ownerName, ownerTitle, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
+      coordinationNote, coordinatedVtvls,
       sanPham, chatLuong, canCu, soSpNam: Number(soSpNam) || 0, nguonSoLieu,
       phutThucTe: Number(phutThucTe) || 0, gioBoSung: Number(gioBoSung) || 0,
       coordinatedTasks: editingTicket?.coordinatedTasks || []
     }),
-    [unitCode, ownerName, ownerTitle, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop, sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung, editingTicket?.coordinatedTasks]
+    [unitCode, ownerName, ownerTitle, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop, coordinationNote, coordinatedVtvls, sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung, editingTicket?.coordinatedTasks]
   );
 
   const formProps = {
-    maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
+    unitCode, maNhiemVu, maCongViec, tenCongViec, maVtvl, maVtvlPhoiHop,
+    coordinationNote, coordinatedVtvls,
     sanPham, chatLuong, canCu, soSpNam, nguonSoLieu, phutThucTe, gioBoSung,
     missionOptions, vtvlOptions,
     onChangeMission: handleMissionChange, onChangeTenCongViec: setTenCongViec,
     onChangeVtvl: setMaVtvl, onChangeVtvlPhoiHop: setMaVtvlPhoiHop,
+    onChangeCoordinationNote: setCoordinationNote, onChangeCoordinatedVtvls: setCoordinatedVtvls,
     onChangeSanPham: setSanPham, onChangeChatLuong: setChatLuong,
     onChangeCanCu: setCanCu, onChangeSoSp: setSoSpNam,
     onChangeNguon: setNguonSoLieu, onChangePhut: setPhutThucTe, onChangeGioBoSung: setGioBoSung

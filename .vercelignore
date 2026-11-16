@@ -11,4 +11,10 @@
 .git
 node_modules
 .next
+.data
+.data/
+backups_private
+backups_private/
+.env*
+*.xls
 

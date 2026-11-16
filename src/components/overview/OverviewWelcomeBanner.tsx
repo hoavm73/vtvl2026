@@ -2,190 +2,216 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
-  ShieldCheck, Building2, User, FileSpreadsheet, FileText,
-  ArrowRight, Sparkles, LogIn
+  ShieldCheck,
+  FileText,
+  LayoutGrid,
+  ArrowRight,
+  LogIn
 } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
 import { OperatorSession } from '@/services/telemetry/operator-session';
-import { getRoleLabel, getRoleBadgeVariant } from '@/services/auth/account-client';
+import { getRoleLabel } from '@/services/auth/account-client';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 interface OverviewWelcomeBannerProps {
   session: OperatorSession | null;
 }
 
+function computeAvatarInitials(rawName: string, isDuplicateOfUnit: boolean): string {
+  const clean = rawName.trim();
+  if (!clean) return 'UT';
+  if (isDuplicateOfUnit) return clean.slice(0, 2).toUpperCase();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
 export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
   const isGuest = !session;
   const role = session?.role || 'staff';
-  const label = session?.displayName || (session?.email ? session.email.split('@')[0] : 'Cán bộ HCM-UTE');
-  const initials = label.slice(0, 2).toUpperCase();
   const unitDef = session ? findHcmuteUnit(session.unitCode) : null;
-  const unitCode = unitDef?.code || session?.unitCode || 'TCNS';
-  const unitNameVi = unitDef?.nameVi || session?.unitNameVi || 'Trường Đại học Công nghệ Kỹ thuật TP.HCM';
+  const unitCode = (unitDef?.code || session?.unitCode || '').trim();
+  const unitNameVi = (unitDef?.nameVi || session?.unitNameVi || '').trim();
+  const rawName = (
+    session?.displayName ||
+    (session?.email ? session.email.split('@')[0] : '') ||
+    'Cán bộ HCM-UTE'
+  ).trim();
 
-  const isDuplicateOfUnit =
-    label.toLowerCase().trim() === unitNameVi.toLowerCase().trim() ||
-    label.toLowerCase().trim().includes('phòng tổ chức') ||
-    label.toLowerCase().trim() === unitCode.toLowerCase().trim();
+  const lowerName = rawName.toLowerCase();
+  const isDuplicateOfUnit = Boolean(
+    (unitNameVi && lowerName === unitNameVi.toLowerCase()) ||
+    (unitCode && lowerName === unitCode.toLowerCase()) ||
+    lowerName === 'phòng tổ chức – nhân sự' ||
+    lowerName === 'phòng tổ chức - nhân sự'
+  );
 
   const greetingName = isDuplicateOfUnit
-    ? (role === 'admin' ? 'Quản trị viên hệ thống' : `đơn vị ${unitCode}`)
-    : label;
+    ? role === 'admin'
+      ? 'Quản trị viên'
+      : role === 'unit_leader'
+        ? 'Lãnh đạo đơn vị'
+        : session?.email?.split('@')[0] || 'Thầy/Cô'
+    : rawName;
 
+  const initials = computeAvatarInitials(rawName, isDuplicateOfUnit);
   const roleBadgeLabel = role === 'admin' ? 'Quản trị viên' : getRoleLabel(role);
 
+  const baseActionCls =
+    'inline-flex items-center justify-center gap-2 h-11 sm:h-[46px] px-4 sm:px-[18px] rounded-[12px] text-[13px] sm:text-sm font-semibold whitespace-nowrap cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#004776] aria-disabled:opacity-50 aria-disabled:pointer-events-none active:scale-[0.99]';
+  const whiteBtnCls = 'bg-white hover:bg-[#eef6fc] text-[#004776] font-bold shadow-xs';
+  const outlineBtnCls =
+    'bg-transparent hover:bg-white/12 text-white border border-white/40 hover:border-white/65';
+
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#073B63] via-[#094875] to-[#075985] text-white shadow-xl shadow-[#073B63]/25 border border-white/20 select-none">
-      {/* 1. Điểm nhấn orbital line & cyan ambient glow nhẹ nhàng đồng bộ với trang /login */}
-      <div className="absolute -top-28 -right-28 w-96 h-96 rounded-full border border-[#5ED4F4]/20 pointer-events-none" />
-      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-64 h-64 rounded-full bg-[#5ED4F4]/[0.08] blur-3xl pointer-events-none" />
-      <div className="absolute -left-20 -bottom-20 w-72 h-72 rounded-full bg-blue-400/[0.08] blur-3xl pointer-events-none" />
+    <section
+      id="overview-welcome-banner"
+      aria-label="Thông tin tổng quan Hệ thống Vị trí việc làm 360"
+      className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(100deg,#004776_0%,#005792_52%,#0068ad_100%)] text-white shadow-[0_12px_30px_-8px_rgba(0,71,118,0.22)] px-4 py-4 sm:px-5 sm:py-5 lg:p-[32px] select-none"
+    >
+      {/* Bộ lọc SVG tạo viền trắng sắc nét quanh logo HCM-UTE trên nền xanh thẫm */}
+      <svg aria-hidden="true" className="sr-only" width="0" height="0">
+        <defs>
+          <filter id="hcmute-banner-logo-outline" x="-8%" y="-8%" width="116%" height="116%">
+            <feMorphology in="SourceAlpha" result="DILATED" operator="dilate" radius="1.8" />
+            <feFlood floodColor="#FFFFFF" floodOpacity="0.96" result="WHITE" />
+            <feComposite in="WHITE" in2="DILATED" operator="in" result="OUTLINE" />
+            <feMerge>
+              <feMergeNode in="OUTLINE" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+      </svg>
 
-      {/* 2. Watermark line-art cổng trường HCM-UTE nền trong suốt (opacity 8-14%, không méo, không che tương tác) */}
-      <div className="absolute right-0 bottom-0 top-0 w-2/3 sm:w-1/2 md:w-5/12 max-w-[460px] pointer-events-none overflow-hidden select-none flex items-end justify-end z-0">
-        <Image
-          src="/assets/login/hcmute-gate-line-art-transparent.png"
-          alt=""
-          width={1774}
-          height={887}
-          priority={false}
-          className="w-full h-auto max-h-[88%] object-contain object-bottom opacity-[0.11] drop-shadow-sm"
-        />
-      </div>
+      {/* Điểm nhấn ánh sáng xanh dịu phía sau cổng bên phải */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_78%_34%,rgba(94,212,244,0.16),transparent_55%)]"
+      />
 
-      <div className="relative z-10 p-5 sm:p-7 space-y-4 sm:space-y-5">
-        {/* Header title row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/20 pb-4">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <img
-              src="/ute_logo.png"
-              alt="HCM-UTE Logo"
-              className="w-11 h-11 sm:w-13 sm:h-13 object-contain shrink-0 bg-white/15 p-1 rounded-xl sm:rounded-2xl backdrop-blur-xs border border-white/25 shadow-xs"
-            />
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-[#5ED4F4]/40 text-[11px] font-semibold text-[#D4E8F8] mb-1">
-                <Sparkles className="w-3 h-3 text-[#5ED4F4] shrink-0" />
-                <span className="truncate">Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)</span>
-              </div>
-              <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
-                Hệ thống Vị trí việc làm 360
-              </h1>
-            </div>
+      {/* Phần trên: Logo + đường phân cách dọc + 3 dòng nhận diện bên trái, ảnh cổng HCM-UTE bên phải */}
+      <div className="relative z-10 flex items-center justify-between gap-4 lg:gap-6 pb-4 sm:pb-5">
+        <div className="flex items-center gap-3.5 sm:gap-5 lg:gap-6 min-w-0 flex-1">
+          <img
+            src="/ute_logo.png"
+            alt="Logo HCM-UTE"
+            width={82}
+            height={82}
+            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-[82px] lg:h-[82px] object-contain shrink-0 select-none"
+            style={{ filter: 'url(#hcmute-banner-logo-outline)' }}
+          />
+          <div className="h-13 sm:h-15 lg:h-[76px] w-px bg-white/25 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 space-y-1">
+            <p className="!text-[13px] sm:!text-[14px] lg:!text-[15px] !font-medium text-[#D6EAF7] !leading-snug">
+              Đề án vị trí việc làm 2026–2030
+            </p>
+            <h1 className="!text-[24px] sm:!text-[27px] lg:!text-[34px] xl:!text-[38px] ![font-weight:800] tracking-tight text-white !leading-[1.15] break-words">
+              Hệ thống Vị trí việc làm 360
+            </h1>
+            <p className="!text-[13px] sm:!text-[14px] lg:!text-[15.5px] !font-normal text-[#E4F2FC] !leading-snug break-words">
+              Trường Đại học Công nghệ Kỹ thuật TP. Hồ Chí Minh (HCM-UTE)
+            </p>
           </div>
         </div>
 
-        {/* Identity & Status Card */}
-        {isGuest ? (
-          <div className="rounded-xl sm:rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className="text-[11px] uppercase tracking-wider font-bold text-[#5ED4F4]">
-                Phiên khách vãng lai
-              </span>
-              <p className="text-sm sm:text-base font-bold text-white">
-                Chào mừng bạn đến với Cổng thông tin Vị trí việc làm HCM-UTE
+        <div className="hidden md:flex md:w-[240px] lg:w-[320px] xl:w-[440px] 2xl:w-[470px] shrink-0 self-end items-end justify-end pointer-events-none select-none -mb-3.5 sm:-mb-4 lg:-mt-4">
+          <img
+            src="/assets/login/hcmute-gate-line-art-transparent.png"
+            alt=""
+            aria-hidden="true"
+            width={1774}
+            height={887}
+            decoding="async"
+            className="w-full h-auto max-h-[120px] lg:max-h-[160px] xl:max-h-[205px] object-contain object-right-bottom pointer-events-none select-none opacity-95 [mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)]"
+          />
+        </div>
+      </div>
+
+      {/* Đường phân cách ngang trắng mờ giữa phần nhận diện và phần chào */}
+      <div className="relative z-10 border-t border-white/20 mb-4 sm:mb-5" aria-hidden="true" />
+
+      {/* Phần dưới: Lời chào & nhóm nút thao tác trực tiếp trên nền banner */}
+      {isGuest ? (
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-4 gap-x-6">
+          <div className="space-y-1 min-w-0 flex-1 basis-[260px]">
+            <p className="text-base sm:text-[19px] font-bold text-white leading-snug">
+              Chào mừng bạn đến với Hệ thống Vị trí việc làm 360
+            </p>
+            <p className="!text-[13px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug break-words">
+              Trường Đại học Công nghệ Kỹ thuật TP. Hồ Chí Minh · HCM-UTE
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full [--primary:#ffffff]">
+            <Link href="/login" className={`${baseActionCls} ${whiteBtnCls}`}>
+              <LogIn className="w-4 h-4 stroke-[2] shrink-0" />
+              <span>Đăng nhập ngay</span>
+            </Link>
+            <Link href="/login?redirect=/admin&admin=true" className={`${baseActionCls} ${outlineBtnCls}`}>
+              <ShieldCheck className="w-4 h-4 stroke-[2] shrink-0" />
+              <span>Quản trị viên</span>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-4 gap-x-6">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 basis-[260px]">
+            {session.avatarUrl ? (
+              <img
+                src={session.avatarUrl}
+                alt={rawName}
+                className="w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-[14px] object-cover shrink-0 border border-white/30 shadow-xs"
+              />
+            ) : (
+              <div className="w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-[14px] bg-white text-[#004776] font-extrabold text-base sm:text-lg flex items-center justify-center shrink-0 shadow-xs">
+                {initials}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <span className="text-base sm:text-[19px] font-bold text-white leading-snug break-words">
+                  Xin chào, {greetingName}
+                </span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#c2410c]/80 text-[#fff7ed] border border-[#fdba74]/55 leading-tight shrink-0">
+                  {roleBadgeLabel}
+                </span>
+              </div>
+              <p className="!text-[13px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug break-words">
+                {unitNameVi}
+                {unitCode ? ` · ${unitCode}` : ''}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Đăng nhập ngay</span>
-              </Link>
-              <Link
-                href="/login?redirect=/admin&admin=true"
-                className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-semibold backdrop-blur-xs transition-colors cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                <span>Quản trị viên</span>
-              </Link>
-            </div>
           </div>
-        ) : (
-          <div className="rounded-xl sm:rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 p-4 sm:p-5">
-            {/* Bố cục Grid 2 cột cân đối: Thông tin người dùng & Cụm thao tác */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-center">
-              {/* Cột 1: Thông tin người dùng (Rõ nét, tương phản WCAG AA) */}
-              <div className="xl:col-span-7 flex items-start sm:items-center gap-3.5 min-w-0">
-                {session.avatarUrl ? (
-                  <img
-                    src={session.avatarUrl}
-                    alt={label}
-                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl object-cover shrink-0 border border-white/40 shadow-xs"
-                  />
-                ) : (
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white text-[#004776] font-extrabold text-base flex items-center justify-center shrink-0 shadow-sm border border-white/30">
-                    {initials}
-                  </div>
-                )}
-                <div className="space-y-1.5 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base sm:text-lg font-bold text-white truncate max-w-xs sm:max-w-md">
-                      Xin chào, {greetingName}!
-                    </span>
-                    <Badge variant={getRoleBadgeVariant(role)} className="text-[11px] px-2 py-0.5 shrink-0 shadow-2xs font-bold">
-                      {roleBadgeLabel}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-bold text-[#bef264] truncate max-w-sm drop-shadow-xs">
-                      <Building2 className="w-3.5 h-3.5 text-[#bef264] shrink-0" />
-                      <span className="truncate">[{unitCode}] {unitNameVi}</span>
-                    </span>
-                    {session.title &&
-                      session.title.toLowerCase().trim() !== unitNameVi.toLowerCase().trim() &&
-                      session.title.toLowerCase().trim() !== label.toLowerCase().trim() && (
-                        <>
-                          <span className="text-white/40">·</span>
-                          <span className="inline-flex items-center gap-1 text-white/90 shrink-0 font-medium">
-                            <User className="w-3.5 h-3.5 text-[#5ED4F4] shrink-0" />
-                            <span>{session.title}</span>
-                          </span>
-                        </>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* Cột 2: Cụm thao tác nhanh (Phân cấp rõ: Phiếu công việc là Primary trắng nổi bật, Bấm giờ là Glass) */}
-              <div className="xl:col-span-5 flex flex-wrap items-center gap-2 xl:justify-end pt-3 xl:pt-0 border-t xl:border-t-0 border-white/15">
-                {role === 'admin' && (
-                  <Link
-                    href="/admin"
-                    className="inline-flex items-center gap-1.5 h-9 sm:h-10 px-3.5 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-xs hover:shadow-sm border border-white/20 transition-all active:scale-[0.98] whitespace-nowrap"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                    <span>Trang Quản trị</span>
-                    <ArrowRight className="w-3 h-3 shrink-0" />
-                  </Link>
-                )}
+          <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full [--primary:#ffffff]">
+            {role === 'admin' && (
+              <Link href="/admin" className={`${baseActionCls} ${whiteBtnCls}`}>
+                <ShieldCheck className="w-4 h-4 stroke-[2] shrink-0" />
+                <span>Trang quản trị</span>
+                <ArrowRight className="w-4 h-4 stroke-[2] shrink-0" />
+              </Link>
+            )}
 
-                {/* Nút Primary: Phiếu công việc (Nổi bật, nền trắng, chữ xanh đậm thương hiệu) */}
-                <Link
-                  href="/phieu-cong-viec"
-                  className="inline-flex items-center gap-1.5 h-9 sm:h-10 px-4 rounded-full bg-white hover:bg-sky-50 text-[#004776] text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-[0.98] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <FileText className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-                  <span>Phiếu công việc</span>
-                </Link>
+            <Link
+              href="/phieu-cong-viec"
+              className={`${baseActionCls} ${role === 'admin' ? outlineBtnCls : whiteBtnCls}`}
+            >
+              <FileText className="w-4 h-4 stroke-[2] shrink-0" />
+              <span>Phiếu công việc</span>
+            </Link>
 
-                {role !== 'staff' && (
-                  <Link
-                    href="/bang-tinh"
-                    className="inline-flex items-center gap-1.5 h-9 sm:h-10 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/25 backdrop-blur-xs transition-colors whitespace-nowrap"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-sky-200 shrink-0" />
-                    <span>Bảng tính 15 biểu</span>
-                  </Link>
-                )}
-              </div>
-            </div>
+            {role !== 'staff' && (
+              <Link href="/bang-tinh" className={`${baseActionCls} ${outlineBtnCls}`}>
+                <LayoutGrid className="w-4 h-4 stroke-[2] shrink-0" />
+                <span>Bảng tính 15 biểu</span>
+              </Link>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </section>
   );
 }

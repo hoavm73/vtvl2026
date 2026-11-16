@@ -52,6 +52,8 @@ AS $$
 | `public.audit_logs` | Admin (toàn trường) hoặc Lãnh đạo đơn vị (`unit_id = caller_unit`). | Ghi nhận từ hệ thống, tự động lọc mật khẩu/token qua trigger `trg_sanitize_audit_logs`. | **CẤM TUYỆT ĐỐI** (Trigger `trg_audit_logs_immutable`). | **CẤM TUYỆT ĐỐI** (Trigger `trg_audit_logs_immutable`). |
 | `public.workbooks` | Admin (toàn trường) hoặc thành viên cùng đơn vị (`unit_code = caller_unit`). | Admin hoặc Lãnh đạo đúng đơn vị. | Admin hoặc Lãnh đạo đúng đơn vị (`staff` bị chặn tuyệt đối). | Chỉ Admin. |
 | `public.user_accounts` | Admin (toàn trường) hoặc thành viên cùng đơn vị. | Admin hoặc Lãnh đạo thêm `staff` trong đơn vị mình. | Admin hoặc Lãnh đạo quản lý `staff` trong đơn vị mình (không cấp Admin, không sửa Admin, không chuyển đơn vị). | Chỉ Admin. |
+| `public.user_vtvl_assignments` | Admin (toàn trường), chính chủ, hoặc tra cứu theo đơn vị. | Admin hoặc Lãnh đạo đơn vị gán cho tài khoản thuộc đơn vị mình. | Admin hoặc Lãnh đạo đơn vị (trừ Admin). | Admin hoặc Lãnh đạo đơn vị. |
+| `public.work_survey_coordinated_vtvls` | Admin hoặc tài khoản được gán đúng `(target_unit_code, target_vtvl_code)` với dòng `is_latest_submitted = TRUE` của phiếu đã nộp (không phải test/archived). | Chỉ ghi nhận đồng bộ khi nộp/nộp lại phiếu. | Chỉ cập nhật cờ `is_latest_submitted` khi nộp lại. | Cascade theo phiếu nguồn. |
 
 ---
 

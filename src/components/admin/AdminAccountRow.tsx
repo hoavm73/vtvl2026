@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Briefcase, Trash2 } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Badge } from '@/components/ui/Badge';
+import { UserVtvlAssignment } from '@/types/staff-ticket';
 import {
   UserRole,
   UserAccountRecord,
@@ -21,12 +22,14 @@ interface AdminAccountRowProps {
   account: UserAccountRecord;
   index: number;
   unitOptions: { value: string; label: string }[];
+  assignedVtvls: UserVtvlAssignment[];
   isUpdating: boolean;
   currentUserRole?: UserRole;
   onUpdate: (
     account: UserAccountRecord,
     patch: { role?: UserRole; unitCode?: string; title?: string; status?: 'active' | 'suspended' }
   ) => void;
+  onOpenAssignVtvl: (account: UserAccountRecord) => void;
   onDelete: (email: string) => void;
 }
 
@@ -34,9 +37,11 @@ export function AdminAccountRow({
   account: acc,
   index,
   unitOptions,
+  assignedVtvls,
   isUpdating,
   currentUserRole,
   onUpdate,
+  onOpenAssignVtvl,
   onDelete
 }: AdminAccountRowProps) {
   const isLeader = currentUserRole === 'unit_leader';
@@ -79,6 +84,32 @@ export function AdminAccountRow({
           size="sm"
           disabled={isUpdating || isLeader}
         />
+      </td>
+      <td className="p-2.5 border-r border-[#e2e8f0]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {assignedVtvls.length > 0 ? (
+            assignedVtvls.map((v) => (
+              <span
+                key={v.id}
+                title={v.tenVtvl || v.maVtvl}
+                className="px-2 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] text-[#004776] text-[10px] font-bold"
+              >
+                {v.maVtvl}
+              </span>
+            ))
+          ) : (
+            <span className="text-[11px] text-[#64748b] italic">Chưa gán VTVL</span>
+          )}
+          <button
+            type="button"
+            disabled={isUpdating || (isLeader && acc.role === 'admin')}
+            onClick={() => onOpenAssignVtvl(acc)}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-[#bfdbfe] bg-white hover:bg-[#eff8ff] text-[#006cee] text-[11px] font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Briefcase className="w-3 h-3" />
+            <span>Gán VTVL</span>
+          </button>
+        </div>
       </td>
       <td className="p-2.5 border-r border-[#e2e8f0]">
         <ShadcnSelect

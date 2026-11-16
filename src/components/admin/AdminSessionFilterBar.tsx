@@ -31,10 +31,10 @@ export function AdminSessionFilterBar({
   onRefresh
 }: AdminSessionFilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2.5 min-h-[48px] sm:min-h-[52px]">
-      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+    <div className="flex flex-wrap items-center justify-between gap-2.5 min-h-[48px] sm:min-h-[52px] w-full min-w-0">
+      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
         {/* Search input */}
-        <div className="relative flex-1 min-w-[200px] sm:max-w-xs">
+        <div className="relative w-full sm:flex-1 sm:max-w-xs min-w-0">
           <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
@@ -46,7 +46,7 @@ export function AdminSessionFilterBar({
         </div>
 
         {/* User filter selector */}
-        <div className="relative min-w-[190px] sm:max-w-xs">
+        <div className="relative w-full sm:w-56 sm:max-w-xs min-w-0">
           <UserCheck className="w-3.5 h-3.5 text-[#004776] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
           <select
             value={selectedUser}

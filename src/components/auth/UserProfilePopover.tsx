@@ -155,7 +155,7 @@ export function UserProfilePopover() {
     <>
       <Popover>
         <PopoverTrigger>
-          <span className="inline-flex items-center gap-2.5 h-10 pl-1.5 pr-3 rounded-full border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer">
+          <span className="inline-flex items-center gap-2 md:gap-2.5 h-10 px-1.5 md:pl-1.5 md:pr-3 rounded-full border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer">
             {session.avatarUrl ? (
               <img src={session.avatarUrl} alt={label} className="w-7 h-7 rounded-full object-cover shrink-0" />
             ) : (
@@ -169,7 +169,7 @@ export function UserProfilePopover() {
                 [{unitCode}] · {roleTitle}
               </span>
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#476885] shrink-0" />
+            <ChevronDown className="hidden sm:block w-3.5 h-3.5 text-[#476885] shrink-0" />
           </span>
         </PopoverTrigger>
 

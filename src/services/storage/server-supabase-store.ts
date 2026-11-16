@@ -161,6 +161,9 @@ export async function persistWorkbookToSupabase(wb: ServerWorkbook, userToken?: 
       so_vtvl_c1: c1Count,
       tong_fte_c3: Math.round(fteTotal * 100) / 100,
       trang_thai_ra_soat: 'Đã lưu trực tuyến',
+      updated_at: new Date().toISOString(),
+      email_nguoi_thuc_hien: latestPart.email || null,
+      chuc_vu_nguoi_thuc_hien: latestPart.roleLabel || null,
       du_lieu_ho_so_json: {
         serverWorkbook: wb,
         actorEmail: latestPart.email,

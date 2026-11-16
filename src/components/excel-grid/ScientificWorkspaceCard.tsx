@@ -8,6 +8,7 @@ import { OperatorSession } from '@/services/telemetry/operator-session';
 import { SyncStatusKind, DataSourceKind, ApiSyncError } from './useOperatorSession';
 import { WorkspaceHeaderRow } from './WorkspaceHeaderRow';
 import { ExcelCommandBar } from './ExcelCommandBar';
+import { MobileWorkspaceHeader } from './MobileWorkspaceHeader';
 
 interface ScientificWorkspaceCardProps {
   activeSheet: ExcelSheetKey;
@@ -49,50 +50,82 @@ interface ScientificWorkspaceCardProps {
 export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
   return (
     <div className="bg-white border-b border-[#cbd5e1] flex flex-col w-full max-w-full min-w-0">
-      {/* 1. Page Header (cao ~52–56px): Mã biểu, Tiêu đề, Đơn vị, Bước, Cảnh báo QA, Hướng dẫn */}
-      <WorkspaceHeaderRow
+      <MobileWorkspaceHeader
         activeSheet={props.activeSheet}
         currentUnit={props.currentUnit}
         unitCode={props.unitCode}
-        activeStep={props.activeStep}
-        activeSheetIndex={props.activeSheetIndex}
-        totalSheets={props.totalSheets}
         orderMode={props.orderMode}
         qualityReport={props.qualityReport}
-        session={props.session}
-        onSelectSheet={props.onSelectSheet}
-        onUnitChange={props.onUnitChange}
-        onOpenGuidance={props.onOpenGuidance}
-        onOpenQualityModal={props.onOpenQualityModal}
-      />
-
-      {/* 2. Command Bar (cao ~42–44px): Thông tin phiên, Máy chủ, Kiểm tra, Lưu biểu, Lưu & tiếp, Công cụ */}
-      <ExcelCommandBar
-        activeSheet={props.activeSheet}
         session={props.session}
         revision={props.revision}
         syncStatus={props.syncStatus}
         dataSource={props.dataSource}
         apiError={props.apiError}
-        lastSyncedAt={props.lastSyncedAt}
         isDirty={props.isDirty}
-        orderMode={props.orderMode}
         canNext={props.canNext}
         isExporting={props.isExporting}
         isC1Unlocked={props.isC1Unlocked}
+        onSelectSheet={props.onSelectSheet}
+        onUnitChange={props.onUnitChange}
         onSwitchSession={props.onSwitchSession}
         onSaveNow={props.onSaveNow}
-        onOpenQualityModal={props.onOpenQualityModal}
-        onSaveSheet={props.onSaveSheet}
-        onSaveAndNext={props.onSaveAndNext}
         onToggleOrderMode={props.onToggleOrderMode}
-        onOpenOrgTreeModal={props.onOpenOrgTreeModal}
+        onOpenGuidance={props.onOpenGuidance}
+        onOpenQualityModal={props.onOpenQualityModal}
         onOpenChartModal={props.onOpenChartModal}
+        onOpenOrgTreeModal={props.onOpenOrgTreeModal}
+        onSaveAndNext={props.onSaveAndNext}
+        onExportWorkbook={props.onExportWorkbook}
         onLoadTcnsData={props.onLoadTcnsData}
         onLoadRecommendedVtvls={props.onLoadRecommendedVtvls}
-        onExportWorkbook={props.onExportWorkbook}
         onOpenUnlockModal={props.onOpenUnlockModal}
       />
+
+      {/* Desktop & Tablet (>= 768px): Page Header + Command Bar */}
+      <div className="hidden md:flex md:flex-col w-full max-w-full min-w-0">
+        <WorkspaceHeaderRow
+          activeSheet={props.activeSheet}
+          currentUnit={props.currentUnit}
+          unitCode={props.unitCode}
+          activeStep={props.activeStep}
+          activeSheetIndex={props.activeSheetIndex}
+          totalSheets={props.totalSheets}
+          orderMode={props.orderMode}
+          qualityReport={props.qualityReport}
+          session={props.session}
+          onSelectSheet={props.onSelectSheet}
+          onUnitChange={props.onUnitChange}
+          onOpenGuidance={props.onOpenGuidance}
+          onOpenQualityModal={props.onOpenQualityModal}
+        />
+
+        <ExcelCommandBar
+          activeSheet={props.activeSheet}
+          session={props.session}
+          revision={props.revision}
+          syncStatus={props.syncStatus}
+          dataSource={props.dataSource}
+          apiError={props.apiError}
+          lastSyncedAt={props.lastSyncedAt}
+          isDirty={props.isDirty}
+          orderMode={props.orderMode}
+          canNext={props.canNext}
+          isExporting={props.isExporting}
+          isC1Unlocked={props.isC1Unlocked}
+          onSwitchSession={props.onSwitchSession}
+          onSaveNow={props.onSaveNow}
+          onOpenQualityModal={props.onOpenQualityModal}
+          onSaveSheet={props.onSaveSheet}
+          onSaveAndNext={props.onSaveAndNext}
+          onToggleOrderMode={props.onToggleOrderMode}
+          onOpenOrgTreeModal={props.onOpenOrgTreeModal}
+          onOpenChartModal={props.onOpenChartModal}
+          onLoadTcnsData={props.onLoadTcnsData}
+          onLoadRecommendedVtvls={props.onLoadRecommendedVtvls}
+          onExportWorkbook={props.onExportWorkbook}
+          onOpenUnlockModal={props.onOpenUnlockModal}
+        />
+      </div>
     </div>
   );
 }

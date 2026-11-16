@@ -15,6 +15,7 @@ import { StaffWorkTicket } from '@/types/staff-ticket';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 
 interface StaffMyTicketsListProps {
+  title?: string;
   tickets: StaffWorkTicket[];
   loading: boolean;
   onEditTicket: (t: StaffWorkTicket) => void;
@@ -26,6 +27,7 @@ interface StaffMyTicketsListProps {
 }
 
 export function StaffMyTicketsList({
+  title = 'Phiếu của tôi',
   tickets,
   loading,
   onEditTicket,
@@ -39,7 +41,7 @@ export function StaffMyTicketsList({
     <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
       <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex items-center justify-between">
         <h2 className="text-base font-bold text-[#004776]">
-          Phiếu của tôi ({tickets.length})
+          {title} ({tickets.length})
         </h2>
       </div>
 

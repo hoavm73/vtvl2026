@@ -9,6 +9,10 @@ erDiagram
     DON_VI ||--o{ COORDINATED_TASKS : "phoi_hop_lien_don_vi"
     DON_VI ||--o{ AUDIT_LOGS : "ghi_nhat_ky_he_thong"
     USER_ACCOUNTS ||--o{ AUDIT_LOGS : "thuc_hien_thao_tac"
+    USER_ACCOUNTS ||--o{ USER_VTVL_ASSIGNMENTS : "phan_cong_ma_vtvl"
+    DON_VI ||--o{ USER_VTVL_ASSIGNMENTS : "pham_vi_vtvl_don_vi"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "de_xuat_phoi_hop_vtvl"
+    DON_VI ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "don_vi_nhan_phoi_hop"
 
     A1_NHIEM_VU ||--o{ STAFF_WORK_TICKETS : "chon_ma_nhiem_vu"
     STAFF_WORK_TICKETS ||--|| A2_CONG_VIEC : "lien_thong_dau_viec"
@@ -315,4 +319,24 @@ erDiagram
         string target_id "ID doi tuong tac dong"
         string detail "Chi tiet thao tac JSON/Text"
         timestamp created_at "Thoi diem ghi nhat ky"
+    }
+
+    USER_VTVL_ASSIGNMENTS {
+        string id PK "UUID phan cong"
+        string user_email FK "Email tai khoan"
+        string unit_code FK "Ma don vi"
+        string ma_vtvl "Ma VTVL C1 tuong minh"
+        boolean is_active "Dang hieu luc"
+        string assigned_by "Nguoi phan cong"
+    }
+
+    WORK_SURVEY_COORDINATED_VTVLS {
+        string id PK "UUID de xuat"
+        string survey_id FK "Lien ket STAFF_WORK_TICKETS"
+        int version_no "Phien ban da nop"
+        string task_row_id "ID dong cong viec on dinh"
+        string host_unit_code FK "Don vi chu tri"
+        string target_unit_code FK "Don vi phoi hop"
+        string target_vtvl_code "Ma VTVL nhan phoi hop"
+        boolean is_latest_submitted "Phien ban da nop moi nhat"
     }

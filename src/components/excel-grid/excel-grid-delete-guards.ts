@@ -107,22 +107,20 @@ export function validateRowDeletion(
       }
     }
 
-    // 5. Kiểm tra Biểu 3. C1_VTVL -> D1, DU_BAO, D2
+    // 5. Kiểm tra Biểu 3. C1_VTVL -> chỉ chặn nếu có phiếu công việc thực tế của cán bộ đang gắn mã VTVL này
     if (sheetKey === 'C1') {
       const vCode = String(targetRow.maVtvl || '').trim().toUpperCase();
-      if (vCode) {
-        const linkedD1 = (workbookData.D1 || []).filter((d) => String(d.maVtvl || '').trim().toUpperCase() === vCode);
-        const linkedDuBao = (workbookData.DU_BAO || []).filter((db) => String(db.maVtvl || '').trim().toUpperCase() === vCode);
-        const linkedD2 = (workbookData.D2 || []).filter((d) => String(d.maVtvl || '').trim().toUpperCase() === vCode);
-        const linkedSheets: string[] = [];
-        if (linkedD1.length > 0) linkedSheets.push('9. D1_NhanLuc');
-        if (linkedDuBao.length > 0) linkedSheets.push('10. DU_BAO_5_NAM');
-        if (linkedD2.length > 0) linkedSheets.push('11. D2_PhuongAn');
-
-        if (linkedSheets.length > 0) {
+      const hasDuplicateRemaining = currentRows.some(
+        (r) => !deleteSet.has(r.id) && String(r.maVtvl || '').trim().toUpperCase() === vCode
+      );
+      if (vCode && !hasDuplicateRemaining) {
+        const linkedTicketTasks = (workbookData.A2 || []).filter(
+          (a) => Boolean(a.sourceTicketId) && String(a.maVtvl || '').trim().toUpperCase() === vCode
+        );
+        if (linkedTicketTasks.length > 0) {
           return {
             canDelete: false,
-            message: `Vị trí việc làm [${vCode}] đang có dữ liệu liên kết tại các biểu sau: ${linkedSheets.join(', ')}.\n\nVui lòng xóa dữ liệu ở các biểu sau trước khi xóa danh mục VTVL gốc!`
+            message: `Vị trí việc làm [${vCode}] đang có ${linkedTicketTasks.length} phiếu công việc thực tế của cán bộ liên kết tại Biểu A2/B1.\n\nVui lòng xóa hoặc chuyển mã VTVL các phiếu công việc trước khi xóa vị trí việc làm này!`
           };
         }
       }
@@ -130,5 +128,33 @@ export function validateRowDeletion(
   }
 
   return { canDelete: true };
+}
+
+export function formatRowRecordLabel(row: GenericGridRow | undefined, index: number): string {
+  if (!row) return `Dòng #${index + 1}`;
+  const code = String(row.maNhiemVu || row.maCongViec || row.maVtvl || row.maSpChuan || '').trim();
+  const title = String(row.tenNhiemVu || row.tenCongViec || row.tenVtvl || row.tenSanPham || row.noiDung || '').trim();
+  const base = `Dòng #${index + 1}${code ? ` — [${code}]` : ''}`;
+  return title ? `${base} ${title.slice(0, 72)}${title.length > 72 ? '…' : ''}` : base;
+}
+
+export function resolveDeleteTargetLabel(
+  confirmDeleteId: string | null,
+  rows: GenericGridRow[],
+  selectedRowIds: Set<string>
+): string | null {
+  if (!confirmDeleteId) return null;
+  if (confirmDeleteId === 'selected') {
+    const labels = Array.from(selectedRowIds)
+      .map((id) => {
+        const idx = rows.findIndex((r) => r.id === id);
+        return idx >= 0 ? formatRowRecordLabel(rows[idx], idx) : '';
+      })
+      .filter(Boolean);
+    if (labels.length === 0) return null;
+    return labels.length <= 2 ? labels.join('; ') : `${labels.slice(0, 2).join('; ')} và ${labels.length - 2} dòng khác`;
+  }
+  const idx = rows.findIndex((r) => r.id === confirmDeleteId);
+  return idx >= 0 ? formatRowRecordLabel(rows[idx], idx) : null;
 }
 

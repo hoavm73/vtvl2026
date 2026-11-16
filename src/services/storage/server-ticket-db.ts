@@ -73,23 +73,24 @@ export interface DbTicketRow {
   phut_thuc_te?: number;
   gio_bo_sung?: number;
   nguon_so_lieu?: string;
+  coordination_note?: string | null; coordinated_vtvls?: unknown;
   coordinated_tasks?: unknown;
-  source_ticket_id?: string;
-  submitted_at?: string;
-  resubmitted_at?: string;
-  approved_at?: string;
-  approved_by?: string;
-  revision_reason?: string;
-  revision_requested_at?: string;
-  revision_requested_by?: string;
-  merged_at?: string;
-  merged_by?: string;
-  a2_row_id?: string;
-  b1_row_id?: string;
-  b2_row_id?: string;
+  source_ticket_id?: string | null;
+  submitted_at?: string | null;
+  resubmitted_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  revision_reason?: string | null;
+  revision_requested_at?: string | null;
+  revision_requested_by?: string | null;
+  merged_at?: string | null;
+  merged_by?: string | null;
+  a2_row_id?: string | null;
+  b1_row_id?: string | null;
+  b2_row_id?: string | null;
   is_merged_to_b1_b2?: boolean;
   current_version_no?: number;
-  last_change_summary?: string;
+  last_change_summary?: string | null;
   is_test_data?: boolean;
   is_archived?: boolean;
   created_at?: string;
@@ -112,6 +113,8 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
     tenCongViec: row.ten_cong_viec,
     maVtvl: row.ma_vtvl || '',
     maVtvlPhoiHop: row.ma_vtvl_phoi_hop || '',
+    coordinatedVtvls: Array.isArray(row.coordinated_vtvls) ? (row.coordinated_vtvls as StaffWorkTicket['coordinatedVtvls']) : undefined,
+    coordinationNote: row.coordination_note || undefined,
     sanPham: row.san_pham || '',
     chatLuong: row.chat_luong || '',
     canCu: row.can_cu || '',
@@ -121,21 +124,21 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
     gioBoSung: Number(row.gio_bo_sung) || 0,
     coordinatedTasks: Array.isArray(row.coordinated_tasks) ? row.coordinated_tasks : [],
     sourceTicketId: row.source_ticket_id || row.id,
-    submittedAt: row.submitted_at,
-    resubmittedAt: row.resubmitted_at,
-    approvedAt: row.approved_at,
-    approvedBy: row.approved_by,
-    revisionReason: row.revision_reason,
-    revisionRequestedAt: row.revision_requested_at,
-    revisionRequestedBy: row.revision_requested_by,
-    mergedAt: row.merged_at,
-    mergedBy: row.merged_by,
-    a2RowId: row.a2_row_id,
-    b1RowId: row.b1_row_id,
-    b2RowId: row.b2_row_id,
+    submittedAt: row.submitted_at || undefined,
+    resubmittedAt: row.resubmitted_at || undefined,
+    approvedAt: row.approved_at || undefined,
+    approvedBy: row.approved_by || undefined,
+    revisionReason: row.revision_reason || undefined,
+    revisionRequestedAt: row.revision_requested_at || undefined,
+    revisionRequestedBy: row.revision_requested_by || undefined,
+    mergedAt: row.merged_at || undefined,
+    mergedBy: row.merged_by || undefined,
+    a2RowId: row.a2_row_id || undefined,
+    b1RowId: row.b1_row_id || undefined,
+    b2RowId: row.b2_row_id || undefined,
     isMergedToB1B2: Boolean(row.is_merged_to_b1_b2),
     currentVersionNo: Number(row.current_version_no) || 0,
-    lastChangeSummary: row.last_change_summary,
+    lastChangeSummary: row.last_change_summary || undefined,
     isTestData: Boolean(row.is_test_data),
     isArchived: Boolean(row.is_archived),
     createdAt: row.created_at || new Date().toISOString(),
@@ -182,6 +185,8 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
     ma_cong_viec: ticket.maCongViec,
     ma_vtvl: ticket.maVtvl,
     ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '',
+    coordinated_vtvls: ticket.coordinatedVtvls || [],
+    coordination_note: ticket.coordinationNote || '',
     ten_cong_viec: ticket.tenCongViec,
     san_pham: ticket.sanPham || '',
     chat_luong: ticket.chatLuong || '',
@@ -192,21 +197,21 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
     nguon_so_lieu: ticket.nguonSoLieu || '',
     coordinated_tasks: ticket.coordinatedTasks || [],
     source_ticket_id: ticket.sourceTicketId || ticket.id,
-    submitted_at: ticket.submittedAt,
-    resubmitted_at: ticket.resubmittedAt,
-    approved_at: ticket.approvedAt,
-    approved_by: ticket.approvedBy,
-    revision_reason: ticket.revisionReason,
-    revision_requested_at: ticket.revisionRequestedAt,
-    revision_requested_by: ticket.revisionRequestedBy,
-    merged_at: ticket.mergedAt,
-    merged_by: ticket.mergedBy,
-    a2_row_id: ticket.a2RowId,
-    b1_row_id: ticket.b1RowId,
-    b2_row_id: ticket.b2RowId,
+    submitted_at: ticket.submittedAt ?? null,
+    resubmitted_at: ticket.resubmittedAt ?? null,
+    approved_at: ticket.approvedAt ?? null,
+    approved_by: ticket.approvedBy ?? null,
+    revision_reason: ticket.revisionReason ?? null,
+    revision_requested_at: ticket.revisionRequestedAt ?? null,
+    revision_requested_by: ticket.revisionRequestedBy ?? null,
+    merged_at: ticket.mergedAt ?? null,
+    merged_by: ticket.mergedBy ?? null,
+    a2_row_id: ticket.a2RowId ?? null,
+    b1_row_id: ticket.b1RowId ?? null,
+    b2_row_id: ticket.b2RowId ?? null,
     is_merged_to_b1_b2: Boolean(ticket.isMergedToB1B2),
     current_version_no: Number(ticket.currentVersionNo) || 0,
-    last_change_summary: ticket.lastChangeSummary,
+    last_change_summary: ticket.lastChangeSummary ?? null,
     is_test_data: Boolean(ticket.isTestData),
     is_archived: Boolean(ticket.isArchived),
     created_at: ticket.createdAt,

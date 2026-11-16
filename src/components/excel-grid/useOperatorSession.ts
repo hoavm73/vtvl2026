@@ -34,9 +34,31 @@ export function useOperatorSession() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [touchedCells, setTouchedCells] = useState<Set<string>>(new Set());
   const [isRestoredSession, setIsRestoredSession] = useState<boolean>(false);
+  const [remoteWorkbook, setRemoteWorkbook] = useState<{ unitCode: string; revision: number; data: Record<ExcelSheetKey, GenericGridRow[]> } | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastDataRef = useRef<Record<ExcelSheetKey, GenericGridRow[]> | null>(null);
+
+  const loadUnitWorkbookFromServer = useCallback(async (targetUnitCode: string, op: OperatorSession | null, isStillMounted: () => boolean = () => true) => {
+    try {
+      const headers: Record<string, string> = {};
+      if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+      if (op?.email) headers['x-actor-email'] = op.email;
+      const res = await fetch(`/api/workbooks/wb_${encodeURIComponent(targetUnitCode)}_2026`, { headers, cache: 'no-store' });
+      if (!res.ok || !isStillMounted()) return;
+      const json = await res.json();
+      if (json.workbook && isStillMounted()) {
+        setWorkbookId(json.workbook.id);
+        setCurrentRevision(json.workbook.currentRevision || 1);
+        setDataSource('server_synced');
+        setSyncStatus('synced');
+        setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
+        if (json.workbook.data) {
+          setRemoteWorkbook({ unitCode: json.workbook.unitId || targetUnitCode, revision: json.workbook.currentRevision || 1, data: json.workbook.data });
+        }
+      }
+    } catch { /* offline fallback */ }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,44 +67,30 @@ export function useOperatorSession() {
       const cur = oauth || getCurrentOperatorSession();
       if (!cur) {
         if (!isMounted) return;
-        setSession(null);
-        setWorkbookId(null);
-        setDataSource('sample');
-        setSyncStatus('synced');
-        setTouchedCells(new Set());
+        setSession(null); setWorkbookId(null); setRemoteWorkbook(null);
+        setDataSource('sample'); setSyncStatus('synced'); setTouchedCells(new Set());
         return;
       }
       if (!isMounted) return;
-      setSession(cur);
-      setIsModalOpen(false);
+      setSession(cur); setIsModalOpen(false);
       const saved = getSessionByEmail(cur.email);
       if (saved?.touchedCells) setTouchedCells(new Set(saved.touchedCells));
       if (!cur.hasSelectedUnit && cur.role !== 'admin') return;
-      const targetUnitCode = cur.unitCode || 'CNTT';
-      try {
-        const res = await fetch(`/api/workbooks/wb_${targetUnitCode}_2026`);
-        if (res.ok && isMounted) {
-          const json = await res.json();
-          if (json.workbook) {
-            setWorkbookId(json.workbook.id);
-            setCurrentRevision(json.workbook.currentRevision || 1);
-            setDataSource('server_synced');
-            setSyncStatus('synced');
-            setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
-          }
-        }
-      } catch { /* offline fallback */ }
+      await loadUnitWorkbookFromServer(cur.unitCode || 'CNTT', cur, () => isMounted);
     };
     const openModalHandler = () => setIsModalOpen(true);
+    const onFocusSync = () => { const cur = getCurrentOperatorSession(); if (cur && (cur.hasSelectedUnit || cur.role === 'admin')) loadUnitWorkbookFromServer(cur.unitCode || 'CNTT', cur, () => isMounted); };
     sync();
     window.addEventListener('vtvl-operator-changed', sync);
     window.addEventListener('vtvl-open-session-modal', openModalHandler);
+    window.addEventListener('focus', onFocusSync);
     return () => {
       isMounted = false;
       window.removeEventListener('vtvl-operator-changed', sync);
       window.removeEventListener('vtvl-open-session-modal', openModalHandler);
+      window.removeEventListener('focus', onFocusSync);
     };
-  }, []);
+  }, [loadUnitWorkbookFromServer]);
 
   const markCellTouched = useCallback((cellKey: string) => {
     setTouchedCells((prev) => {
@@ -98,14 +106,18 @@ export function useOperatorSession() {
   const updateSessionUnit = useCallback((newUnitCode: string) => {
     const cur = getCurrentOperatorSession();
     if (cur?.hasSelectedUnit && cur.role !== 'admin' && cur.unitCode !== newUnitCode) return;
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     const updated = updateOperatorSessionUnit(newUnitCode);
     if (updated) {
       setSession(updated);
-      setWorkbookId(null);
+      setWorkbookId(`wb_${updated.unitCode}_2026`);
+      setCurrentRevision(1);
+      setRemoteWorkbook(null);
       setDataSource('sample');
-      saveActiveUnitSession({ unitCode: newUnitCode, actorEmail: updated.email, actorTitle: updated.title });
+      saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
+      loadUnitWorkbookFromServer(updated.unitCode, updated);
     }
-  }, []);
+  }, [loadUnitWorkbookFromServer]);
 
   const submitSession = useCallback(async (
     email: string, unitCode: string, title: string, chosenWorkbookId?: string
@@ -187,57 +199,52 @@ export function useOperatorSession() {
   }, []);
 
   const persistDataForSession = useCallback(async (
-    data: Record<ExcelSheetKey, GenericGridRow[]>, forceImmediate = false
+    data: Record<ExcelSheetKey, GenericGridRow[]>, forceImmediate = false, unitOverride?: string
   ) => {
     if (!session) return;
+    const targetUnit = (unitOverride || session.unitCode).toUpperCase();
+    const activeWbId = (targetUnit === session.unitCode.toUpperCase() && workbookId) ? workbookId : `wb_${targetUnit}_2026`;
     setSyncStatus('saving');
     lastDataRef.current = data;
 
     const touchedArray = Array.from(touchedCells);
-    saveEmailSessionData(session.email, session.unitCode, session.title, data, touchedArray);
-
+    saveEmailSessionData(session.email, targetUnit, session.title, data, touchedArray);
     saveLocalDraft({
-      id: workbookId || `draft_${session.unitCode}_${session.email}`,
-      unitCode: session.unitCode, reportingPeriod: '01/10/2025–30/9/2026',
-      operatorEmail: session.email, data, touchedCells: touchedArray,
-      clientSavedAt: new Date().toISOString(), clientTimestamp: Date.now(),
-      serverRevision: currentRevision, isDirty: false
+      id: activeWbId || `draft_${targetUnit}_${session.email}`, unitCode: targetUnit, reportingPeriod: '01/10/2025–30/9/2026',
+      operatorEmail: session.email, data, touchedCells: touchedArray, clientSavedAt: new Date().toISOString(), clientTimestamp: Date.now(), serverRevision: currentRevision, isDirty: false
     });
 
     const runServerSave = async () => {
-      const activeWbId = workbookId || `wb_${session.unitCode}_2026`;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
       if (session.email) headers['x-actor-email'] = session.email;
+      const bodyBase = {
+        data, touchedCells: touchedArray, baseRevision: currentRevision,
+        commitMessage: `Lưu tự động lúc ${new Date().toLocaleTimeString('vi-VN')}`, unitCode: targetUnit,
+        participant: { email: session.email, displayName: session.displayName || session.email.split('@')[0], roleLabel: session.title, unitCode: targetUnit }
+      };
       try {
-        const res = await fetch(`/api/workbooks/${activeWbId}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            data, touchedCells: touchedArray, baseRevision: currentRevision,
-            commitMessage: `Lưu tự động lúc ${new Date().toLocaleTimeString('vi-VN')}`,
-            unitCode: session.unitCode,
-            participant: { email: session.email, displayName: session.displayName || session.email.split('@')[0], roleLabel: session.title, unitCode: session.unitCode }
-          })
-        });
-
+        let res = await fetch(`/api/workbooks/${activeWbId}`, { method: 'PUT', headers, body: JSON.stringify(bodyBase) });
         if (res.status === 409) {
           const json = await res.json();
-          setSyncStatus('conflict');
-          setConflictData(json.currentServerWorkbook);
-          setApiError({ code: 'CONFLICT_409', message: 'Dữ liệu máy chủ đã được cập nhật bởi phiên khác.', retryable: false, timestamp: Date.now() });
-          return;
+          if (typeof json.serverRevision === 'number') {
+            res = await fetch(`/api/workbooks/${activeWbId}`, { method: 'PUT', headers, body: JSON.stringify({ ...bodyBase, baseRevision: json.serverRevision }) });
+          } else {
+            setSyncStatus('conflict'); setConflictData(json.currentServerWorkbook);
+            setApiError({ code: 'CONFLICT_409', message: 'Dữ liệu máy chủ đã được cập nhật bởi phiên khác.', retryable: false, timestamp: Date.now() });
+            return;
+          }
         }
-
         if (res.ok) {
           const json = await res.json();
           const targetWb = json.workbook?.serverWorkbook || json.workbook;
           if (targetWb?.id) setWorkbookId(targetWb.id);
           const nextRev = json.workbook?.currentRevision || targetWb?.currentRevision;
-          if (typeof nextRev === 'number') setCurrentRevision(nextRev);
-          setSyncStatus('synced');
-          setDataSource('server_synced');
-          setApiError(null);
+          if (typeof nextRev === 'number') {
+            setCurrentRevision(nextRev);
+            try { localStorage.setItem(`hcmute_vtvl_grid_rev_${targetUnit}`, String(nextRev)); } catch { /* ignore */ }
+          }
+          setSyncStatus('synced'); setDataSource('server_synced'); setApiError(null);
           setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
         } else {
           setSyncStatus('offline');
@@ -246,20 +253,12 @@ export function useOperatorSession() {
       } catch {
         setSyncStatus('offline');
         setApiError({ code: 'NETWORK_TIMEOUT', message: 'Lỗi mạng khi lưu máy chủ, đã ghi tạm vào hàng đợi.', retryable: true, timestamp: Date.now() });
-        queueOfflineSync({
-          id: `queue_${Date.now()}`, workbookId: activeWbId, baseRevision: currentRevision,
-          data, touchedCells: touchedArray, queuedAt: Date.now(), operatorEmail: session.email
-        });
+        queueOfflineSync({ id: `queue_${Date.now()}`, workbookId: activeWbId, baseRevision: currentRevision, data, touchedCells: touchedArray, queuedAt: Date.now(), operatorEmail: session.email });
       }
     };
 
-    if (forceImmediate) {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      await runServerSave();
-    } else {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(runServerSave, 1500);
-    }
+    if (forceImmediate) { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); await runServerSave(); }
+    else { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); debounceTimerRef.current = setTimeout(runServerSave, 1500); }
   }, [session, workbookId, currentRevision, touchedCells]);
 
   const retrySync = useCallback(() => {
@@ -281,7 +280,7 @@ export function useOperatorSession() {
   }, []);
 
   return {
-    session, workbookId, currentRevision, syncStatus, dataSource,
+    session, workbookId, currentRevision, syncStatus, dataSource, remoteWorkbook,
     lastSyncedAt, conflictData, apiError, isModalOpen, touchedCells,
     isRestoredSession, markCellTouched, submitSession, updateSessionUnit,
     switchSession, closeModal, logoutSession, persistDataForSession, retrySync

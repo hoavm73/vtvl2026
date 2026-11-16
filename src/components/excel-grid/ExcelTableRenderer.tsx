@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ExcelSheetMeta, GenericGridRow } from './excel-grid-types';
 import { ExcelDataCell } from './ExcelDataCell';
 import { ExcelRowCardEditor } from './ExcelRowCardEditor';
 import { TableDeleteConfirmModal } from './TableDeleteConfirmModal';
 import { TableControlBar } from './TableControlBar';
+import { resolveDeleteTargetLabel } from './excel-grid-delete-guards';
 import { ArrowUpDown, Plus, Trash2, Copy } from 'lucide-react';
 import { useQueryFilter } from '@/services/query/use-query-filter';
 import { ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
@@ -47,7 +48,7 @@ export function ExcelTableRenderer({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [lastDeletedCount, setLastDeletedCount] = useState<number>(0);
   const [deletedRowBackup, setDeletedRowBackup] = useState<{ row: GenericGridRow; index: number } | null>(null);
-  const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('table');
+  const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('cards');
 
   const isLocked = isReadOnly || (meta.key === 'C1' && !isC1Unlocked);
 
@@ -101,35 +102,36 @@ export function ExcelTableRenderer({
   };
 
   const handleDeleteRow = (rowId: string) => {
-    if (selectedRowIds.size > 1 && selectedRowIds.has(rowId)) {
-      setConfirmDeleteId('selected');
-      return;
-    }
-    const ok = onDeleteRow(rowId);
-    if (ok !== false) {
-      const idx = rows.findIndex((r) => r.id === rowId);
-      if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
-      setLastDeletedCount(1);
-      if (selectedRowIds.has(rowId)) setSelectedRowIds((prev) => { const next = new Set(prev); next.delete(rowId); return next; });
-    }
+    setConfirmDeleteId(selectedRowIds.size > 1 && selectedRowIds.has(rowId) ? 'selected' : rowId);
   };
+
+  const targetRecordLabel = useMemo(
+    () => resolveDeleteTargetLabel(confirmDeleteId, rows, selectedRowIds),
+    [confirmDeleteId, rows, selectedRowIds]
+  );
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return;
-    const ids = Array.from(selectedRowIds);
-    if (ids.length > 0 && onDeleteRow(ids) !== false) {
-      setLastDeletedCount(ids.length);
-      setSelectedRowIds(new Set());
+    if (confirmDeleteId === 'selected') {
+      const ids = Array.from(selectedRowIds);
+      if (ids.length > 0 && onDeleteRow(ids) !== false) { setLastDeletedCount(ids.length); setDeletedRowBackup(null); setSelectedRowIds(new Set()); }
+    } else {
+      const idx = rows.findIndex((r) => r.id === confirmDeleteId);
+      if (onDeleteRow(confirmDeleteId) !== false) {
+        if (idx >= 0) setDeletedRowBackup({ row: rows[idx], index: idx });
+        setLastDeletedCount(1);
+        setSelectedRowIds((prev) => { const n = new Set(prev); n.delete(confirmDeleteId); return n; });
+      }
     }
     setConfirmDeleteId(null);
-    setDeletedRowBackup(null);
   };
 
   return (
-    <div className={`flex flex-col bg-white overflow-hidden w-full max-w-full min-w-0 transition-all ${isFullscreen ? 'fixed inset-2 z-50 rounded-xl border border-[#cbd5e1] shadow-xl' : 'h-full'}`}>
+    <div className={`flex flex-col bg-white overflow-x-clip w-full max-w-full min-w-0 pb-20 md:pb-0 transition-all ${isFullscreen ? 'fixed inset-2 z-50 rounded-xl border border-[#cbd5e1] shadow-xl' : 'h-full'}`}>
       <TableDeleteConfirmModal
         confirmDeleteId={confirmDeleteId} selectedCount={selectedRowIds.size}
-        lastDeletedCount={lastDeletedCount} deletedRowBackup={deletedRowBackup}
+        lastDeletedCount={lastDeletedCount} targetRecordLabel={targetRecordLabel}
+        sheetLabel={meta.title || meta.sheetName} deletedRowBackup={deletedRowBackup}
         onCancel={() => setConfirmDeleteId(null)} onConfirm={handleConfirmDelete}
         onRestoreBackup={() => { onAddRow(); setDeletedRowBackup(null); }}
       />
@@ -144,9 +146,9 @@ export function ExcelTableRenderer({
         onDensityChange={setDensity} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />
 
-      {/* MOBILE CARD MODE (Optional toggle on < 768px) */}
+      {/* MOBILE CARD MODE (< 768px default) */}
       {mobileViewMode === 'cards' && (
-        <div className="block md:hidden p-3 bg-[#f8fafc]/50">
+        <div className="block md:hidden p-2.5 bg-[#f8fafc]/60">
           <ExcelRowCardEditor
             meta={meta}
             rows={processedRows}

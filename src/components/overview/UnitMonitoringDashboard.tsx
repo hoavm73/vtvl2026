@@ -9,11 +9,13 @@ import {
   MonitorTotals,
   MonitorTicketItem,
   MonitorHistoryItem,
-  StageFilterKey
+  StageFilterKey,
+  matchesMonitorSearch
 } from './UnitMonitoringTypes';
 import { UnitMonitoringKpiStrip } from './UnitMonitoringKpiStrip';
 import { UnitMonitoringTable } from './UnitMonitoringTable';
 import { UnitMonitoringHistoryPanel } from './UnitMonitoringHistoryPanel';
+import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 
 const STAGE_TO_TICKET_TAB: Record<StageFilterKey, string> = {
   ALL: 'ALL',
@@ -29,11 +31,23 @@ const STAGE_TO_TICKET_TAB: Record<StageFilterKey, string> = {
  * Dashboard theo dõi tiến trình, số liệu kê khai & lịch sử đơn vị dành cho Phòng TCNS và Quản trị viên.
  */
 export function UnitMonitoringDashboard() {
-  const [selectedUnit, setSelectedUnit] = useState<string>('ALL');
-  const [selectedGroup, setSelectedGroup] = useState<string>('ALL');
-  const [stageFilter, setStageFilter] = useState<StageFilterKey>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [includeTest, setIncludeTest] = useState<boolean>(false);
+  const { state: filterState, setField: setFilterField } = usePersistedListState('unit-monitor-filters', {
+    unit: 'ALL',
+    group: 'ALL',
+    stage: 'ALL',
+    q: '',
+    test: false
+  });
+  const selectedUnit = filterState.unit;
+  const selectedGroup = filterState.group;
+  const stageFilter = filterState.stage as StageFilterKey;
+  const searchQuery = filterState.q;
+  const includeTest = filterState.test;
+  const setSelectedUnit = (val: string) => setFilterField('unit', val);
+  const setSelectedGroup = (val: string) => setFilterField('group', val);
+  const setStageFilter = (val: StageFilterKey) => setFilterField('stage', val);
+  const setSearchQuery = (val: string) => setFilterField('q', val);
+  const setIncludeTest = (val: boolean) => setFilterField('test', val);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('');
@@ -106,7 +120,6 @@ export function UnitMonitoringDashboard() {
   }, [fetchMonitorData]);
 
   const filteredUnitRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     return unitSummaries.filter((u) => {
       if (selectedUnit !== 'ALL' && u.unitCode !== selectedUnit) return false;
       if (selectedGroup !== 'ALL' && u.group !== selectedGroup) return false;
@@ -116,7 +129,7 @@ export function UnitMonitoringDashboard() {
       if (stageFilter === 'has_approved' && u.approvedCount === 0) return false;
       if (stageFilter === 'has_merged' && u.mergedCount === 0) return false;
       if (stageFilter === 'empty' && u.totalTickets > 0) return false;
-      if (q && !u.unitCode.toLowerCase().includes(q) && !u.unitNameVi.toLowerCase().includes(q)) {
+      if (!matchesMonitorSearch([u.unitCode, u.unitNameVi], searchQuery)) {
         return false;
       }
       return true;
@@ -136,10 +149,10 @@ export function UnitMonitoringDashboard() {
   const isInitialSkeleton = loading && unitSummaries.length === 0;
 
   return (
-    <section className="space-y-4 text-[#004776]">
+    <section className="space-y-4 text-[#004776] w-full max-w-full min-w-0">
       {/* Khối Header điều hành & Dải KPI chuẩn S-Link */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#dbe8f5] p-4 sm:p-5 shadow-[0_2px_16px_-4px_rgba(0,71,118,0.06)] space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#e8eff7] pb-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#dbe8f5] p-3.5 sm:p-5 shadow-[0_2px_16px_-4px_rgba(0,71,118,0.06)] space-y-4 min-w-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#e8eff7] pb-4 min-w-0">
           <div className="space-y-1 min-w-0">
             <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
               Dashboard theo dõi đơn vị
@@ -151,11 +164,11 @@ export function UnitMonitoringDashboard() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto min-w-0">
             <button
               type="button"
               onClick={() => setSelectedUnit('ALL')}
-              className={`h-9.5 px-4 rounded-full text-xs font-semibold cursor-pointer transition-all ${
+              className={`h-9.5 px-3.5 sm:px-4 rounded-full text-xs font-semibold cursor-pointer transition-all shrink-0 ${
                 selectedUnit === 'ALL'
                   ? 'bg-[#006cee] hover:bg-[#005ecc] text-white shadow-xs'
                   : 'bg-[#e1edf8] hover:bg-[#d5e5f6] text-[#004776]'
@@ -168,7 +181,7 @@ export function UnitMonitoringDashboard() {
               aria-label="Chọn đơn vị cần theo dõi"
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="h-9.5 px-3.5 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 max-w-[260px]"
+              className="h-9.5 px-3 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 w-full sm:w-auto sm:max-w-[260px] min-w-0 flex-1 sm:flex-initial"
             >
               <option value="ALL">Lọc theo từng đơn vị…</option>
               {HCMUTE_UNITS.map((u) => (

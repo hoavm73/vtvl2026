@@ -8,7 +8,7 @@ import { recalculateGridFormulas } from '@/components/excel-grid/excel-grid-form
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import {
   getOrCreateWorkbook,
-  saveServerWorkbook,
+  saveServerWorkbookAndPersist,
   normalizeEmail,
   syncServerWorkbooksFromSupabase,
   withUnitWorkbookLock
@@ -37,7 +37,7 @@ export async function mergeApprovedTicketToUnitWorkbook(
   const unit = findHcmuteUnit(initialTicket.unitCode);
 
   return withUnitWorkbookLock(unit.code, async () => {
-    await syncServerWorkbooksFromSupabase();
+    await syncServerWorkbooksFromSupabase(true);
     const store = loadTickets();
     const existing = store.get(ticketId);
     if (!existing) {
@@ -150,7 +150,7 @@ export async function mergeApprovedTicketToUnitWorkbook(
     await persistTicketToSupabase(updatedTicket);
     await recordIdempotentMergeLinks(existing.id, mergeLinkTargets);
 
-    const saved = saveServerWorkbook({
+    const saved = await saveServerWorkbookAndPersist({
       workbookId: wb.id,
       baseRevision: expectedBaseRevision,
       data: updatedData,
@@ -250,4 +250,35 @@ export function getTicketCounts(): { approved: number; pending: number; draft: n
     else draft++;
   }
   return { approved, pending, draft, total };
+}
+
+/** Tự động đối soát và đưa mọi phiếu Đã duyệt còn thiếu vào Biểu A2 & B1 của đơn vị. */
+export async function reconcileApprovedUnitTicketsToWorkbook(unitCode: string, actorEmail?: string): Promise<number> {
+  const uc = (unitCode || '').trim().toUpperCase();
+  if (!uc) return 0;
+  const approvedTickets = Array.from(loadTickets().values()).filter(
+    (t) => t.unitCode.toUpperCase() === uc && toCanonicalStatus(t.status) === 'approved' && !t.isTestData && !t.isArchived
+  );
+  if (approvedTickets.length === 0) return 0;
+
+  const wb = getOrCreateWorkbook(uc);
+  const a2Rows = wb.data.A2 || [];
+  const b1Rows = wb.data.B1 || [];
+  const a2Ids = new Set(a2Rows.map((r) => String(r.id || '').trim()));
+  const a2Src = new Set(a2Rows.map((r) => String(r.sourceTicketId || '').trim()).filter(Boolean));
+  const b1Ids = new Set(b1Rows.map((r) => String(r.id || '').trim()));
+  const b1Src = new Set(b1Rows.map((r) => String(r.sourceTicketId || '').trim()).filter(Boolean));
+
+  let reconciled = 0;
+  for (const t of approvedTickets) {
+    const hasA2 = a2Ids.has(`a2-${t.id}`) || a2Src.has(t.id);
+    const hasB1 = b1Ids.has(`b1-${t.id}`) || b1Src.has(t.id);
+    if (!t.isMergedToB1B2 || !hasA2 || !hasB1) {
+      try {
+        await mergeApprovedTicketToUnitWorkbook(t.id, actorEmail || t.approvedBy || t.ownerEmail);
+        reconciled++;
+      } catch { /* bỏ qua nếu một phiếu xung đột để tránh chặn các phiếu khác */ }
+    }
+  }
+  return reconciled;
 }

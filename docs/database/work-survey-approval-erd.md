@@ -21,6 +21,10 @@ erDiagram
     USER_ACCOUNTS ||--o{ WORK_SURVEY_STATUS_HISTORY : "performs"
     USER_ACCOUNTS ||--o{ WORK_SURVEY_MERGE_LINKS : "performs"
     USER_ACCOUNTS ||--o{ AUDIT_LOGS : "records"
+    USER_ACCOUNTS ||--o{ USER_VTVL_ASSIGNMENTS : "assigned_vtvl"
+    DM_DON_VI ||--o{ USER_VTVL_ASSIGNMENTS : "scopes_vtvl"
+    STAFF_WORK_TICKETS ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "proposes"
+    DM_DON_VI ||--o{ WORK_SURVEY_COORDINATED_VTVLS : "target_unit"
 
     DM_DON_VI {
         string ma_don_vi PK "Mã đơn vị: 39 đơn vị hoạt động chuẩn (CTL, CK, CNTT, SDH, QTTHTT, TCNS, BANTT...)"
@@ -108,6 +112,25 @@ erDiagram
         string merged_by "Người thực hiện gộp"
         timestamp merged_at "Thời điểm gộp"
         timestamp updated_at "Thời điểm cập nhật"
+    }
+
+    USER_VTVL_ASSIGNMENTS {
+        uuid id PK "Khóa chính UUID"
+        string user_email FK "Email tài khoản (user_accounts.email)"
+        string unit_code FK "Mã đơn vị (dm_don_vi.ma_don_vi)"
+        string ma_vtvl "Mã VTVL phân công tường minh"
+        boolean is_active "Đang hiệu lực"
+    }
+
+    WORK_SURVEY_COORDINATED_VTVLS {
+        uuid id PK "Khóa chính UUID"
+        string survey_id FK "Mã phiếu nguồn"
+        integer version_no "Phiên bản đã nộp"
+        string task_row_id "ID dòng công việc ổn định"
+        string host_unit_code FK "Đơn vị chủ trì"
+        string target_unit_code FK "Đơn vị phối hợp"
+        string target_vtvl_code "Mã VTVL phối hợp"
+        boolean is_latest_submitted "Chỉ đọc phiên bản đã nộp mới nhất"
     }
 ```
 

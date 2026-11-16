@@ -25,6 +25,10 @@ erDiagram
     dm_don_vi ||--o{ coordinated_tasks : "phối hợp liên đơn vị"
     user_accounts ||--o{ audit_logs : "thực hiện thao tác"
     dm_don_vi ||--o{ audit_logs : "đơn vị bị tác động"
+    user_accounts ||--o{ user_vtvl_assignments : "phân công mã VTVL tường minh"
+    dm_don_vi ||--o{ user_vtvl_assignments : "phạm vi đơn vị mã VTVL"
+    staff_work_tickets ||--o{ work_survey_coordinated_vtvls : "đề xuất VTVL phối hợp theo phiên bản"
+    dm_don_vi ||--o{ work_survey_coordinated_vtvls : "đơn vị nhận phối hợp"
 
     a1_nhiem_vu ||--o{ staff_work_tickets : "chọn mã nhiệm vụ"
     staff_work_tickets ||--o| a2_cong_viec : "gộp đầu việc đã duyệt"
@@ -90,4 +94,6 @@ erDiagram
 27. **`public.work_survey_status_history`** (PK: `id`, FK: `survey_id -> staff_work_tickets(id)`): Lịch sử chuyển trạng thái bất biến.
 28. **`public.work_survey_merge_links`** (PK: `id`, UK: `(survey_id, target_sheet, target_record_id)`): Liên kết gộp chống trùng vào biểu `A2`, `B1` và `B2` (chỉ tạo dòng `B2` khi có dữ liệu tác động B2 thật).
 29. **`public.coordinated_tasks`** (PK: `id`, FK: `ticket_id -> staff_work_tickets(id)`): Công việc phối hợp liên đơn vị.
-30. **`public.audit_logs`** (PK: `id`): Nhật ký kiểm toán hệ thống bất biến (`actor_email`, `actor_role`, `unit_id`, `action`, `target_id`, `target_entity`, `old_values`, `new_values`), tự động lọc bỏ mật khẩu/token/secret.
+30. **`public.user_vtvl_assignments`** (PK: `id`, UK: `(user_email, unit_code, ma_vtvl)`, FK: `user_email`, `unit_code`): Quan hệ tường minh nhiều-nhiều Người dùng ↔ `(đơn vị, mã VTVL)`, tránh suy đoán người nhận.
+31. **`public.work_survey_coordinated_vtvls`** (PK: `id`, UK: `(survey_id, version_no, task_row_id, target_unit_code, target_vtvl_code)`): Bảng chiếu đề xuất phối hợp theo từng phiên bản đã nộp (`is_latest_submitted`), cô lập dữ liệu nháp chưa nộp lại.
+32. **`public.audit_logs`** (PK: `id`): Nhật ký kiểm toán hệ thống bất biến (`actor_email`, `actor_role`, `unit_id`, `action`, `target_id`, `target_entity`, `old_values`, `new_values`), tự động lọc bỏ mật khẩu/token/secret.

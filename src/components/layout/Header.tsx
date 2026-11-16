@@ -86,10 +86,12 @@ export function Header() {
             />
           </Link>
 
-          <InfoTip title="Căn cứ pháp lý & Cơ quan thường trực">
-            <p><strong>Đơn vị chủ trì:</strong> Phòng Tổ chức - Nhân sự — Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE).</p>
-            <p><strong>Căn cứ:</strong> Hướng dẫn số 07-HD/BTCTW; Nghị định số 232/2026/NĐ-CP; Thông tư số 31/2026/TT-BGDĐT; Hướng dẫn số 02 (1907/HD-ĐHCNKT ngày 17/6/2026).</p>
-          </InfoTip>
+          <div className="hidden sm:block shrink-0">
+            <InfoTip title="Căn cứ pháp lý & Cơ quan thường trực">
+              <p><strong>Đơn vị chủ trì:</strong> Phòng Tổ chức - Nhân sự — Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE).</p>
+              <p><strong>Căn cứ:</strong> Hướng dẫn số 07-HD/BTCTW; Nghị định số 232/2026/NĐ-CP; Thông tư số 31/2026/TT-BGDĐT; Hướng dẫn số 02 (1907/HD-ĐHCNKT ngày 17/6/2026).</p>
+            </InfoTip>
+          </div>
         </div>
 
         {/* Tiện ích và Tài khoản bên phải (Cụm điều khiển tài khoản duy nhất) */}

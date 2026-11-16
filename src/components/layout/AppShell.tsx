@@ -103,13 +103,13 @@ export function AppShell({ children }: AppShellProps) {
   const isLoggedIn = Boolean(session);
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-clip relative bg-[#f8fbff]">
+    <div className="min-h-screen w-full max-w-full flex flex-col overflow-x-clip relative bg-[#f8fbff]">
       {!isLoginPage && isLoggedIn && <Header />}
 
       {isLoginPage ? (
-        <main className="flex-1 flex flex-col min-h-screen">{children}</main>
+        <main className="flex-1 w-full max-w-full flex flex-col min-h-screen">{children}</main>
       ) : !isLoggedIn ? (
-        <main className="flex-1 flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <main className="flex-1 w-full max-w-full flex flex-col items-center justify-center min-h-screen p-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-[#d8e3ef] flex items-center justify-center mb-4">
             <img src="/ute_logo.png" alt="HCM-UTE Logo" className="w-10 h-10 object-contain" />
           </div>
@@ -122,13 +122,13 @@ export function AppShell({ children }: AppShellProps) {
           </p>
         </main>
       ) : (
-        <div className="flex-1 flex w-full">
+        <div className="flex-1 flex w-full max-w-full min-w-0">
           <AppSidebar
             collapsed={collapsed}
             session={session}
             onToggle={handleToggleSidebar}
           />
-          <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
+          <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
             {children}
           </main>
         </div>

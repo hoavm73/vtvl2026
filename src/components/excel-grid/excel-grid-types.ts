@@ -25,6 +25,7 @@ export interface ExcelColumnDef {
   formulaHint?: string;
   selectOptions?: string[];
   dynamicOptionsKey?: 'vtvlList' | 'missionList' | 'taskList' | 'productList' | 'pl1VtvlList';
+  allowCustom?: boolean;
   readOnly?: boolean;
   required?: boolean;
 }
@@ -109,4 +110,9 @@ export const TECHNICAL_DEPENDENCY_ORDER: ExcelSheetKey[] = [
 export const ADMIN_ONLY_SHEETS = new Set<ExcelSheetKey>(['K', 'T', 'S']);
 
 export const WORKFLOW_SHEET_ORDER: ExcelSheetKey[] = EXCEL_NATURAL_SHEET_ORDER;
+
+const STEP_BY_SHEET: Partial<Record<ExcelSheetKey, number>> = {
+  A1: 1, A2: 2, DM_SP: 2, B1: 3, B2_CT: 4, B2: 4, C1: 5, C2: 5, C3: 6, D1: 7, D2: 7, DU_BAO: 7, K: 8, T: 8, S: 8
+};
+export const getStepFromSheet = (sheet: ExcelSheetKey): number => STEP_BY_SHEET[sheet] || 1;
 

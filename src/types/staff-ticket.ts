@@ -33,6 +33,65 @@ export interface CoordinatedTaskLink {
   note?: string;
 }
 
+export interface CoordinatedVtvlEntry {
+  id: string;
+  targetUnitCode: string;
+  targetUnitName?: string;
+  maVtvl: string;
+  tenVtvl?: string;
+  note?: string;
+}
+
+export interface UserVtvlAssignment {
+  id: string;
+  userEmail: string;
+  unitCode: string;
+  maVtvl: string;
+  tenVtvl?: string;
+  isActive: boolean;
+  assignedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CoordinatedVtvlRecipientPreview {
+  targetUnitCode: string;
+  targetUnitName: string;
+  maVtvl: string;
+  tenVtvl: string;
+  recipients: { email: string; displayName: string; unitCode: string }[];
+  emptyMessage?: string;
+}
+
+export interface ProposedCoordinatedTaskItem {
+  proposalKey: string;
+  surveyId: string;
+  taskRowId: string;
+  hostUnitCode: string;
+  hostUnitName: string;
+  maNhiemVu: string;
+  tenNhiemVu: string;
+  maCongViec: string;
+  tenCongViec: string;
+  proposerName: string;
+  proposerTitle: string;
+  hostPrimaryVtvlCode: string;
+  hostPrimaryVtvlName: string;
+  matchedVtvls: {
+    targetUnitCode: string;
+    targetUnitName: string;
+    maVtvl: string;
+    tenVtvl: string;
+    note?: string;
+  }[];
+  sanPham: string;
+  coordinationNote?: string;
+  submittedAt: string;
+  versionNo: number;
+  sourceStatus: DisplayTicketStatus;
+  canonicalStatus: CanonicalTicketStatus;
+}
+
 export interface WorkSurveyStatusHistory {
   id: string;
   surveyId: string;
@@ -71,6 +130,8 @@ export interface WorkSurveySnapshot {
   tenVtvlSnapshot?: string;
   maVtvlPhoiHop?: string;
   tenVtvlPhoiHopSnapshot?: string;
+  coordinationNote?: string;
+  coordinatedVtvls?: CoordinatedVtvlEntry[];
   sanPham: string;
   chatLuong: string;
   canCu: string;
@@ -116,6 +177,8 @@ export interface StaffWorkTicket {
   tenCongViec: string;
   maVtvl: string;
   maVtvlPhoiHop?: string;
+  coordinationNote?: string;
+  coordinatedVtvls?: CoordinatedVtvlEntry[];
   sanPham: string;
   chatLuong: string;
   canCu: string;

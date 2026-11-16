@@ -3,10 +3,10 @@
 import React from 'react';
 
 interface StaffTicketSignatureBlockProps {
-  ownerName: string;
+  ownerName?: string;
 }
 
-export function StaffTicketSignatureBlock({ ownerName }: StaffTicketSignatureBlockProps) {
+export function StaffTicketSignatureBlock(_props: StaffTicketSignatureBlockProps) {
   const today = new Date();
   return (
     <div className="grid grid-cols-2 gap-6 mt-8 text-center text-[13px] break-inside-avoid">
@@ -22,7 +22,6 @@ export function StaffTicketSignatureBlock({ ownerName }: StaffTicketSignatureBlo
         <div className="font-bold uppercase mt-0.5">NGƯỜI LẬP PHIẾU</div>
         <div className="text-[11.5px] italic">(Ký, ghi rõ họ tên)</div>
         <div className="h-20" />
-        <div className="font-bold">{ownerName}</div>
       </div>
     </div>
   );

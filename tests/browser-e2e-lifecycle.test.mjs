@@ -291,7 +291,7 @@ async function runBrowserE2E() {
         const selectTrigger = document.querySelector('#staff-ticket-form-card button[aria-haspopup="listbox"]');
         if (!textarea || !selectTrigger) return null;
         return {
-          hasStaffTabs: text.includes('Phiếu của tôi') && text.includes('Phiếu toàn đơn vị (Chỉ đọc)') && !text.includes('Chờ duyệt'),
+          hasStaffTabs: text.includes('Phiếu của tôi') && text.includes('Chờ duyệt') && text.includes('Đã duyệt') && text.includes('Phiếu toàn đơn vị (Chỉ đọc)'),
           hasTextarea: Boolean(textarea),
           hasSelectTrigger: Boolean(selectTrigger),
         };
@@ -300,7 +300,7 @@ async function runBrowserE2E() {
 
     assert(
       Boolean(staffFormReady && staffFormReady.hasStaffTabs),
-      'DOM /phieu-cong-viec (Staff) hiển thị đúng tab "Phiếu của tôi" & "Phiếu toàn đơn vị (Chỉ đọc)" (ẩn tab "Chờ duyệt" của Lãnh đạo)'
+      'DOM /phieu-cong-viec (Staff) hiển thị đúng 5 tab ("Phiếu của tôi", "Chờ duyệt", "Đã duyệt", "Phiếu toàn đơn vị (Chỉ đọc)")'
     );
 
     // Click mission dropdown inside #staff-ticket-form-card to verify full mission text without truncation

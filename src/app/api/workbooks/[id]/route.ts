@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server';
 import {
   getWorkbookById,
   getOrCreateWorkbook,
-  saveServerWorkbook,
+  saveServerWorkbookAndPersist,
   deleteServerWorkbook,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
+import { persistWorkbookToSupabase } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
-import { appendAuditLog } from '@/services/storage/server-audit-store';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
+import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
+import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,17 +33,14 @@ export async function GET(req: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
+    await syncServerWorkbooksFromSupabase(true);
     let workbook = getWorkbookById(id);
-
-    if (!workbook) {
-      await syncServerWorkbooksFromSupabase();
-      workbook = getWorkbookById(id);
-    }
 
     if (!workbook) {
       const unitMatch = id.match(/^wb_([A-Za-z0-9]+)/);
       if (unitMatch) {
         workbook = getOrCreateWorkbook(unitMatch[1]);
+        await persistWorkbookToSupabase(workbook);
       }
     }
 
@@ -56,7 +56,11 @@ export async function GET(req: Request, context: RouteContext) {
       );
     }
 
-    return NextResponse.json({ success: true, workbook });
+    await syncTicketsFromSupabase(workbook.unitId).catch(() => {});
+    const syncedCount = await reconcileApprovedUnitTicketsToWorkbook(workbook.unitId, caller.email).catch(() => 0);
+    if (syncedCount > 0) workbook = getWorkbookById(id) || getOrCreateWorkbook(workbook.unitId);
+
+    return NextResponse.json({ success: true, workbook }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
     return NextResponse.json({ error: msg, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
@@ -93,11 +97,8 @@ export async function PUT(req: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Thiếu dữ liệu bảng biểu.', code: 'MISSING_DATA' }, { status: 400 });
     }
 
-    let existingWb = getWorkbookById(id);
-    if (!existingWb) {
-      await syncServerWorkbooksFromSupabase();
-      existingWb = getWorkbookById(id);
-    }
+    await syncServerWorkbooksFromSupabase(true);
+    const existingWb = getWorkbookById(id);
 
     const unitMatch = id.match(/^wb_([A-Za-z0-9]+)/);
     const targetUnit = (existingWb?.unitId || (unitMatch ? unitMatch[1] : caller.unitCode)).toUpperCase();
@@ -119,20 +120,21 @@ export async function PUT(req: Request, context: RouteContext) {
 
       if (isC1Changed && !caller.isAdmin && !caller.isUnitLeader) {
         return NextResponse.json(
-          { error: 'Chỉ Quản trị viên hệ thống có quyền sửa đổi cấu trúc danh mục VTVL tại Biểu C1.', code: 'FORBIDDEN_C1_CHANGE' },
+          { error: 'Chỉ Quản trị viên hệ thống hoặc Lãnh đạo đơn vị có quyền sửa đổi danh mục VTVL tại Biểu C1.', code: 'FORBIDDEN_C1_CHANGE' },
           { status: 403 }
         );
       }
     }
 
-    const result = saveServerWorkbook({
+    const result = await saveServerWorkbookAndPersist({
       workbookId: id,
       data,
       touchedCells: Array.isArray(touchedCells) ? touchedCells : [],
       baseRevision: typeof baseRevision === 'number' ? baseRevision : 1,
       changeSummary: commitMessage || 'Cập nhật từ phiên làm việc',
       actorEmail: caller.email,
-      actorTitle: participant?.roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Quản trị viên')
+      actorTitle: participant?.roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Quản trị viên'),
+      unitCode: targetUnit
     });
 
     if (result.conflict) {
@@ -148,7 +150,13 @@ export async function PUT(req: Request, context: RouteContext) {
       );
     }
 
-    appendAuditLog({
+    await syncTicketsFromSupabase(targetUnit).catch(() => {});
+    const preserved = await reconcileApprovedUnitTicketsToWorkbook(targetUnit, caller.email).catch(() => 0);
+    const finalResult = preserved > 0
+      ? (() => { const wb = getWorkbookById(id) || getOrCreateWorkbook(targetUnit); return { ...result, currentRevision: wb.currentRevision, serverWorkbook: wb }; })()
+      : result;
+
+    const audit = appendAuditLog({
       workbookId: id,
       unitCode: targetUnit,
       unitName: existingWb?.unitNameVi || targetUnit,
@@ -157,8 +165,9 @@ export async function PUT(req: Request, context: RouteContext) {
       actorEmail: caller.email,
       actorRole: caller.role
     });
+    await persistAuditLogToSupabase(audit);
 
-    return NextResponse.json({ success: true, workbook: result });
+    return NextResponse.json({ success: true, workbook: finalResult });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
     return NextResponse.json({ error: msg, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });

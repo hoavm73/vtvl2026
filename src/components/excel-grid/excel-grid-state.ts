@@ -3,7 +3,7 @@ import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDE
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
-import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
+import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange, syncC1NameChange } from './excel-grid-a1-helpers';
 import { validateRowDeletion } from './excel-grid-delete-guards';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
@@ -20,10 +20,16 @@ function getInitialUnitCode(fallback: string): string {
   } catch { return fallback; }
 }
 
-export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
+export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, initialSheet?: ExcelSheetKey) {
   const [unitCode, setUnitCode] = useState(() => getInitialUnitCode(initialUnitCode));
   const [orderMode, setOrderMode] = useState<SheetOrderMode>('excel');
-  const [activeSheet, setActiveSheet] = useState<ExcelSheetKey>('A1');
+  const [activeSheet, setActiveSheet] = useState<ExcelSheetKey>(initialSheet || 'A1');
+
+  useEffect(() => {
+    if (initialSheet && (isAdmin || !ADMIN_ONLY_SHEETS.has(initialSheet))) {
+      setActiveSheet(initialSheet);
+    }
+  }, [initialSheet, isAdmin]);
   const { isC1Unlocked, unlockC1, lockC1 } = useC1AdminLock();
   const [data, setData] = useState<Record<ExcelSheetKey, GenericGridRow[]>>(() => {
     const code = getInitialUnitCode(initialUnitCode);
@@ -51,7 +57,6 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
       } catch { /* ignore */ }
     }
     setData(fresh);
-    setActiveSheet('A1');
   }, []);
 
   useEffect(() => {
@@ -85,10 +90,10 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
     if (typeof window !== 'undefined') localStorage.setItem('hcmute_vtvl_grid_TCNS', JSON.stringify(tcnsData));
   }, []);
 
-  const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string) => {
+  const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string, resetSheet = false) => {
     if (newUnitCode) setUnitCode(newUnitCode);
     setData(restoredData);
-    setActiveSheet('A1');
+    if (resetSheet) setActiveSheet('A1');
   }, []);
 
   const updateCell = useCallback((sheetKey: ExcelSheetKey, rowId: string, field: string, value: string | number) => {
@@ -116,16 +121,12 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
         return recalculateGridFormulas({ ...prev, A2: updatedRows }, currentUnit.code, currentUnit.nameVi);
       }
 
-      // 3. Khi chọn mã VTVL ở C1 -> gán mã đơn vị phía trước và tự động điền Tên VTVL từ danh mục trường
+      // 3. Khi chọn/sửa mã VTVL hoặc tên VTVL ở C1 -> chuẩn hóa mã đơn vị, chống trùng và đồng bộ C2..D2
       if (sheetKey === 'C1' && field === 'maVtvl') {
-        const rawCode = String(value).trim().toUpperCase();
-        if (!rawCode) {
-          const updatedRows = sheetRows.map((r) => (r.id === rowId ? { ...r, maVtvl: '', tenVtvl: '' } : r));
-          return recalculateGridFormulas({ ...prev, C1: updatedRows }, currentUnit.code, currentUnit.nameVi);
-        }
-        const finalVtvl = rawCode.includes('.') ? rawCode : `${currentUnit.code}.${rawCode}`;
-        const { updatedC1, updatedC2 } = syncC1VtvlChange(prev, rowId, finalVtvl);
-        return recalculateGridFormulas({ ...prev, C1: updatedC1, C2: updatedC2 }, currentUnit.code, currentUnit.nameVi);
+        return recalculateGridFormulas(syncC1VtvlChange(prev, rowId, String(value), currentUnit.code), currentUnit.code, currentUnit.nameVi);
+      }
+      if (sheetKey === 'C1' && field === 'tenVtvl') {
+        return recalculateGridFormulas(syncC1NameChange(prev, rowId, String(value), currentUnit.code), currentUnit.code, currentUnit.nameVi);
       }
 
       // 4. Khi chọn mã công việc ở B2_CT -> tự tra cứu mã VTVL từ A2
@@ -213,26 +214,24 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false) {
 
   const saveSheetData = useCallback((sheetKey: ExcelSheetKey) => {
     const timeStr = new Date().toLocaleTimeString('vi-VN');
-    setData((prev) => {
-      const synced = recalculateGridFormulas(prev, currentUnit.code, currentUnit.nameVi);
-      const logEntry = buildAuditLogEntry({
-        bieu: sheetKey === 'A1' ? '1. A1_NhiemVu' : `Biểu ${sheetKey}`,
-        ma: currentUnit.code,
-        truong: 'Lưu dữ liệu biểu',
-        giaTriCu: 'Bản lưu trước',
-        giaTriMoi: `Lưu cập nhật biểu ${sheetKey} lúc ${timeStr}`,
-        nguon: 'QĐ 2266/QĐ-ĐHCNKT',
-        nguoiXacNhan: `Tổ công tác VTVL [${currentUnit.code}]`,
-        versionCount: prev.S?.length || 0
-      });
-      synced.S = [logEntry, ...(synced.S || []).slice(0, 49)];
-      if (typeof window !== 'undefined') localStorage.setItem(`hcmute_vtvl_grid_${currentUnit.code}`, JSON.stringify(synced));
-      return synced;
+    const synced = recalculateGridFormulas(data, currentUnit.code, currentUnit.nameVi);
+    const logEntry = buildAuditLogEntry({
+      bieu: sheetKey === 'A1' ? '1. A1_NhiemVu' : `Biểu ${sheetKey}`,
+      ma: currentUnit.code,
+      truong: 'Lưu dữ liệu biểu',
+      giaTriCu: 'Bản lưu trước',
+      giaTriMoi: `Lưu cập nhật biểu ${sheetKey} lúc ${timeStr}`,
+      nguon: 'QĐ 2266/QĐ-ĐHCNKT',
+      nguoiXacNhan: `Tổ công tác VTVL [${currentUnit.code}]`,
+      versionCount: data.S?.length || 0
     });
+    synced.S = [logEntry, ...(synced.S || []).slice(0, 49)];
+    setData(synced);
+    if (typeof window !== 'undefined') localStorage.setItem(`hcmute_vtvl_grid_${currentUnit.code}`, JSON.stringify(synced));
     setLastSaved(timeStr);
     setLastSavedSheet(sheetKey);
-    return timeStr;
-  }, [currentUnit.code, currentUnit.nameVi]);
+    return synced;
+  }, [currentUnit.code, currentUnit.nameVi, data]);
 
   const currentSheetOrder = useMemo(() => {
     const rawOrder = orderMode === 'technical' ? TECHNICAL_DEPENDENCY_ORDER : EXCEL_NATURAL_SHEET_ORDER;

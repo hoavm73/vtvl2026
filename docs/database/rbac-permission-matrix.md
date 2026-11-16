@@ -30,6 +30,8 @@ Ngày cập nhật: 15/11/2026
 | **Xem lịch sử phiên bản & so sánh trường (`v1, v2...`)** | Có (toàn trường) | Có (phiếu đã nộp trong đơn vị mình) | Có (phiếu của mình + phiếu đã nộp cùng đơn vị, không xem bản nháp người khác) |
 | **Duyệt / yêu cầu bổ sung phiếu** | Có (bao gồm phiếu của Lãnh đạo) | Có (cùng đơn vị, **trừ phiếu của chính mình**) | Không |
 | **Gộp phiếu `approved` vào biểu A2/B1/B2** | Có | Có (cùng đơn vị) | Không |
+| **Xem tab “Nhiệm vụ được đề xuất phối hợp” (chỉ đọc)** | Có (toàn trường hoặc VTVL được gán) | Chỉ các công việc đã nộp gắn đúng `(unit_code, ma_vtvl)` được gán cho mình | Chỉ các công việc đã nộp gắn đúng `(unit_code, ma_vtvl)` được gán cho mình |
+| **Phân công mã VTVL (`user_vtvl_assignments`)** | Toàn hệ thống | Tài khoản cùng đơn vị (trừ Admin) | Không (chỉ xem phân công của chính mình) |
 | **Quản trị tài khoản trong đơn vị** | Toàn hệ thống | Có (nội bộ đơn vị mình; không cấp Admin, không sửa Admin, không chuyển đơn vị) | Không |
 
 ---

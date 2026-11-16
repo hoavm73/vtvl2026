@@ -29,6 +29,12 @@ import {
   getTicketMergeLinks,
   resetVersionMemoryStore
 } from './server-ticket-version-store';
+import {
+  getDraftCoordinationExtras,
+  removeCoordinationDataForSurvey,
+  resetCoordinationMemoryStore,
+  saveDraftCoordinationExtras
+} from './server-coordination-store';
 import { registerCacheInvalidator } from './server-file-lock';
 
 export {
@@ -41,7 +47,11 @@ export {
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const TICKETS_FILE = path.join(DATA_DIR, 'staff_tickets.json');
 let memoryTickets: Map<string, StaffWorkTicket> | null = null;
-export function resetTicketMemoryStore(): void { memoryTickets = null; resetVersionMemoryStore(); }
+export function resetTicketMemoryStore(): void {
+  memoryTickets = null;
+  resetVersionMemoryStore();
+  resetCoordinationMemoryStore();
+}
 registerCacheInvalidator(() => { memoryTickets = null; });
 
 function resolveActorName(email?: string): string | undefined {
@@ -57,8 +67,11 @@ export function enrichTicket(ticket: StaffWorkTicket): StaffWorkTicket {
     ...h,
     actorName: h.actorName || resolveActorName(h.actorId)
   }));
+  const draftExtras = getDraftCoordinationExtras(ticket.id);
   return {
     ...ticket,
+    coordinatedVtvls: ticket.coordinatedVtvls?.length ? ticket.coordinatedVtvls : (draftExtras.coordinatedVtvls || []),
+    coordinationNote: ticket.coordinationNote || draftExtras.coordinationNote || '',
     approvedByName: ticket.approvedByName || resolveActorName(ticket.approvedBy),
     revisionRequestedByName: ticket.revisionRequestedByName || resolveActorName(ticket.revisionRequestedBy),
     mergedByName: ticket.mergedByName || resolveActorName(ticket.mergedBy),
@@ -146,6 +159,7 @@ export function getTicketsByOwner(email: string, unitCode?: string): StaffWorkTi
   const targetUnit = unitCode ? unitCode.trim().toUpperCase() : undefined;
   const store = loadTickets();
   const tickets = Array.from(store.values()).filter((t) => {
+    if (t.isArchived) return false;
     if (normalizeEmail(t.ownerEmail) !== norm) return false;
     if (targetUnit && t.unitCode.toUpperCase() !== targetUnit) return false;
     return true;
@@ -233,6 +247,7 @@ export async function upsertTicketAndSyncUnit(
 
   // Bắt buộc ghi DB thành công trước khi cập nhật cache bộ nhớ (không nuốt lỗi)
   await persistTicketToSupabase(ticket);
+  saveDraftCoordinationExtras(ticket.id, ticket.coordinatedVtvls, ticket.coordinationNote);
   store.set(ticket.id, ticket);
   persistTickets();
 
@@ -244,6 +259,7 @@ export async function deleteTicketAndSyncUnit(ticketId: string, actorEmail: stri
   const target = store.get(ticketId);
   if (!target || normalizeEmail(target.ownerEmail) !== normalizeEmail(actorEmail)) return false;
   await deleteTicketFromSupabase(ticketId);
+  removeCoordinationDataForSurvey(ticketId);
   store.delete(ticketId);
   persistTickets();
   return true;

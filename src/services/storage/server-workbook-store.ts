@@ -88,16 +88,24 @@ function loadStore(): Map<string, ServerWorkbook> {
   return memoryWorkbooks;
 }
 
-export async function syncServerWorkbooksFromSupabase(): Promise<void> {
+function findLatestUnitWorkbook(store: Map<string, ServerWorkbook>, unitCode: string): ServerWorkbook | null {
+  const target = unitCode.trim().toUpperCase();
+  return Array.from(store.values())
+    .filter((w) => !w.isDeleted && w.unitId.toUpperCase() === target)
+    .sort((a, b) => (b.currentRevision || 0) - (a.currentRevision || 0))[0] || null;
+}
+
+export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Promise<void> {
   const store = loadStore();
   const deleted = loadDeletedWbIds();
   try {
-    const supaWorkbooks = await fetchWorkbooksFromSupabase();
+    const supaWorkbooks = await fetchWorkbooksFromSupabase(forceRefresh);
     for (const sw of supaWorkbooks) {
-      if (!sw.id || deleted.has(sw.id) || deleted.has(sw.unitId)) continue;
-      const local = store.get(sw.id);
-      if (local?.isDeleted) continue;
-      if (!local || (sw.currentRevision && sw.currentRevision >= local.currentRevision)) {
+      if (!sw.id || deleted.has(sw.id) || deleted.has(sw.unitId) || store.get(sw.id)?.isDeleted) continue;
+      const sameUnit = Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === sw.unitId.toUpperCase());
+      const maxRev = sameUnit.reduce((m, w) => Math.max(m, w.currentRevision || 0), 0);
+      if (!sameUnit.length || (sw.currentRevision && sw.currentRevision >= maxRev)) {
+        sameUnit.forEach((oldWb) => { if (oldWb.id !== sw.id) store.delete(oldWb.id); });
         store.set(sw.id, sw);
       }
     }
@@ -106,28 +114,19 @@ export async function syncServerWorkbooksFromSupabase(): Promise<void> {
 }
 
 export function getOrCreateWorkbook(
-  unitId: string,
-  reportingPeriod = '01/10/2025–30/9/2026',
-  email = 'tcns@hcmute.edu.vn',
-  roleLabel = 'Chuyên viên'
+  unitId: string, reportingPeriod = '01/10/2025–30/9/2026', email = 'tcns@hcmute.edu.vn', roleLabel = 'Chuyên viên'
 ): ServerWorkbook {
   const store = loadStore();
   const normEmail = normalizeEmail(email);
-  const existing = Array.from(store.values()).find(
-    (w) => !w.isDeleted && w.unitId === unitId && w.reportingPeriod === reportingPeriod
-  );
+  const existing = findLatestUnitWorkbook(store, unitId);
   const now = new Date().toLocaleString('vi-VN');
   if (existing) {
-    let p = existing.participants.find((x) => x.emailNormalized === normEmail);
-    if (!p) {
+    if (!existing.participants.some((x) => x.emailNormalized === normEmail)) {
       existing.participants.push({
-        id: `part_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        sessionId: `sess_${Date.now()}`, workbookId: existing.id,
-        displayName: roleLabel, email, emailNormalized: normEmail,
-        roleLabel, startedAt: now, updatedAt: now
+        id: `part_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, sessionId: `sess_${Date.now()}`,
+        workbookId: existing.id, displayName: roleLabel, email, emailNormalized: normEmail, roleLabel, startedAt: now, updatedAt: now
       });
       persistStore();
-      persistWorkbookToSupabase(existing).catch(() => {});
     }
     return existing;
   }
@@ -171,7 +170,7 @@ export function getWorkbookById(id: string): ServerWorkbook | null {
   const wb = store.get(id);
   if (wb && !wb.isDeleted) return wb;
   const m = id.match(/^wb_([A-Za-z0-9]+)/);
-  return m ? Array.from(store.values()).find((w) => !w.isDeleted && (w.unitId === m[1] || w.id === id)) || null : null;
+  return m ? findLatestUnitWorkbook(store, m[1]) : null;
 }
 export function parseDateToTimestamp(raw?: string): number {
   if (!raw) return 0;
@@ -232,6 +231,14 @@ export function saveServerWorkbook(params: {
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
+export async function saveServerWorkbookAndPersist(
+  params: Parameters<typeof saveServerWorkbook>[0]
+): Promise<ReturnType<typeof saveServerWorkbook>> {
+  const res = saveServerWorkbook(params);
+  if (res.success && res.serverWorkbook) await persistWorkbookToSupabase(res.serverWorkbook);
+  return res;
+}
+
 export function rollbackServerWorkbookRevision(
   workbookId: string, targetRevision: number, actorEmail: string
 ): { success: boolean; currentRevision?: number } {
@@ -262,9 +269,7 @@ export async function deleteServerWorkbook(workbookId: string): Promise<boolean>
   if (!wb) return false;
   wb.isDeleted = true;
   const deleted = loadDeletedWbIds();
-  deleted.add(wb.id);
-  deleted.add(wb.unitId);
-  deleted.add(workbookId);
+  [wb.id, wb.unitId, workbookId].forEach((k) => deleted.add(k));
   persistDeletedWbIds();
   persistStore();
   await deleteWorkbookFromSupabase(wb.unitId);

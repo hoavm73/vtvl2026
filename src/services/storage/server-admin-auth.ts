@@ -145,8 +145,8 @@ export async function getServerAdminAuth(reqEmail?: string, accessToken?: string
 
   try {
     const { getServerSession } = await import('next-auth');
-    const { authOptions } = await import('@/services/auth/auth-options');
-    const sess = await getServerSession(authOptions);
+    const { getAuthOptions } = await import('@/services/auth/auth-options');
+    const sess = await getServerSession(getAuthOptions());
     if (sess?.user?.email) {
       await syncAccountsFromSupabase();
       const acc = getUserAccountByEmail(sess.user.email);

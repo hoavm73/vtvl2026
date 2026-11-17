@@ -30,7 +30,9 @@ import {
   resetVersionMemoryStore
 } from './server-ticket-version-store';
 import {
+  getAllReplacedWorkCodes,
   getDraftCoordinationExtras,
+  getReplacedWorkCodesForSurvey,
   removeCoordinationDataForSurvey,
   resetCoordinationMemoryStore,
   saveDraftCoordinationExtras
@@ -62,6 +64,7 @@ function resolveActorName(email?: string): string | undefined {
 export function enrichTicket(ticket: StaffWorkTicket): StaffWorkTicket {
   const versions = getTicketVersions(ticket.id);
   const mergeLinks = getTicketMergeLinks(ticket.id);
+  const replacedWorkCodes = getReplacedWorkCodesForSurvey(ticket.id);
   const latestVer = versions.length > 0 ? versions[versions.length - 1].versionNo : (ticket.currentVersionNo || 0);
   const statusHistory = (ticket.statusHistory || []).map((h) => ({
     ...h,
@@ -78,7 +81,8 @@ export function enrichTicket(ticket: StaffWorkTicket): StaffWorkTicket {
     statusHistory,
     currentVersionNo: latestVer,
     versions,
-    mergeLinks
+    mergeLinks,
+    replacedWorkCodes: replacedWorkCodes.length ? replacedWorkCodes : ticket.replacedWorkCodes
   };
 }
 
@@ -141,15 +145,28 @@ export function allocateNextTaskCode(
   if (!cleanMission) return '';
   const pattern = new RegExp(`^${cleanMission.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.CV(\\d+)$`, 'i');
   let maxNum = 0;
-  for (const row of a2Rows) {
-    const match = String(row.maCongViec || '').trim().match(pattern);
+  const checkCode = (raw?: string) => {
+    const match = String(raw || '').trim().match(pattern);
     if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+  };
+  for (const row of a2Rows) checkCode(String(row.maCongViec || ''));
+  for (const r of getAllReplacedWorkCodes(unitCode)) {
+    checkCode(r.oldWorkCode);
+    checkCode(r.newWorkCode);
   }
   for (const t of existingTickets) {
-    // Bảo toàn mọi mã công việc đã tồn tại trong CSDL (kể cả phiếu thử/lưu trữ) để không cấp trùng lại mã cũ
-    if (t.id === excludeTicketId || t.unitCode.toUpperCase() !== unitCode.toUpperCase()) continue;
-    const match = String(t.maCongViec || '').trim().match(pattern);
-    if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+    // Bảo toàn mọi mã công việc đã tồn tại (kể cả lịch sử phiên bản & mã đã thay thế) để không bao giờ cấp lại mã cũ
+    if (t.unitCode.toUpperCase() !== unitCode.toUpperCase()) continue;
+    for (const v of getTicketVersions(t.id)) checkCode(v.snapshot?.maCongViec);
+    for (const r of t.replacedWorkCodes || []) { checkCode(r.oldWorkCode); checkCode(r.newWorkCode); }
+    for (const h of t.statusHistory || []) {
+      checkCode(h.oldWorkCode);
+      checkCode(h.newWorkCode);
+      const m = String(h.reason || '').match(/Mã công việc được thay đổi từ\s+([^\s;]+)\s+sang\s+([^\s.;]+)/i);
+      if (m) { checkCode(m[1]); checkCode(m[2]); }
+    }
+    if (t.id === excludeTicketId) continue;
+    checkCode(t.maCongViec);
   }
   return `${cleanMission}.CV${String(maxNum + 1).padStart(2, '0')}`;
 }
@@ -221,9 +238,11 @@ export async function upsertTicketAndSyncUnit(
   const currentA2 = wb.data.A2 || [];
   const allTickets = Array.from(store.values());
 
-  let resolvedTaskCode = (input.maCongViec || '').trim();
-  const missionChanged = existing && existing.maNhiemVu !== input.maNhiemVu;
-  if (!resolvedTaskCode || missionChanged) {
+  const missionChanged = Boolean(
+    existing && existing.maNhiemVu.trim().toUpperCase() !== input.maNhiemVu.trim().toUpperCase()
+  );
+  let resolvedTaskCode = !missionChanged ? (existing?.maCongViec || (input.maCongViec || '').trim()) : '';
+  if (!resolvedTaskCode) {
     resolvedTaskCode = allocateNextTaskCode(unit.code, input.maNhiemVu, currentA2, allTickets, existing?.id);
   }
 

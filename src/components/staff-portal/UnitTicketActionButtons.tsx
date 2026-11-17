@@ -49,9 +49,9 @@ export function UnitTicketActionButtons({
         </button>
       )}
 
-      {isOwnTicket && onEditTicket && (canonical === 'changes_requested' || canonical === 'draft') && (
+      {isOwnTicket && onEditTicket && !t.isMergedToB1B2 && (canonical === 'changes_requested' || canonical === 'draft' || canonical === 'submitted' || canonical === 'resubmitted') && (
         <button type="button" onClick={() => onEditTicket(t)} className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors">
-          <Edit3 className="w-3.5 h-3.5 text-[#006cee]" /> Sửa
+          <Edit3 className="w-3.5 h-3.5 text-[#006cee]" /> Chỉnh sửa
         </button>
       )}
 

@@ -14,6 +14,8 @@ import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 
 export type ApprovalActionType =
   | 'SUBMIT'
+  | 'UPDATE_PENDING'
+  | 'CHANGE_MISSION_CODE'
   | 'REQUEST_CHANGES'
   | 'RESUBMIT'
   | 'APPROVE'
@@ -33,52 +35,21 @@ export interface ApprovalTimelineEvent {
 }
 
 const ACTION_META: Record<ApprovalActionType, { label: string; dotCls: string; badgeCls: string; boxCls: string }> = {
-  SUBMIT: {
-    label: 'Nộp phiếu khảo sát',
-    dotCls: 'bg-[#006cee] ring-[#e6f1ff]',
-    badgeCls: 'bg-[#eef5ff] text-[#006cee]',
-    boxCls: 'bg-[#f4f9ff] border-[#cfe2fc]'
-  },
-  REQUEST_CHANGES: {
-    label: 'Yêu cầu bổ sung / phản hồi',
-    dotCls: 'bg-[#f99c00] ring-[#fff4e5]',
-    badgeCls: 'bg-[#fff8eb] text-[#b45309]',
-    boxCls: 'bg-[#fff8eb] border-[#fcd34d]'
-  },
-  RESUBMIT: {
-    label: 'Nộp lại sau chỉnh sửa',
-    dotCls: 'bg-[#7c3aed] ring-[#f3e8ff]',
-    badgeCls: 'bg-[#f5f3ff] text-[#6d28d9]',
-    boxCls: 'bg-[#f5f3ff] border-[#ddd6fe]'
-  },
-  APPROVE: {
-    label: 'Phê duyệt phiếu',
-    dotCls: 'bg-[#00b87a] ring-[#e6f9f1]',
-    badgeCls: 'bg-[#e6f9f1] text-[#008f5d]',
-    boxCls: 'bg-[#e6f9f1] border-[#a7f3d0]'
-  },
-  MERGE_TO_SHEETS: {
-    label: 'Gộp vào Biểu A2/B1/B2',
-    dotCls: 'bg-[#008f5d] ring-[#e6f9f1]',
-    badgeCls: 'bg-[#e6f9f1] text-[#008f5d]',
-    boxCls: 'bg-[#f1f9f5] border-[#a7f3d0]'
-  },
-  REVOKE_APPROVAL: {
-    label: 'Thu hồi phê duyệt (yêu cầu sửa lại)',
-    dotCls: 'bg-[#d97706] ring-[#fff4e5]',
-    badgeCls: 'bg-[#fff8eb] text-[#b45309]',
-    boxCls: 'bg-[#fff8eb] border-[#fcd34d]'
-  },
-  CANCEL_TICKET: {
-    label: 'Hủy / xóa phiếu kê khai sai',
-    dotCls: 'bg-[#e11d48] ring-[#ffe4e6]',
-    badgeCls: 'bg-rose-50 text-rose-700',
-    boxCls: 'bg-rose-50 border-rose-200'
-  }
+  SUBMIT: { label: 'Nộp phiếu khảo sát', dotCls: 'bg-[#006cee] ring-[#e6f1ff]', badgeCls: 'bg-[#eef5ff] text-[#006cee]', boxCls: 'bg-[#f4f9ff] border-[#cfe2fc]' },
+  UPDATE_PENDING: { label: 'Cập nhật phiếu sau khi gửi duyệt', dotCls: 'bg-[#006cee] ring-[#e6f1ff]', badgeCls: 'bg-[#eef5ff] text-[#006cee]', boxCls: 'bg-[#f4f9ff] border-[#cfe2fc]' },
+  CHANGE_MISSION_CODE: { label: 'Đổi Mã nhiệm vụ & cấp lại Mã công việc', dotCls: 'bg-[#0072BC] ring-[#e6f1ff]', badgeCls: 'bg-[#eef5ff] text-[#0072BC]', boxCls: 'bg-[#f4f9ff] border-[#cfe2fc]' },
+  REQUEST_CHANGES: { label: 'Yêu cầu bổ sung / phản hồi', dotCls: 'bg-[#f99c00] ring-[#fff4e5]', badgeCls: 'bg-[#fff8eb] text-[#b45309]', boxCls: 'bg-[#fff8eb] border-[#fcd34d]' },
+  RESUBMIT: { label: 'Nộp lại sau chỉnh sửa', dotCls: 'bg-[#7c3aed] ring-[#f3e8ff]', badgeCls: 'bg-[#f5f3ff] text-[#6d28d9]', boxCls: 'bg-[#f5f3ff] border-[#ddd6fe]' },
+  APPROVE: { label: 'Phê duyệt phiếu', dotCls: 'bg-[#00b87a] ring-[#e6f9f1]', badgeCls: 'bg-[#e6f9f1] text-[#008f5d]', boxCls: 'bg-[#e6f9f1] border-[#a7f3d0]' },
+  MERGE_TO_SHEETS: { label: 'Gộp vào Biểu A2/B1/B2', dotCls: 'bg-[#008f5d] ring-[#e6f9f1]', badgeCls: 'bg-[#e6f9f1] text-[#008f5d]', boxCls: 'bg-[#f1f9f5] border-[#a7f3d0]' },
+  REVOKE_APPROVAL: { label: 'Thu hồi phê duyệt (yêu cầu sửa lại)', dotCls: 'bg-[#d97706] ring-[#fff4e5]', badgeCls: 'bg-[#fff8eb] text-[#b45309]', boxCls: 'bg-[#fff8eb] border-[#fcd34d]' },
+  CANCEL_TICKET: { label: 'Hủy / xóa phiếu kê khai sai', dotCls: 'bg-[#e11d48] ring-[#ffe4e6]', badgeCls: 'bg-rose-50 text-rose-700', boxCls: 'bg-rose-50 border-rose-200' }
 };
 
 function normalizeActionType(rawAction?: string, toStatus?: string): ApprovalActionType {
   const act = (rawAction || '').toUpperCase().trim();
+  if (act === 'CHANGE_MISSION_CODE') return 'CHANGE_MISSION_CODE';
+  if (act === 'UPDATE_PENDING') return 'UPDATE_PENDING';
   if (act === 'REVOKE_APPROVAL') return 'REVOKE_APPROVAL';
   if (act === 'CANCEL_TICKET') return 'CANCEL_TICKET';
   if (act === 'APPROVE') return 'APPROVE';

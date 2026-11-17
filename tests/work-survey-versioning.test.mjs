@@ -299,21 +299,23 @@ async function main() {
     assert.strictEqual(versions[0].snapshot.gioBoSung, 12);
   });
 
-  // CA 6: Sau khi nộp, phiếu bị khóa sửa đổi; không ai được sửa nội dung kê khai của người khác
-  await runCase('E2E-06', 'Phiếu đã nộp bị khóa sửa đổi (FORBIDDEN_TICKET_LOCKED) và không ai sửa được phiếu của người khác', async () => {
-    const ownerEditSubmitted = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+  // CA 6: Sau khi nộp, phiếu không thể hạ cấp ngược về Nháp và không ai được sửa nội dung kê khai của người khác
+  await runCase('E2E-06', 'Phiếu đang Chờ duyệt không thể chuyển ngược về Nháp (FORBIDDEN_TICKET_LOCKED) và không ai sửa được phiếu của người khác', async () => {
+    const ownerDowngradeToDraft = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + tokenQaStaffSdh, 'content-type': 'application/json' },
       body: JSON.stringify({
         id: qaTicketId,
+        action: 'draft',
+        status: 'Nháp',
         unitCode: 'SDH',
         maNhiemVu: 'SDH.NV01',
-        tenCongViec: 'Thử sửa khi đã nộp',
+        tenCongViec: 'Thử chuyển ngược về Nháp khi đang Chờ duyệt',
         maVtvl: 'SDH.CV01'
       })
     }));
-    assert.strictEqual(ownerEditSubmitted.status, 403, 'Chủ sở hữu không được sửa phiếu khi đang ở trạng thái Đã nộp');
-    const errLocked = await ownerEditSubmitted.json();
+    assert.strictEqual(ownerDowngradeToDraft.status, 403, 'Chủ sở hữu không được chuyển ngược phiếu Chờ duyệt về trạng thái Nháp');
+    const errLocked = await ownerDowngradeToDraft.json();
     assert.strictEqual(errLocked.code, 'FORBIDDEN_TICKET_LOCKED');
 
     // Lãnh đạo hoặc Admin thử sửa trực tiếp nội dung kê khai của cán bộ -> bị chặn

@@ -6,6 +6,7 @@ import { TicketStatus } from '@/types/staff-ticket';
 
 interface StaffTicketToolbarProps {
   isEditing: boolean;
+  isEditingPending?: boolean;
   editingTaskCode?: string;
   saving: boolean;
   onCancelEdit: () => void;
@@ -18,6 +19,7 @@ interface StaffTicketToolbarProps {
  */
 export function StaffTicketToolbar({
   isEditing,
+  isEditingPending = false,
   editingTaskCode,
   saving,
   onCancelEdit,
@@ -53,15 +55,17 @@ export function StaffTicketToolbar({
         </button>
 
         <div className="flex flex-wrap items-center gap-2 ml-auto">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => onSave('Nháp')}
-            className="h-9 px-3.5 rounded-xl border border-[#006cee] bg-white hover:bg-[#eef5ff] text-[#006cee] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs whitespace-nowrap transition-colors"
-          >
-            <Save className="w-4 h-4 shrink-0" />
-            <span>Lưu nháp</span>
-          </button>
+          {!isEditingPending && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => onSave('Nháp')}
+              className="h-9 px-3.5 rounded-xl border border-[#006cee] bg-white hover:bg-[#eef5ff] text-[#006cee] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs whitespace-nowrap transition-colors"
+            >
+              <Save className="w-4 h-4 shrink-0" />
+              <span>Lưu nháp</span>
+            </button>
+          )}
           <button
             type="button"
             disabled={saving}
@@ -69,7 +73,7 @@ export function StaffTicketToolbar({
             className="h-9 px-4 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs whitespace-nowrap transition-colors"
           >
             <Send className="w-4 h-4 shrink-0" />
-            <span>{saving ? 'Đang lưu...' : 'Lưu & nộp'}</span>
+            <span>{saving ? (isEditingPending ? 'Đang cập nhật...' : 'Đang lưu...') : (isEditingPending ? 'Cập nhật phiếu' : 'Lưu & nộp')}</span>
           </button>
         </div>
       </div>

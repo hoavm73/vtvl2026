@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { CoordinatedVtvlEntry, WorkSurveySnapshot, WorkSurveyVersion } from '@/types/staff-ticket';
+import { CoordinatedVtvlEntry, ReplacedWorkCodeRecord, WorkSurveySnapshot, WorkSurveyVersion } from '@/types/staff-ticket';
 import { registerCacheInvalidator } from './server-file-lock';
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { resetVersionMemoryStore } from './server-ticket-version-store';
@@ -29,6 +29,7 @@ export interface SubmittedCoordinatedVtvlRow {
 export interface CoordinationDiskState {
   draftExtrasBySurvey: Record<string, { coordinatedVtvls?: CoordinatedVtvlEntry[]; coordinationNote?: string }>;
   submittedRowsBySurvey: Record<string, SubmittedCoordinatedVtvlRow[]>;
+  replacedCodesBySurvey: Record<string, ReplacedWorkCodeRecord[]>;
 }
 
 let memoryState: CoordinationDiskState | null = null;
@@ -45,7 +46,8 @@ export function loadCoordinationState(): CoordinationDiskState {
       if (parsed && typeof parsed === 'object') {
         memoryState = {
           draftExtrasBySurvey: parsed.draftExtrasBySurvey || {},
-          submittedRowsBySurvey: parsed.submittedRowsBySurvey || {}
+          submittedRowsBySurvey: parsed.submittedRowsBySurvey || {},
+          replacedCodesBySurvey: parsed.replacedCodesBySurvey || {}
         };
         return memoryState;
       }
@@ -53,7 +55,7 @@ export function loadCoordinationState(): CoordinationDiskState {
   } catch {
     // ignore corrupted local cache
   }
-  memoryState = { draftExtrasBySurvey: {}, submittedRowsBySurvey: {} };
+  memoryState = { draftExtrasBySurvey: {}, submittedRowsBySurvey: {}, replacedCodesBySurvey: {} };
   return memoryState;
 }
 
@@ -65,6 +67,43 @@ export function persistCoordinationState(state: CoordinationDiskState): void {
   } catch {
     // ignore
   }
+}
+
+export function recordReplacedWorkCode(entry: Omit<ReplacedWorkCodeRecord, 'id'>): ReplacedWorkCodeRecord {
+  const state = loadCoordinationState();
+  const list = state.replacedCodesBySurvey[entry.surveyId] ? [...state.replacedCodesBySurvey[entry.surveyId]] : [];
+  const item: ReplacedWorkCodeRecord = {
+    ...entry,
+    id: `rwc-${entry.surveyId}-${entry.oldWorkCode}-${entry.newWorkCode}-${Date.now()}`
+  };
+  list.push(item);
+  state.replacedCodesBySurvey[entry.surveyId] = list;
+  persistCoordinationState(state);
+  return item;
+}
+
+export function compensateRemoveReplacedWorkCode(surveyId: string, recordId: string): void {
+  const state = loadCoordinationState();
+  const list = state.replacedCodesBySurvey[surveyId];
+  if (!list) return;
+  state.replacedCodesBySurvey[surveyId] = list.filter((r) => r.id !== recordId);
+  persistCoordinationState(state);
+}
+
+export function getReplacedWorkCodesForSurvey(surveyId: string): ReplacedWorkCodeRecord[] {
+  return [...(loadCoordinationState().replacedCodesBySurvey[surveyId] || [])];
+}
+
+export function getAllReplacedWorkCodes(unitCode?: string): ReplacedWorkCodeRecord[] {
+  const state = loadCoordinationState();
+  const uc = unitCode ? unitCode.trim().toUpperCase() : '';
+  const all: ReplacedWorkCodeRecord[] = [];
+  for (const list of Object.values(state.replacedCodesBySurvey)) {
+    for (const r of list) {
+      if (!uc || r.unitCode.toUpperCase() === uc) all.push(r);
+    }
+  }
+  return all;
 }
 
 export function saveDraftCoordinationExtras(

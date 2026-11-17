@@ -5,6 +5,7 @@ import { User, Link2 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
+import { formatApprovalDateTime } from './TicketApprovalHistoryTimeline';
 import { UnitTicketActionButtons } from './UnitTicketActionButtons';
 import {
   ApprovedSubFilter,
@@ -163,6 +164,9 @@ export function UnitTicketsReviewList({
                         <span>• Đơn vị: <strong className="text-[#004776]">{t.unitCode}</strong></span>
                         {submittedDateIso && (
                           <span className="tabular-nums">• Nộp: {new Date(submittedDateIso).toLocaleDateString('vi-VN')}</span>
+                        )}
+                        {t.updatedAt && (
+                          <span className="tabular-nums">• Cập nhật: <strong className="text-[#004776]">{formatApprovalDateTime(t.updatedAt)}</strong></span>
                         )}
                       </div>
                     </div>

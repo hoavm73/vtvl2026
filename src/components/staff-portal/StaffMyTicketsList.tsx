@@ -14,6 +14,7 @@ import {
 import { StaffWorkTicket } from '@/types/staff-ticket';
 import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
+import { formatApprovalDateTime } from './TicketApprovalHistoryTimeline';
 
 interface StaffMyTicketsListProps {
   title?: string;
@@ -60,7 +61,7 @@ export function StaffMyTicketsList({
             const StatusIcon = meta.Icon;
             const canonical = meta.canonical;
             const coordBadges = getTicketCoordinatedVtvlBadges(t);
-            const canEdit = canonical === 'draft' || canonical === 'changes_requested';
+            const canEdit = !t.isMergedToB1B2 && (canonical === 'draft' || canonical === 'submitted' || canonical === 'resubmitted' || canonical === 'changes_requested');
             const canDelete = canonical === 'draft';
             const canSubmit = canonical === 'draft';
             const canResubmit = canonical === 'changes_requested';
@@ -103,6 +104,11 @@ export function StaffMyTicketsList({
                   <div className="text-sm sm:text-[15px] font-bold text-[#004776] leading-snug">
                     {t.tenCongViec}
                   </div>
+                  {t.updatedAt && (
+                    <div className="text-[11px] text-[#20446c] tabular-nums">
+                      Cập nhật gần nhất: <strong className="text-[#004776]">{formatApprovalDateTime(t.updatedAt)}</strong>
+                    </div>
+                  )}
 
                   {t.revisionReason && canonical === 'changes_requested' && (
                     <div className="p-2.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-xs text-[#004776] flex items-start gap-2">
@@ -191,7 +197,7 @@ export function StaffMyTicketsList({
                       onClick={() => onEditTicket(t)}
                       className="h-8 px-2.5 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#006cee]" /> Sửa
+                      <Edit3 className="w-3.5 h-3.5 text-[#006cee]" /> Chỉnh sửa
                     </button>
                   )}
 

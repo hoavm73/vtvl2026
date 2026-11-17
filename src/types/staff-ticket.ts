@@ -158,7 +158,30 @@ export interface WorkSurveyStatusHistory {
   actorName?: string;
   actorRole: string;
   unitId: string;
+  oldMissionCode?: string;
+  newMissionCode?: string;
+  oldWorkCode?: string;
+  newWorkCode?: string;
+  previousVersionNo?: number;
+  currentVersionNo?: number;
   createdAt: string;
+}
+
+export interface ReplacedWorkCodeRecord {
+  id: string;
+  surveyId: string;
+  unitCode: string;
+  oldMissionCode: string;
+  newMissionCode: string;
+  oldWorkCode: string;
+  newWorkCode: string;
+  status: 'replaced' | 'retired';
+  ticketStatusAtChange: string;
+  previousVersionNo: number;
+  currentVersionNo: number;
+  actorEmail: string;
+  actorRole: string;
+  replacedAt: string;
 }
 
 export interface WorkSurveyMergeLink {
@@ -266,6 +289,7 @@ export interface StaffWorkTicket {
   statusHistory?: WorkSurveyStatusHistory[];
   versions?: WorkSurveyVersion[];
   mergeLinks?: WorkSurveyMergeLink[];
+  replacedWorkCodes?: ReplacedWorkCodeRecord[];
   createdAt: string;
   updatedAt: string;
 }

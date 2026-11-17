@@ -13,6 +13,7 @@ import {
   createImmutableSurveyVersion,
   compensateRemoveSurveyVersion
 } from '@/services/storage/server-ticket-version-store';
+import { withCrossProcessLock } from '@/services/storage/server-file-lock';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { CallerAuthContext } from '@/services/storage/server-auth-guard';
@@ -57,7 +58,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
       return NextResponse.json({ error: 'Phiếu chưa đủ các trường bắt buộc (trừ các mục "nếu có") để nộp.', code: 'MISSING_REQUIRED_FIELDS' }, { status: 400 });
     }
 
-    return await withSurveySubmissionLock(target.id, async () => {
+    return await withCrossProcessLock(`ticket_unit_${target.unitCode.toUpperCase()}`, async () => {
       const latest = getTicketById(target.id) || target;
       const curCanon = toCanonicalStatus(latest.status);
       const isResubmit = act === 'resubmit';
@@ -145,7 +146,8 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
     return NextResponse.json({ error: 'Lãnh đạo đơn vị chỉ thao tác trên phiếu thuộc đơn vị mình.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
   }
 
-  return await withSurveySubmissionLock(target.id, async () => {
+  return await withCrossProcessLock(`ticket_unit_${target.unitCode.toUpperCase()}`, async () => {
+    await syncTicketsFromSupabase(target.unitCode).catch(() => {});
     const latest = getTicketById(target.id) || target;
     const nowIso = new Date().toISOString();
     const curCanon = toCanonicalStatus(latest.status);

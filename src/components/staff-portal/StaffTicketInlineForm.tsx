@@ -50,7 +50,9 @@ export function StaffTicketInlineForm({
   const [successMsg, setSuccessMsg] = useState('');
 
   const unit = findHcmuteUnit(unitCode);
-  const isResubmittingMode = Boolean(editingTicket && toCanonicalStatus(editingTicket.status) === 'changes_requested');
+  const editingCanon = editingTicket ? toCanonicalStatus(editingTicket.status) : null;
+  const isResubmittingMode = Boolean(editingTicket && editingCanon === 'changes_requested');
+  const isEditingPendingMode = Boolean(editingTicket && (editingCanon === 'submitted' || editingCanon === 'resubmitted'));
 
   const resetForm = () => {
     setMaNhiemVu(''); setMaCongViec(''); setTenCongViec(''); setMaVtvl(''); setMaVtvlPhoiHop('');
@@ -90,14 +92,17 @@ export function StaffTicketInlineForm({
   const handleMissionChange = async (nextMission: string) => {
     setMaNhiemVu(nextMission);
     if (!nextMission) { setMaCongViec(''); return; }
-    if (editingTicket && editingTicket.maNhiemVu === nextMission) {
+    if (editingTicket && editingTicket.maNhiemVu.trim().toUpperCase() === nextMission.trim().toUpperCase()) {
       setMaCongViec(editingTicket.maCongViec);
       return;
     }
     try {
+      const op = getCurrentOperatorSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-actor-email': ownerEmail };
+      if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
       const res = await fetch('/api/tickets', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ unitCode, maNhiemVu: nextMission, excludeTicketId: editingTicket?.id })
       });
       if (res.ok) {
@@ -113,7 +118,7 @@ export function StaffTicketInlineForm({
       setErr('Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm chính và nhập Tên công việc cụ thể.');
       return;
     }
-    const isSubmitAction = status === 'Đã nộp' || status === 'Đã nộp lại' || status === 'submitted' || status === 'resubmitted';
+    const isSubmitAction = isEditingPendingMode || status === 'Đã nộp' || status === 'Đã nộp lại' || status === 'submitted' || status === 'resubmitted';
     if (isSubmitAction) {
       const missing: string[] = [];
       if (!sanPham.trim()) missing.push('Sản phẩm đầu ra');
@@ -135,10 +140,10 @@ export function StaffTicketInlineForm({
       const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-actor-email': ownerEmail };
       if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
 
-      const effectiveAction = isSubmitAction ? (isResubmittingMode ? 'resubmit' : 'submit') : 'draft';
-      const effectiveStatus: TicketStatus = isSubmitAction
-        ? (isResubmittingMode ? 'Đã nộp lại' : 'Đã nộp')
-        : (isResubmittingMode ? 'Yêu cầu bổ sung' : 'Nháp');
+      const effectiveAction = isEditingPendingMode ? 'update_pending' : isSubmitAction ? (isResubmittingMode ? 'resubmit' : 'submit') : 'draft';
+      const effectiveStatus: TicketStatus = isEditingPendingMode
+        ? (editingCanon === 'resubmitted' ? 'Đã nộp lại' : 'Đã nộp')
+        : isSubmitAction ? (isResubmittingMode ? 'Đã nộp lại' : 'Đã nộp') : (isResubmittingMode ? 'Yêu cầu bổ sung' : 'Nháp');
 
       const res = await fetch('/api/tickets', {
         method: 'POST',
@@ -162,9 +167,11 @@ export function StaffTicketInlineForm({
         return;
       }
       setSuccessMsg(
-        isSubmitAction
-          ? (isResubmittingMode ? 'Đã nộp lại phiếu và lưu phiên bản mới thành công!' : 'Đã lưu và gửi phiếu thành công!')
-          : 'Đã lưu nháp và giữ mã công việc ở đơn vị!'
+        isEditingPendingMode
+          ? 'Đã cập nhật phiếu. Phiếu tiếp tục ở trạng thái Chờ duyệt.'
+          : isSubmitAction
+            ? (isResubmittingMode ? 'Đã nộp lại phiếu và lưu phiên bản mới thành công!' : 'Đã lưu và gửi phiếu thành công!')
+            : 'Đã lưu nháp và giữ mã công việc ở đơn vị!'
       );
       onSaved(json.ticket);
       if (!editingTicket) resetForm();
@@ -229,47 +236,35 @@ export function StaffTicketInlineForm({
     <div id="staff-ticket-form-card" className="space-y-3">
       <div className="bg-white p-3 rounded-2xl border border-[#dbe8f5] shadow-[0_2px_12px_-4px_rgba(0,71,118,0.06)] space-y-2.5 print:hidden">
         <div className="grid grid-cols-2 gap-1 p-1 bg-[#f1f6fc] rounded-xl border border-[#dbe8f5]">
-          <button
-            type="button"
-            onClick={() => setViewMode('form')}
-            className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${
-              viewMode === 'form' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'
-            }`}
-          >
+          <button type="button" onClick={() => setViewMode('form')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'form' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
             <LayoutList className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Kê khai nhập liệu</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('preview')}
-            className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${
-              viewMode === 'preview' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'
-            }`}
-          >
+          <button type="button" onClick={() => setViewMode('preview')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'preview' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
             <Printer className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Xem trước bản in A4</span>
           </button>
         </div>
-
         <StaffTicketToolbar
-          isEditing={Boolean(editingTicket)}
-          editingTaskCode={editingTicket?.maCongViec}
-          saving={saving}
-          onCancelEdit={onCancelEdit}
-          onPrint={() => window.print()}
-          onSave={handleSave}
+          isEditing={Boolean(editingTicket)} isEditingPending={isEditingPendingMode}
+          editingTaskCode={editingTicket?.maCongViec} saving={saving}
+          onCancelEdit={onCancelEdit} onPrint={() => window.print()} onSave={handleSave}
         />
       </div>
+
+      {isEditingPendingMode && (
+        <div className="p-3 rounded-xl bg-[#eef5ff] border border-[#bfdbfe] text-xs text-[#004776] font-medium print:hidden">
+          Phiếu đã được gửi duyệt. Bạn vẫn có thể chỉnh sửa trong thời gian phiếu chưa được duyệt. Nội dung mới nhất sẽ được gửi đến người duyệt.
+        </div>
+      )}
 
       {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
       {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
 
       {isResubmittingMode && editingTicket && (
         <StaffTicketResubmitBox
-          editingTicket={editingTicket}
-          draftTicketCandidate={draftTicketCandidate}
-          changeSummary={changeSummary}
-          onChangeSummary={setChangeSummary}
+          editingTicket={editingTicket} draftTicketCandidate={draftTicketCandidate}
+          changeSummary={changeSummary} onChangeSummary={setChangeSummary}
         />
       )}
 
@@ -279,13 +274,8 @@ export function StaffTicketInlineForm({
 
       <div className={viewMode === 'preview' ? 'block' : 'hidden print:block'}>
         <StaffTicketA4Preview
-          {...formProps}
-          unitNameVi={unit.nameVi}
-          unitCode={unit.code}
-          ownerName={ownerName}
-          ownerEmail={ownerEmail}
-          ownerTitle={ownerTitle}
-          editingTicket={editingTicket}
+          {...formProps} unitNameVi={unit.nameVi} unitCode={unit.code}
+          ownerName={ownerName} ownerEmail={ownerEmail} ownerTitle={ownerTitle} editingTicket={editingTicket}
         />
       </div>
     </div>

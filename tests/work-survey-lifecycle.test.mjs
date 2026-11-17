@@ -1533,6 +1533,484 @@ runTest('Ca 24: Chuẩn hóa luồng lưu dữ liệu UI/CTA -> API -> Supabase 
   }
 });
 
+runTest('Ca 25: Luồng Chỉnh sửa phiếu đang Chờ duyệt (14 tiêu chí nghiệm thu: giữ nguyên ID/mã CV, tăng version, lịch sử UPDATE_PENDING, khóa sau khi Đã duyệt / Đã gộp B1-B2)', () => {
+  const inlineFormCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketInlineForm.tsx'), 'utf8');
+  const toolbarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketToolbar.tsx'), 'utf8');
+  const myTicketsCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffMyTicketsList.tsx'), 'utf8');
+  const timelineCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/TicketApprovalHistoryTimeline.tsx'), 'utf8');
+
+  assert.ok(
+    inlineFormCode.includes('Phiếu đã được gửi duyệt. Bạn vẫn có thể chỉnh sửa trong thời gian phiếu chưa được duyệt. Nội dung mới nhất sẽ được gửi đến người duyệt.'),
+    'StaffTicketInlineForm phải hiển thị đúng thông báo khi chỉnh sửa phiếu Chờ duyệt'
+  );
+  assert.ok(
+    inlineFormCode.includes('Đã cập nhật phiếu. Phiếu tiếp tục ở trạng thái Chờ duyệt.'),
+    'StaffTicketInlineForm phải hiển thị đúng thông báo sau khi cập nhật phiếu Chờ duyệt thành công'
+  );
+  assert.ok(
+    toolbarCode.includes("'Cập nhật phiếu'"),
+    'StaffTicketToolbar phải đổi nhãn nút thành Cập nhật phiếu khi đang sửa phiếu Chờ duyệt'
+  );
+  assert.ok(
+    myTicketsCode.includes('Chỉnh sửa') && myTicketsCode.includes("canonical === 'submitted'") && myTicketsCode.includes('!t.isMergedToB1B2'),
+    'StaffMyTicketsList phải cho phép nút Chỉnh sửa trên phiếu Chờ duyệt và chặn khi Đã duyệt hoặc Đã gộp B1/B2'
+  );
+  assert.ok(
+    timelineCode.includes('UPDATE_PENDING') && timelineCode.includes('Cập nhật phiếu sau khi gửi duyệt'),
+    'TicketApprovalHistoryTimeline phải có sự kiện UPDATE_PENDING ("Cập nhật phiếu sau khi gửi duyệt")'
+  );
+
+  const dataDir = path.join(root, '.data');
+  const backupFiles = ['server_accounts.json', 'accounts.json', 'staff_tickets.json', 'work_survey_versions.json', 'work_survey_merge_links.json', 'audit-logs.json', 'audit_logs.json', 'server_workbooks.json', 'work_survey_coordinated_vtvls.json'];
+  const backups = new Map();
+  for (const name of backupFiles) {
+    const p = path.join(dataDir, name);
+    backups.set(p, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+  }
+
+  try {
+    const tsxScript = `
+      import assert from 'assert';
+      import { NextRequest } from 'next/server';
+      import { GET as getTickets, POST as postTicket, PATCH as patchTicket } from './src/app/api/tickets/route';
+      import { generateUserSessionToken } from './src/services/storage/server-auth-guard';
+      import { upsertUserAccount } from './src/services/storage/server-account-store';
+      import { getOrCreateWorkbook } from './src/services/storage/server-workbook-store';
+
+      (async () => {
+        const ownerEmail = 'staff.editpending.qa@hcmute.edu.vn';
+        const otherStaffEmail = 'other.staff.qa@hcmute.edu.vn';
+        const leaderEmail = 'leader.editpending.qa@hcmute.edu.vn';
+        const adminEmail = 'tcns@hcmute.edu.vn';
+
+        await upsertUserAccount({ email: ownerEmail, displayName: 'Chuyên viên Kê khai QA', unitCode: 'SDH', unitNameVi: 'Viện Sau Đại học', title: 'Cán bộ – Giảng viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: otherStaffEmail, displayName: 'Chuyên viên Khác QA', unitCode: 'SDH', unitNameVi: 'Viện Sau Đại học', title: 'Cán bộ – Giảng viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: leaderEmail, displayName: 'Lãnh đạo SĐH QA', unitCode: 'SDH', unitNameVi: 'Viện Sau Đại học', title: 'Lãnh đạo đơn vị', role: 'unit_leader', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: adminEmail, displayName: 'Quản trị viên TCNS', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Phòng Tổ chức – Nhân sự', role: 'admin', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        getOrCreateWorkbook('SDH', '01/10/2025–30/9/2026', leaderEmail, 'Lãnh đạo đơn vị');
+
+        const ownerToken = generateUserSessionToken({ email: ownerEmail, unitCode: 'SDH', role: 'staff' });
+        const otherToken = generateUserSessionToken({ email: otherStaffEmail, unitCode: 'SDH', role: 'staff' });
+        const leaderToken = generateUserSessionToken({ email: leaderEmail, unitCode: 'SDH', role: 'unit_leader' });
+        const adminToken = generateUserSessionToken({ email: adminEmail, unitCode: 'TCNS', role: 'admin' });
+
+        // TC1: Tạo nháp rồi mở lại sửa nháp bình thường
+        const draftRes1 = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'draft', status: 'Nháp', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV01', tenCongViec: 'Công việc khảo sát bản nháp 1', maVtvl: 'SDH.CV01',
+            sanPham: 'Báo cáo nháp', chatLuong: 'Đúng hạn', canCu: 'QĐ 01', soSpNam: 5, nguonSoLieu: 'Hồ sơ', phutThucTe: 60, gioBoSung: 2
+          })
+        }));
+        assert.strictEqual(draftRes1.status, 200);
+        const draft1 = (await draftRes1.json()).ticket;
+        const ticketId = draft1.id;
+        const originalTaskCode = draft1.maCongViec;
+        assert.strictEqual(draft1.status, 'Nháp');
+        assert.ok(originalTaskCode.startsWith('SDH.NV01.CV'), 'Phải cấp mã công việc cho bản nháp');
+
+        const draftRes2 = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'draft', status: 'Nháp', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV01', tenCongViec: 'Công việc khảo sát bản nháp 2', maVtvl: 'SDH.CV01',
+            sanPham: 'Báo cáo nháp 2', chatLuong: 'Đúng hạn', canCu: 'QĐ 01', soSpNam: 8, nguonSoLieu: 'Hồ sơ', phutThucTe: 60, gioBoSung: 2
+          })
+        }));
+        assert.strictEqual(draftRes2.status, 200);
+        const draft2 = (await draftRes2.json()).ticket;
+        assert.strictEqual(draft2.id, ticketId);
+        assert.strictEqual(draft2.maCongViec, originalTaskCode);
+
+        // TC2: Nhấn "Lưu & nộp" -> phiếu chuyển sang Chờ duyệt ("Đã nộp", v1)
+        const submitRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'submit', status: 'Đã nộp', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV01', tenCongViec: 'Công việc nộp lần đầu v1', maVtvl: 'SDH.CV01',
+            coordinatedVtvls: [{ unitCode: 'SDH', maVtvl: 'SDH.CV02', note: 'Phối hợp chuyên môn' }],
+            sanPham: 'Hồ sơ v1', chatLuong: 'Đạt chuẩn ISO', canCu: 'Quyết định 100/QĐ-ĐHCNKT',
+            soSpNam: 10, nguonSoLieu: 'Phần mềm quản lý', phutThucTe: 90, gioBoSung: 4
+          })
+        }));
+        assert.strictEqual(submitRes.status, 200);
+        const submittedV1 = (await submitRes.json()).ticket;
+        assert.strictEqual(submittedV1.status, 'Đã nộp');
+        assert.strictEqual(submittedV1.currentVersionNo, 1);
+        assert.strictEqual(submittedV1.maCongViec, originalTaskCode);
+        const firstSubmittedAt = submittedV1.submittedAt;
+        assert.ok(firstSubmittedAt, 'Phải lưu ngày gửi lần đầu submittedAt');
+
+        // TC5 & TC6 & TC7 & TC8: Chủ sở hữu mở lại phiếu đang Chờ duyệt và bấm "Cập nhật phiếu" (không đổi maNhiemVu -> giữ nguyên maCongViec)
+        const updatePendingRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV01',
+            tenCongViec: 'Công việc đã cập nhật khi đang Chờ duyệt v2',
+            maVtvl: 'SDH.CV02',
+            maVtvlPhoiHop: 'SDH.CV03',
+            coordinationNote: 'Phối hợp rà soát học vụ',
+            coordinatedVtvls: [{ unitCode: 'SDH', maVtvl: 'SDH.CV03', note: 'Phối hợp rà soát học vụ' }],
+            sanPham: 'Hồ sơ thẩm định v2',
+            chatLuong: 'Hoàn thành 100% đúng hạn',
+            canCu: 'Quyết định 200/QĐ-ĐHCNKT',
+            soSpNam: 25,
+            nguonSoLieu: 'Hệ thống E-Office HCM-UTE',
+            phutThucTe: 120,
+            gioBoSung: 6
+          })
+        }));
+        assert.strictEqual(updatePendingRes.status, 200, 'Chủ sở hữu phải cập nhật được phiếu đang Chờ duyệt');
+        const updatedV2 = (await updatePendingRes.json()).ticket;
+        assert.strictEqual(updatedV2.id, ticketId, 'Không được tạo bản ghi phiếu mới');
+        assert.strictEqual(updatedV2.maCongViec, originalTaskCode, 'Không đổi Mã nhiệm vụ thì phải giữ nguyên Mã công việc');
+        assert.strictEqual(updatedV2.status, 'Đã nộp', 'Sau khi cập nhật, phiếu phải tiếp tục giữ trạng thái Chờ duyệt (Đã nộp)');
+        assert.strictEqual(updatedV2.currentVersionNo, 2, 'Phải tăng phiên bản lên v2');
+        assert.strictEqual(updatedV2.submittedAt, firstSubmittedAt, 'Không được làm mất ngày gửi lần đầu submittedAt');
+        assert.strictEqual(updatedV2.ownerEmail, ownerEmail, 'Không được làm mất người kê khai');
+        assert.strictEqual(updatedV2.unitCode, 'SDH', 'Không được làm mất đơn vị');
+        assert.strictEqual(updatedV2.maNhiemVu, 'SDH.NV01');
+        assert.strictEqual(updatedV2.tenCongViec, 'Công việc đã cập nhật khi đang Chờ duyệt v2');
+        assert.strictEqual(updatedV2.maVtvl, 'SDH.CV02');
+        assert.strictEqual(updatedV2.soSpNam, 25);
+        assert.strictEqual(updatedV2.phutThucTe, 120);
+        assert.strictEqual(updatedV2.gioBoSung, 6);
+        assert.strictEqual(updatedV2.coordinatedVtvls.length, 1);
+        assert.strictEqual(updatedV2.coordinatedVtvls[0].maVtvl, 'SDH.CV03');
+
+        // Kiểm tra Lịch sử và Người duyệt nhìn thấy nội dung mới nhất
+        const leaderViewRes = await getTickets(new NextRequest('http://localhost:3360/api/tickets?id=' + encodeURIComponent(ticketId), {
+          headers: { authorization: 'Bearer ' + leaderToken }
+        }));
+        assert.strictEqual(leaderViewRes.status, 200);
+        const leaderViewBody = await leaderViewRes.json();
+        assert.strictEqual(leaderViewBody.ticket.tenCongViec, 'Công việc đã cập nhật khi đang Chờ duyệt v2', 'Người duyệt phải nhìn thấy nội dung mới nhất');
+        assert.strictEqual(leaderViewBody.versions.length, 2, 'Phải có đủ 2 snapshot phiên bản v1 và v2');
+        assert.strictEqual(leaderViewBody.versions[1].changeSummary, 'Cập nhật phiếu sau khi gửi duyệt');
+        const hasUpdatePendingHistory = (leaderViewBody.ticket.statusHistory || []).some(
+          (h) => h.action === 'UPDATE_PENDING' && h.reason === 'Cập nhật phiếu sau khi gửi duyệt'
+        );
+        assert.strictEqual(hasUpdatePendingHistory, true, 'Lịch sử phải ghi nhận sự kiện UPDATE_PENDING ("Cập nhật phiếu sau khi gửi duyệt")');
+
+        // TC11: Người dùng khác (kể cả cán bộ khác, lãnh đạo, hay admin) không sửa được phiếu của người kê khai
+        for (const [label, tok] of [['cán bộ khác', otherToken], ['lãnh đạo', leaderToken], ['admin', adminToken]]) {
+          const illegalRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + tok, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              id: ticketId, action: 'update_pending', unitCode: 'SDH',
+              maNhiemVu: 'SDH.NV02', tenCongViec: 'Sửa trái phép bởi ' + label, maVtvl: 'SDH.CV02',
+              sanPham: 'SP', chatLuong: 'CL', canCu: 'CC', soSpNam: 1, nguonSoLieu: 'NSL', phutThucTe: 10
+            })
+          }));
+          assert.strictEqual(illegalRes.status, 403, label + ' không được phép sửa nội dung phiếu của người khác');
+          const illegalErr = await illegalRes.json();
+          assert.strictEqual(illegalErr.code, 'FORBIDDEN_IDOR');
+        }
+
+        // TC9 & TC10: Lãnh đạo duyệt phiếu (autoMerge: false để kiểm thử trạng thái Đã duyệt trước khi gộp B1/B2) -> sau đó chủ sở hữu bấm "Cập nhật phiếu"
+        const approveRes = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PATCH',
+          headers: { authorization: 'Bearer ' + leaderToken, 'content-type': 'application/json' },
+          body: JSON.stringify({ ticketId, action: 'approve', autoMerge: false, unitCode: 'SDH' })
+        }));
+        assert.strictEqual(approveRes.status, 200);
+        const approvedTicket = (await approveRes.json()).ticket;
+        assert.strictEqual(approvedTicket.status, 'Đã duyệt');
+        assert.strictEqual(approvedTicket.currentVersionNo, 2, 'Phải duyệt đúng phiên bản mới nhất v2');
+        assert.strictEqual(Boolean(approvedTicket.isMergedToB1B2), false);
+
+        const concurrentEditAfterApprove = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV02', tenCongViec: 'Cố sửa sau khi lãnh đạo vừa duyệt', maVtvl: 'SDH.CV02',
+            sanPham: 'SP', chatLuong: 'CL', canCu: 'CC', soSpNam: 99, nguonSoLieu: 'NSL', phutThucTe: 99
+          })
+        }));
+        assert.strictEqual(concurrentEditAfterApprove.status, 403, 'Phiếu đã duyệt phải từ chối chỉnh sửa với HTTP 403');
+        const approvedErr = await concurrentEditAfterApprove.json();
+        assert.strictEqual(approvedErr.code, 'FORBIDDEN_TICKET_APPROVED');
+        assert.strictEqual(
+          approvedErr.error,
+          'Phiếu đã được duyệt nên không thể tiếp tục chỉnh sửa. Vui lòng tải lại dữ liệu.',
+          'Thông báo từ chối khi phiếu đã được duyệt phải khớp chính xác yêu cầu'
+        );
+
+        // TC12: Khi phiếu đã gộp B1/B2 (isMergedToB1B2 = true) -> tuyệt đối không cho sửa nội dung nguồn
+        const mergeRes = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PATCH',
+          headers: { authorization: 'Bearer ' + leaderToken, 'content-type': 'application/json' },
+          body: JSON.stringify({ ticketId, action: 'merge', unitCode: 'SDH' })
+        }));
+        assert.strictEqual(mergeRes.status, 200);
+        const editMergedRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + ownerToken, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', unitCode: 'SDH',
+            maNhiemVu: 'SDH.NV02', tenCongViec: 'Cố sửa phiếu đã gộp B1/B2', maVtvl: 'SDH.CV02',
+            sanPham: 'SP', chatLuong: 'CL', canCu: 'CC', soSpNam: 99, nguonSoLieu: 'NSL', phutThucTe: 99
+          })
+        }));
+        assert.strictEqual(editMergedRes.status, 403);
+        const mergedErr = await editMergedRes.json();
+        assert.strictEqual(mergedErr.code, 'FORBIDDEN_TICKET_MERGED');
+      })().catch((e) => { console.error(e); process.exit(1); });
+    `;
+    execSync(`npx tsx -e "${tsxScript.replace(/"/g, '\\"')}"`, {
+      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      stdio: 'pipe'
+    });
+  } finally {
+    for (const [p, content] of backups.entries()) {
+      if (content === null) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+      else fs.writeFileSync(p, content, 'utf8');
+    }
+  }
+});
+
+runTest('Ca 26: Nghiệp vụ đổi Mã nhiệm vụ khi chỉnh sửa phiếu (9 tiêu chí nghiệm thu: cấp mã CV mới, bảo lưu mã cũ replaced không tái sử dụng, lịch sử CHANGE_MISSION_CODE, đồng bộ đề xuất phối hợp, rollback & xử lý đồng thời)', () => {
+  const dataDir = path.join(root, '.data');
+  const backupFiles = ['server_accounts.json', 'accounts.json', 'staff_tickets.json', 'work_survey_versions.json', 'work_survey_merge_links.json', 'audit-logs.json', 'audit_logs.json', 'server_workbooks.json', 'work_survey_coordinated_vtvls.json', 'work_relationships.json', 'user_vtvl_assignments.json'];
+  const backups = new Map();
+  for (const name of backupFiles) {
+    const p = path.join(dataDir, name);
+    backups.set(p, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+  }
+
+  try {
+    const tsxScript = `
+      import assert from 'assert';
+      import { NextRequest } from 'next/server';
+      import { GET as getTickets, POST as postTicket, PUT as putTicket, PATCH as patchTicket } from './src/app/api/tickets/route';
+      import { GET as getCoordinated } from './src/app/api/tickets/coordinated/route';
+      import { generateUserSessionToken } from './src/services/storage/server-auth-guard';
+      import { upsertUserAccount } from './src/services/storage/server-account-store';
+      import { getOrCreateWorkbook } from './src/services/storage/server-workbook-store';
+      import { setAssignmentsForAccount } from './src/services/storage/server-vtvl-assignment-store';
+      import { getReplacedWorkCodesForSurvey } from './src/services/storage/server-coordination-store';
+
+      (async () => {
+        const staff1 = 'staff1.mission.qa@hcmute.edu.vn';
+        const staff2 = 'staff2.mission.qa@hcmute.edu.vn';
+        const coordReceiver = 'receiver.mission.qa@hcmute.edu.vn';
+        const leader = 'leader.mission.qa@hcmute.edu.vn';
+
+        await upsertUserAccount({ email: staff1, displayName: 'Cán bộ 1 QA', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Chuyên viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: staff2, displayName: 'Cán bộ 2 QA', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Chuyên viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: coordReceiver, displayName: 'Người nhận phối hợp QA', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Chuyên viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: leader, displayName: 'Lãnh đạo TCNS QA', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Trưởng phòng', role: 'unit_leader', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+
+        getOrCreateWorkbook('TCNS', '01/10/2025–30/9/2026', leader, 'Trưởng phòng');
+        await setAssignmentsForAccount({ userEmail: coordReceiver, unitCode: 'TCNS', items: [{ maVtvl: 'TCNS.CV09', tenVtvl: 'Chuyên viên phối hợp' }], assignedBy: leader });
+
+        const tok1 = generateUserSessionToken({ email: staff1, unitCode: 'TCNS', role: 'staff' });
+        const tok2 = generateUserSessionToken({ email: staff2, unitCode: 'TCNS', role: 'staff' });
+        const tokReceiver = generateUserSessionToken({ email: coordReceiver, unitCode: 'TCNS', role: 'staff' });
+        const tokLeader = generateUserSessionToken({ email: leader, unitCode: 'TCNS', role: 'unit_leader' });
+
+        // 1. Tạo phiếu ở TCNS.NV01 và nộp (v1) -> nhận mã TCNS.NV01.CVxx
+        const createRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'submit', status: 'Đã nộp', unitCode: 'TCNS',
+            maNhiemVu: 'TCNS.NV01', tenCongViec: 'Rà soát hồ sơ vị trí việc làm v1', maVtvl: 'TCNS.CV01',
+            coordinatedVtvls: [{ unitCode: 'TCNS', maVtvl: 'TCNS.CV09', note: 'Phối hợp đối chiếu' }],
+            sanPham: 'Báo cáo rà soát', chatLuong: 'Đúng hạn', canCu: 'QĐ 2266',
+            soSpNam: 12, nguonSoLieu: 'Hồ sơ TCNS', phutThucTe: 90, gioBoSung: 2
+          })
+        }));
+        assert.strictEqual(createRes.status, 200);
+        const ticketV1 = (await createRes.json()).ticket;
+        const ticketId = ticketV1.id;
+        const oldWorkCode = ticketV1.maCongViec;
+        assert.ok(oldWorkCode.startsWith('TCNS.NV01.CV'), 'Mã công việc v1 phải thuộc TCNS.NV01');
+
+        // 2. TC1: Chỉnh sửa nội dung nhưng KHÔNG đổi Mã nhiệm vụ -> giữ nguyên oldWorkCode
+        const sameMissionRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'TCNS',
+            maNhiemVu: 'TCNS.NV01', maCongViec: oldWorkCode,
+            tenCongViec: 'Rà soát hồ sơ vị trí việc làm v2 (cùng nhiệm vụ)', maVtvl: 'TCNS.CV01',
+            coordinatedVtvls: [{ unitCode: 'TCNS', maVtvl: 'TCNS.CV09', note: 'Phối hợp đối chiếu' }],
+            sanPham: 'Báo cáo rà soát', chatLuong: 'Đúng hạn', canCu: 'QĐ 2266',
+            soSpNam: 15, nguonSoLieu: 'Hồ sơ TCNS', phutThucTe: 90, gioBoSung: 2
+          })
+        }));
+        assert.strictEqual(sameMissionRes.status, 200);
+        const ticketV2 = (await sameMissionRes.json()).ticket;
+        assert.strictEqual(ticketV2.id, ticketId);
+        assert.strictEqual(ticketV2.maCongViec, oldWorkCode, 'Không đổi Mã nhiệm vụ thì Mã công việc giữ nguyên');
+        assert.strictEqual(ticketV2.currentVersionNo, 2);
+
+        // 3. TC8: Giả lập lỗi giữa chừng (_simulateVersionFailure) khi đổi Mã nhiệm vụ sang TCNS.NV02 -> phải rollback toàn bộ
+        const failChangeRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'TCNS',
+            maNhiemVu: 'TCNS.NV02', tenCongViec: 'Thử đổi sang NV02 nhưng lỗi giữa chừng', maVtvl: 'TCNS.CV01',
+            coordinatedVtvls: [{ unitCode: 'TCNS', maVtvl: 'TCNS.CV09', note: 'Phối hợp đối chiếu' }],
+            sanPham: 'Báo cáo', chatLuong: 'Đúng hạn', canCu: 'QĐ 2266',
+            soSpNam: 15, nguonSoLieu: 'Hồ sơ TCNS', phutThucTe: 90, gioBoSung: 2,
+            _simulateVersionFailure: true
+          })
+        }));
+        assert.strictEqual(failChangeRes.status, 500, 'Lỗi giữa chừng phải trả về 500');
+        const checkAfterRollback = await getTickets(new NextRequest('http://localhost:3360/api/tickets?id=' + encodeURIComponent(ticketId), {
+          headers: { authorization: 'Bearer ' + tok1 }
+        }));
+        const rolledBackTicket = (await checkAfterRollback.json()).ticket;
+        assert.strictEqual(rolledBackTicket.maNhiemVu, 'TCNS.NV01', 'Rollback phải giữ nguyên Mã nhiệm vụ cũ');
+        assert.strictEqual(rolledBackTicket.maCongViec, oldWorkCode, 'Rollback phải giữ nguyên Mã công việc cũ');
+        assert.strictEqual(rolledBackTicket.currentVersionNo, 2, 'Rollback không được tạo phiên bản rác');
+        assert.strictEqual(getReplacedWorkCodesForSurvey(ticketId).length, 0, 'Rollback không được để lại bản ghi replaced rác');
+
+        // 4. TC2, TC3, TC4, TC5, TC6: Đổi Mã nhiệm vụ từ TCNS.NV01 sang TCNS.NV02 thành công (kể cả khi client cố gửi maCongViec cũ)
+        const changeMissionRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'TCNS',
+            maNhiemVu: 'TCNS.NV02', maCongViec: oldWorkCode,
+            tenCongViec: 'Công việc sau khi chuyển sang nhiệm vụ TCNS.NV02', maVtvl: 'TCNS.CV01',
+            coordinatedVtvls: [{ unitCode: 'TCNS', maVtvl: 'TCNS.CV09', note: 'Phối hợp đối chiếu ở NV02' }],
+            sanPham: 'Báo cáo NV02', chatLuong: 'Đúng hạn', canCu: 'QĐ 2266',
+            soSpNam: 20, nguonSoLieu: 'Hồ sơ TCNS', phutThucTe: 90, gioBoSung: 2
+          })
+        }));
+        assert.strictEqual(changeMissionRes.status, 200);
+        const ticketV3 = (await changeMissionRes.json()).ticket;
+        const newWorkCode = ticketV3.maCongViec;
+        assert.strictEqual(ticketV3.id, ticketId, 'ID phiếu giữ nguyên');
+        assert.strictEqual(ticketV3.status, 'Đã nộp', 'Trạng thái Chờ duyệt giữ nguyên');
+        assert.strictEqual(ticketV3.maNhiemVu, 'TCNS.NV02');
+        assert.ok(newWorkCode.startsWith('TCNS.NV02.CV'), 'Mã công việc mới phải thuộc TCNS.NV02: ' + newWorkCode);
+        assert.notStrictEqual(newWorkCode, oldWorkCode, 'Mã công việc mới phải khác mã cũ');
+        assert.strictEqual(ticketV3.currentVersionNo, 3);
+
+        // Kiểm tra cấu trúc replacedWorkCodes lưu quan hệ oldWorkCode -> newWorkCode
+        const replacedList = getReplacedWorkCodesForSurvey(ticketId);
+        assert.strictEqual(replacedList.length, 1, 'Phải lưu bản ghi đánh dấu mã cũ là replaced');
+        assert.strictEqual(replacedList[0].oldMissionCode, 'TCNS.NV01');
+        assert.strictEqual(replacedList[0].newMissionCode, 'TCNS.NV02');
+        assert.strictEqual(replacedList[0].oldWorkCode, oldWorkCode);
+        assert.strictEqual(replacedList[0].newWorkCode, newWorkCode);
+        assert.strictEqual(replacedList[0].status, 'replaced');
+        assert.strictEqual(replacedList[0].previousVersionNo, 2);
+        assert.strictEqual(replacedList[0].currentVersionNo, 3);
+
+        // Kiểm tra lịch sử và snapshot phiên bản
+        const detailAfterChange = await (await getTickets(new NextRequest('http://localhost:3360/api/tickets?id=' + encodeURIComponent(ticketId), {
+          headers: { authorization: 'Bearer ' + tokLeader }
+        }))).json();
+        assert.strictEqual(detailAfterChange.versions[0].snapshot.maCongViec, oldWorkCode, 'Snapshot v1 vẫn giữ nguyên mã công việc cũ');
+        assert.strictEqual(detailAfterChange.versions[1].snapshot.maCongViec, oldWorkCode, 'Snapshot v2 vẫn giữ nguyên mã công việc cũ');
+        assert.strictEqual(detailAfterChange.versions[2].snapshot.maCongViec, newWorkCode, 'Snapshot v3 lưu mã công việc mới');
+        const expectedReason = 'Thay đổi Mã nhiệm vụ từ TCNS.NV01 sang TCNS.NV02; Mã công việc được thay đổi từ ' + oldWorkCode + ' sang ' + newWorkCode + '.';
+        const changeHist = (detailAfterChange.ticket.statusHistory || []).find((h) => h.action === 'CHANGE_MISSION_CODE');
+        assert.ok(changeHist, 'Lịch sử phải có sự kiện CHANGE_MISSION_CODE');
+        assert.ok(changeHist.reason.includes(expectedReason), 'Nội dung lịch sử phải khớp mẫu chuẩn: ' + changeHist.reason);
+        assert.strictEqual(changeHist.oldMissionCode, 'TCNS.NV01');
+        assert.strictEqual(changeHist.newMissionCode, 'TCNS.NV02');
+        assert.strictEqual(changeHist.oldWorkCode, oldWorkCode);
+        assert.strictEqual(changeHist.newWorkCode, newWorkCode);
+
+        // Kiểm tra TC4: Mã công việc cũ (oldWorkCode thuộc TCNS.NV01) tuyệt đối KHÔNG được cấp lại cho phiếu mới thuộc TCNS.NV01
+        const nextAllocRes = await putTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PUT',
+          headers: { authorization: 'Bearer ' + tok2, 'content-type': 'application/json' },
+          body: JSON.stringify({ unitCode: 'TCNS', maNhiemVu: 'TCNS.NV01' })
+        }));
+        const nextAllocCode = (await nextAllocRes.json()).nextTaskCode;
+        assert.notStrictEqual(nextAllocCode, oldWorkCode, 'Mã công việc cũ đã replaced tuyệt đối không được tái sử dụng');
+        const oldSeq = parseInt(oldWorkCode.split('.CV')[1], 10);
+        const nextSeq = parseInt(nextAllocCode.split('.CV')[1], 10);
+        assert.ok(nextSeq > oldSeq, 'Số thứ tự CV mới (' + nextSeq + ') phải lớn hơn số thứ tự mã cũ đã replaced (' + oldSeq + ')');
+
+        // Kiểm tra TC6: Đề xuất VTVL phối hợp hiện hành phải phản ánh Mã nhiệm vụ mới & Mã công việc mới (không còn mã cũ)
+        const coordRes = await getCoordinated(new NextRequest('http://localhost:3360/api/tickets/coordinated?scope=unit', {
+          headers: { authorization: 'Bearer ' + tokReceiver }
+        }));
+        const coordBody = await coordRes.json();
+        const propItem = (coordBody.items || []).find((i) => i.surveyId === ticketId);
+        assert.ok(propItem, 'Đề xuất phối hợp của phiếu phải tồn tại');
+        assert.strictEqual(propItem.maNhiemVu, 'TCNS.NV02', 'Đề xuất phối hợp hiện hành phải dùng Mã nhiệm vụ mới');
+        assert.strictEqual(propItem.maCongViec, newWorkCode, 'Đề xuất phối hợp hiện hành phải dùng Mã công việc mới');
+
+        // 5. TC9 (Đồng thời & Idempotency):
+        // 5a. Gửi lại đúng cùng request cập nhật 2 lần liên tiếp (timeout retry) -> không sinh thêm phiên bản hay lịch sử
+        const retryRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: ticketId, action: 'update_pending', status: 'Đã nộp', unitCode: 'TCNS',
+            maNhiemVu: 'TCNS.NV02', maCongViec: newWorkCode,
+            tenCongViec: 'Công việc sau khi chuyển sang nhiệm vụ TCNS.NV02', maVtvl: 'TCNS.CV01',
+            coordinatedVtvls: [{ unitCode: 'TCNS', maVtvl: 'TCNS.CV09', note: 'Phối hợp đối chiếu ở NV02' }],
+            sanPham: 'Báo cáo NV02', chatLuong: 'Đúng hạn', canCu: 'QĐ 2266',
+            soSpNam: 20, nguonSoLieu: 'Hồ sơ TCNS', phutThucTe: 90, gioBoSung: 2
+          })
+        }));
+        const retryBody = await retryRes.json();
+        assert.strictEqual(retryBody.idempotent, true, 'Gửi trùng cùng nội dung phải trả về idempotent=true');
+        assert.strictEqual(retryBody.ticket.currentVersionNo, 3, 'Không được tạo thêm phiên bản thứ 4 khi retry');
+
+        // 5b. Hai phiếu khác nhau đồng thời chuyển sang cùng một Mã nhiệm vụ (TCNS.NV03) -> phải nhận 2 mã CV khác nhau, không trùng
+        const tA_Res = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'draft', status: 'Nháp', unitCode: 'TCNS', maNhiemVu: 'TCNS.NV01', tenCongViec: 'Phiếu A', maVtvl: 'TCNS.CV01' })
+        }));
+        const tB_Res = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'POST',
+          headers: { authorization: 'Bearer ' + tok2, 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'draft', status: 'Nháp', unitCode: 'TCNS', maNhiemVu: 'TCNS.NV01', tenCongViec: 'Phiếu B', maVtvl: 'TCNS.CV01' })
+        }));
+        const tA = (await tA_Res.json()).ticket;
+        const tB = (await tB_Res.json()).ticket;
+
+        const [moveA, moveB] = await Promise.all([
+          postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + tok1, 'content-type': 'application/json' },
+            body: JSON.stringify({ id: tA.id, action: 'draft', status: 'Nháp', unitCode: 'TCNS', maNhiemVu: 'TCNS.NV03', tenCongViec: 'Phiếu A sang NV03', maVtvl: 'TCNS.CV01' })
+          })),
+          postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+            method: 'POST',
+            headers: { authorization: 'Bearer ' + tok2, 'content-type': 'application/json' },
+            body: JSON.stringify({ id: tB.id, action: 'draft', status: 'Nháp', unitCode: 'TCNS', maNhiemVu: 'TCNS.NV03', tenCongViec: 'Phiếu B sang NV03', maVtvl: 'TCNS.CV01' })
+          }))
+        ]);
+        const codeA = (await moveA.json()).ticket.maCongViec;
+        const codeB = (await moveB.json()).ticket.maCongViec;
+        assert.ok(codeA.startsWith('TCNS.NV03.CV') && codeB.startsWith('TCNS.NV03.CV'), 'Cả hai phiếu phải nhận mã thuộc TCNS.NV03');
+        assert.notStrictEqual(codeA, codeB, 'Hai phiếu chuyển đồng thời sang cùng Mã nhiệm vụ không được nhận trùng Mã công việc (' + codeA + ' vs ' + codeB + ')');
+      })().catch((e) => { console.error(e); process.exit(1); });
+    `;
+    execSync(`npx tsx -e "${tsxScript.replace(/"/g, '\\"')}"`, {
+      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      stdio: 'pipe'
+    });
+  } finally {
+    for (const [p, content] of backups.entries()) {
+      if (content === null) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+      else fs.writeFileSync(p, content, 'utf8');
+    }
+  }
+});
+
 console.log('\n================================================================');
 console.log(` KẾT QUẢ KIỂM THỬ: ${passed} PASS, ${failed} FAIL`);
 console.log('================================================================\n');

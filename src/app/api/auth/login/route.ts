@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     const sessionToken = generateUserSessionToken({
       email: verified.email,
       role: verified.role,
-      unitCode: verified.unitCode
+      unitCode: verified.unitCode,
+      ttlHours: 168
     });
     await setUserSessionCookie(sessionToken);
 
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60
+      maxAge: 7 * 24 * 60 * 60
     });
 
     return res;

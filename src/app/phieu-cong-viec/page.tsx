@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentOperatorSession, clearCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
+import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
+import { performFullLogout } from '@/services/auth/google-auth';
 import { ProposedCoordinatedTaskItem, StaffWorkTicket, WorkRelationshipItem, toCanonicalStatus } from '@/types/staff-ticket';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { StaffTicketInlineForm } from '@/components/staff-portal/StaffTicketInlineForm';
@@ -206,7 +207,7 @@ export default function StaffWorkTicketsPage() {
         <StaffPortalHeaderBanner
           unitCode={session.unitCode} unitNameVi={unitNameVi}
           onCreateNew={() => { selectTab('my'); setEditingTicket(null); }}
-          onLogout={() => { clearCurrentOperatorSession(); router.push('/login'); }}
+          onLogout={() => { void performFullLogout('/login'); }}
         />
         <StaffTicketsTabBar
           activeTab={activeTab} onSelectTab={selectTab} draftCount={myDraftTickets.length} pendingCount={pendingCount}

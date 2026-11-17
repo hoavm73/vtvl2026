@@ -12,16 +12,23 @@ export interface GoogleLoginCheckResult {
   message?: string;
 }
 
+let logoutInProgress = false;
+
+export function isLogoutInProgress(): boolean {
+  return logoutInProgress;
+}
+
 /**
  * Khởi chạy đăng nhập Google OAuth qua NextAuth (/api/auth/signin/google)
  */
-export async function startGoogleOAuthLogin(redirectPath = '/bang-tinh'): Promise<GoogleLoginCheckResult> {
+export async function startGoogleOAuthLogin(redirectPath = '/'): Promise<GoogleLoginCheckResult> {
   if (typeof window === 'undefined') {
     return { ok: false, reason: 'MISSING_CONFIG', message: 'Không thể đăng nhập ngoài trình duyệt.' };
   }
 
   try {
-    const safePath = redirectPath.startsWith('/') ? redirectPath : '/bang-tinh';
+    logoutInProgress = false;
+    const safePath = redirectPath.startsWith('/') ? redirectPath : '/';
     const checkRes = await fetch(`/api/auth/google?redirect=${encodeURIComponent(safePath)}`, {
       cache: 'no-store'
     });
@@ -52,12 +59,37 @@ export function consumeGoogleOAuthCallback(): OperatorSession | null {
   return null;
 }
 
-export function signOutGoogleSession(): void {
-  if (typeof window !== 'undefined') {
-    fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
-    fetch('/api/admin/c1-lock', { method: 'DELETE' }).catch(() => {});
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    signOut({ redirect: false }).catch(() => {});
-  }
+/**
+ * Đăng xuất chuẩn Cookie-First: xóa đồng bộ toàn bộ HTTP-only cookies trên máy chủ
+ * (NextAuth + Session Token + Admin Token), dọn localStorage/sessionStorage và điều hướng sạch.
+ */
+export async function performFullLogout(redirectTo = '/login'): Promise<void> {
+  logoutInProgress = true;
   clearCurrentOperatorSession();
+
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.removeItem('hcmute_vtvl_admin_token');
+    } catch { /* ignore */ }
+
+    await Promise.allSettled([
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'include', cache: 'no-store' }),
+      fetch('/api/admin/c1-lock', { method: 'DELETE', credentials: 'include' }),
+      signOut({ redirect: false })
+    ]);
+
+    window.location.replace(redirectTo);
+  }
+}
+
+export function signOutGoogleSession(options?: { redirect?: boolean; redirectTo?: string }): void {
+  if (options?.redirect === false) {
+    clearCurrentOperatorSession();
+    if (typeof window !== 'undefined') {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'include', cache: 'no-store' }).catch(() => {});
+      signOut({ redirect: false }).catch(() => {});
+    }
+    return;
+  }
+  void performFullLogout(options?.redirectTo || '/login');
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuthHydration } from '@/components/auth/AuthSessionProvider';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { startGoogleOAuthLogin, consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 import { GoogleLogoSvg } from '@/components/auth/GoogleOAuthButton';
@@ -16,7 +16,7 @@ import { LoginSuccessCard } from '@/components/auth/LoginSuccessCard';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: nextAuthSession, status: nextAuthStatus } = useSession();
+  const { isServerVerified, serverAuthenticated, refreshServerSession } = useAuthHydration();
   const redirectParam = searchParams.get('redirect') || searchParams.get('next') || '';
   const oauthError = searchParams.get('error') || '';
   const isAdminIntent = searchParams.get('admin') === 'true' || redirectParam === '/admin' || searchParams.get('reason') === 'admin_required';
@@ -27,9 +27,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(() =>
-    typeof window !== 'undefined' && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))
-  );
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [redirectMessage, setRedirectMessage] = useState('Đã đăng nhập thành công, đang chuyển hướng…');
 
   useEffect(() => {
@@ -38,40 +36,19 @@ function LoginForm() {
   }, [oauthError]);
 
   useEffect(() => {
-    const tryCompleteLogin = () => {
-      const oauthSession = consumeGoogleOAuthCallback();
-      const active = oauthSession || getCurrentOperatorSession();
-      if (!active) return false;
-      if (isAdminIntent && active.role !== 'admin' && active.email !== 'tcns@hcmute.edu.vn') return false;
-      if (searchParams.get('switch')) return false;
+    if (!isServerVerified || !serverAuthenticated || searchParams.get('switch')) return;
+    const active = consumeGoogleOAuthCallback() || getCurrentOperatorSession();
+    if (!active) return;
+    const isAdm = active.role === 'admin' || active.email === 'tcns@hcmute.edu.vn';
+    if (isAdminIntent && !isAdm) return;
 
-      setIsRedirecting(true);
-      setRedirectMessage(`Đã đăng nhập thành công (${active.email}), đang chuyển hướng…`);
-      syncOperatorAccountWithServer(active).then(({ account }) => {
-        const role = account?.role || active.role || 'staff';
-        const isAdm = role === 'admin' || active.email === 'tcns@hcmute.edu.vn';
-        router.replace(redirectParam || (isAdm ? '/admin' : '/'));
-      });
-      return true;
-    };
-
-    if (tryCompleteLogin()) return;
-
-    if (nextAuthStatus === 'authenticated' && nextAuthSession?.user?.email && !searchParams.get('switch')) {
-      const role = nextAuthSession.user.role || 'staff';
-      const isAdm = role === 'admin' || nextAuthSession.user.email === 'tcns@hcmute.edu.vn';
-      if (!isAdminIntent || isAdm) {
-        setIsRedirecting(true);
-        setRedirectMessage(`Đã đăng nhập thành công (${nextAuthSession.user.email}), đang chuyển hướng…`);
-        router.replace(redirectParam || (isAdm ? '/admin' : '/'));
-        return;
-      }
-    }
-
-    const onOperatorReady = () => { tryCompleteLogin(); };
-    window.addEventListener('vtvl-operator-changed', onOperatorReady);
-    return () => window.removeEventListener('vtvl-operator-changed', onOperatorReady);
-  }, [router, redirectParam, isAdminIntent, searchParams, nextAuthStatus, nextAuthSession]);
+    setIsRedirecting(true);
+    setRedirectMessage(`Đã đăng nhập thành công (${active.email}), đang chuyển hướng…`);
+    syncOperatorAccountWithServer(active).then(({ account }) => {
+      const role = account?.role || active.role || 'staff';
+      router.replace(redirectParam || (role === 'admin' ? '/admin' : '/'));
+    });
+  }, [router, redirectParam, isAdminIntent, searchParams, isServerVerified, serverAuthenticated]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,8 +85,9 @@ function LoginForm() {
 
       setIsRedirecting(true);
       setRedirectMessage(`Đã đăng nhập thành công (${acc.email}), đang chuyển hướng…`);
+      await refreshServerSession();
       const targetRoute = redirectParam || (acc.role === 'admin' ? '/admin' : '/');
-      router.push(targetRoute);
+      router.replace(targetRoute);
     } catch {
       setError('Không thể kết nối tới máy chủ xác thực.');
       setLoading(false);

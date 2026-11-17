@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuthHydration } from '@/components/auth/AuthSessionProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
@@ -19,7 +19,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { status: nextAuthStatus } = useSession();
+  const { isServerVerified, serverAuthenticated } = useAuthHydration();
   const [collapsed, setCollapsed] = useState(false);
   const [session, setSession] = useState<OperatorSession | null>(() => {
     if (typeof window !== 'undefined') {
@@ -51,8 +51,7 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     syncUnitsWithServer();
     const cur = refreshSession();
-    const hasHashAuth = typeof window !== 'undefined' && window.location.hash.includes('access_token=');
-    if (!cur && !hasHashAuth && pathname !== '/login' && nextAuthStatus === 'unauthenticated') {
+    if (isServerVerified && !serverAuthenticated && !cur && pathname !== '/login') {
       router.replace('/login');
     }
 
@@ -87,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
         channel.close();
       }
     };
-  }, [refreshSession, pathname, router, nextAuthStatus]);
+  }, [refreshSession, pathname, router, isServerVerified, serverAuthenticated]);
 
   const handleToggleSidebar = () => {
     setCollapsed((prev) => {

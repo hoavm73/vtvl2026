@@ -8,7 +8,7 @@ import {
 } from '@/services/telemetry/operator-session';
 import { saveLocalDraft, queueOfflineSync } from '@/services/storage/indexeddb-storage';
 import { saveActiveUnitSession } from '@/services/telemetry/activity-log';
-import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
+import { consumeGoogleOAuthCallback, performFullLogout } from '@/services/auth/google-auth';
 import { ExcelSheetKey, GenericGridRow } from './excel-grid-types';
 
 export type SyncStatusKind = 'synced' | 'saving' | 'offline' | 'conflict' | 'unsaved';
@@ -271,12 +271,12 @@ export function useOperatorSession() {
   }, []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
   const logoutSession = useCallback(() => {
-    clearCurrentOperatorSession();
     setSession(null);
     setWorkbookId(null);
     setDataSource('sample');
     setTouchedCells(new Set());
     setIsModalOpen(false);
+    void performFullLogout('/login');
   }, []);
 
   return {

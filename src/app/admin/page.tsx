@@ -14,8 +14,9 @@ import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
 import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
 import { AdminSkeletonLoading } from '@/components/admin/AdminSkeletonLoading';
-import { getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
+import { performFullLogout } from '@/services/auth/google-auth';
 import { getAdminUnits } from '@/services/units/unit-management';
 
 type AdminTabKey = 'unit-monitor' | 'sessions' | 'accounts' | 'session-control' | 'units';
@@ -141,13 +142,9 @@ export default function AdminPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-    } catch { /* ignore */ }
-    clearCurrentOperatorSession();
     setIsAuthenticated(false);
     setSessionCount(0);
-    router.push('/login?redirect=/admin&admin=true');
+    await performFullLogout('/login?redirect=/admin&admin=true');
   };
 
   if (isAuthenticated === null) return <AdminSkeletonLoading />;

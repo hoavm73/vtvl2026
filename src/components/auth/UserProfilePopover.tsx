@@ -14,7 +14,7 @@ import { AccountProfileModal } from '@/components/auth/AccountProfileModal';
 import { UnitSelectionModal } from '@/components/auth/UnitSelectionModal';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { OperatorSession, getCurrentOperatorSession, clearCurrentOperatorSession } from '@/services/telemetry/operator-session';
-import { consumeGoogleOAuthCallback, signOutGoogleSession } from '@/services/auth/google-auth';
+import { consumeGoogleOAuthCallback, performFullLogout } from '@/services/auth/google-auth';
 import {
   UserRole, ROLE_OPTIONS, getRoleLabel, getRoleBadgeVariant,
   getRoleFromTitle, syncOperatorAccountWithServer, updateMyAccountOnServer,
@@ -64,13 +64,11 @@ export function UserProfilePopover() {
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/bang-tinh';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsProfileOpen(false);
     setIsAdmin(false);
     setSession(null);
-    clearCurrentOperatorSession();
-    signOutGoogleSession();
-    router.replace('/login');
+    await performFullLogout('/login');
   };
 
   const handleQuickRoleUpdate = async (newRole: string) => {
@@ -123,18 +121,21 @@ export function UserProfilePopover() {
             <div className="pt-2 border-t border-[#e8eff7] space-y-1.5">
               <PopoverClose>
                 <Link
+                  href="/login"
+                  className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-[#e1edf8] hover:bg-[#d0e4f5] text-xs font-bold text-[#004776] transition-colors cursor-pointer"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Đăng nhập Email &amp; Mật khẩu</span>
+                </Link>
+              </PopoverClose>
+              <PopoverClose>
+                <Link
                   href="/login?redirect=/admin&admin=true"
                   className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[#004776] bg-[#f0f7fd] hover:bg-[#e1effa] text-xs font-bold text-[#004776] transition-colors cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-[#004776]" />
                   <span>Đăng nhập Quản trị hệ thống</span>
                 </Link>
-              </PopoverClose>
-              <PopoverClose onClick={() => window.dispatchEvent(new CustomEvent('vtvl-open-session-modal'))}>
-                <span className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-[#e1edf8] hover:bg-[#d0e4f5] text-xs font-bold text-[#004776] transition-colors cursor-pointer">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Hoặc khai báo phiên đơn vị</span>
-                </span>
               </PopoverClose>
             </div>
           </PopoverContent>
@@ -243,12 +244,14 @@ export function UserProfilePopover() {
               </>
             )}
 
-            <PopoverClose onClick={() => window.dispatchEvent(new CustomEvent('vtvl-open-session-modal'))}>
-              <span className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-[#d8e3ef] bg-white hover:bg-[#f4f7fb] text-xs font-semibold text-[#004776] transition-colors cursor-pointer">
-                <RefreshCw className="w-3.5 h-3.5 text-[#004776]" />
-                <span>Đổi đơn vị hoặc phiên làm việc</span>
-              </span>
-            </PopoverClose>
+            {isAdmin && (
+              <PopoverClose onClick={() => window.dispatchEvent(new CustomEvent('vtvl-open-session-modal'))}>
+                <span className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-[#d8e3ef] bg-white hover:bg-[#f4f7fb] text-xs font-semibold text-[#004776] transition-colors cursor-pointer">
+                  <RefreshCw className="w-3.5 h-3.5 text-[#004776]" />
+                  <span>Chuyển đổi xem bảng tính đơn vị</span>
+                </span>
+              </PopoverClose>
+            )}
 
             <PopoverClose onClick={handleLogout}>
               <span className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-[#fdeceb] hover:bg-[#fbd5d3] text-xs font-bold text-[#b42318] transition-colors cursor-pointer">

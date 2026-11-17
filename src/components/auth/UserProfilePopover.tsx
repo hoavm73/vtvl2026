@@ -39,12 +39,12 @@ export function UserProfilePopover() {
       setIsSyncing(false);
       return;
     }
-    const isExplicitAdmin = active.email === 'tcns@hcmute.edu.vn';
     const synced = await syncOperatorAccountWithServer(active);
     if (synced.account?.hasSelectedUnit || synced.account?.role === 'unit_leader' || synced.account?.role === 'admin') {
       markEmailAsOnboarded(active.email);
     }
-    setIsAdmin(isExplicitAdmin && synced.isAdmin);
+    const effectiveAdmin = synced.isAdmin || synced.account?.role === 'admin' || active.email === 'tcns@hcmute.edu.vn';
+    setIsAdmin(effectiveAdmin);
     setSession(getCurrentOperatorSession() || active);
     setIsSyncing(false);
   };
@@ -56,7 +56,7 @@ export function UserProfilePopover() {
       const custom = e as CustomEvent<OperatorSession | null>;
       const active = custom.detail ?? getCurrentOperatorSession();
       setSession(active);
-      if (active?.email === 'tcns@hcmute.edu.vn') setIsAdmin(true);
+      if (active?.email === 'tcns@hcmute.edu.vn' || active?.role === 'admin') setIsAdmin(true);
     };
     window.addEventListener('vtvl-operator-changed', handleSessionChange);
     return () => window.removeEventListener('vtvl-operator-changed', handleSessionChange);

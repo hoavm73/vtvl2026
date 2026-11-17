@@ -12,13 +12,7 @@ import { UserVtvlAssignment } from '@/types/staff-ticket';
 import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { usePersistedListState } from '@/services/query/use-persisted-list-state';
 import { getCurrentOperatorSession, saveCurrentOperatorSession } from '@/services/telemetry/operator-session';
-import {
-  UserRole,
-  UserAccountRecord,
-  ROLE_OPTIONS,
-  getRoleLabel,
-  adminUpdateUserRoleOnServer
-} from '@/services/auth/account-client';
+import { UserRole, UserAccountRecord, ROLE_OPTIONS, getRoleLabel, adminUpdateUserRoleOnServer } from '@/services/auth/account-client';
 
 export function AdminAccountsTab() {
   const [accounts, setAccounts] = useState<UserAccountRecord[]>([]);
@@ -28,6 +22,7 @@ export function AdminAccountsTab() {
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [onlyGoogle, setOnlyGoogle] = useState(false);
   const [assignmentsByEmail, setAssignmentsByEmail] = useState<Record<string, UserVtvlAssignment[]>>({});
   const [assigningAccount, setAssigningAccount] = useState<UserAccountRecord | null>(null);
   const { state: listState, setField: setListField } = usePersistedListState('admin-accounts-list', { limit: 10 });
@@ -78,36 +73,25 @@ export function AdminAccountsTab() {
     return counts;
   }, [accounts]);
 
+  const googleCount = useMemo(() => accounts.filter((a) => a.authProvider === 'google').length, [accounts]);
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
+      if (onlyGoogle && acc.authProvider !== 'google') return false;
       if (roleFilter !== 'all' && acc.role !== roleFilter) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.trim().toLowerCase();
-      return (
-        acc.email.toLowerCase().includes(q) ||
-        acc.displayName.toLowerCase().includes(q) ||
-        acc.unitCode.toLowerCase().includes(q) ||
-        acc.unitNameVi.toLowerCase().includes(q)
-      );
+      return [acc.email, acc.displayName, acc.unitCode, acc.unitNameVi].some((s) => s.toLowerCase().includes(q));
     });
-  }, [accounts, roleFilter, searchQuery]);
+  }, [accounts, onlyGoogle, roleFilter, searchQuery]);
 
   const handleUpdateAccount = async (
     target: UserAccountRecord,
     patch: { role?: UserRole; unitCode?: string; title?: string; status?: 'active' | 'suspended' }
   ) => {
-    setUpdatingEmail(target.email);
-    setFeedback(null);
-    setError(null);
+    setUpdatingEmail(target.email); setFeedback(null); setError(null);
     const cur = getCurrentOperatorSession();
     const res = await adminUpdateUserRoleOnServer(
-      {
-        email: target.email,
-        role: patch.role || target.role,
-        unitCode: patch.unitCode || target.unitCode,
-        title: patch.title ?? target.title,
-        status: patch.status ?? target.status
-      },
+      { email: target.email, role: patch.role || target.role, unitCode: patch.unitCode || target.unitCode, title: patch.title ?? target.title, status: patch.status ?? target.status },
       cur
     );
     setUpdatingEmail(null);
@@ -169,6 +153,15 @@ export function AdminAccountsTab() {
             <span>{opt.label}: {roleCounts[opt.value] || 0}</span>
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setOnlyGoogle((p) => !p)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+            onlyGoogle ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-[#004776] border-[#d8e3ef] hover:bg-[#f4f7fb]'
+          }`}
+        >
+          <span>Google OAuth: {googleCount}</span>
+        </button>
       </div>
 
       <AdminAccountCreateForm

@@ -67,9 +67,14 @@ export function AdminAccountRow({
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-[#004776] truncate">{acc.displayName}</span>
-              <Badge variant={getRoleBadgeVariant(acc.role)} className="text-[10px] px-1.5 py-0">
-                {acc.authProvider === 'google' ? 'Google' : 'Phiên'}
+              <Badge variant={acc.authProvider === 'google' ? 'success' : getRoleBadgeVariant(acc.role)} className="text-[10px] px-1.5 py-0">
+                {acc.authProvider === 'google' ? 'Google' : 'Email'}
               </Badge>
+              {acc.authProvider === 'google' && !acc.hasSelectedUnit && (
+                <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+                  Mới đăng ký
+                </Badge>
+              )}
             </div>
             <div className="text-[11px] text-[#476885] truncate">{acc.email}</div>
           </div>

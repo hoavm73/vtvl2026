@@ -11,3 +11,4 @@
 3. **Xác thực người dùng (NextAuth v4 + Phiên nội bộ):**
    - Đăng nhập Google sử dụng **NextAuth v4** (`GoogleProvider` + `PrismaAdapter(prisma)`) tại `src/services/auth/auth-options.ts` và `src/app/api/auth/[...nextauth]/route.ts`.
    - Người dùng mới đăng nhập Google lần đầu được tự động tạo tài khoản với vai trò an toàn `staff` trong `public.user_accounts`. Quản trị viên quản lý danh sách người dùng và phân quyền (`admin` / `unit_leader` / `staff`) tại giao diện bảng `/admin?tab=accounts`.
+

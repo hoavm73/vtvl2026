@@ -41,3 +41,4 @@ export async function POST() {
 export async function DELETE() {
   return buildLogoutResponse();
 }
+

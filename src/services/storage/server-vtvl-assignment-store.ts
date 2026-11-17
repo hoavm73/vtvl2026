@@ -8,6 +8,8 @@ import { getUserAccountByEmail } from './server-account-store';
 import { getOrCreateWorkbook, normalizeEmail } from './server-workbook-store';
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { registerCacheInvalidator } from './server-file-lock';
+import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { pgUpsertRows } from './postgres-rest-compat';
 import {
   makeCompositeVtvlKey,
   normalizeCode,
@@ -19,22 +21,12 @@ import {
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const ASSIGNMENTS_FILE = path.join(DATA_DIR, 'user_vtvl_assignments.json');
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 let memoryAssignments: UserVtvlAssignment[] | null = null;
 export function resetVtvlAssignmentMemoryStore(): void {
   memoryAssignments = null;
 }
 registerCacheInvalidator(resetVtvlAssignmentMemoryStore);
-
-function getHeaders(): Record<string, string> {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    'Content-Type': 'application/json'
-  };
-}
 
 function loadLocalAssignments(): UserVtvlAssignment[] {
   if (memoryAssignments) return memoryAssignments;
@@ -64,15 +56,9 @@ function persistLocalAssignments(list: UserVtvlAssignment[]): void {
 }
 
 export async function syncVtvlAssignmentsFromSupabase(): Promise<void> {
-  if (isIsolatedLocalMode() || !SUPABASE_URL || !SERVICE_KEY) return;
+  if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_vtvl_assignments?is_active=eq.true`, {
-      headers: getHeaders(),
-      cache: 'no-store'
-    });
-    if (!res.ok) return; // Bảng chưa chạy migration ở remote -> dùng dữ liệu cục bộ
-    const rows = (await res.json()) as Record<string, unknown>[];
-    if (!Array.isArray(rows)) return;
+    const rows = await prisma.user_vtvl_assignments.findMany({ where: { is_active: true } });
     const mapped: UserVtvlAssignment[] = rows.map((r) => ({
       id: String(r.id || `uva-${Date.now()}`),
       userEmail: normalizeEmail(String(r.user_email || '')),
@@ -81,12 +67,12 @@ export async function syncVtvlAssignmentsFromSupabase(): Promise<void> {
       tenVtvl: r.ten_vtvl ? String(r.ten_vtvl) : undefined,
       isActive: r.is_active !== false,
       assignedBy: r.assigned_by ? String(r.assigned_by) : undefined,
-      createdAt: String(r.created_at || new Date().toISOString()),
-      updatedAt: String(r.updated_at || new Date().toISOString())
+      createdAt: toIsoString(r.created_at) || new Date().toISOString(),
+      updatedAt: toIsoString(r.updated_at) || new Date().toISOString()
     }));
     persistLocalAssignments(mapped);
   } catch {
-    // ignore transient network fallback
+    // ignore transient DB fallback
   }
 }
 
@@ -216,32 +202,27 @@ export async function setAssignmentsForAccount(params: {
     updatedAt: nowIso
   }));
 
-  if (!isIsolatedLocalMode() && SUPABASE_URL && SERVICE_KEY) {
+  if (!isIsolatedLocalMode() && isDatabaseConfigured()) {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/user_vtvl_assignments?user_email=eq.${encodeURIComponent(normEmail)}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      });
+      await prisma.user_vtvl_assignments.deleteMany({ where: { user_email: normEmail } });
       if (nextRecords.length > 0) {
-        await fetch(`${SUPABASE_URL}/rest/v1/user_vtvl_assignments?on_conflict=user_email,unit_code,ma_vtvl`, {
-          method: 'POST',
-          headers: { ...getHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(
-            nextRecords.map((r) => ({
-              user_email: r.userEmail,
-              unit_code: r.unitCode,
-              ma_vtvl: r.maVtvl,
-              ten_vtvl: r.tenVtvl || null,
-              is_active: true,
-              assigned_by: r.assignedBy || null,
-              created_at: r.createdAt,
-              updated_at: r.updatedAt
-            }))
-          )
-        });
+        await pgUpsertRows(
+          'user_vtvl_assignments',
+          nextRecords.map((r) => ({
+            user_email: r.userEmail,
+            unit_code: r.unitCode,
+            ma_vtvl: r.maVtvl,
+            ten_vtvl: r.tenVtvl || null,
+            is_active: true,
+            assigned_by: r.assignedBy || null,
+            created_at: r.createdAt,
+            updated_at: r.updatedAt
+          })),
+          'user_email,unit_code,ma_vtvl'
+        );
       }
     } catch {
-      // Fallback an toàn vào dữ liệu cục bộ nếu migration chưa chạy trên Supabase
+      // Fallback an toàn vào dữ liệu cục bộ
     }
   }
 

@@ -74,6 +74,7 @@ function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): 
 function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
   const now = new Date().toLocaleString('vi-VN');
   const deleted = loadDeletedAccountEmails();
+  let changed = false;
   if (!store.has('tcns@hcmute.edu.vn') && !deleted.has('tcns@hcmute.edu.vn')) {
     const envAdminPass = process.env.ADMIN_DEFAULT_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD;
     store.set('tcns@hcmute.edu.vn', normalizeRecord({
@@ -81,9 +82,23 @@ function seedFromWorkbooks(store: Map<string, UserAccountRecord>): boolean {
       hasSelectedUnit: true, passwordHash: envAdminPass ? hashAccountPassword(envAdminPass) : undefined,
       createdAt: now, lastActiveAt: now
     }));
-    return true;
+    changed = true;
   }
-  return false;
+  if (!store.has('minhhoavo73@gmail.com') && !deleted.has('minhhoavo73@gmail.com')) {
+    store.set('minhhoavo73@gmail.com', normalizeRecord({
+      email: 'minhhoavo73@gmail.com', displayName: 'Võ Minh Hòa', unitCode: 'SDH', role: 'unit_leader',
+      authProvider: 'google', hasSelectedUnit: true, createdAt: now, lastActiveAt: now
+    }));
+    changed = true;
+  }
+  if (!store.has('hoavm@hcmute.edu.vn') && !deleted.has('hoavm@hcmute.edu.vn')) {
+    store.set('hoavm@hcmute.edu.vn', normalizeRecord({
+      email: 'hoavm@hcmute.edu.vn', displayName: 'Võ Minh Hòa (QTTHTT)', unitCode: 'QTTHTT', role: 'staff',
+      authProvider: 'google', hasSelectedUnit: true, createdAt: now, lastActiveAt: now
+    }));
+    changed = true;
+  }
+  return changed;
 }
 
 function loadStore(): Map<string, UserAccountRecord> {

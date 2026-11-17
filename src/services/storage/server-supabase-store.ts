@@ -1,28 +1,14 @@
+import { Prisma } from '@prisma/client';
 import { ServerWorkbook } from './server-workbook-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
 import { syncWorkbookAtomicOrFallback } from './server-workbook-relational-sync';
-
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SUPABASE_KEY = (
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  ''
-).trim();
+import { isDatabaseConfigured, prisma } from './prisma';
+import { pgUpsertRows } from './postgres-rest-compat';
 
 const CACHE_TTL_MS = 5000;
 let cachedWorkbooks: ServerWorkbook[] | null = null;
 let lastFetchedAt = 0;
-
-function getHeaders(userToken?: string): Record<string, string> {
-  const bearer = userToken || SUPABASE_KEY;
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${bearer}`,
-    'Content-Type': 'application/json'
-  };
-}
 
 export function invalidateSupabaseCache(): void {
   cachedWorkbooks = null;
@@ -30,8 +16,7 @@ export function invalidateSupabaseCache(): void {
 }
 
 export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<ServerWorkbook[]> {
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return [];
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return [];
 
   const now = Date.now();
   if (!forceRefresh && cachedWorkbooks && now - lastFetchedAt < CACHE_TTL_MS) {
@@ -39,32 +24,36 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
   }
 
   try {
-    const query =
-      'select=ma_don_vi,ten_don_vi,phien_ban,updated_at,du_lieu_ho_so_json&order=updated_at.desc.nullslast&limit=100';
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?${query}`, {
-      headers: getHeaders(),
-      cache: 'no-store'
+    const rows = await prisma.t_tien_do.findMany({
+      select: {
+        ma_don_vi: true,
+        ten_don_vi: true,
+        phien_ban: true,
+        updated_at: true,
+        du_lieu_ho_so_json: true
+      },
+      orderBy: { updated_at: 'desc' },
+      take: 100
     });
-    if (!res.ok) return cachedWorkbooks || [];
-    const rows = await res.json();
-    if (!Array.isArray(rows)) return cachedWorkbooks || [];
 
     const workbooks: ServerWorkbook[] = [];
 
     for (const r of rows) {
-      if (r.du_lieu_ho_so_json?.serverWorkbook) {
-        const wb: ServerWorkbook = r.du_lieu_ho_so_json.serverWorkbook;
+      const json = (r.du_lieu_ho_so_json as Record<string, unknown>) || {};
+      if (json.serverWorkbook) {
+        const wb = json.serverWorkbook as ServerWorkbook;
         if (!wb.isDeleted) {
           if (!Array.isArray(wb.participants) || wb.participants.length === 0) {
-            const email = r.du_lieu_ho_so_json?.actorEmail || 'tcns@hcmute.edu.vn';
+            const email = String(json.actorEmail || 'tcns@hcmute.edu.vn');
+            const title = String(json.actorTitle || 'Chuyên viên');
             wb.participants = [{
               id: `part_${wb.unitId || r.ma_don_vi}`,
               sessionId: `sess_${wb.unitId || r.ma_don_vi}`,
               workbookId: wb.id || `wb_${r.ma_don_vi}_2026`,
-              displayName: r.du_lieu_ho_so_json?.actorTitle || 'Chuyên viên',
+              displayName: title,
               email,
               emailNormalized: email.trim().toLowerCase(),
-              roleLabel: r.du_lieu_ho_so_json?.actorTitle || 'Chuyên viên',
+              roleLabel: title,
               startedAt: wb.updatedAt || new Date().toISOString(),
               updatedAt: wb.updatedAt || new Date().toISOString()
             }];
@@ -76,14 +65,15 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
         continue;
       }
 
-      if (r.du_lieu_ho_so_json?.isDeleted) continue;
+      if (json.isDeleted) continue;
 
       const unitCode = r.ma_don_vi;
       const unit = findHcmuteUnit(unitCode);
-      const email = r.du_lieu_ho_so_json?.actorEmail || 'tcns@hcmute.edu.vn';
-      const title = r.du_lieu_ho_so_json?.actorTitle || 'Chuyên viên';
+      const email = String(json.actorEmail || 'tcns@hcmute.edu.vn');
+      const title = String(json.actorTitle || 'Chuyên viên');
       const updated = r.updated_at ? new Date(r.updated_at).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
       const revNum = parseInt((r.phien_ban || '').replace('v', ''), 10) || 1;
+      const gridData = (json.data as ServerWorkbook['data']) || buildDefaultGridWorkbook(unitCode);
 
       workbooks.push({
         id: `wb_${unitCode}_2026`,
@@ -92,8 +82,8 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
         reportingPeriod: '01/10/2025–30/9/2026',
         status: 'draft',
         currentRevision: revNum,
-        data: r.du_lieu_ho_so_json?.data || buildDefaultGridWorkbook(unitCode),
-        touchedCells: r.du_lieu_ho_so_json?.touchedCells || [],
+        data: gridData,
+        touchedCells: Array.isArray(json.touchedCells) ? (json.touchedCells as string[]) : [],
         createdAt: updated,
         updatedAt: updated,
         participants: [{
@@ -111,7 +101,7 @@ export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<
           id: `rev_${unitCode}_${revNum}`,
           workbookId: `wb_${unitCode}_2026`,
           revision: revNum,
-          data: r.du_lieu_ho_so_json?.data || buildDefaultGridWorkbook(unitCode),
+          data: gridData,
           actorEmail: email.trim().toLowerCase(),
           actorTitle: title,
           changeSummary: 'Đồng bộ từ tiến độ đơn vị trực tuyến',
@@ -137,7 +127,7 @@ export async function persistWorkbookToSupabase(
     throw new Error('TX_ABORTED_MIDWAY: Lỗi giả lập giữa giao dịch đồng bộ bảng tính.');
   }
   if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return true;
-  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  if (!isDatabaseConfigured()) return false;
   invalidateSupabaseCache();
   try {
     const latestPart = wb.participants[wb.participants.length - 1] || {
@@ -151,12 +141,12 @@ export async function persistWorkbookToSupabase(
     let fteTotal = 0;
 
     if (wb.data) {
-      const d = wb.data as Record<string, any[]>;
+      const d = wb.data as unknown as Record<string, Array<Record<string, unknown>>>;
       if (Array.isArray(d.A1)) a1Count = d.A1.length;
       if (Array.isArray(d.A2)) a2Count = d.A2.length;
       if (Array.isArray(d.C1)) c1Count = d.C1.length;
       if (Array.isArray(d.C3)) {
-        fteTotal = d.C3.reduce((sum, r) => sum + (parseFloat(r.nguoiCanBoTri || r.nhuCauFte || 0) || 0), 0);
+        fteTotal = d.C3.reduce((sum, r) => sum + (parseFloat(String(r.nguoiCanBoTri ?? r.nhuCauFte ?? 0)) || 0), 0);
       }
     }
 
@@ -200,27 +190,7 @@ export async function postServerRest(
   payload: unknown,
   upsertConflictCol?: string
 ): Promise<PostServerRestResult> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return { ok: false, status: 503, table, error: 'Chưa cấu hình Supabase URL/KEY' };
-  }
-  const query = upsertConflictCol ? `?on_conflict=${encodeURIComponent(upsertConflictCol)}` : '';
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        ...getHeaders(),
-        Prefer: upsertConflictCol ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      return { ok: false, status: res.status, table, error: `Lỗi ghi dữ liệu bảng ${table} (HTTP ${res.status})` };
-    }
-    return { ok: true, status: res.status, table };
-  } catch {
-    return { ok: false, status: 502, table, error: `Không thể kết nối máy chủ dữ liệu (${table})` };
-  }
+  return pgUpsertRows(table, payload, upsertConflictCol);
 }
 
 export async function postServerRestRequired(
@@ -239,21 +209,18 @@ export async function postServerRestRequired(
 }
 
 export async function deleteWorkbookFromSupabase(unitId: string): Promise<boolean> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  if (!isDatabaseConfigured()) return false;
   invalidateSupabaseCache();
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/t_tien_do?ma_don_vi=eq.${encodeURIComponent(unitId)}`, {
-      method: 'PATCH',
-      headers: {
-        ...getHeaders(),
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({
+    await prisma.t_tien_do.updateMany({
+      where: { ma_don_vi: unitId },
+      data: {
         trang_thai_ra_soat: 'Đã đánh dấu lưu trữ/xóa',
-        du_lieu_ho_so_json: { isDeleted: true }
-      })
+        du_lieu_ho_so_json: { isDeleted: true } as unknown as Prisma.InputJsonValue,
+        updated_at: new Date()
+      }
     });
-    return res.ok;
+    return true;
   } catch {
     return false;
   }

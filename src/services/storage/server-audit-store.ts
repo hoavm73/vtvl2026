@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { Prisma } from '@prisma/client';
+import { isDatabaseConfigured, prisma } from './prisma';
 
 export interface ServerAuditLog {
   id: string;
@@ -23,8 +25,6 @@ export interface ServerAuditLog {
 
 const DATA_DIR = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), '.data');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit-logs.json');
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 const SECRET_KEYS = new Set([
   'password',
@@ -103,38 +103,30 @@ export function appendAuditLog(entry: Omit<ServerAuditLog, 'id' | 'createdAt' | 
 }
 
 export async function persistAuditLogToSupabase(log: ServerAuditLog): Promise<void> {
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return;
-  if (!SUPABASE_URL || !SERVICE_KEY) return;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_logs`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal'
-    },
-    body: JSON.stringify({
-      workbook_id: log.workbookId || `wb_${log.unitCode}_2026`,
-      actor_email: log.actorEmail || 'system',
-      actor_role: log.actorRole || 'staff',
-      unit_id: log.unitId || log.unitCode,
-      action: log.action,
-      target_id: log.targetId || null,
-      target_entity: log.targetEntity || null,
-      old_values: log.oldValues || null,
-      new_values: log.newValues || null,
-      metadata: { details: log.details, unitName: log.unitName }
-    })
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    const isSchemaOutdated =
-      res.status === 400 || errText.includes('PGRST204') || errText.includes('42703');
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return;
+  try {
+    await prisma.audit_logs.create({
+      data: {
+        workbook_id: log.workbookId || `wb_${log.unitCode}_2026`,
+        actor_email: log.actorEmail || 'system',
+        actor_role: log.actorRole || 'staff',
+        unit_id: log.unitId || log.unitCode,
+        action: log.action,
+        target_id: log.targetId || null,
+        target_entity: log.targetEntity || null,
+        old_values: log.oldValues ? (log.oldValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+        new_values: log.newValues ? (log.newValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+        metadata: { details: log.details, unitName: log.unitName } as unknown as Prisma.InputJsonValue
+      }
+    });
+  } catch (e) {
+    const errText = e instanceof Error ? e.message : String(e);
+    const isSchemaOutdated = errText.includes('42703') || errText.includes('42P01');
     if (process.env.NODE_ENV === 'production' || process.env.STRICT_DB_SCHEMA === 'true') {
       const err = new Error(
         isSchemaOutdated
           ? `[DATABASE_SCHEMA_OUTDATED] Bảng audit_logs thiếu trường kiểm toán bắt buộc: ${errText}`
-          : `[DB_AUDIT_WRITE_FAILED] Lỗi ghi audit_logs (${res.status}): ${errText}`
+          : `[DB_AUDIT_WRITE_FAILED] Lỗi ghi audit_logs: ${errText}`
       );
       (err as unknown as { code: string; status: number }).code = isSchemaOutdated
         ? 'DATABASE_SCHEMA_OUTDATED'

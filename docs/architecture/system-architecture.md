@@ -105,3 +105,20 @@ erDiagram
 
 
 
+
+
+---
+
+## Kiến trúc PostgreSQL 16 độc lập, Prisma ORM & NextAuth v4 (Cập nhật v2.0)
+
+- **Kho mã nguồn duy nhất:** `https://github.com/hoavm73/vtvl2026` (nhánh `main`).
+- **Tên miền vận hành HTTPS:** `https://kekhaivtvl.hcmute.edu.vn` (chính) và `https://vtvl.utehub.vn` (dự phòng), đứng sau Nginx HTTP/2 SSL Reverse Proxy trỏ vào container `utevtvl-app` (`127.0.0.1:3360`).
+- **Cơ sở dữ liệu & ORM:**
+  - `utevtvl-postgres` (PostgreSQL 16 Alpine, `127.0.0.1:5436`, CSDL `utevtvl_db`) lưu trữ toàn bộ 42 bảng dữ liệu, bao gồm 908 tài khoản `user_accounts`, 20 tài khoản Google `"User"`, 78 `staff_work_tickets`, 73 `work_survey_versions`, 81 `work_survey_status_history`, 12 `work_survey_merge_links`, 16 hồ sơ `t_tien_do`, `audit_logs` và `49.998` dòng `s_nhat_ky`.
+  - Tầng truy cập dữ liệu sử dụng **Prisma Client** (`prisma/schema.prisma`, `src/services/storage/prisma.ts`) kết hợp thực thi giao dịch PL/pgSQL RPC nguyên tử (`src/services/storage/postgres-rest-compat.ts`).
+- **Quản lý phiên bản Migration tự động:**
+  - Mọi thay đổi lược đồ CSDL được phiên bản hóa trong `prisma/migrations/<timestamp>_<name>/migration.sql` cùng lịch sử `supabase/migrations/*.sql`.
+  - Khi triển khai (`./deploy.sh`), `scripts/migrate-postgres.mjs` đối soát SHA-256 checksum và ghi vết vào cả `public."_prisma_migrations"`, `public.schema_migrations` và tệp `migrations.log` (tra cứu qua API Quản trị `/api/admin/migrations`).
+- **Xác thực đa phương thức (NextAuth + Mật khẩu nội bộ):**
+  - Đăng nhập Google công vụ qua **NextAuth v4** (`GoogleProvider` + `PrismaAdapter(prisma)` tại `/api/auth/[...nextauth]`), tự động đồng bộ vai trò (`admin`, `unit_leader`, `staff`) và mã đơn vị từ bảng `user_accounts`.
+  - Đăng nhập Email/Mật khẩu nội bộ (`/api/auth/login`) tiếp tục hoạt động song song cho 908 tài khoản cán bộ bằng `scrypt` / HMAC session cookie.

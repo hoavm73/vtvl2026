@@ -1,8 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus, toDisplayStatus, WorkSurveyStatusHistory } from '@/types/staff-ticket';
 import { normalizeEmail } from './server-workbook-store';
+import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { pgCallSurveyRpc, pgUpsertRows } from './postgres-rest-compat';
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const getDbUrl = () => (process.env.DATABASE_URL || '').trim();
 
 export function isIsolatedLocalMode(): boolean {
   return process.env.VTVL_ISOLATED_LOCAL_STORE === 'true';
@@ -10,7 +12,7 @@ export function isIsolatedLocalMode(): boolean {
 
 export function assertTicketDbConfigured(operation: string): boolean {
   if (isIsolatedLocalMode()) return false;
-  if (!SUPABASE_URL || !SERVICE_KEY) {
+  if (!getDbUrl() && !isDatabaseConfigured()) {
     if (process.env.NODE_ENV === 'production') {
       const err = new Error(`[DB_SERVICE_UNAVAILABLE] Dịch vụ CSDL máy chủ chưa được cấu hình cho thao tác ${operation}.`);
       (err as unknown as { status: number; code: string }).status = 503;
@@ -20,14 +22,6 @@ export function assertTicketDbConfigured(operation: string): boolean {
     return false;
   }
   return true;
-}
-
-function getServiceHeaders(): Record<string, string> {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    'Content-Type': 'application/json'
-  };
 }
 
 export function createSchemaOrDbError(table: string, status: number, detailText: string): Error & { table?: string; status?: number; code?: string } {
@@ -53,19 +47,19 @@ export function createSchemaOrDbError(table: string, status: number, detailText:
 }
 
 export interface DbTicketRow {
-  id: string; unit_code: string; unit_id?: string; owner_email: string; owner_id?: string;
+  id: string; unit_code: string; unit_id?: string | null; owner_email: string; owner_id?: string | null;
   owner_name?: string; owner_title?: string; status?: string; ma_nhiem_vu?: string;
-  ma_cong_viec: string; ma_vtvl?: string; ma_vtvl_phoi_hop?: string; ten_cong_viec: string;
-  san_pham?: string; chat_luong?: string; can_cu?: string; so_sp_nam?: number;
-  phut_thuc_te?: number; gio_bo_sung?: number; nguon_so_lieu?: string;
+  ma_cong_viec: string; ma_vtvl?: string; ma_vtvl_phoi_hop?: string | null; ten_cong_viec: string;
+  san_pham?: string | null; chat_luong?: string | null; can_cu?: string | null; so_sp_nam?: unknown;
+  phut_thuc_te?: unknown; gio_bo_sung?: unknown; nguon_so_lieu?: string | null;
   coordination_note?: string | null; coordinated_vtvls?: unknown; coordinated_tasks?: unknown;
-  source_ticket_id?: string | null; submitted_at?: string | null; resubmitted_at?: string | null;
-  approved_at?: string | null; approved_by?: string | null; revision_reason?: string | null;
-  revision_requested_at?: string | null; revision_requested_by?: string | null;
-  merged_at?: string | null; merged_by?: string | null; a2_row_id?: string | null;
+  source_ticket_id?: string | null; submitted_at?: Date | string | null; resubmitted_at?: Date | string | null;
+  approved_at?: Date | string | null; approved_by?: string | null; revision_reason?: string | null;
+  revision_requested_at?: Date | string | null; revision_requested_by?: string | null;
+  merged_at?: Date | string | null; merged_by?: string | null; a2_row_id?: string | null;
   b1_row_id?: string | null; b2_row_id?: string | null; is_merged_to_b1_b2?: boolean;
   current_version_no?: number; last_change_summary?: string | null; is_test_data?: boolean;
-  is_archived?: boolean; created_at?: string; updated_at?: string;
+  is_archived?: boolean; created_at?: Date | string; updated_at?: Date | string;
 }
 
 export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
@@ -84,35 +78,33 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
     phutThucTe: Number(row.phut_thuc_te) || 0, gioBoSung: Number(row.gio_bo_sung) || 0,
     coordinatedTasks: Array.isArray(row.coordinated_tasks) ? row.coordinated_tasks : [],
     sourceTicketId: row.source_ticket_id || row.id,
-    submittedAt: row.submitted_at || undefined, resubmittedAt: row.resubmitted_at || undefined,
-    approvedAt: row.approved_at || undefined, approvedBy: row.approved_by || undefined,
+    submittedAt: toIsoString(row.submitted_at), resubmittedAt: toIsoString(row.resubmitted_at),
+    approvedAt: toIsoString(row.approved_at), approvedBy: row.approved_by || undefined,
     revisionReason: row.revision_reason || undefined,
-    revisionRequestedAt: row.revision_requested_at || undefined, revisionRequestedBy: row.revision_requested_by || undefined,
-    mergedAt: row.merged_at || undefined, mergedBy: row.merged_by || undefined,
+    revisionRequestedAt: toIsoString(row.revision_requested_at), revisionRequestedBy: row.revision_requested_by || undefined,
+    mergedAt: toIsoString(row.merged_at), mergedBy: row.merged_by || undefined,
     a2RowId: row.a2_row_id || undefined, b1RowId: row.b1_row_id || undefined, b2RowId: row.b2_row_id || undefined,
     isMergedToB1B2: Boolean(row.is_merged_to_b1_b2), currentVersionNo: Number(row.current_version_no) || 0,
     lastChangeSummary: row.last_change_summary || undefined, isTestData: Boolean(row.is_test_data),
     isArchived: Boolean(row.is_archived),
-    createdAt: row.created_at || new Date().toISOString(), updatedAt: row.updated_at || new Date().toISOString()
+    createdAt: toIsoString(row.created_at) || new Date().toISOString(),
+    updatedAt: toIsoString(row.updated_at) || new Date().toISOString()
   };
 }
 
 export async function fetchTicketsFromSupabase(unitCode?: string): Promise<StaffWorkTicket[] | null> {
   if (!assertTicketDbConfigured('fetchTickets')) return null;
-  const filter = unitCode ? `?unit_code=eq.${encodeURIComponent(unitCode)}&order=updated_at.desc` : '?order=updated_at.desc';
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets${filter}`, { headers: getServiceHeaders(), cache: 'no-store' });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw createSchemaOrDbError('staff_work_tickets', res.status, detail);
+  try {
+    const rows = await prisma.staff_work_tickets.findMany({
+      where: unitCode ? { unit_code: unitCode } : undefined,
+      orderBy: { updated_at: 'desc' }
+    });
+    return rows.map((r) => mapDbRowToTicket(r as unknown as DbTicketRow));
+  } catch (e) {
+    throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
   }
-  const rows = (await res.json()) as DbTicketRow[];
-  return Array.isArray(rows) ? rows.map(mapDbRowToTicket) : [];
 }
 
-/**
- * Lưu phiếu công việc vào Supabase với đầy đủ trường metadata vòng đời & phiên bản.
- * Tuyệt đối không fallback âm thầm sang payload rút gọn làm mất metadata phê duyệt/lịch sử.
- */
 export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<boolean> {
   if (!assertTicketDbConfigured('persistTicket')) return false;
   const normEmail = normalizeEmail(ticket.ownerEmail);
@@ -120,38 +112,60 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
     throw new Error('[SECURITY] Invalid ticket owner identifier. Cannot persist ticket.');
   }
 
-  const payload: DbTicketRow = {
-    id: ticket.id, unit_code: ticket.unitCode, unit_id: ticket.unitId || ticket.unitCode,
-    owner_email: normEmail, owner_id: ticket.ownerId || normEmail,
-    owner_name: ticket.ownerName, owner_title: ticket.ownerTitle, status: toCanonicalStatus(ticket.status),
-    ma_nhiem_vu: ticket.maNhiemVu, ma_cong_viec: ticket.maCongViec, ma_vtvl: ticket.maVtvl,
-    ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '', coordinated_vtvls: ticket.coordinatedVtvls || [],
-    coordination_note: ticket.coordinationNote || '', ten_cong_viec: ticket.tenCongViec,
-    san_pham: ticket.sanPham || '', chat_luong: ticket.chatLuong || '', can_cu: ticket.canCu || '',
-    so_sp_nam: Number(ticket.soSpNam) || 0, phut_thuc_te: Number(ticket.phutThucTe) || 0,
-    gio_bo_sung: Number(ticket.gioBoSung) || 0, nguon_so_lieu: ticket.nguonSoLieu || '',
-    coordinated_tasks: ticket.coordinatedTasks || [], source_ticket_id: ticket.sourceTicketId || ticket.id,
-    submitted_at: ticket.submittedAt ?? null, resubmitted_at: ticket.resubmittedAt ?? null,
-    approved_at: ticket.approvedAt ?? null, approved_by: ticket.approvedBy ?? null,
-    revision_reason: ticket.revisionReason ?? null, revision_requested_at: ticket.revisionRequestedAt ?? null,
-    revision_requested_by: ticket.revisionRequestedBy ?? null, merged_at: ticket.mergedAt ?? null,
-    merged_by: ticket.mergedBy ?? null, a2_row_id: ticket.a2RowId ?? null,
-    b1_row_id: ticket.b1RowId ?? null, b2_row_id: ticket.b2RowId ?? null,
-    is_merged_to_b1_b2: Boolean(ticket.isMergedToB1B2), current_version_no: Number(ticket.currentVersionNo) || 0,
-    last_change_summary: ticket.lastChangeSummary ?? null, is_test_data: Boolean(ticket.isTestData),
-    is_archived: Boolean(ticket.isArchived), created_at: ticket.createdAt,
-    updated_at: ticket.updatedAt || new Date().toISOString()
+  const data = {
+    id: ticket.id,
+    unit_code: ticket.unitCode,
+    unit_id: ticket.unitId || ticket.unitCode,
+    owner_email: normEmail,
+    owner_id: ticket.ownerId || normEmail,
+    owner_name: ticket.ownerName,
+    owner_title: ticket.ownerTitle,
+    status: toCanonicalStatus(ticket.status),
+    ma_nhiem_vu: ticket.maNhiemVu,
+    ma_cong_viec: ticket.maCongViec,
+    ma_vtvl: ticket.maVtvl,
+    ma_vtvl_phoi_hop: ticket.maVtvlPhoiHop || '',
+    coordinated_vtvls: (ticket.coordinatedVtvls || []) as unknown as Prisma.InputJsonValue,
+    coordination_note: ticket.coordinationNote || '',
+    ten_cong_viec: ticket.tenCongViec,
+    san_pham: ticket.sanPham || '',
+    chat_luong: ticket.chatLuong || '',
+    can_cu: ticket.canCu || '',
+    so_sp_nam: Number(ticket.soSpNam) || 0,
+    phut_thuc_te: Number(ticket.phutThucTe) || 0,
+    gio_bo_sung: Number(ticket.gioBoSung) || 0,
+    nguon_so_lieu: ticket.nguonSoLieu || '',
+    coordinated_tasks: (ticket.coordinatedTasks || []) as unknown as Prisma.InputJsonValue,
+    source_ticket_id: ticket.sourceTicketId || ticket.id,
+    submitted_at: ticket.submittedAt ? new Date(ticket.submittedAt) : null,
+    resubmitted_at: ticket.resubmittedAt ? new Date(ticket.resubmittedAt) : null,
+    approved_at: ticket.approvedAt ? new Date(ticket.approvedAt) : null,
+    approved_by: ticket.approvedBy ?? null,
+    revision_reason: ticket.revisionReason ?? null,
+    revision_requested_at: ticket.revisionRequestedAt ? new Date(ticket.revisionRequestedAt) : null,
+    revision_requested_by: ticket.revisionRequestedBy ?? null,
+    merged_at: ticket.mergedAt ? new Date(ticket.mergedAt) : null,
+    merged_by: ticket.mergedBy ?? null,
+    a2_row_id: ticket.a2RowId ?? null,
+    b1_row_id: ticket.b1RowId ?? null,
+    b2_row_id: ticket.b2RowId ?? null,
+    is_merged_to_b1_b2: Boolean(ticket.isMergedToB1B2),
+    current_version_no: Number(ticket.currentVersionNo) || 0,
+    last_change_summary: ticket.lastChangeSummary ?? null,
+    is_test_data: Boolean(ticket.isTestData),
+    is_archived: Boolean(ticket.isArchived),
+    created_at: ticket.createdAt ? new Date(ticket.createdAt) : new Date(),
+    updated_at: ticket.updatedAt ? new Date(ticket.updatedAt) : new Date()
   };
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets?on_conflict=id`, {
-    method: 'POST',
-    headers: { ...getServiceHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw createSchemaOrDbError('staff_work_tickets', res.status, detail);
+  try {
+    await prisma.staff_work_tickets.upsert({
+      where: { id: ticket.id },
+      update: data,
+      create: data
+    });
+  } catch (e) {
+    throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
   }
   await syncCoordinatedTasksToTable(ticket).catch(() => {});
   return true;
@@ -159,15 +173,12 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
 
 async function syncCoordinatedTasksToTable(ticket: StaffWorkTicket): Promise<void> {
   if (!assertTicketDbConfigured('syncCoordinatedTasks')) return;
-  await fetch(`${SUPABASE_URL}/rest/v1/coordinated_tasks?ticket_id=eq.${encodeURIComponent(ticket.id)}`, {
-    method: 'DELETE', headers: { ...getServiceHeaders(), Prefer: 'return=minimal' }
-  });
+  await prisma.coordinated_tasks.deleteMany({ where: { ticket_id: ticket.id } });
   const list = Array.isArray(ticket.coordinatedTasks) ? ticket.coordinatedTasks : [];
   if (list.length === 0) return;
-  await fetch(`${SUPABASE_URL}/rest/v1/coordinated_tasks?on_conflict=id`, {
-    method: 'POST',
-    headers: { ...getServiceHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(list.map((c) => ({
+  await pgUpsertRows(
+    'coordinated_tasks',
+    list.map((c) => ({
       id: c.id || `coord-${ticket.id}-${c.targetUnitCode}-${c.targetTaskCode}`,
       ticket_id: ticket.id,
       unit_code: ticket.unitCode,
@@ -175,51 +186,41 @@ async function syncCoordinatedTasksToTable(ticket: StaffWorkTicket): Promise<voi
       target_task_code: c.targetTaskCode,
       target_task_name: c.targetTaskName || null,
       notes: c.note || null
-    })))
-  });
+    })),
+    'id'
+  );
 }
 
 export async function deleteTicketFromSupabase(ticketId: string): Promise<boolean> {
-  if (!assertTicketDbConfigured('deleteTicket')) return false;
-  if (!ticketId) return false;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/staff_work_tickets?id=eq.${encodeURIComponent(ticketId)}`, {
-    method: 'DELETE',
-    headers: getServiceHeaders()
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw createSchemaOrDbError('staff_work_tickets', res.status, detail);
+  if (!assertTicketDbConfigured('deleteTicket') || !ticketId) return false;
+  try {
+    await prisma.staff_work_tickets.deleteMany({ where: { id: ticketId } });
+    return true;
+  } catch (e) {
+    throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
   }
-  return true;
 }
 
 export async function recordStatusHistoryInSupabase(h: Omit<WorkSurveyStatusHistory, 'id' | 'createdAt'>): Promise<void> {
   if (!assertTicketDbConfigured('recordStatusHistory')) return;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/work_survey_status_history`, {
-    method: 'POST',
-    headers: { ...getServiceHeaders(), Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      survey_id: h.surveyId,
-      from_status: h.fromStatus || null,
-      to_status: h.toStatus,
-      action: h.action,
-      reason: h.reason || null,
-      actor_id: h.actorId,
-      actor_role: h.actorRole,
-      unit_id: h.unitId
-    })
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw createSchemaOrDbError('work_survey_status_history', res.status, detail);
+  try {
+    await prisma.work_survey_status_history.create({
+      data: {
+        survey_id: h.surveyId,
+        from_status: h.fromStatus || null,
+        to_status: h.toStatus,
+        action: h.action,
+        reason: h.reason || null,
+        actor_id: h.actorId,
+        actor_role: h.actorRole,
+        unit_id: h.unitId
+      }
+    });
+  } catch (e) {
+    throw createSchemaOrDbError('work_survey_status_history', 500, e instanceof Error ? e.message : String(e));
   }
 }
 
-/**
- * Gọi RPC nguyên tử trên PostgreSQL (rpc_submit_work_survey, rpc_approve_work_survey,
- * rpc_request_work_survey_changes, rpc_merge_work_survey_to_b1_b2) với danh tính đã xác thực.
- * Mỗi lời gọi PostgREST /rpc/... chạy trong đúng 1 transaction DB với SET LOCAL app.actor_id.
- */
 export async function callAtomicSurveyRpc(
   rpcName:
     | 'rpc_submit_work_survey'
@@ -230,18 +231,13 @@ export async function callAtomicSurveyRpc(
   params: Record<string, unknown>
 ): Promise<{ executed: boolean; ticket?: StaffWorkTicket }> {
   if (!assertTicketDbConfigured(rpcName)) return { executed: false };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
-    method: 'POST',
-    headers: getServiceHeaders(),
-    body: JSON.stringify(params)
-  });
+  const res = await pgCallSurveyRpc<DbTicketRow>(rpcName, params);
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
+    const detail = res.errorText || '';
     if (detail.includes('PGRST202') || res.status === 404) {
       return { executed: false };
     }
     throw createSchemaOrDbError(rpcName, res.status, detail);
   }
-  const row = (await res.json()) as DbTicketRow;
-  return { executed: true, ticket: row && row.id ? mapDbRowToTicket(row) : undefined };
+  return { executed: true, ticket: res.row && res.row.id ? mapDbRowToTicket(res.row) : undefined };
 }

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { Prisma } from '@prisma/client';
 import {
   StaffWorkTicket,
   WorkSurveyMergeLink,
@@ -9,13 +10,12 @@ import {
 import { buildTicketSnapshot } from '@/services/tickets/ticket-diff-engine';
 import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lock';
 import { isIsolatedLocalMode } from './server-ticket-db';
+import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { pgUpsertRows } from './postgres-rest-compat';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const VERSIONS_FILE = path.join(DATA_DIR, 'work_survey_versions.json');
 const MERGE_LINKS_FILE = path.join(DATA_DIR, 'work_survey_merge_links.json');
-
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 let memoryVersions: Record<string, WorkSurveyVersion[]> | null = null;
 let memoryMergeLinks: Record<string, WorkSurveyMergeLink[]> | null = null;
@@ -23,14 +23,6 @@ export function resetVersionMemoryStore(): void { memoryVersions = null; memoryM
 registerCacheInvalidator(resetVersionMemoryStore);
 
 const recentSubmissionDigest = new Map<string, { version: WorkSurveyVersion; timestamp: number }>();
-
-function getSupabaseHeaders(): Record<string, string> {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    'Content-Type': 'application/json'
-  };
-}
 
 function loadLocalVersions(): Record<string, WorkSurveyVersion[]> {
   if (memoryVersions) return memoryVersions;
@@ -42,9 +34,7 @@ function loadLocalVersions(): Record<string, WorkSurveyVersion[]> {
         return memoryVersions!;
       }
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   memoryVersions = {};
   return memoryVersions;
 }
@@ -54,9 +44,7 @@ function persistLocalVersions(): void {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(VERSIONS_FILE, JSON.stringify(memoryVersions, null, 2), 'utf8');
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 function loadLocalMergeLinks(): Record<string, WorkSurveyMergeLink[]> {
@@ -69,9 +57,7 @@ function loadLocalMergeLinks(): Record<string, WorkSurveyMergeLink[]> {
         return memoryMergeLinks!;
       }
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   memoryMergeLinks = {};
   return memoryMergeLinks;
 }
@@ -81,9 +67,7 @@ function persistLocalMergeLinks(): void {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(MERGE_LINKS_FILE, JSON.stringify(memoryMergeLinks, null, 2), 'utf8');
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 export async function withSurveySubmissionLock<T>(surveyId: string, fn: () => Promise<T>): Promise<T> {
@@ -117,22 +101,20 @@ export function ensureLegacyBaselineVersion(ticket: StaffWorkTicket): WorkSurvey
 
 export async function fetchTicketVersionsFromSupabase(surveyId: string): Promise<WorkSurveyVersion[]> {
   const localList = getTicketVersions(surveyId);
-  if (isIsolatedLocalMode() || !SUPABASE_URL || !SERVICE_KEY) return localList;
+  if (isIsolatedLocalMode() || !isDatabaseConfigured()) return localList;
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/work_survey_versions?survey_id=eq.${encodeURIComponent(surveyId)}&order=version_no.asc`,
-      { headers: getSupabaseHeaders(), cache: 'no-store' }
-    );
-    if (!res.ok) return localList;
-    const rows = await res.json();
-    if (!Array.isArray(rows) || rows.length === 0) return localList;
-    const mapped: WorkSurveyVersion[] = rows.map((r: Record<string, unknown>) => ({
+    const rows = await prisma.work_survey_versions.findMany({
+      where: { survey_id: surveyId },
+      orderBy: { version_no: 'asc' }
+    });
+    if (!rows.length) return localList;
+    const mapped: WorkSurveyVersion[] = rows.map((r) => ({
       id: String(r.id || `ver-${surveyId}-${r.version_no}`),
       surveyId: String(r.survey_id || surveyId),
       versionNo: Number(r.version_no) || 1,
-      snapshot: (r.snapshot as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
+      snapshot: (r.snapshot as unknown as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
       submittedBy: String(r.submitted_by || ''),
-      submittedAt: r.submitted_at ? String(r.submitted_at) : null,
+      submittedAt: toIsoString(r.submitted_at) || null,
       changeSummary: r.change_summary ? String(r.change_summary) : undefined,
       isMigrationBaseline: Boolean(r.is_migration_baseline)
     }));
@@ -173,7 +155,6 @@ export async function createImmutableSurveyVersion(input: CreateVersionInput): P
   const existing = store[input.surveyId] ? [...store[input.surveyId]] : [];
   const nextVersionNo = existing.reduce((max, v) => Math.max(max, v.versionNo), 0) + 1;
 
-  // Chặn ghi đè nếu version_no đã tồn tại
   if (existing.some((v) => v.versionNo === nextVersionNo)) {
     throw new Error(`[DUPLICATE_VERSION] Phiên bản v${nextVersionNo} của phiếu ${input.surveyId} đã tồn tại.`);
   }
@@ -189,29 +170,27 @@ export async function createImmutableSurveyVersion(input: CreateVersionInput): P
     isMigrationBaseline: false
   };
 
-  if (!isIsolatedLocalMode() && SUPABASE_URL && SERVICE_KEY) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/work_survey_versions`, {
-      method: 'POST',
-      headers: { ...getSupabaseHeaders(), Prefer: 'return=minimal' },
-      body: JSON.stringify({
-        survey_id: newVersion.surveyId,
-        version_no: newVersion.versionNo,
-        snapshot: newVersion.snapshot,
-        submitted_by: newVersion.submittedBy,
-        submitted_at: newVersion.submittedAt,
-        change_summary: newVersion.changeSummary || null,
-        is_migration_baseline: false
-      })
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      // Ở production: bắt buộc bảng work_survey_versions phải tồn tại và ghi thành công
+  if (!isIsolatedLocalMode() && isDatabaseConfigured()) {
+    try {
+      await prisma.work_survey_versions.create({
+        data: {
+          survey_id: newVersion.surveyId,
+          version_no: newVersion.versionNo,
+          snapshot: newVersion.snapshot as unknown as Prisma.InputJsonValue,
+          submitted_by: newVersion.submittedBy,
+          submitted_at: newVersion.submittedAt ? new Date(newVersion.submittedAt) : new Date(),
+          change_summary: newVersion.changeSummary || null,
+          is_migration_baseline: false
+        }
+      });
+    } catch (e) {
+      const errText = e instanceof Error ? e.message : String(e);
       if (process.env.NODE_ENV === 'production') {
-        const isSchemaErr = errText.includes('PGRST204') || errText.includes('42P01') || errText.includes('work_survey_versions');
+        const isSchemaErr = errText.includes('42P01') || errText.includes('work_survey_versions');
         const err = new Error(
           isSchemaErr
-            ? `[DATABASE_SCHEMA_OUTDATED] Thiếu bảng hoặc cột work_survey_versions trên Supabase: ${errText}`
-            : `[DB_VERSION_WRITE_FAILED] Lỗi ghi phiên bản phiếu (${res.status}): ${errText}`
+            ? `[DATABASE_SCHEMA_OUTDATED] Thiếu bảng hoặc cột work_survey_versions trên PostgreSQL: ${errText}`
+            : `[DB_VERSION_WRITE_FAILED] Lỗi ghi phiên bản phiếu: ${errText}`
         );
         (err as unknown as { code: string; status: number }).code = isSchemaErr ? 'DATABASE_SCHEMA_OUTDATED' : 'DB_VERSION_WRITE_FAILED';
         (err as unknown as { status: number }).status = 500;
@@ -227,9 +206,6 @@ export async function createImmutableSurveyVersion(input: CreateVersionInput): P
   return newVersion;
 }
 
-/**
- * Hoàn tác phiên bản vừa tạo trong bộ nhớ khi giao dịch nộp phiếu bị lỗi giữa chừng (Compensation Rollback).
- */
 export function compensateRemoveSurveyVersion(surveyId: string, versionNo: number): void {
   const store = loadLocalVersions();
   if (!store[surveyId]) return;
@@ -267,15 +243,20 @@ export async function recordIdempotentMergeLinks(
     }
   }
 
-  if (!isIsolatedLocalMode() && SUPABASE_URL && SERVICE_KEY && links.length > 0) {
-    await fetch(`${SUPABASE_URL}/rest/v1/work_survey_merge_links?on_conflict=survey_id,target_sheet,target_record_id`, {
-      method: 'POST',
-      headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(links.map((item) => ({
-        survey_id: surveyId, target_sheet: item.targetSheet, target_record_id: item.targetRecordId,
-        source_version: item.sourceVersion, merged_by: item.mergedBy, merged_at: now, updated_at: now
-      })))
-    }).catch(() => {});
+  if (!isIsolatedLocalMode() && isDatabaseConfigured() && links.length > 0) {
+    await pgUpsertRows(
+      'work_survey_merge_links',
+      links.map((item) => ({
+        survey_id: surveyId,
+        target_sheet: item.targetSheet,
+        target_record_id: item.targetRecordId,
+        source_version: item.sourceVersion,
+        merged_by: item.mergedBy,
+        merged_at: now,
+        updated_at: now
+      })),
+      'survey_id,target_sheet,target_record_id'
+    ).catch(() => {});
   }
 
   store[surveyId] = current;

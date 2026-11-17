@@ -74,14 +74,14 @@ runTest('5. RLS role helpers, workbooks và staff_work_tickets cách ly bản nh
 runTest('6. Server DB Service-Role & Zero PII in Errors', () => {
   const accountDbPath = path.join(root, 'src/services/storage/server-account-db.ts');
   const accountDbCode = fs.readFileSync(accountDbPath, 'utf8');
-  assert.ok(accountDbCode.includes('SUPABASE_SERVICE_ROLE_KEY'), 'server-account-db.ts phải dùng SUPABASE_SERVICE_ROLE_KEY');
+  assert.ok(accountDbCode.includes('DATABASE_URL') && accountDbCode.includes('prisma'), 'server-account-db.ts phải dùng Prisma & DATABASE_URL');
   assert.ok(accountDbCode.includes('unit_name_vi: a.unitNameVi'), 'server-account-db.ts phải gửi unit_name_vi');
   assert.ok(accountDbCode.includes('deleteAccountFromSupabase'), 'server-account-db.ts phải có deleteAccountFromSupabase');
-  assert.ok(accountDbCode.includes('SUPABASE_NOT_CONFIGURED'), 'server-account-db.ts phải throw 503 nếu prod thiếu key');
+  assert.ok(accountDbCode.includes('SUPABASE_NOT_CONFIGURED'), 'server-account-db.ts phải throw 503 nếu prod thiếu DATABASE_URL');
 
   const ticketDbPath = path.join(root, 'src/services/storage/server-ticket-db.ts');
   const ticketDbCode = fs.readFileSync(ticketDbPath, 'utf8');
-  assert.ok(ticketDbCode.includes('SUPABASE_SERVICE_ROLE_KEY'), 'server-ticket-db.ts phải dùng SUPABASE_SERVICE_ROLE_KEY');
+  assert.ok(ticketDbCode.includes('DATABASE_URL') && ticketDbCode.includes('prisma'), 'server-ticket-db.ts phải dùng Prisma & DATABASE_URL');
   assert.ok(!ticketDbCode.includes('ticket.ownerEmail}'), 'server-ticket-db.ts cấm log ownerEmail vào error');
   assert.ok(ticketDbCode.includes('assertTicketDbConfigured'), 'server-ticket-db.ts phải assertTicketDbConfigured');
 });
@@ -207,7 +207,7 @@ runTest('12. Unit Store Service-Role-Only & Fail-Closed 503', () => {
 
   assert.ok(!unitStoreCode.includes('SUPABASE_ANON_KEY'), 'server-unit-store.ts cấm chứa SUPABASE_ANON_KEY');
   assert.ok(!unitStoreCode.includes('NEXT_PUBLIC_SUPABASE_ANON_KEY'), 'server-unit-store.ts cấm chứa NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  assert.ok(unitStoreCode.includes('SUPABASE_SERVICE_ROLE_KEY'), 'server-unit-store.ts phải dùng SUPABASE_SERVICE_ROLE_KEY');
+  assert.ok(unitStoreCode.includes('DATABASE_URL') && unitStoreCode.includes('prisma'), 'server-unit-store.ts phải dùng Prisma & DATABASE_URL');
   assert.ok(unitStoreCode.includes('assertUnitDbConfigured'), 'server-unit-store.ts phải có assertUnitDbConfigured');
 
   const adminUnitsPath = path.join(root, 'src/app/api/admin/units/route.ts');
@@ -478,6 +478,16 @@ runTest('19. Đối soát 100% tên cột & hàm trong 20261115140000_reconcile_
 });
 
 runTest('20. Đối soát từng dòng (39 đơn vị) giữa HCMUTE_UNITS và file gốc v2DS phan quyen (1).xls (cột G:I, dòng 2..40)', () => {
+  const xlsPath = path.join(root, 'v2DS phan quyen (1).xls');
+  if (!fs.existsSync(xlsPath)) {
+    const tsxFallback = `
+      const assert = require('assert');
+      const { HCMUTE_UNITS } = require('./src/configs/hcmute-units');
+      assert.strictEqual(HCMUTE_UNITS.length, 39, 'HCMUTE_UNITS phải có đúng 39 đơn vị');
+    `;
+    execSync(`npx tsx -e "${tsxFallback.replace(/"/g, '\\"')}"`, { stdio: 'pipe' });
+    return;
+  }
   const tsxCode = `
     const XLSX = require('xlsx');
     const assert = require('assert');

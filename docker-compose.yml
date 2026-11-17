@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: utevtvl-postgres
+    restart: always
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "password_encryption=scram-sha-256"
+      - "-c"
+      - "log_min_duration_statement=500"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-utevtvl_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-UteVtvl_Secure_2026_xP9}
+      POSTGRES_DB: ${POSTGRES_DB:-utevtvl_db}
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - utevtvl_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-utevtvl_admin} -d $${POSTGRES_DB:-utevtvl_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    container_name: utevtvl-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://kekhaivtvl.hcmute.edu.vn}
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3360:3360"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3360
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://kekhaivtvl.hcmute.edu.vn}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://kekhaivtvl.hcmute.edu.vn}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-utevtvl_admin}:${POSTGRES_PASSWORD:-UteVtvl_Secure_2026_xP9}@postgres:5432/${POSTGRES_DB:-utevtvl_db}?schema=public
+    volumes:
+      - utevtvl_appdata:/app/.data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3360/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  utevtvl_pgdata:
+  utevtvl_appdata:

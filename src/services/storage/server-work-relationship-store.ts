@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { Prisma } from '@prisma/client';
 import {
   ProposedCoordinatedTaskItem, StaffWorkTicket, WorkRelationshipApprovalLevel,
   WorkRelationshipItem, toCanonicalStatus, toDisplayStatus
@@ -10,12 +11,12 @@ import { loadTickets } from './server-ticket-store';
 import { ensureLegacyBaselineVersion } from './server-ticket-version-store';
 import { resolveUnitVtvlName } from './server-vtvl-assignment-store';
 import { normalizeEmail } from './server-workbook-store';
+import { getDbTestHook, isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { pgUpsertRows } from './postgres-rest-compat';
 import { extractEffectiveCoordinatedVtvls, normalizeCode, resolveUnitCodeSafe, resolveUnitNameSafe } from '@/services/tickets/vtvl-coordination-helpers';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const REL_FILE = path.join(DATA_DIR, 'work_relationships.json');
-const getSupaUrl = () => (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const getSupaKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 interface ManualApprovalRecord {
   hostLeaderApproved?: boolean; hostApprovedBy?: string; hostApprovedAt?: string;
@@ -56,11 +57,6 @@ function persistState(state: WorkRelationshipStoreState): void {
   } catch { /* ignore */ }
 }
 
-function dbHeaders(): Record<string, string> {
-  const k = getSupaKey();
-  return { apikey: k, Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' };
-}
-
 function mapRelItemToDbRow(r: WorkRelationshipItem) {
   return {
     id: r.id, source_survey_id: r.sourceSurveyId, source_task_code: r.sourceTaskCode,
@@ -79,14 +75,17 @@ function mapRelItemToDbRow(r: WorkRelationshipItem) {
 }
 
 export async function syncWorkRelationshipsFromSupabase(): Promise<void> {
-  const url = getSupaUrl(), key = getSupaKey();
-  if (isIsolatedLocalMode() || !url || !key) return;
+  if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
   try {
     const state = loadState();
-    const tdRes = await fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json`, { headers: dbHeaders(), cache: 'no-store' });
-    const tdRows = tdRes.ok ? await tdRes.json().catch(() => []) : [];
-    const jsonbRels: WorkRelationshipItem[] = Array.isArray(tdRows) && Array.isArray(tdRows[0]?.du_lieu_ho_so_json?.workRelationships)
-      ? tdRows[0].du_lieu_ho_so_json.workRelationships : [];
+    const hook = getDbTestHook();
+    const tdRow: Record<string, unknown> | null = hook?.select
+      ? ((await hook.select('t_tien_do', { ma_don_vi: 'TCNS' }))[0] || null)
+      : ((await prisma.t_tien_do.findUnique({ where: { ma_don_vi: 'TCNS' }, select: { du_lieu_ho_so_json: true } })) as unknown as Record<string, unknown> | null);
+    const tdJson = (tdRow?.du_lieu_ho_so_json as Record<string, unknown>) || {};
+    const jsonbRels: WorkRelationshipItem[] = Array.isArray(tdJson.workRelationships)
+      ? (tdJson.workRelationships as WorkRelationshipItem[]) : [];
+
     for (const jr of jsonbRels) {
       if (!jr?.id) continue;
       const cur = state.manualApprovals[jr.id] || {};
@@ -105,38 +104,30 @@ export async function syncWorkRelationshipsFromSupabase(): Promise<void> {
     }
 
     if (!supabaseTableUnavailable) {
-      const res = await fetch(`${url}/rest/v1/work_relationships`, { headers: dbHeaders(), cache: 'no-store' });
-      if (res.status === 404) { supabaseTableUnavailable = true; persistState(state); return; }
-      if (res.ok) {
-        const rows = (await res.json()) as Record<string, unknown>[];
-        const dbIds = new Set<string>();
-        if (Array.isArray(rows)) {
-          for (const r of rows) {
-            const id = String(r.id || '').trim();
-            if (!id) continue;
-            dbIds.add(id);
-            const cur = state.manualApprovals[id] || {};
-            state.manualApprovals[id] = {
-              hostLeaderApproved: Boolean(r.host_leader_approved || cur.hostLeaderApproved),
-              hostApprovedBy: (r.host_approved_by ? String(r.host_approved_by) : undefined) || cur.hostApprovedBy,
-              hostApprovedAt: (r.host_approved_at ? String(r.host_approved_at) : undefined) || cur.hostApprovedAt,
-              targetLeaderApproved: Boolean(r.target_leader_approved || cur.targetLeaderApproved),
-              targetApprovedBy: (r.target_approved_by ? String(r.target_approved_by) : undefined) || cur.targetApprovedBy,
-              targetApprovedAt: (r.target_approved_at ? String(r.target_approved_at) : undefined) || cur.targetApprovedAt,
-              tcnsApproved: Boolean(r.tcns_approved || cur.tcnsApproved),
-              tcnsApprovedBy: (r.tcns_approved_by ? String(r.tcns_approved_by) : undefined) || cur.tcnsApprovedBy,
-              tcnsApprovedAt: (r.tcns_approved_at ? String(r.tcns_approved_at) : undefined) || cur.tcnsApprovedAt
-            };
-          }
-        }
-        const missingFromDb = jsonbRels.filter((jr) => jr?.id && !dbIds.has(jr.id));
-        if (missingFromDb.length > 0) {
-          await fetch(`${url}/rest/v1/work_relationships?on_conflict=id`, {
-            method: 'POST',
-            headers: { ...dbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-            body: JSON.stringify(missingFromDb.map((jr) => mapRelItemToDbRow({ ...jr, ...state.manualApprovals[jr.id] })))
-          }).catch(() => {});
-        }
+      const rows: Record<string, unknown>[] = hook?.select
+        ? await hook.select('work_relationships')
+        : ((await prisma.work_relationships.findMany()) as unknown as Record<string, unknown>[]);
+      const dbIds = new Set<string>();
+      for (const r of rows) {
+        const id = String(r.id || '').trim();
+        if (!id) continue;
+        dbIds.add(id);
+        const cur = state.manualApprovals[id] || {};
+        state.manualApprovals[id] = {
+          hostLeaderApproved: Boolean(r.host_leader_approved || cur.hostLeaderApproved),
+          hostApprovedBy: (r.host_approved_by ? String(r.host_approved_by) : undefined) || cur.hostApprovedBy,
+          hostApprovedAt: toIsoString(r.host_approved_at as Date | string) || cur.hostApprovedAt,
+          targetLeaderApproved: Boolean(r.target_leader_approved || cur.targetLeaderApproved),
+          targetApprovedBy: (r.target_approved_by ? String(r.target_approved_by) : undefined) || cur.targetApprovedBy,
+          targetApprovedAt: toIsoString(r.target_approved_at as Date | string) || cur.targetApprovedAt,
+          tcnsApproved: Boolean(r.tcns_approved || cur.tcnsApproved),
+          tcnsApprovedBy: (r.tcns_approved_by ? String(r.tcns_approved_by) : undefined) || cur.tcnsApprovedBy,
+          tcnsApprovedAt: toIsoString(r.tcns_approved_at as Date | string) || cur.tcnsApprovedAt
+        };
+      }
+      const missingFromDb = jsonbRels.filter((jr) => jr?.id && !dbIds.has(jr.id));
+      if (missingFromDb.length > 0) {
+        await pgUpsertRows('work_relationships', missingFromDb.map((jr) => mapRelItemToDbRow({ ...jr, ...state.manualApprovals[jr.id] })), 'id').catch(() => {});
       }
     }
     persistState(state);
@@ -144,28 +135,20 @@ export async function syncWorkRelationshipsFromSupabase(): Promise<void> {
 }
 
 async function persistRelationshipsToSupabase(items: WorkRelationshipItem[]): Promise<void> {
-  const url = getSupaUrl(), key = getSupaKey();
-  if (isIsolatedLocalMode() || !url || !key || items.length === 0) return;
+  if (isIsolatedLocalMode() || !isDatabaseConfigured() || items.length === 0) return;
   try {
     if (!supabaseTableUnavailable) {
-      const res = await fetch(`${url}/rest/v1/work_relationships?on_conflict=id`, {
-        method: 'POST',
-        headers: { ...dbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(items.map(mapRelItemToDbRow))
-      });
+      const res = await pgUpsertRows('work_relationships', items.map(mapRelItemToDbRow), 'id');
       if (res.ok) return;
       if (res.status === 404) supabaseTableUnavailable = true;
     }
-    const existingRes = await fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json,phien_ban`, { headers: dbHeaders(), cache: 'no-store' });
-    const existingRows = existingRes.ok ? await existingRes.json().catch(() => []) : [];
-    const existingRow = Array.isArray(existingRows) && existingRows[0] ? existingRows[0] : null;
-    await fetch(`${url}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
-      method: 'POST',
-      headers: { ...dbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({
-        ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: existingRow?.phien_ban || 'v1',
-        du_lieu_ho_so_json: { ...(existingRow?.du_lieu_ho_so_json || {}), workRelationships: items }
-      })
+    const existingRow = await prisma.t_tien_do.findUnique({ where: { ma_don_vi: 'TCNS' } });
+    const prevJson = (existingRow?.du_lieu_ho_so_json as Record<string, unknown>) || {};
+    const nextJson = { ...prevJson, workRelationships: items } as unknown as Prisma.InputJsonValue;
+    await prisma.t_tien_do.upsert({
+      where: { ma_don_vi: 'TCNS' },
+      update: { ten_don_vi: 'Phòng Tổ chức - Nhân sự', du_lieu_ho_so_json: nextJson, updated_at: new Date() },
+      create: { ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: existingRow?.phien_ban || 'v1', du_lieu_ho_so_json: nextJson }
     });
   } catch { /* fallback safely */ }
 }

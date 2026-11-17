@@ -1,17 +1,19 @@
 import fs from 'fs';
 import path from 'path';
+import { Prisma } from '@prisma/client';
 import { HcmuteUnit, UnitGroupKind } from '@/types/vtvl';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { getDbTestHook, isDatabaseConfigured, prisma } from './prisma';
+import { pgUpsertRows } from './postgres-rest-compat';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const UNITS_FILE = path.join(DATA_DIR, 'custom_units.json');
-const getSupaUrl = () => (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const getSupaKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const getDbUrl = () => (process.env.DATABASE_URL || '').trim();
 
 const VALID_UNIT_GROUPS = new Set<UnitGroupKind>(['khoa-vien', 'phong-ban', 'trung-tam', 'dang-doanthe']);
 
 export function assertUnitDbConfigured(operation: string): void {
-  if (!getSupaUrl() || !getSupaKey()) {
+  if (!getDbUrl() && !isDatabaseConfigured()) {
     if (process.env.NODE_ENV === 'production') {
       const err = new Error(`[DB_SERVICE_UNAVAILABLE] Dịch vụ CSDL máy chủ chưa được cấu hình cho thao tác ${operation}.`);
       (err as unknown as { code: string; status: number }).code = 'DB_SERVICE_UNAVAILABLE';
@@ -23,11 +25,6 @@ export function assertUnitDbConfigured(operation: string): void {
 
 let memoryUnits: HcmuteUnit[] | null = null;
 let lastSupabaseSyncAt = 0;
-
-function getSupabaseHeaders(): Record<string, string> {
-  const k = getSupaKey();
-  return { apikey: k, Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' };
-}
 
 export const DELETED_UNIT_CODES = new Set([
   'IDDF', 'TRTC', 'HDT', 'BGH', 'FFT',
@@ -100,28 +97,22 @@ function mapUnitToDmDonViRow(u: HcmuteUnit) {
 }
 
 async function upsertUnitsToDmDonVi(units: HcmuteUnit[]): Promise<boolean> {
-  const url = getSupaUrl(), key = getSupaKey();
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key || units.length === 0) return false;
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured() || units.length === 0) return false;
   const rows = units.filter((u) => u.code && !DELETED_UNIT_CODES.has(u.code.toUpperCase())).map(mapUnitToDmDonViRow);
   if (rows.length === 0) return false;
-  const res = await fetch(`${url}/rest/v1/dm_don_vi?on_conflict=ma_don_vi`, {
-    method: 'POST',
-    headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(rows)
-  });
+  const res = await pgUpsertRows('dm_don_vi', rows, 'ma_don_vi');
   return res.ok;
 }
 
 async function deactivateUnitInDmDonVi(code: string): Promise<boolean> {
-  const url = getSupaUrl(), key = getSupaKey();
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return false;
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return false;
   const norm = code.trim().toUpperCase();
-  const res = await fetch(`${url}/rest/v1/dm_don_vi?ma_don_vi=eq.${encodeURIComponent(norm)}`, {
-    method: 'PATCH',
-    headers: { ...getSupabaseHeaders(), Prefer: 'return=minimal' },
-    body: JSON.stringify({ is_active: false, updated_at: new Date().toISOString() })
+  if (getDbTestHook()) return true;
+  await prisma.dm_don_vi.updateMany({
+    where: { ma_don_vi: norm },
+    data: { is_active: false, updated_at: new Date() }
   });
-  return res.ok;
+  return true;
 }
 
 function persistLocalUnits(): void {
@@ -134,22 +125,28 @@ function persistLocalUnits(): void {
 
 async function persistUnitsToSupabase(units: HcmuteUnit[]): Promise<boolean> {
   assertUnitDbConfigured('persist_units');
-  const url = getSupaUrl(), key = getSupaKey();
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return false;
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return false;
   try {
     await upsertUnitsToDmDonVi(units);
-    const existingRes = await fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json,phien_ban`, { headers: getSupabaseHeaders(), cache: 'no-store' });
-    const existingRows = existingRes.ok ? await existingRes.json() : [];
-    const existingRow = Array.isArray(existingRows) && existingRows[0] ? existingRows[0] : null;
-    const res = await fetch(`${url}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
-      method: 'POST',
-      headers: { ...getSupabaseHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({
-        ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: existingRow?.phien_ban || 'v1',
-        du_lieu_ho_so_json: { ...(existingRow?.du_lieu_ho_so_json || {}), customUnits: units, unitsUpdatedAt: new Date().toISOString() }
-      })
+    const hook = getDbTestHook();
+    if (hook?.select) {
+      const rows = await hook.select('t_tien_do', { ma_don_vi: 'TCNS' });
+      const prev = rows[0] || {};
+      const r = await pgUpsertRows('t_tien_do', {
+        ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: prev.phien_ban || 'v1',
+        du_lieu_ho_so_json: { ...((prev.du_lieu_ho_so_json as Record<string, unknown>) || {}), customUnits: units, unitsUpdatedAt: new Date().toISOString() }
+      }, 'ma_don_vi');
+      return r.ok;
+    }
+    const existingRow = await prisma.t_tien_do.findUnique({ where: { ma_don_vi: 'TCNS' } });
+    const prevJson = (existingRow?.du_lieu_ho_so_json as Record<string, unknown>) || {};
+    const nextJson = { ...prevJson, customUnits: units, unitsUpdatedAt: new Date().toISOString() } as unknown as Prisma.InputJsonValue;
+    await prisma.t_tien_do.upsert({
+      where: { ma_don_vi: 'TCNS' },
+      update: { ten_don_vi: 'Phòng Tổ chức - Nhân sự', du_lieu_ho_so_json: nextJson, updated_at: new Date() },
+      create: { ma_don_vi: 'TCNS', ten_don_vi: 'Phòng Tổ chức - Nhân sự', phien_ban: existingRow?.phien_ban || 'v1', du_lieu_ho_so_json: nextJson }
     });
-    return res.ok;
+    return true;
   } catch (err: unknown) {
     const errObj = err as { code?: string; status?: number };
     if (errObj?.code === 'DB_SERVICE_UNAVAILABLE' || errObj?.status === 503) throw err;
@@ -180,17 +177,18 @@ export async function syncUnitsFromSupabase(force = false): Promise<HcmuteUnit[]
   const now = Date.now();
   if (!force && now - lastSupabaseSyncAt < 30000 && memoryUnits && memoryUnits.length > 0) return memoryUnits;
   assertUnitDbConfigured('sync_units');
-  const url = getSupaUrl(), key = getSupaKey();
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !url || !key) return loadServerUnits();
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return loadServerUnits();
 
   try {
-    const [dmRes, tdRes] = await Promise.all([
-      fetch(`${url}/rest/v1/dm_don_vi?order=ma_don_vi.asc`, { headers: getSupabaseHeaders(), cache: 'no-store' }),
-      fetch(`${url}/rest/v1/t_tien_do?ma_don_vi=eq.TCNS&select=du_lieu_ho_so_json`, { headers: getSupabaseHeaders(), cache: 'no-store' })
-    ]);
-    const dmRows = dmRes.ok ? ((await dmRes.json()) as Record<string, unknown>[]) : [];
-    const tdRows = tdRes.ok ? await tdRes.json() : [];
-    const tcnsCustom = Array.isArray(tdRows) && tdRows[0]?.du_lieu_ho_so_json?.customUnits ? normalizeRemoteUnits(tdRows[0].du_lieu_ho_so_json.customUnits) : [];
+    const hook = getDbTestHook();
+    const dmRows: Record<string, unknown>[] = hook?.select
+      ? await hook.select('dm_don_vi')
+      : ((await prisma.dm_don_vi.findMany({ orderBy: { ma_don_vi: 'asc' } })) as unknown as Record<string, unknown>[]);
+    const tdRow: Record<string, unknown> | null = hook?.select
+      ? ((await hook.select('t_tien_do', { ma_don_vi: 'TCNS' }))[0] || null)
+      : ((await prisma.t_tien_do.findUnique({ where: { ma_don_vi: 'TCNS' }, select: { du_lieu_ho_so_json: true } })) as unknown as Record<string, unknown> | null);
+    const rawJson = (tdRow?.du_lieu_ho_so_json as Record<string, unknown>) || {};
+    const tcnsCustom = Array.isArray(rawJson.customUnits) ? normalizeRemoteUnits(rawJson.customUnits as HcmuteUnit[]) : [];
 
     if (Array.isArray(dmRows) && dmRows.length > 0) {
       const inactiveCodeSet = new Set(dmRows.filter((r) => r.is_active === false).map((r) => String(r.ma_don_vi || '').trim().toUpperCase()));

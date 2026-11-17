@@ -21,9 +21,7 @@ import {
 import { clearLocalMergeLinks, getTicketVersions } from './server-ticket-version-store';
 import { removeCoordinationDataForSurvey } from './server-coordination-store';
 import { deleteTicketFromSupabase, isIsolatedLocalMode } from './server-ticket-db';
-
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+import { isDatabaseConfigured, prisma } from './prisma';
 
 /**
  * Gỡ dòng công việc & khối lượng của một phiếu cụ thể khỏi Biểu A2/B1 đơn vị,
@@ -85,11 +83,8 @@ export async function unmergeTicketFromUnitWorkbook(
   });
 
   clearLocalMergeLinks(ticketId);
-  if (!isIsolatedLocalMode() && SUPABASE_URL && SERVICE_KEY) {
-    await fetch(`${SUPABASE_URL}/rest/v1/work_survey_merge_links?survey_id=eq.${encodeURIComponent(ticketId)}`, {
-      method: 'DELETE',
-      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
-    }).catch(() => {});
+  if (!isIsolatedLocalMode() && isDatabaseConfigured()) {
+    await prisma.work_survey_merge_links.deleteMany({ where: { survey_id: ticketId } }).catch(() => {});
   }
 
   return res;

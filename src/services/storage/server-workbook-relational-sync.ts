@@ -1,46 +1,35 @@
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { ServerWorkbook } from './server-workbook-store';
+import { isDatabaseConfigured, pgQuery, prisma } from './prisma';
+import { pgCallSurveyRpc, pgUpsertRows } from './postgres-rest-compat';
 
-const getSupaUrl = () => (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const getSupaKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 const VALID_NHOM_LA_MA = new Set(['I', 'II', 'III', 'IV', 'V', 'VI']);
 const VALID_LOAI_NL = new Set(['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ']);
 const VALID_PP = new Set(['PP1', 'PP2', 'PP3', 'PP1+PP2', 'PP1+PP3', 'PP2+PP3']);
 const VALID_TAC_DONG = new Set(['Số hóa', 'Cải tiến quy trình', 'Thuê dịch vụ/đặt hàng', 'Tự chủ', 'Xã hội hóa', 'Công việc mới phát sinh']);
 
-function dbHeaders(prefer?: string, userToken?: string): Record<string, string> {
-  const key = getSupaKey() || (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
-  const h: Record<string, string> = { apikey: key, Authorization: `Bearer ${userToken || key}`, 'Content-Type': 'application/json' };
-  if (prefer) h.Prefer = prefer;
-  return h;
-}
-
 async function upsertRowsStrict(table: string, rows: unknown[], conflictCol: string): Promise<void> {
   if (!rows.length) return;
-  const res = await fetch(`${getSupaUrl()}/rest/v1/${table}?on_conflict=${encodeURIComponent(conflictCol)}`, {
-    method: 'POST', headers: dbHeaders('resolution=merge-duplicates,return=minimal'), body: JSON.stringify(rows)
-  });
-  if (!res.ok) throw new Error(`RELATIONAL_SYNC_FAILED:${table}:${res.status}`);
+  const res = await pgUpsertRows(table, rows, conflictCol);
+  if (!res.ok) throw new Error(`RELATIONAL_SYNC_FAILED:${table}:${res.status}:${res.error || ''}`);
 }
 
 async function pruneStaleSinglePk(table: string, unitCode: string, pkCol: string, activeIds: Set<string>): Promise<void> {
-  const res = await fetch(`${getSupaUrl()}/rest/v1/${table}?ma_don_vi=eq.${encodeURIComponent(unitCode)}&select=${encodeURIComponent(pkCol)}`, { headers: dbHeaders(), cache: 'no-store' });
-  if (!res.ok) return;
-  const rows = (await res.json()) as Record<string, unknown>[];
-  const stale = rows.map((r) => String(r[pkCol] ?? '').trim()).filter((id) => id && !activeIds.has(id));
-  for (let i = 0; i < stale.length; i += 40) {
-    const chunk = stale.slice(i, i + 40).map((v) => `"${encodeURIComponent(v.replace(/"/g, ''))}"`).join(',');
-    await fetch(`${getSupaUrl()}/rest/v1/${table}?ma_don_vi=eq.${encodeURIComponent(unitCode)}&${pkCol}=in.(${chunk})`, { method: 'DELETE', headers: dbHeaders('return=minimal') });
+  const res = await pgQuery<Record<string, unknown>>(`SELECT "${pkCol}" FROM public."${table}" WHERE ma_don_vi = $1`, [unitCode]).catch(() => null);
+  if (!res) return;
+  const stale = res.rows.map((r) => String(r[pkCol] ?? '').trim()).filter((id) => id && !activeIds.has(id));
+  if (stale.length > 0) {
+    await pgQuery(`DELETE FROM public."${table}" WHERE ma_don_vi = $1 AND "${pkCol}" = ANY($2::text[])`, [unitCode, stale]);
   }
 }
 
 async function pruneStaleCompositeYear(table: string, unitCode: string, yearCol: string, activeKeys: Set<string>): Promise<void> {
-  const res = await fetch(`${getSupaUrl()}/rest/v1/${table}?ma_don_vi=eq.${encodeURIComponent(unitCode)}&select=ma_vtvl,${yearCol}`, { headers: dbHeaders(), cache: 'no-store' });
-  if (!res.ok) return;
-  for (const r of (await res.json()) as Record<string, unknown>[]) {
-    const vtvl = String(r.ma_vtvl || '').trim(), yr = String(r[yearCol] ?? '').trim();
+  const res = await pgQuery<Record<string, unknown>>(`SELECT ma_vtvl, "${yearCol}" FROM public."${table}" WHERE ma_don_vi = $1`, [unitCode]).catch(() => null);
+  if (!res) return;
+  for (const r of res.rows) {
+    const vtvl = String(r.ma_vtvl || '').trim(), yr = Number(r[yearCol]);
     if (vtvl && yr && !activeKeys.has(`${vtvl}::${yr}`)) {
-      await fetch(`${getSupaUrl()}/rest/v1/${table}?ma_don_vi=eq.${encodeURIComponent(unitCode)}&ma_vtvl=eq.${encodeURIComponent(vtvl)}&${yearCol}=eq.${encodeURIComponent(yr)}`, { method: 'DELETE', headers: dbHeaders('return=minimal') });
+      await pgQuery(`DELETE FROM public."${table}" WHERE ma_don_vi = $1 AND ma_vtvl = $2 AND "${yearCol}" = $3`, [unitCode, vtvl, yr]);
     }
   }
 }
@@ -149,30 +138,29 @@ export function buildWorkbookRelationalPayload(wb: ServerWorkbook) {
 }
 
 export async function syncWorkbookAtomicOrFallback(
-  wb: ServerWorkbook, snapshotPayload: Record<string, unknown>, userToken?: string, options?: { simulateTxError?: boolean; requireAtomicRpc?: boolean }
+  wb: ServerWorkbook, snapshotPayload: Record<string, unknown>, _userToken?: string, options?: { simulateTxError?: boolean; requireAtomicRpc?: boolean }
 ): Promise<{ ok: boolean; atomicRpcUsed: boolean }> {
   if (options?.simulateTxError && process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') {
     throw new Error('TX_ABORTED_MIDWAY: Lỗi giả lập giữa giao dịch đồng bộ bảng tính.');
   }
-  const supaUrl = getSupaUrl(), supaKey = getSupaKey();
-  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !supaUrl || !supaKey || wb.isDeleted) return { ok: true, atomicRpcUsed: false };
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured() || wb.isDeleted) return { ok: true, atomicRpcUsed: false };
 
   const rel = buildWorkbookRelationalPayload(wb), unitCode = rel.unitCode;
   if (!unitCode) return { ok: false, atomicRpcUsed: false };
 
-  const rpcRes = await fetch(`${supaUrl}/rest/v1/rpc/rpc_sync_workbook_atomic`, {
-    method: 'POST', headers: dbHeaders(undefined, userToken),
-    body: JSON.stringify({ p_unit_code: unitCode, p_snapshot: snapshotPayload, p_relational: rel, p_simulate_error: Boolean(options?.simulateTxError) })
+  const rpcRes = await pgCallSurveyRpc('rpc_sync_workbook_atomic', {
+    p_unit_code: unitCode,
+    p_snapshot: snapshotPayload,
+    p_relational: rel,
+    p_simulate_error: Boolean(options?.simulateTxError)
   });
   if (rpcRes.ok) return { ok: true, atomicRpcUsed: true };
-  const errText = await rpcRes.text().catch(() => '');
+  const errText = rpcRes.errorText || '';
   if (options?.simulateTxError || options?.requireAtomicRpc || (rpcRes.status !== 404 && !errText.includes('PGRST202'))) {
-    throw new Error(`TX_ABORTED_MIDWAY: RPC rpc_sync_workbook_atomic thất bại (HTTP ${rpcRes.status}): ${errText}`);
+    throw new Error(`TX_ABORTED_MIDWAY: RPC rpc_sync_workbook_atomic thất bại (${rpcRes.status}): ${errText}`);
   }
 
-  const prevRes = await fetch(`${supaUrl}/rest/v1/t_tien_do?ma_don_vi=eq.${encodeURIComponent(unitCode)}`, { headers: dbHeaders(), cache: 'no-store' });
-  const prevRows = prevRes.ok ? await prevRes.json().catch(() => []) : [];
-  const prevSnapshot = Array.isArray(prevRows) && prevRows[0] ? prevRows[0] : null;
+  const prevSnapshot = await prisma.t_tien_do.findUnique({ where: { ma_don_vi: unitCode } }).catch(() => null);
   try {
     await upsertRowsStrict('dm_don_vi', [rel.unitRow], 'ma_don_vi');
     await upsertRowsStrict('t_tien_do', [snapshotPayload], 'ma_don_vi');
@@ -213,9 +201,7 @@ export async function syncWorkbookAtomicOrFallback(
     return { ok: true, atomicRpcUsed: false };
   } catch (err) {
     if (prevSnapshot) {
-      await fetch(`${supaUrl}/rest/v1/t_tien_do?on_conflict=ma_don_vi`, {
-        method: 'POST', headers: dbHeaders('resolution=merge-duplicates,return=minimal'), body: JSON.stringify(prevSnapshot)
-      }).catch(() => {});
+      await pgUpsertRows('t_tien_do', prevSnapshot as unknown as Record<string, unknown>, 'ma_don_vi').catch(() => {});
     }
     throw err;
   }

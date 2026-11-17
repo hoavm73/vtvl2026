@@ -1,0 +1,927 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("staff")
+  unitCode      String    @default("CNTT")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model a1_nhiem_vu {
+  ma_nhiem_vu    String         @id
+  ma_don_vi      String
+  ten_nhiem_vu   String
+  can_cu_phap_ly String
+  ky_thong_ke    String         @default("01/10/2025–30/9/2026")
+  trang_thai_nv  String         @default("Tiếp tục thực hiện")
+  nguon_nhiem_vu String?
+  updated_at     DateTime       @default(now()) @db.Timestamptz(6)
+  dm_don_vi      dm_don_vi      @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  a2_cong_viec   a2_cong_viec[]
+
+  @@index([ma_don_vi], map: "idx_a1_nhiem_vu_ma_don_vi")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model a2_cong_viec {
+  ma_cong_viec       String           @id
+  ma_don_vi          String
+  ma_nhiem_vu        String
+  ma_vtvl            String
+  ma_sp_chuan        String?
+  ten_cong_viec      String
+  ten_san_pham       String
+  nhom_la_ma         String
+  don_vi_tinh        String
+  yeu_cau_chat_luong String?
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
+  dm_don_vi          dm_don_vi        @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  a1_nhiem_vu        a1_nhiem_vu      @relation(fields: [ma_nhiem_vu], references: [ma_nhiem_vu], onDelete: Cascade, onUpdate: NoAction)
+  dm_san_pham        dm_san_pham?     @relation(fields: [ma_sp_chuan], references: [ma_sp_chuan], onUpdate: NoAction)
+  c1_vtvl            c1_vtvl          @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+  b1_khoi_luong      b1_khoi_luong?
+  b2_ct_tac_dong     b2_ct_tac_dong[]
+  b2_thay_doi        b2_thay_doi?
+  can_cu_goi_y       can_cu_goi_y[]
+
+  @@index([ma_don_vi], map: "idx_a2_cong_viec_ma_don_vi")
+  @@index([ma_nhiem_vu], map: "idx_a2_cong_viec_ma_nhiem_vu")
+  @@index([ma_vtvl], map: "idx_a2_cong_viec_ma_vtvl")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_logs {
+  id            BigInt   @id @default(autoincrement())
+  workbook_id   String?
+  session_id    String?
+  actor_email   String?
+  action        String
+  sheet_id      String?
+  record_id     String?
+  metadata      Json?    @default("{}")
+  ip_address    String?
+  user_agent    String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  actor_role    String?
+  unit_id       String?
+  target_id     String?
+  target_entity String?
+  old_values    Json?
+  new_values    Json?
+
+  @@index([action], map: "idx_audit_logs_action")
+  @@index([actor_email], map: "idx_audit_logs_actor")
+  @@index([created_at(sort: Desc)], map: "idx_audit_logs_created")
+  @@index([target_entity, target_id], map: "idx_audit_logs_target")
+  @@index([unit_id], map: "idx_audit_logs_unit")
+  @@index([workbook_id], map: "idx_audit_logs_wb")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model b1_khoi_luong {
+  ma_cong_viec         String       @id
+  ma_don_vi            String
+  ma_vtvl              String
+  ma_sp_chuan          String?
+  so_sp_nam            Decimal      @default(0) @db.Decimal(12, 2)
+  phut_sp_do_thuc_te   Decimal      @default(0) @db.Decimal(10, 2)
+  gio_bo_sung_nam      Decimal      @default(0) @db.Decimal(10, 2)
+  gio_sp_tinh          Decimal      @default(0) @db.Decimal(12, 2)
+  gio_tong_tinh        Decimal      @default(0) @db.Decimal(12, 2)
+  nguon_so_luong       String?
+  nguon_thoi_gian      String?
+  trang_thai_can_cu_tg String       @default("Có định mức")
+  ky_thong_ke          String       @default("01/10/2025–30/9/2026")
+  phut_sp_chuan        Decimal      @default(0) @db.Decimal(10, 2)
+  phut_sp_dung_tinh    Decimal      @default(0) @db.Decimal(10, 2)
+  canh_bao_cot_r       String       @default("ĐẠT")
+  giai_trinh_cot_s     String?
+  updated_at           DateTime     @default(now()) @db.Timestamptz(6)
+  a2_cong_viec         a2_cong_viec @relation(fields: [ma_cong_viec], references: [ma_cong_viec], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi            dm_don_vi    @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  dm_san_pham          dm_san_pham? @relation(fields: [ma_sp_chuan], references: [ma_sp_chuan], onUpdate: NoAction)
+  c1_vtvl              c1_vtvl      @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_b1_khoi_luong_ma_don_vi")
+  @@index([ma_vtvl], map: "idx_b1_khoi_luong_ma_vtvl")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model b2_ct_tac_dong {
+  id_tac_dong       String       @id
+  ma_don_vi         String
+  ma_cong_viec      String
+  ma_vtvl           String
+  loai_tac_dong     String       @default("Số hóa")
+  khau_tac_dong     String?
+  so_sp_ap_dung     Decimal      @default(0) @db.Decimal(12, 2)
+  phut_truoc        Decimal      @default(0) @db.Decimal(10, 2)
+  phut_sau          Decimal      @default(0) @db.Decimal(10, 2)
+  gio_giam_hop_le   Decimal      @default(0) @db.Decimal(12, 2)
+  can_cu_minh_chung String?
+  updated_at        DateTime     @default(now()) @db.Timestamptz(6)
+  a2_cong_viec      a2_cong_viec @relation(fields: [ma_cong_viec], references: [ma_cong_viec], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi         dm_don_vi    @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl           c1_vtvl      @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_cong_viec], map: "idx_b2_ct_ma_cong_viec")
+  @@index([ma_don_vi], map: "idx_b2_ct_ma_don_vi")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model b2_thay_doi {
+  ma_cong_viec      String       @id
+  ma_don_vi         String
+  ma_vtvl           String
+  gio_giam_so_hoa   Decimal      @default(0) @db.Decimal(12, 2)
+  gio_giam_thue_tc  Decimal      @default(0) @db.Decimal(12, 2)
+  gio_viec_moi      Decimal      @default(0) @db.Decimal(12, 2)
+  gio_tac_dong_rong Decimal      @default(0) @db.Decimal(12, 2)
+  updated_at        DateTime     @default(now()) @db.Timestamptz(6)
+  a2_cong_viec      a2_cong_viec @relation(fields: [ma_cong_viec], references: [ma_cong_viec], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi         dm_don_vi    @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl           c1_vtvl      @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_b2_thay_doi_ma_don_vi")
+  @@index([ma_vtvl], map: "idx_b2_thay_doi_ma_vtvl")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model c1_vtvl {
+  ma_vtvl                 String                @id
+  ma_don_vi               String
+  ma_danh_muc_nd232       String?
+  nhom_vtvl_4             String
+  ten_khung_vtvl_truong   String
+  ten_vtvl_cu_the_don_vi  String
+  bac_nghe_nghiep_su_dung String
+  ma_ngach_chuc_danh      String?
+  loai_nhan_luc           String                @default("Viên chức")
+  che_do_lam_viec         String                @default("Phổ biến (40 giờ/tuần)")
+  gio_chuan_pp2           Decimal               @default(1904) @db.Decimal(10, 2)
+  phuong_phap             String                @default("PP2")
+  gio_b1_nam              Decimal               @default(0) @db.Decimal(12, 2)
+  gio_b2_tac_dong         Decimal               @default(0) @db.Decimal(12, 2)
+  gio_rong_nam            Decimal               @default(0) @db.Decimal(12, 2)
+  nhu_cau_fte             Decimal               @default(1) @db.Decimal(10, 2)
+  updated_at              DateTime              @default(now()) @db.Timestamptz(6)
+  a2_cong_viec            a2_cong_viec[]
+  b1_khoi_luong           b1_khoi_luong[]
+  b2_ct_tac_dong          b2_ct_tac_dong[]
+  b2_thay_doi             b2_thay_doi[]
+  dm_vtvl_khung_truong    dm_vtvl_khung_truong? @relation(fields: [ma_danh_muc_nd232], references: [ma_danh_muc_nd232], onUpdate: NoAction)
+  dm_don_vi               dm_don_vi             @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c2_nang_luc             c2_nang_luc?
+  c3_nhu_cau              c3_nhu_cau?
+  can_cu_goi_y            can_cu_goi_y[]
+  d1_nhan_luc             d1_nhan_luc[]
+  d2_phuong_an            d2_phuong_an[]
+  du_bao_5_nam            du_bao_5_nam[]
+  sldv_phan_bo_ngach      sldv_phan_bo_ngach[]
+
+  @@index([ma_don_vi], map: "idx_c1_vtvl_ma_don_vi")
+  @@index([ma_danh_muc_nd232], map: "idx_c1_vtvl_ma_khung")
+  @@index([ma_danh_muc_nd232], map: "idx_c1_vtvl_ma_nd232")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model c2_nang_luc {
+  ma_vtvl                     String    @id
+  ma_don_vi                   String
+  muc_tieu_vi_tri             String
+  trach_nhiem_chinh           String
+  khung_nang_luc_bac          String
+  yeu_cau_trinh_do_chuyen_mon String
+  ma_chuc_danh_nghe_nghiep    String?
+  updated_at                  DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi                   dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl                     c1_vtvl   @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_c2_nang_luc_ma_don_vi")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model c3_nhu_cau {
+  ma_vtvl             String    @id
+  ma_don_vi           String
+  phuong_phap         String    @default("PP2")
+  gio_b1_nam          Decimal   @default(0) @db.Decimal(12, 2)
+  gio_tac_dong_b2     Decimal   @default(0) @db.Decimal(12, 2)
+  gio_rong_nam        Decimal   @default(0) @db.Decimal(12, 2)
+  gio_chuan_pp2       Decimal   @default(1904) @db.Decimal(10, 2)
+  nguoi_quy_doi_pp2   Decimal   @default(0) @db.Decimal(10, 2)
+  nguoi_dinh_bien_pp1 Decimal   @default(0) @db.Decimal(10, 2)
+  nguoi_can_bo_tri    Decimal   @default(1) @db.Decimal(10, 2)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi           dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl             c1_vtvl   @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_c3_nhu_cau_ma_don_vi")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model can_cu_goi_y {
+  ma_don_vi          String
+  ma_cong_viec       String
+  ma_vtvl            String
+  ten_cong_viec      String
+  so_sp_goi_y        Decimal      @default(0) @db.Decimal(12, 2)
+  phut_sp_goi_y      Decimal      @default(0) @db.Decimal(10, 2)
+  muc_do_phuc_tap    String       @default("Thông thường")
+  nguon_can_cu_goi_y String
+  da_sua_thuc_te     Boolean      @default(false)
+  updated_at         DateTime     @default(now()) @db.Timestamptz(6)
+  a2_cong_viec       a2_cong_viec @relation(fields: [ma_cong_viec], references: [ma_cong_viec], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi          dm_don_vi    @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl            c1_vtvl      @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ma_don_vi, ma_cong_viec])
+  @@index([ma_don_vi], map: "idx_can_cu_goi_y_ma_don_vi")
+  @@index([ma_vtvl], map: "idx_can_cu_goi_y_ma_vtvl")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model coordinated_tasks {
+  id                                                      String             @id @db.VarChar(100)
+  ticket_id                                               String             @db.VarChar(100)
+  unit_code                                               String             @db.VarChar(50)
+  target_unit_code                                        String             @db.VarChar(50)
+  target_task_code                                        String?            @db.VarChar(100)
+  target_task_name                                        String?
+  role_in_task                                            String?            @db.VarChar(100)
+  estimated_hours                                         Decimal?           @default(0) @db.Decimal
+  notes                                                   String?
+  created_at                                              DateTime           @default(now()) @db.Timestamptz(6)
+  dm_don_vi_coordinated_tasks_target_unit_codeTodm_don_vi dm_don_vi          @relation("coordinated_tasks_target_unit_codeTodm_don_vi", fields: [target_unit_code], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  staff_work_tickets                                      staff_work_tickets @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi_coordinated_tasks_unit_codeTodm_don_vi        dm_don_vi          @relation("coordinated_tasks_unit_codeTodm_don_vi", fields: [unit_code], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ticket_id], map: "idx_coord_ticket")
+  @@index([unit_code, target_unit_code], map: "idx_coord_units")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model d1_nhan_luc {
+  ma_nguon_luc        String    @id
+  ma_don_vi           String
+  ma_vtvl             String
+  ho_va_ten           String
+  chuc_danh_hien_giu  String
+  ma_ngach_chuc_danh  String
+  loai_nhan_luc       String    @default("Viên chức")
+  ty_le_phan_bo_chinh Decimal   @default(100) @db.Decimal(5, 2)
+  gio_quy_doi_nam     Decimal   @default(1904) @db.Decimal(10, 2)
+  canh_bao_d1         String    @default("ĐẠT")
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi           dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl             c1_vtvl   @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_d1_nhan_luc_ma_don_vi")
+  @@index([ma_vtvl], map: "idx_d1_nhan_luc_ma_vtvl")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model d2_phuong_an {
+  ma_vtvl              String
+  nam_phuong_an        Int
+  ma_don_vi            String
+  so_nguoi_can_bo_tri  Decimal   @default(1) @db.Decimal(10, 2)
+  so_nguoi_hien_co     Decimal   @default(1) @db.Decimal(10, 2)
+  chenh_lech           Decimal   @default(0) @db.Decimal(10, 2)
+  phuong_an_dieu_chinh String    @default("Giữ ổn định")
+  dm_don_vi            dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl              c1_vtvl   @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ma_vtvl, nam_phuong_an])
+  @@index([ma_don_vi], map: "idx_d2_phuong_an_ma_don_vi")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dm_chuc_danh_tt31 {
+  ma_so_chuc_danh   String   @id
+  ten_chuc_danh     String
+  khoan_dieu_tt31   String
+  loai_vien_chuc    String
+  khung_he_so_luong String
+  dien_chuyen_tiep  Boolean  @default(false)
+  ghi_chu_bo_nhiem  String?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dm_don_vi {
+  ma_don_vi                                                                               String                          @id
+  ten_don_vi_vi                                                                           String
+  ten_don_vi_en                                                                           String
+  khoi_don_vi                                                                             String
+  linh_vuc                                                                                String?
+  chuc_danh_thu_truong_vi                                                                 String?
+  chuc_danh_thu_truong_en                                                                 String?
+  so_nhan_su_mac_dinh                                                                     Int                             @default(10)
+  created_at                                                                              DateTime                        @default(now()) @db.Timestamptz(6)
+  is_active                                                                               Boolean                         @default(true)
+  updated_at                                                                              DateTime                        @default(now()) @db.Timestamptz(6)
+  a1_nhiem_vu                                                                             a1_nhiem_vu[]
+  a2_cong_viec                                                                            a2_cong_viec[]
+  b1_khoi_luong                                                                           b1_khoi_luong[]
+  b2_ct_tac_dong                                                                          b2_ct_tac_dong[]
+  b2_thay_doi                                                                             b2_thay_doi[]
+  c1_vtvl                                                                                 c1_vtvl[]
+  c2_nang_luc                                                                             c2_nang_luc[]
+  c3_nhu_cau                                                                              c3_nhu_cau[]
+  can_cu_goi_y                                                                            can_cu_goi_y[]
+  coordinated_tasks_coordinated_tasks_target_unit_codeTodm_don_vi                         coordinated_tasks[]             @relation("coordinated_tasks_target_unit_codeTodm_don_vi")
+  coordinated_tasks_coordinated_tasks_unit_codeTodm_don_vi                                coordinated_tasks[]             @relation("coordinated_tasks_unit_codeTodm_don_vi")
+  d1_nhan_luc                                                                             d1_nhan_luc[]
+  d2_phuong_an                                                                            d2_phuong_an[]
+  du_bao_5_nam                                                                            du_bao_5_nam[]
+  k_kiem_tra                                                                              k_kiem_tra[]
+  ra_soat_chua_du_can_cu                                                                  ra_soat_chua_du_can_cu[]
+  s_nhat_ky                                                                               s_nhat_ky[]
+  sldv_phan_bo_ngach                                                                      sldv_phan_bo_ngach[]
+  sldv_quy_mo_don_vi                                                                      sldv_quy_mo_don_vi?
+  staff_work_tickets_staff_work_tickets_unit_idTodm_don_vi                                staff_work_tickets[]            @relation("staff_work_tickets_unit_idTodm_don_vi")
+  staff_work_tickets_staff_work_tickets_unit_codeTodm_don_vi                              staff_work_tickets[]            @relation("staff_work_tickets_unit_codeTodm_don_vi")
+  t_tien_do                                                                               t_tien_do?
+  user_accounts_user_accounts_unit_idTodm_don_vi                                          user_accounts[]                 @relation("user_accounts_unit_idTodm_don_vi")
+  user_accounts_user_accounts_unit_codeTodm_don_vi                                        user_accounts[]                 @relation("user_accounts_unit_codeTodm_don_vi")
+  user_vtvl_assignments                                                                   user_vtvl_assignments[]
+  work_relationships_work_relationships_host_unit_codeTodm_don_vi                         work_relationships[]            @relation("work_relationships_host_unit_codeTodm_don_vi")
+  work_relationships_work_relationships_target_unit_codeTodm_don_vi                       work_relationships[]            @relation("work_relationships_target_unit_codeTodm_don_vi")
+  work_survey_coordinated_vtvls_work_survey_coordinated_vtvls_host_unit_codeTodm_don_vi   work_survey_coordinated_vtvls[] @relation("work_survey_coordinated_vtvls_host_unit_codeTodm_don_vi")
+  work_survey_coordinated_vtvls_work_survey_coordinated_vtvls_target_unit_codeTodm_don_vi work_survey_coordinated_vtvls[] @relation("work_survey_coordinated_vtvls_target_unit_codeTodm_don_vi")
+  workbooks                                                                               workbooks[]
+
+  @@index([is_active], map: "idx_dm_don_vi_is_active")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dm_san_pham {
+  ma_sp_chuan         String          @id
+  ten_loai_sp         String
+  khoi_nganh_linh_vuc String
+  nhom_la_ma          String
+  phut_sp_chuan       Decimal         @db.Decimal(10, 2)
+  van_ban_xac_nhan    String?
+  trang_thai          String          @default("Đã xác nhận")
+  co_quan_xac_nhan    String?
+  ngay_hieu_luc       String?
+  pham_vi_ap_dung     String?
+  created_at          DateTime        @default(now()) @db.Timestamptz(6)
+  a2_cong_viec        a2_cong_viec[]
+  b1_khoi_luong       b1_khoi_luong[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dm_vtvl_khung_truong {
+  ma_danh_muc_nd232        String    @id
+  tt_toan_truong           Int
+  tt_trong_nhom            Int
+  nhom_vtvl_4              String
+  ten_khung_vtvl_truong    String
+  gioi_han_bac_nghe_nghiep String
+  ds_bac_cho_phep          Json      @default("[]")
+  cong_thuc_ten_cu_the     String
+  ma_so_chuc_danh          String?
+  ky_hieu_goi_y            String?
+  pham_vi_ap_dung          String?
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+  c1_vtvl                  c1_vtvl[]
+
+  @@index([nhom_vtvl_4], map: "idx_dm_vtvl_khung_nhom4")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model du_bao_5_nam {
+  ma_vtvl               String
+  nam_du_bao            Int
+  ma_don_vi             String
+  ty_le_thay_doi_kl_pct Decimal   @default(0) @db.Decimal(6, 2)
+  nhu_cau_fte_du_kien   Decimal   @default(1) @db.Decimal(10, 2)
+  thuyet_minh_du_bao    String?
+  dm_don_vi             dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl               c1_vtvl   @relation(fields: [ma_vtvl], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ma_vtvl, nam_du_bao])
+  @@index([ma_don_vi], map: "idx_du_bao_5_nam_ma_don_vi")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model k_kiem_tra {
+  ma_don_vi          String
+  stt_chi_tieu       Int
+  nhom_bieu_doi_soat String
+  noi_dung_kiem_tra  String
+  so_dong_loi        Int       @default(0)
+  ket_luan           String    @default("ĐẠT")
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi          dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ma_don_vi, stt_chi_tieu])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model migration_20261116210000_data_backup {
+  backup_id    BigInt   @id @default(autoincrement())
+  table_name   String
+  record_id    String
+  action_taken String
+  old_data     Json
+  backed_up_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([table_name, record_id, action_taken], map: "uq_mig_20261116210000_backup")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ra_soat_chua_du_can_cu {
+  id                 BigInt    @id @default(autoincrement())
+  ma_don_vi          String
+  loai_bang          String    @default("Chua_du_can_cu")
+  bieu_nguon         String
+  toa_do_o           String
+  ma_tham_chieu      String
+  noi_dung_phat_hien String
+  nguyen_nhan        String?
+  thoi_han_bo_sung   String?
+  dau_moi_phu_trach  String?
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi          dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_ra_soat_chua_du_can_cu_ma_don_vi")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model s_nhat_ky {
+  id                      BigInt    @id @default(autoincrement())
+  ma_don_vi               String
+  ten_don_vi              String
+  hanh_dong               String
+  chi_tiet                String
+  email_nguoi_thuc_hien   String?
+  chuc_vu_nguoi_thuc_hien String?
+  phien_ban               String    @default("v1")
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  bieu_cap_nhat           String?
+  gia_tri_cu              String?
+  gia_tri_moi             String?
+  dm_don_vi               dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_s_nhat_ky_ma_don_vi")
+  @@index([ma_don_vi, created_at(sort: Desc)], map: "idx_s_nhat_ky_ma_don_vi_created")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model schema_migrations {
+  id              Int      @id @default(autoincrement())
+  filename        String   @unique
+  checksum_sha256 String
+  execution_ms    Int      @default(0)
+  status          String   @default("success")
+  applied_by      String   @default(dbgenerated("CURRENT_USER"))
+  git_commit      String?
+  error_message   String?
+  applied_at      DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model session_participants {
+  id                String            @id
+  session_id        String
+  workbook_id       String
+  display_name      String?
+  email             String
+  email_normalized  String
+  role_label        String            @default("Chuyên viên")
+  started_at        DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime          @default(now()) @db.Timestamptz(6)
+  workbook_sessions workbook_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workbooks         workbooks         @relation(fields: [workbook_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([email_normalized], map: "idx_participants_email_norm")
+  @@index([workbook_id], map: "idx_participants_wb")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sldv_phan_bo_ngach {
+  id              String    @id
+  ma_don_vi       String
+  ma_ngach        String
+  ten_ngach       String
+  so_nguoi        Int       @default(1)
+  ma_vtvl_xep_vao String
+  la_dong_tach    Boolean   @default(false)
+  ghi_chu         String?
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi       dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  c1_vtvl         c1_vtvl   @relation(fields: [ma_vtvl_xep_vao], references: [ma_vtvl], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_sldv_phan_bo_ngach_ma_don_vi")
+  @@index([ma_vtvl_xep_vao], map: "idx_sldv_phan_bo_ngach_ma_vtvl")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sldv_quy_mo_don_vi {
+  ma_don_vi            String    @id
+  so_sinh_vien_quy_doi Int       @default(0)
+  so_nganh_ctdt        Int       @default(0)
+  so_lop_hoc_phan_nam  Int       @default(0)
+  so_phong_tn_xuong    Int       @default(0)
+  so_de_tai_nckh_nam   Int       @default(0)
+  so_van_ban_ho_so_nam Int       @default(0)
+  he_so_quy_mo         Decimal   @default(1.00) @db.Decimal(8, 2)
+  updated_at           DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi            dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model staff_work_tickets {
+  id                                                                         String                          @id @db.VarChar(100)
+  unit_code                                                                  String                          @db.VarChar(50)
+  owner_email                                                                String                          @db.VarChar(255)
+  owner_name                                                                 String                          @db.VarChar(255)
+  owner_title                                                                String                          @db.VarChar(100)
+  status                                                                     String                          @default("Nháp") @db.VarChar(20)
+  ma_nhiem_vu                                                                String                          @db.VarChar(50)
+  ma_cong_viec                                                               String                          @db.VarChar(100)
+  ten_cong_viec                                                              String
+  ma_vtvl                                                                    String                          @db.VarChar(50)
+  ma_vtvl_phoi_hop                                                           String?                         @default("") @db.VarChar(50)
+  san_pham                                                                   String?                         @default("")
+  chat_luong                                                                 String?                         @default("")
+  can_cu                                                                     String?                         @default("")
+  so_sp_nam                                                                  Decimal                         @default(0) @db.Decimal
+  nguon_so_lieu                                                              String?                         @default("")
+  phut_thuc_te                                                               Decimal                         @default(0) @db.Decimal
+  gio_bo_sung                                                                Decimal                         @default(0) @db.Decimal
+  coordinated_tasks                                                          Json?                           @default("[]")
+  created_at                                                                 DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at                                                                 DateTime                        @default(now()) @db.Timestamptz(6)
+  source_ticket_id                                                           String?                         @db.VarChar(100)
+  approved_by                                                                String?                         @db.VarChar(255)
+  approved_at                                                                DateTime?                       @db.Timestamptz(6)
+  is_merged_to_b1_b2                                                         Boolean                         @default(false)
+  unit_id                                                                    String?                         @db.VarChar(50)
+  owner_id                                                                   String?                         @db.VarChar(255)
+  submitted_at                                                               DateTime?                       @db.Timestamptz(6)
+  resubmitted_at                                                             DateTime?                       @db.Timestamptz(6)
+  revision_reason                                                            String?
+  revision_requested_at                                                      DateTime?                       @db.Timestamptz(6)
+  revision_requested_by                                                      String?                         @db.VarChar(255)
+  merged_at                                                                  DateTime?                       @db.Timestamptz(6)
+  merged_by                                                                  String?                         @db.VarChar(255)
+  b1_row_id                                                                  String?                         @db.VarChar(100)
+  b2_row_id                                                                  String?                         @db.VarChar(100)
+  a2_row_id                                                                  String?                         @db.VarChar(100)
+  current_version_no                                                         Int                             @default(0)
+  last_change_summary                                                        String?
+  is_test_data                                                               Boolean                         @default(false)
+  is_archived                                                                Boolean                         @default(false)
+  coordination_note                                                          String?
+  coordinated_vtvls                                                          Json                            @default("[]")
+  coordinated_task_rows                                                      coordinated_tasks[]
+  dm_don_vi_staff_work_tickets_unit_idTodm_don_vi                            dm_don_vi?                      @relation("staff_work_tickets_unit_idTodm_don_vi", fields: [unit_id], references: [ma_don_vi], onDelete: Restrict, onUpdate: NoAction, map: "fk_staff_work_tickets_unit_id")
+  user_accounts_staff_work_tickets_approved_byTouser_accounts                user_accounts?                  @relation("staff_work_tickets_approved_byTouser_accounts", fields: [approved_by], references: [email], map: "fk_tickets_approved_by")
+  user_accounts_staff_work_tickets_merged_byTouser_accounts                  user_accounts?                  @relation("staff_work_tickets_merged_byTouser_accounts", fields: [merged_by], references: [email], map: "fk_tickets_merged_by")
+  user_accounts_staff_work_tickets_revision_requested_byTouser_accounts      user_accounts?                  @relation("staff_work_tickets_revision_requested_byTouser_accounts", fields: [revision_requested_by], references: [email], map: "fk_tickets_revision_requested_by")
+  user_accounts_staff_work_tickets_owner_emailTouser_accounts                user_accounts                   @relation("staff_work_tickets_owner_emailTouser_accounts", fields: [owner_email], references: [email], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi_staff_work_tickets_unit_codeTodm_don_vi                          dm_don_vi                       @relation("staff_work_tickets_unit_codeTodm_don_vi", fields: [unit_code], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+  work_relationships_work_relationships_source_survey_idTostaff_work_tickets work_relationships[]            @relation("work_relationships_source_survey_idTostaff_work_tickets")
+  work_relationships_work_relationships_target_survey_idTostaff_work_tickets work_relationships[]            @relation("work_relationships_target_survey_idTostaff_work_tickets")
+  work_survey_coordinated_vtvls                                              work_survey_coordinated_vtvls[]
+  work_survey_merge_links                                                    work_survey_merge_links[]
+  work_survey_status_history                                                 work_survey_status_history[]
+  work_survey_versions                                                       work_survey_versions[]
+
+  @@unique([unit_code, ma_cong_viec], map: "uq_staff_ticket_unit_task")
+  @@index([owner_email], map: "idx_staff_tickets_owner")
+  @@index([status], map: "idx_staff_tickets_status")
+  @@index([ma_cong_viec], map: "idx_staff_tickets_task")
+  @@index([unit_code], map: "idx_staff_tickets_unit")
+  @@index([approved_at], map: "idx_swt_approved_at")
+  @@index([owner_id], map: "idx_swt_owner_id")
+  @@index([status], map: "idx_swt_status")
+  @@index([submitted_at], map: "idx_swt_submitted_at")
+  @@index([unit_id], map: "idx_swt_unit_id")
+  @@index([unit_code, status], map: "idx_swt_unit_status")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model t_tien_do {
+  ma_don_vi               String    @id
+  ten_don_vi              String
+  phien_ban               String    @default("v1")
+  so_nhiem_vu_a1          Int       @default(0)
+  so_cong_viec_a2         Int       @default(0)
+  so_vtvl_c1              Int       @default(0)
+  tong_fte_c3             Decimal   @default(0) @db.Decimal(10, 2)
+  email_nguoi_thuc_hien   String?
+  chuc_vu_nguoi_thuc_hien String?
+  trang_thai_ra_soat      String    @default("Đã khởi tạo trực tuyến")
+  du_lieu_ho_so_json      Json      @default("{}")
+  updated_at              DateTime  @default(now()) @db.Timestamptz(6)
+  dm_don_vi               dm_don_vi @relation(fields: [ma_don_vi], references: [ma_don_vi], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([ma_don_vi], map: "idx_t_tien_do_ma_don_vi")
+  @@index([updated_at(sort: Desc)], map: "idx_t_tien_do_updated_at")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_accounts {
+  email                                                                      String                  @id
+  display_name                                                               String                  @default("Cán bộ HCM-UTE")
+  unit_code                                                                  String                  @default("FIT")
+  unit_name_vi                                                               String
+  title                                                                      String                  @default("Chuyên viên")
+  role                                                                       String                  @default("editor")
+  auth_provider                                                              String                  @default("google")
+  avatar_url                                                                 String?
+  status                                                                     String                  @default("active")
+  created_at                                                                 DateTime                @default(now()) @db.Timestamptz(6)
+  last_active_at                                                             DateTime                @default(now()) @db.Timestamptz(6)
+  has_selected_unit                                                          Boolean?                @default(false)
+  password_hash                                                              String?                 @db.VarChar(255)
+  user_id                                                                    String?                 @db.VarChar(255)
+  full_name                                                                  String?                 @db.VarChar(255)
+  unit_id                                                                    String?                 @db.VarChar(50)
+  is_active                                                                  Boolean                 @default(true)
+  updated_at                                                                 DateTime                @default(now()) @db.Timestamptz(6)
+  staff_work_tickets_staff_work_tickets_approved_byTouser_accounts           staff_work_tickets[]    @relation("staff_work_tickets_approved_byTouser_accounts")
+  staff_work_tickets_staff_work_tickets_merged_byTouser_accounts             staff_work_tickets[]    @relation("staff_work_tickets_merged_byTouser_accounts")
+  staff_work_tickets_staff_work_tickets_revision_requested_byTouser_accounts staff_work_tickets[]    @relation("staff_work_tickets_revision_requested_byTouser_accounts")
+  staff_work_tickets_staff_work_tickets_owner_emailTouser_accounts           staff_work_tickets[]    @relation("staff_work_tickets_owner_emailTouser_accounts")
+  dm_don_vi_user_accounts_unit_idTodm_don_vi                                 dm_don_vi?              @relation("user_accounts_unit_idTodm_don_vi", fields: [unit_id], references: [ma_don_vi], onDelete: Restrict, onUpdate: NoAction, map: "fk_user_accounts_unit_id")
+  dm_don_vi_user_accounts_unit_codeTodm_don_vi                               dm_don_vi               @relation("user_accounts_unit_codeTodm_don_vi", fields: [unit_code], references: [ma_don_vi], onUpdate: NoAction)
+  user_vtvl_assignments                                                      user_vtvl_assignments[]
+
+  @@index([role], map: "idx_user_accounts_role")
+  @@index([status], map: "idx_user_accounts_status")
+  @@index([unit_code], map: "idx_user_accounts_unit")
+  @@index([unit_code], map: "idx_user_accounts_unit_code")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_vtvl_assignments {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_email    String        @db.VarChar(255)
+  unit_code     String        @db.VarChar(50)
+  ma_vtvl       String        @db.VarChar(80)
+  ten_vtvl      String?
+  is_active     Boolean       @default(true)
+  assigned_by   String?       @db.VarChar(255)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @default(now()) @db.Timestamptz(6)
+  dm_don_vi     dm_don_vi     @relation(fields: [unit_code], references: [ma_don_vi])
+  user_accounts user_accounts @relation(fields: [user_email], references: [email], onDelete: Cascade)
+
+  @@unique([user_email, unit_code, ma_vtvl], map: "uq_user_vtvl_assignment")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model work_relationships {
+  id                                                                         String              @id
+  source_survey_id                                                           String
+  source_task_code                                                           String
+  source_task_name                                                           String
+  source_mission_code                                                        String?             @default("")
+  host_unit_code                                                             String
+  host_unit_name                                                             String?             @default("")
+  host_vtvl_code                                                             String
+  host_vtvl_name                                                             String?             @default("")
+  target_unit_code                                                           String
+  target_unit_name                                                           String?             @default("")
+  target_vtvl_code                                                           String
+  target_vtvl_name                                                           String?             @default("")
+  coordination_note                                                          String?             @default("")
+  san_pham                                                                   String?             @default("")
+  target_survey_id                                                           String?
+  target_task_code                                                           String?
+  host_leader_approved                                                       Boolean             @default(false)
+  host_approved_by                                                           String?
+  host_approved_at                                                           DateTime?           @db.Timestamptz(6)
+  target_leader_approved                                                     Boolean             @default(false)
+  target_approved_by                                                         String?
+  target_approved_at                                                         DateTime?           @db.Timestamptz(6)
+  tcns_approved                                                              Boolean             @default(false)
+  tcns_approved_by                                                           String?
+  tcns_approved_at                                                           DateTime?           @db.Timestamptz(6)
+  relationship_status                                                        String              @default("unapproved")
+  created_at                                                                 DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at                                                                 DateTime            @default(now()) @db.Timestamptz(6)
+  dm_don_vi_work_relationships_host_unit_codeTodm_don_vi                     dm_don_vi           @relation("work_relationships_host_unit_codeTodm_don_vi", fields: [host_unit_code], references: [ma_don_vi], map: "fk_work_rel_host_unit")
+  staff_work_tickets_work_relationships_source_survey_idTostaff_work_tickets staff_work_tickets  @relation("work_relationships_source_survey_idTostaff_work_tickets", fields: [source_survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_work_rel_source_survey")
+  staff_work_tickets_work_relationships_target_survey_idTostaff_work_tickets staff_work_tickets? @relation("work_relationships_target_survey_idTostaff_work_tickets", fields: [target_survey_id], references: [id], onUpdate: NoAction, map: "fk_work_rel_target_survey")
+  dm_don_vi_work_relationships_target_unit_codeTodm_don_vi                   dm_don_vi           @relation("work_relationships_target_unit_codeTodm_don_vi", fields: [target_unit_code], references: [ma_don_vi], map: "fk_work_rel_target_unit")
+
+  @@index([target_unit_code, target_vtvl_code], map: "idx_work_relationships_target_vtvl")
+  @@index([host_unit_code, target_unit_code], map: "idx_work_relationships_units")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model work_survey_coordinated_vtvls {
+  id                                                                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id                                                           String             @db.VarChar(100)
+  version_no                                                          Int
+  task_row_id                                                         String             @db.VarChar(120)
+  host_unit_code                                                      String             @db.VarChar(50)
+  target_unit_code                                                    String             @db.VarChar(50)
+  target_vtvl_code                                                    String             @db.VarChar(80)
+  target_vtvl_name                                                    String?
+  coordination_note                                                   String?
+  is_latest_submitted                                                 Boolean            @default(true)
+  created_at                                                          DateTime           @default(now()) @db.Timestamptz(6)
+  dm_don_vi_work_survey_coordinated_vtvls_host_unit_codeTodm_don_vi   dm_don_vi          @relation("work_survey_coordinated_vtvls_host_unit_codeTodm_don_vi", fields: [host_unit_code], references: [ma_don_vi])
+  staff_work_tickets                                                  staff_work_tickets @relation(fields: [survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  dm_don_vi_work_survey_coordinated_vtvls_target_unit_codeTodm_don_vi dm_don_vi          @relation("work_survey_coordinated_vtvls_target_unit_codeTodm_don_vi", fields: [target_unit_code], references: [ma_don_vi])
+
+  @@unique([survey_id, version_no, task_row_id, target_unit_code, target_vtvl_code], map: "uq_survey_ver_task_target_vtvl")
+  @@index([survey_id, version_no(sort: Desc)], map: "idx_coord_vtvls_survey_ver")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model work_survey_merge_links {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id          String             @db.VarChar(100)
+  target_sheet       String             @db.VarChar(10)
+  target_record_id   String             @db.VarChar(100)
+  source_version     Int                @default(1)
+  merged_by          String             @db.VarChar(255)
+  merged_at          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  staff_work_tickets staff_work_tickets @relation(fields: [survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([survey_id, target_sheet, target_record_id], map: "uq_survey_target_sheet_record")
+  @@index([survey_id], map: "idx_wsml_survey_id")
+  @@index([target_sheet, target_record_id], map: "idx_wsml_target")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model work_survey_status_history {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id          String             @db.VarChar(100)
+  from_status        String?            @db.VarChar(50)
+  to_status          String             @db.VarChar(50)
+  action             String             @db.VarChar(50)
+  reason             String?
+  actor_id           String             @db.VarChar(255)
+  actor_role         String             @db.VarChar(50)
+  unit_id            String             @db.VarChar(50)
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  staff_work_tickets staff_work_tickets @relation(fields: [survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_wssh_created_at")
+  @@index([survey_id], map: "idx_wssh_survey_id")
+  @@index([unit_id], map: "idx_wssh_unit_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model work_survey_versions {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id             String             @db.VarChar(100)
+  version_no            Int
+  snapshot              Json
+  submitted_by          String             @db.VarChar(255)
+  submitted_at          DateTime?          @db.Timestamptz(6)
+  change_summary        String?
+  is_migration_baseline Boolean            @default(false)
+  created_at            DateTime           @default(now()) @db.Timestamptz(6)
+  staff_work_tickets    staff_work_tickets @relation(fields: [survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([survey_id, version_no], map: "uq_work_survey_versions_survey_version")
+  @@index([submitted_by], map: "idx_wsv_submitted_by")
+  @@index([survey_id, version_no(sort: Desc)], map: "idx_wsv_survey_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workbook_revisions {
+  id             String    @id
+  workbook_id    String
+  revision       Int
+  data           Json
+  checksum       String?
+  actor_email    String
+  actor_title    String?
+  session_id     String?
+  change_summary String?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  workbooks      workbooks @relation(fields: [workbook_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([workbook_id, revision], map: "uq_workbook_revisions_wb_rev")
+  @@index([workbook_id, revision(sort: Desc)], map: "idx_revisions_wb_rev")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workbook_sessions {
+  id                   String                 @id
+  workbook_id          String
+  access_scope         String                 @default("editor")
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  expires_at           DateTime               @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
+  revoked_at           DateTime?              @db.Timestamptz(6)
+  last_active_at       DateTime               @default(now()) @db.Timestamptz(6)
+  session_participants session_participants[]
+  workbooks            workbooks              @relation(fields: [workbook_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([last_active_at(sort: Desc)], map: "idx_workbook_sessions_active")
+  @@index([workbook_id], map: "idx_workbook_sessions_wb")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workbooks {
+  id                   String                 @id
+  unit_id              String
+  reporting_period     String                 @default("01/10/2025–30/9/2026")
+  status               String                 @default("draft")
+  current_revision     Int                    @default(1)
+  data                 Json                   @default("{}")
+  touched_cells        Json                   @default("[]")
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  created_by_session   String?
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_by_session   String?
+  is_deleted           Boolean                @default(false)
+  session_participants session_participants[]
+  workbook_revisions   workbook_revisions[]
+  workbook_sessions    workbook_sessions[]
+  dm_don_vi            dm_don_vi              @relation(fields: [unit_id], references: [ma_don_vi], onUpdate: NoAction)
+
+  @@unique([unit_id, reporting_period], map: "uq_workbooks_unit_period")
+  @@index([unit_id, reporting_period], map: "idx_workbooks_unit_period")
+  @@index([updated_at(sort: Desc)], map: "idx_workbooks_updated_at")
+}

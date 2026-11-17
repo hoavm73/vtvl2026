@@ -1399,81 +1399,79 @@ runTest('Ca 24: Chuẩn hóa luồng lưu dữ liệu UI/CTA -> API -> Supabase 
         await resetServerUnits();
         assert.strictEqual(getActiveHcmuteUnits().length, 39, 'Sau resetServerUnits phải khôi phục đủ 39 đơn vị chuẩn');
 
-        // 5. Kiểm thử RPC nguyên tử trên DB mock, backfill workRelationships từ JSONB & chống tự thêm lại TYT khi is_active=false trên dm_don_vi
-        const origFetch = global.fetch;
+        // 5. Kiểm thử RPC nguyên tử trên DB mock (Prisma/PostgreSQL hook), backfill workRelationships từ JSONB & chống tự thêm lại TYT khi is_active=false trên dm_don_vi
         const origIso = process.env.VTVL_ISOLATED_LOCAL_STORE;
-        const origUrl = process.env.SUPABASE_URL;
-        const origKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const { setDbTestHook } = require('./src/services/storage/prisma');
         try {
           process.env.VTVL_ISOLATED_LOCAL_STORE = 'false';
-          process.env.SUPABASE_URL = 'https://mock-supabase.local';
-          process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
 
           const rpcCalls = [];
           const mockWorkRelDb = new Map();
           let simulateDbRpcAbort = false;
 
-          global.fetch = async (url, init = {}) => {
-            const u = String(url);
-            if (u.includes('/rest/v1/rpc/rpc_sync_workbook_atomic')) {
-              const body = JSON.parse(init.body || '{}');
-              rpcCalls.push(body);
-              if (body.p_simulate_error || simulateDbRpcAbort) {
-                return new Response(JSON.stringify({ message: 'TX_ABORTED_MIDWAY' }), { status: 500 });
-              }
-              return new Response(JSON.stringify({ success: true, atomic_tx: true }), { status: 200 });
-            }
-            if (u.includes('/rest/v1/t_tien_do?ma_don_vi=eq.TCNS')) {
-              return new Response(JSON.stringify([{
-                ma_don_vi: 'TCNS',
-                phien_ban: 'v1',
-                du_lieu_ho_so_json: {
-                  customUnits: [
-                    { code: 'TYT', nameVi: 'Trạm Y tế', group: 'phong-ban' },
-                    { code: 'TCNS', nameVi: 'Phòng Tổ chức - Nhân sự', group: 'phong-ban' }
-                  ],
-                  workRelationships: [{
-                    id: 'wrel-jsonb-1',
-                    sourceSurveyId: 'tk-src-1',
-                    sourceTaskCode: 'TCNS.NV01.CV01',
-                    sourceTaskName: 'Phối hợp JSONB',
-                    sourceMissionCode: 'TCNS.NV01',
-                    hostUnitCode: 'TCNS',
-                    hostUnitName: 'Phòng Tổ chức - Nhân sự',
-                    hostVtvlCode: 'TCNS.QL01',
-                    targetUnitCode: 'QTTHTT',
-                    targetUnitName: 'Phòng Quản trị thương hiệu và Truyền thông',
-                    targetVtvlCode: 'QTTHTT.HT46',
-                    hostLeaderApproved: true,
-                    hostApprovedBy: 'tcns@hcmute.edu.vn',
-                    targetLeaderApproved: true,
-                    targetApprovedBy: 'leader.qtthtt@hcmute.edu.vn',
-                    tcnsApproved: true,
-                    tcnsApprovedBy: 'tcns@hcmute.edu.vn',
-                    approvalLevel: 'both_units_and_tcns',
-                    updatedAt: '2026-11-16T10:00:00.000Z'
-                  }]
+          setDbTestHook({
+            rpc: async (fnName, params) => {
+              if (fnName === 'rpc_sync_workbook_atomic') {
+                rpcCalls.push(params);
+                if (params.p_simulate_error || simulateDbRpcAbort) {
+                  return { ok: false, status: 500, errorText: 'TX_ABORTED_MIDWAY' };
                 }
-              }]), { status: 200 });
-            }
-            if (u.includes('/rest/v1/work_relationships')) {
-              if (!init.method || init.method === 'GET') {
-                return new Response(JSON.stringify(Array.from(mockWorkRelDb.values())), { status: 200 });
+                return { ok: true, status: 200, row: { success: true, atomic_tx: true } };
               }
-              if (init.method === 'POST') {
-                const rows = JSON.parse(init.body || '[]');
+              return { ok: true, status: 200, row: {} };
+            },
+            select: async (table) => {
+              if (table === 't_tien_do') {
+                return [{
+                  ma_don_vi: 'TCNS',
+                  phien_ban: 'v1',
+                  du_lieu_ho_so_json: {
+                    customUnits: [
+                      { code: 'TYT', nameVi: 'Trạm Y tế', group: 'phong-ban' },
+                      { code: 'TCNS', nameVi: 'Phòng Tổ chức - Nhân sự', group: 'phong-ban' }
+                    ],
+                    workRelationships: [{
+                      id: 'wrel-jsonb-1',
+                      sourceSurveyId: 'tk-src-1',
+                      sourceTaskCode: 'TCNS.NV01.CV01',
+                      sourceTaskName: 'Phối hợp JSONB',
+                      sourceMissionCode: 'TCNS.NV01',
+                      hostUnitCode: 'TCNS',
+                      hostUnitName: 'Phòng Tổ chức - Nhân sự',
+                      hostVtvlCode: 'TCNS.QL01',
+                      targetUnitCode: 'QTTHTT',
+                      targetUnitName: 'Phòng Quản trị thương hiệu và Truyền thông',
+                      targetVtvlCode: 'QTTHTT.HT46',
+                      hostLeaderApproved: true,
+                      hostApprovedBy: 'tcns@hcmute.edu.vn',
+                      targetLeaderApproved: true,
+                      targetApprovedBy: 'leader.qtthtt@hcmute.edu.vn',
+                      tcnsApproved: true,
+                      tcnsApprovedBy: 'tcns@hcmute.edu.vn',
+                      approvalLevel: 'both_units_and_tcns',
+                      updatedAt: '2026-11-16T10:00:00.000Z'
+                    }]
+                  }
+                }];
+              }
+              if (table === 'work_relationships') {
+                return Array.from(mockWorkRelDb.values());
+              }
+              if (table === 'dm_don_vi') {
+                return [
+                  { ma_don_vi: 'TCNS', ten_don_vi_vi: 'Phòng Tổ chức - Nhân sự', khoi_don_vi: 'phong-ban', is_active: true },
+                  { ma_don_vi: 'TYT', ten_don_vi_vi: 'Trạm Y tế', khoi_don_vi: 'phong-ban', is_active: false }
+                ];
+              }
+              return [];
+            },
+            upsert: async (table, rows) => {
+              if (table === 'work_relationships') {
                 for (const r of rows) mockWorkRelDb.set(r.id, r);
-                return new Response('', { status: 201 });
               }
+              return { ok: true, status: 201 };
             }
-            if (u.includes('/rest/v1/dm_don_vi?order=ma_don_vi.asc')) {
-              return new Response(JSON.stringify([
-                { ma_don_vi: 'TCNS', ten_don_vi_vi: 'Phòng Tổ chức - Nhân sự', khoi_don_vi: 'phong-ban', is_active: true },
-                { ma_don_vi: 'TYT', ten_don_vi_vi: 'Trạm Y tế', khoi_don_vi: 'phong-ban', is_active: false }
-              ]), { status: 200 });
-            }
-            return new Response('[]', { status: 200 });
-          };
+          });
 
           const { syncWorkbookAtomicOrFallback } = require('./src/services/storage/server-workbook-relational-sync');
           const { syncWorkRelationshipsFromSupabase, resetWorkRelationshipsMemoryStore, getWorkRelationshipById } = require('./src/services/storage/server-work-relationship-store');
@@ -1513,10 +1511,8 @@ runTest('Ca 24: Chuẩn hóa luồng lưu dữ liệu UI/CTA -> API -> Supabase 
           assert.strictEqual(syncedUnits.some((u) => u.code === 'TYT'), false, 'Đơn vị is_active=false trên dm_don_vi không được bị backfill từ customUnits thêm lại');
           await resetServerUnits();
         } finally {
-          global.fetch = origFetch;
+          setDbTestHook(null);
           process.env.VTVL_ISOLATED_LOCAL_STORE = origIso;
-          if (origUrl === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = origUrl;
-          if (origKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = origKey;
         }
       })().catch((e) => { console.error(e); process.exit(1); });
     `;

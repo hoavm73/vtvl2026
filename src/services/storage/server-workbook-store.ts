@@ -74,7 +74,7 @@ function loadStore(): Map<string, ServerWorkbook> {
       list.forEach((wb) => { if (deleted.has(wb.id) || deleted.has(wb.unitId)) wb.isDeleted = true; memoryWorkbooks!.set(wb.id, wb); });
     }
   } catch { /* ignore */ }
-  if (memoryWorkbooks.size === 0 && !process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
+  if (memoryWorkbooks.size === 0 && !process.env.DATABASE_URL) {
     try {
       getInitialSeedWorkbooks().forEach((wb) => { if (!deleted.has(wb.id) && !deleted.has(wb.unitId)) memoryWorkbooks!.set(wb.id, wb); });
       persistStore();

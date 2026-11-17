@@ -6,14 +6,6 @@ import { normalizeEmail } from './server-workbook-store';
 
 const ADMIN_COOKIE_NAME = 'hcmute_vtvl_admin_token_v2';
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SUPABASE_PUBLIC_KEY = (
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  ''
-).trim();
-
 export interface AdminSessionPayload {
   role: 'admin';
   authenticatedAt: string;
@@ -28,13 +20,11 @@ export function verifyAdminPassword(password: string): boolean {
   if (!password) return false;
   const trimmed = password.trim();
 
-  // 1. Kiểm tra mật khẩu quản trị từ biến môi trường (nếu có)
   const envAdminPassword = (process.env.ADMIN_DEFAULT_PASSWORD || '').trim();
   if (envAdminPassword && trimmed === envAdminPassword) {
     return true;
   }
 
-  // 2. Đối soát an toàn với tài khoản tcns@hcmute.edu.vn từ bảng user_accounts
   try {
     const acc = getUserAccountByEmail('tcns@hcmute.edu.vn');
     if (acc?.passwordHash && verifyPasswordHash(trimmed, acc.passwordHash)) {
@@ -58,12 +48,6 @@ export function generateAdminToken(): string {
   return `${body}.${signature}`;
 }
 
-/**
- * Chuẩn hóa mốc hết hạn token về mili-giây (Unix Epoch ms).
- * - expiresAt: định dạng nội bộ HCM-UTE VTVL 360 (mili-giây, >= 1e12).
- * - exp: chuẩn JWT RFC 7519 (giây, 1e9..1e11) hoặc mili-giây (>= 1e12).
- * Từ chối mọi giá trị không phải number hữu hạn, <= 0, hoặc vượt quá 366 ngày kể từ hiện tại.
- */
 export function normalizeTokenExpirationMs(rawPayload: Record<string, unknown>, nowMs = Date.now()): number | null {
   const hasExpiresAt = rawPayload.expiresAt !== undefined && rawPayload.expiresAt !== null;
   const hasExp = rawPayload.exp !== undefined && rawPayload.exp !== null;
@@ -74,13 +58,12 @@ export function normalizeTokenExpirationMs(rawPayload: Record<string, unknown>, 
     return null;
   }
 
-  // Nếu dùng trường exp chuẩn JWT (đơn vị giây: 1_000_000_000 .. 99_999_999_999), đổi sang mili-giây
   const expMs = !hasExpiresAt && rawVal >= 1_000_000_000 && rawVal < 100_000_000_000
     ? Math.trunc(rawVal * 1000)
     : Math.trunc(rawVal);
 
-  const minValidEpochMs = 1_577_836_800_000; // 2020-01-01T00:00:00Z
-  const maxValidEpochMs = nowMs + 366 * 24 * 60 * 60 * 1000; // Tối đa 1 năm kể từ hiện tại
+  const minValidEpochMs = 1_577_836_800_000;
+  const maxValidEpochMs = nowMs + 366 * 24 * 60 * 60 * 1000;
   if (expMs < minValidEpochMs || expMs > maxValidEpochMs) {
     return null;
   }
@@ -115,28 +98,39 @@ export function verifyAdminToken(token: string): AdminSessionPayload | null {
 }
 
 export async function verifySupabaseAccessTokenEmail(token?: string | null): Promise<string | null> {
-  if (!token || !SUPABASE_URL || !SUPABASE_PUBLIC_KEY) return null;
+  if (!token) return null;
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        apikey: SUPABASE_PUBLIC_KEY,
-        Authorization: `Bearer ${token.trim()}`
-      },
-      cache: 'no-store'
-    });
-    if (!res.ok) return null;
-    const user = await res.json();
-    const email = normalizeEmail(user?.email || '');
-    return email || null;
+    const parts = token.trim().split('.');
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      const secret = getAuthSecret();
+      const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest('base64url');
+      if (safeCompareSignature(parts[1], expected)) {
+        const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8')) as Record<string, unknown>;
+        const expMs = normalizeTokenExpirationMs(payload);
+        if (expMs && Date.now() < expMs && typeof payload.email === 'string') {
+          return normalizeEmail(payload.email) || null;
+        }
+      }
+    }
   } catch {
-    return null;
+    // ignore
   }
+  return null;
 }
 
 export async function isVerifiedAdminAccount(email?: string | null, accessToken?: string | null): Promise<boolean> {
   if (!email) return false;
-  const verifiedEmail = await verifySupabaseAccessTokenEmail(accessToken);
-  if (!verifiedEmail || verifiedEmail !== normalizeEmail(email)) return false;
+  const normReq = normalizeEmail(email);
+  let verifiedEmail = await verifySupabaseAccessTokenEmail(accessToken);
+  if (!verifiedEmail) {
+    try {
+      const { getServerSession } = await import('next-auth');
+      const { authOptions } = await import('@/services/auth/auth-options');
+      const sess = await getServerSession(authOptions);
+      if (sess?.user?.email) verifiedEmail = normalizeEmail(sess.user.email);
+    } catch { /* ignore */ }
+  }
+  if (!verifiedEmail || verifiedEmail !== normReq) return false;
   await syncAccountsFromSupabase();
   const acc = getUserAccountByEmail(verifiedEmail);
   return Boolean(acc && acc.role === 'admin' && acc.status === 'active');
@@ -147,6 +141,17 @@ export async function getServerAdminAuth(reqEmail?: string, accessToken?: string
     const cookieStore = await cookies();
     const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
     if (token && verifyAdminToken(token) !== null) return true;
+  } catch { /* ignore */ }
+
+  try {
+    const { getServerSession } = await import('next-auth');
+    const { authOptions } = await import('@/services/auth/auth-options');
+    const sess = await getServerSession(authOptions);
+    if (sess?.user?.email) {
+      await syncAccountsFromSupabase();
+      const acc = getUserAccountByEmail(sess.user.email);
+      if (acc && acc.role === 'admin' && acc.status === 'active') return true;
+    }
   } catch { /* ignore */ }
 
   if (reqEmail && accessToken) {

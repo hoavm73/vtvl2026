@@ -5,12 +5,11 @@ import { registerCacheInvalidator } from './server-file-lock';
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { resetVersionMemoryStore } from './server-ticket-version-store';
 import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
+import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const PROJECTION_FILE = path.join(DATA_DIR, 'work_survey_coordinated_vtvls.json');
 const VERSIONS_FILE = path.join(DATA_DIR, 'work_survey_versions.json');
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 export interface SubmittedCoordinatedVtvlRow {
   id: string;
@@ -137,21 +136,14 @@ export function removeCoordinationDataForSurvey(surveyId: string): void {
   persistCoordinationState(state);
 }
 
-/** Đồng bộ toàn bộ snapshot phiên bản phiếu từ Supabase cho môi trường Serverless cold start. */
+/** Đồng bộ toàn bộ snapshot phiên bản phiếu từ PostgreSQL qua Prisma. */
 export async function syncVersionsCacheFromSupabase(): Promise<void> {
-  if (isIsolatedLocalMode() || !SUPABASE_URL || !SERVICE_KEY) return;
+  if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/work_survey_versions?order=version_no.asc`, {
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      cache: 'no-store'
+    const rows = await prisma.work_survey_versions.findMany({
+      orderBy: { version_no: 'asc' }
     });
-    if (!res.ok) return;
-    const rows = (await res.json()) as Record<string, unknown>[];
-    if (!Array.isArray(rows) || rows.length === 0) return;
+    if (!rows.length) return;
 
     let currentMap: Record<string, WorkSurveyVersion[]> = {};
     try {
@@ -172,9 +164,9 @@ export async function syncVersionsCacheFromSupabase(): Promise<void> {
         id: String(r.id || `ver-${surveyId}-${r.version_no}`),
         surveyId,
         versionNo: Number(r.version_no) || 1,
-        snapshot: (r.snapshot as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
+        snapshot: (r.snapshot as unknown as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
         submittedBy: String(r.submitted_by || ''),
-        submittedAt: r.submitted_at ? String(r.submitted_at) : null,
+        submittedAt: toIsoString(r.submitted_at) || null,
         changeSummary: r.change_summary ? String(r.change_summary) : undefined,
         isMigrationBaseline: Boolean(r.is_migration_baseline)
       });
@@ -189,6 +181,6 @@ export async function syncVersionsCacheFromSupabase(): Promise<void> {
     fs.writeFileSync(VERSIONS_FILE, JSON.stringify(merged, null, 2), 'utf8');
     resetVersionMemoryStore();
   } catch {
-    // ignore transient network fallback
+    // ignore transient DB fallback
   }
 }

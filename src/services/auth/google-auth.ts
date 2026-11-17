@@ -1,14 +1,10 @@
 'use client';
 
+import { signIn, signOut } from 'next-auth/react';
 import {
   OperatorSession,
-  normalizeEmail,
-  saveCurrentOperatorSession,
-  clearCurrentOperatorSession,
-  getCurrentOperatorSession,
-  getAllEmailSessions
+  clearCurrentOperatorSession
 } from '@/services/telemetry/operator-session';
-import { getRoleFromTitle, isEmailAlreadyOnboarded, markEmailAsOnboarded } from '@/services/auth/account-client';
 
 export interface GoogleLoginCheckResult {
   ok: boolean;
@@ -17,8 +13,7 @@ export interface GoogleLoginCheckResult {
 }
 
 /**
- * Khởi chạy đăng nhập Google OAuth qua API máy chủ Next.js (/api/auth/google)
- * Giúp ẩn hoàn toàn khóa Supabase và cấu hình OAuth khỏi trình duyệt
+ * Khởi chạy đăng nhập Google OAuth qua NextAuth (/api/auth/signin/google)
  */
 export async function startGoogleOAuthLogin(redirectPath = '/bang-tinh'): Promise<GoogleLoginCheckResult> {
   if (typeof window === 'undefined') {
@@ -26,129 +21,43 @@ export async function startGoogleOAuthLogin(redirectPath = '/bang-tinh'): Promis
   }
 
   try {
-    const query = `redirect=${encodeURIComponent(redirectPath)}&origin=${encodeURIComponent(window.location.origin)}`;
-    const res = await fetch(`/api/auth/google?${query}`, { cache: 'no-store' });
-    const data = await res.json().catch(() => ({}));
+    const safePath = redirectPath.startsWith('/') ? redirectPath : '/bang-tinh';
+    const checkRes = await fetch(`/api/auth/google?redirect=${encodeURIComponent(safePath)}`, {
+      cache: 'no-store'
+    });
+    const checkData = await checkRes.json().catch(() => ({}));
 
-    if (res.ok && data.ok && data.authorizeUrl) {
-      window.location.href = data.authorizeUrl;
-      return { ok: true };
+    if (!checkRes.ok || !checkData.ok) {
+      return {
+        ok: false,
+        reason: checkData.reason || 'MISSING_CONFIG',
+        message:
+          checkData.message ||
+          'Chưa cấu hình GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET trên máy chủ.'
+      };
     }
 
-    return {
-      ok: false,
-      reason: data.reason || 'NETWORK_ERROR',
-      message: data.message || 'Không thể khởi tạo phiên đăng nhập Google từ máy chủ.'
-    };
+    await signIn('google', { callbackUrl: safePath });
+    return { ok: true };
   } catch {
     return {
       ok: false,
       reason: 'NETWORK_ERROR',
-      message: 'Lỗi kết nối đến máy chủ xác thực (/api/auth/google).'
+      message: 'Lỗi kết nối đến máy chủ xác thực NextAuth (/api/auth).'
     };
   }
 }
 
-/**
- * Xử lý token trả về từ Supabase (#access_token=...) hoặc Google OAuth (#id_token=...)
- */
-export function consumeGoogleOAuthCallback(defaultUnitCode = 'CNTT'): OperatorSession | null {
-  if (typeof window === 'undefined') return null;
-  const rawHash = window.location.hash;
-  if (!rawHash || (!rawHash.includes('access_token=') && !rawHash.includes('id_token='))) {
-    return null;
-  }
-
-  const params = new URLSearchParams(rawHash.slice(1));
-  const token = params.get('access_token') || params.get('id_token');
-  if (!token) return null;
-
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const jsonStr = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`)
-        .join('')
-    );
-    const payload = JSON.parse(jsonStr);
-
-    const email = normalizeEmail(payload.email || '');
-    if (!email) return null;
-
-    const existing = getCurrentOperatorSession();
-    const prevRecord = getAllEmailSessions().find((s) => s.email === email);
-    const isSameEmail = existing && existing.email === email;
-    const isTcnsAdmin = email === 'tcns@hcmute.edu.vn';
-
-    if (!isTcnsAdmin && typeof window !== 'undefined') {
-      fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
-    }
-
-    const alreadyOnboarded =
-      isTcnsAdmin ||
-      isEmailAlreadyOnboarded(email) ||
-      Boolean(prevRecord) ||
-      Boolean(existing?.hasSelectedUnit) ||
-      existing?.role === 'unit_leader' ||
-      existing?.role === 'admin' ||
-      (Boolean(existing?.unitCode) && existing?.unitCode !== defaultUnitCode);
-
-    const hasSelectedUnit = alreadyOnboarded;
-    const unitCode = isTcnsAdmin
-      ? 'TCNS'
-      : (isSameEmail && existing?.unitCode) || prevRecord?.unitCode || defaultUnitCode;
-    const title = isTcnsAdmin
-      ? 'Trưởng phòng'
-      : (isSameEmail && existing?.title) || prevRecord?.title || 'Chuyên viên';
-
-    if (hasSelectedUnit) {
-      markEmailAsOnboarded(email);
-    }
-
-    const displayName =
-      payload.user_metadata?.full_name ||
-      payload.user_metadata?.name ||
-      payload.name ||
-      email.split('@')[0];
-    const avatarUrl =
-      payload.user_metadata?.avatar_url ||
-      payload.user_metadata?.picture ||
-      payload.picture ||
-      '';
-
-    const prevRole = prevRecord?.title ? getRoleFromTitle(prevRecord.title) : undefined;
-    const resolvedRole = isTcnsAdmin
-      ? 'admin'
-      : (isSameEmail && existing?.role ? existing.role : prevRole || 'staff');
-
-    const session = saveCurrentOperatorSession(email, unitCode, title, {
-      displayName,
-      avatarUrl,
-      authProvider: 'google',
-      accessToken: token,
-      role: resolvedRole,
-      hasSelectedUnit
-    });
-
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    return session;
-  } catch {
-    return null;
-  }
+export function consumeGoogleOAuthCallback(): OperatorSession | null {
+  return null;
 }
 
 export function signOutGoogleSession(): void {
   if (typeof window !== 'undefined') {
-    if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('id_token='))) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
     fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
     fetch('/api/admin/c1-lock', { method: 'DELETE' }).catch(() => {});
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    signOut({ redirect: false }).catch(() => {});
   }
   clearCurrentOperatorSession();
 }
-

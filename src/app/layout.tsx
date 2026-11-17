@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AppShell } from '@/components/layout/AppShell';
+import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -23,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col overflow-x-clip relative">
-        <AppShell>{children}</AppShell>
+        <AuthSessionProvider>
+          <AppShell>{children}</AppShell>
+        </AuthSessionProvider>
       </body>
     </html>
   );

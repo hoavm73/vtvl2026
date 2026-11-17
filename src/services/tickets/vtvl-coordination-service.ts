@@ -20,6 +20,8 @@ import {
 } from '@/services/storage/server-coordination-store';
 import { getOrCreateWorkbook } from '@/services/storage/server-workbook-store';
 import { isIsolatedLocalMode } from '@/services/storage/server-ticket-db';
+import { isDatabaseConfigured, prisma } from '@/services/storage/prisma';
+import { pgUpsertRows } from '@/services/storage/postgres-rest-compat';
 import {
   extractEffectiveCoordinatedVtvls,
   makeCompositeVtvlKey,
@@ -27,9 +29,6 @@ import {
   resolveUnitCodeSafe,
   resolveUnitNameSafe
 } from './vtvl-coordination-helpers';
-
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 export function getSubmittedCoordinationHistory(surveyId: string): SubmittedCoordinatedVtvlRow[] {
   return [...(loadCoordinationState().submittedRowsBySurvey[surveyId] || [])].sort(
@@ -84,43 +83,32 @@ export async function syncSubmittedCoordinationProjection(
   state.submittedRowsBySurvey[ticket.id] = [...existing, ...newRows];
   persistCoordinationState(state);
 
-  if (!isIsolatedLocalMode() && SUPABASE_URL && SERVICE_KEY) {
+  if (!isIsolatedLocalMode() && isDatabaseConfigured()) {
     try {
-      const headers = {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        'Content-Type': 'application/json'
-      };
-      await fetch(`${SUPABASE_URL}/rest/v1/work_survey_coordinated_vtvls?survey_id=eq.${encodeURIComponent(ticket.id)}`, {
-        method: 'PATCH',
-        headers: { ...headers, Prefer: 'return=minimal' },
-        body: JSON.stringify({ is_latest_submitted: false })
+      await prisma.work_survey_coordinated_vtvls.updateMany({
+        where: { survey_id: ticket.id },
+        data: { is_latest_submitted: false }
       });
       if (newRows.length > 0) {
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/work_survey_coordinated_vtvls?on_conflict=survey_id,version_no,task_row_id,target_unit_code,target_vtvl_code`,
-          {
-            method: 'POST',
-            headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
-            body: JSON.stringify(
-              newRows.map((r) => ({
-                survey_id: r.surveyId,
-                version_no: r.versionNo,
-                task_row_id: r.taskRowId,
-                host_unit_code: r.hostUnitCode,
-                target_unit_code: r.targetUnitCode,
-                target_vtvl_code: r.targetVtvlCode,
-                target_vtvl_name: r.targetVtvlName || null,
-                coordination_note: r.coordinationNote || null,
-                is_latest_submitted: true,
-                created_at: r.createdAt
-              }))
-            )
-          }
+        await pgUpsertRows(
+          'work_survey_coordinated_vtvls',
+          newRows.map((r) => ({
+            survey_id: r.surveyId,
+            version_no: r.versionNo,
+            task_row_id: r.taskRowId,
+            host_unit_code: r.hostUnitCode,
+            target_unit_code: r.targetUnitCode,
+            target_vtvl_code: r.targetVtvlCode,
+            target_vtvl_name: r.targetVtvlName || null,
+            coordination_note: r.coordinationNote || null,
+            is_latest_submitted: true,
+            created_at: r.createdAt
+          })),
+          'survey_id,version_no,task_row_id,target_unit_code,target_vtvl_code'
         );
       }
     } catch {
-      // Fallback an toàn vào dữ liệu cục bộ nếu migration chưa chạy trên Supabase
+      // Fallback an toàn vào dữ liệu cục bộ nếu bảng chưa đồng bộ
     }
   }
 

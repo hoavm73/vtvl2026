@@ -212,7 +212,38 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
     }
   }
 
-  // 5. Kiểm tra tài khoản Quản trị qua cookie
+  // 5. Kiểm tra phiên NextAuth (Google OAuth + PrismaAdapter)
+  try {
+    const { getServerSession } = await import('next-auth');
+    const { authOptions } = await import('@/services/auth/auth-options');
+    const nextAuthSess = await getServerSession(authOptions);
+    if (nextAuthSess?.user?.email) {
+      const sessEmail = normalizeEmail(nextAuthSess.user.email);
+      await syncAccountsFromSupabase();
+      const acc = getUserAccountByEmail(sessEmail);
+      if (!acc && process.env.NODE_ENV === 'production' && sessEmail !== 'tcns@hcmute.edu.vn') {
+        return unauthContext;
+      }
+      if (acc && acc.status === 'suspended') {
+        return { ...unauthContext, isSuspended: true, email: sessEmail };
+      }
+      const role = acc?.role || nextAuthSess.user.role || (sessEmail === 'tcns@hcmute.edu.vn' ? 'admin' : 'staff');
+      const unitCode = (acc?.unitCode || nextAuthSess.user.unitCode || 'CNTT').toUpperCase();
+      const isAdmin = role === 'admin' || sessEmail === 'tcns@hcmute.edu.vn';
+      return {
+        isAuthenticated: true,
+        isSuspended: false,
+        email: sessEmail,
+        role,
+        unitCode,
+        isAdmin,
+        isUnitLeader: role === 'unit_leader',
+        isStaff: role === 'staff'
+      };
+    }
+  } catch { /* ignore outside request context */ }
+
+  // 6. Kiểm tra tài khoản Quản trị qua cookie
   try {
     const cookieStore = await cookies();
     const adminToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;

@@ -30,3 +30,4 @@ jobs:
             cd "$TARGET_DIR"
             chmod +x deploy.sh
             ./deploy.sh
+

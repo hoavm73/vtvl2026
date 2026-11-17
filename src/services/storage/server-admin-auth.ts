@@ -125,8 +125,8 @@ export async function isVerifiedAdminAccount(email?: string | null, accessToken?
   if (!verifiedEmail) {
     try {
       const { getServerSession } = await import('next-auth');
-      const { authOptions } = await import('@/services/auth/auth-options');
-      const sess = await getServerSession(authOptions);
+      const { getAuthOptions } = await import('@/services/auth/auth-options');
+      const sess = await getServerSession(getAuthOptions());
       if (sess?.user?.email) verifiedEmail = normalizeEmail(sess.user.email);
     } catch { /* ignore */ }
   }

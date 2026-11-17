@@ -16,6 +16,8 @@ COPY . .
 ARG NEXT_PUBLIC_APP_URL="https://kekhaivtvl.hcmute.edu.vn"
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy?schema=public"
+ENV ADMIN_SERVER_SECRET="build-time-only-placeholder-secret-not-used-in-runner"
+ENV NEXTAUTH_SECRET="build-time-only-placeholder-secret-not-used-in-runner"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
@@ -51,3 +53,4 @@ USER nextjs
 EXPOSE 3360
 
 CMD ["node", "server.js"]
+

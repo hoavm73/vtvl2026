@@ -73,3 +73,4 @@ CREATE TABLE IF NOT EXISTS "VerificationToken" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_token_key" ON "VerificationToken"("token");
 CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+

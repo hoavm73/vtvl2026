@@ -16,3 +16,4 @@ if [ -n "$REMOTE_SHA" ] && [ "$REMOTE_SHA" != "$DEPLOYED_SHA" ]; then
   echo "[$(date -Iseconds)] Phát hiện commit mới trên hoavm73/vtvl2026 ($DEPLOYED_SHA -> $REMOTE_SHA). Bắt đầu auto-deploy..."
   bash "$WORK_DIR/deploy.sh"
 fi
+

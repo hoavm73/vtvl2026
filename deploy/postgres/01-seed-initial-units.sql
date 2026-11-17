@@ -54,3 +54,4 @@ INSERT INTO public.dm_don_vi (
   ('CDT', 'Công đoàn Trường', 'University Trade Union', 'dang-doanthe', 'congdoan.hcmute.edu.vn', 'Chủ tịch Công đoàn Trường', 'President of the University Trade Union', 6),
   ('DTN', 'Đoàn Thanh niên - Hội Sinh viên', 'Ho Chi Minh Communist Youth Union & Students Association', 'dang-doanthe', 'doanthanhnien.hcmute.edu.vn', 'Bí thư Đoàn Thanh niên', 'Secretary of the Ho Chi Minh Communist Youth Union', 9)
 ON CONFLICT (ma_don_vi) DO NOTHING;
+

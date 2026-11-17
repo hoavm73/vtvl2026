@@ -215,8 +215,8 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
   // 5. Kiểm tra phiên NextAuth (Google OAuth + PrismaAdapter)
   try {
     const { getServerSession } = await import('next-auth');
-    const { authOptions } = await import('@/services/auth/auth-options');
-    const nextAuthSess = await getServerSession(authOptions);
+    const { getAuthOptions } = await import('@/services/auth/auth-options');
+    const nextAuthSess = await getServerSession(getAuthOptions());
     if (nextAuthSess?.user?.email) {
       const sessEmail = normalizeEmail(nextAuthSess.user.email);
       await syncAccountsFromSupabase();

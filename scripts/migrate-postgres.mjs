@@ -274,3 +274,4 @@ runMigrations().catch((err) => {
   console.error('❌ [MIGRATE FATAL]', err instanceof Error ? err.message : err);
   process.exit(1);
 });
+

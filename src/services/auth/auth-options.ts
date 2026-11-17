@@ -27,7 +27,7 @@ const ALLOWED_DOMAINS = (process.env.GOOGLE_ALLOWED_HD || '')
   .filter(Boolean);
 
 export function isGoogleOAuthConfigured(): boolean {
-  return Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+  return Boolean((process.env.GOOGLE_CLIENT_ID || '').trim() && (process.env.GOOGLE_CLIENT_SECRET || '').trim());
 }
 
 function normalizeRole(role?: string | null, isTcnsAdmin = false): UserRole {
@@ -36,33 +36,39 @@ function normalizeRole(role?: string | null, isTcnsAdmin = false): UserRole {
   return 'staff';
 }
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  secret: (process.env.NEXTAUTH_SECRET || '').trim() || getAuthSecret(),
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login'
-  },
-  providers: isGoogleOAuthConfigured()
-    ? [
-        GoogleProvider({
-          clientId: GOOGLE_CLIENT_ID,
-          clientSecret: GOOGLE_CLIENT_SECRET,
-          allowDangerousEmailAccountLinking: true,
-          authorization: {
-            params: {
-              prompt: 'select_account',
-              access_type: 'offline',
-              response_type: 'code'
-            }
-          }
-        })
-      ]
-    : [],
+export function getAuthOptions(): NextAuthOptions {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+  const secret = (process.env.NEXTAUTH_SECRET || '').trim() || getAuthSecret();
+
+  return {
+    adapter: PrismaAdapter(prisma),
+    secret,
+    session: {
+      strategy: 'jwt',
+      maxAge: 30 * 24 * 60 * 60
+    },
+    pages: {
+      signIn: '/login',
+      error: '/login'
+    },
+    providers:
+      clientId && clientSecret
+        ? [
+            GoogleProvider({
+              clientId,
+              clientSecret,
+              allowDangerousEmailAccountLinking: true,
+              authorization: {
+                params: {
+                  prompt: 'select_account',
+                  access_type: 'offline',
+                  response_type: 'code'
+                }
+              }
+            })
+          ]
+        : [],
   callbacks: {
     async signIn({ user }) {
       const email = normalizeEmail(user?.email || '');
@@ -130,4 +136,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   }
-};
+  };
+}
+

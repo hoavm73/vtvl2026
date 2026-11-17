@@ -31,3 +31,4 @@ declare module 'next-auth/jwt' {
     sessionToken?: string;
   }
 }
+

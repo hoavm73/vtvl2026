@@ -28,7 +28,7 @@ console.log('================================================================');
 // PHẦN 1: KIỂM THỬ TĨNH TỆP MIGRATION SUPABASE RLS HARDENED
 // -----------------------------------------------------------------------------
 runTest('1. Kiểm tra tồn tại tệp Migration 20261114_hardened_rls_data_protection.sql', () => {
-  const migPath = path.join(root, 'supabase/migrations/20261114_hardened_rls_data_protection.sql');
+  const migPath = path.join(root, 'trash/supabase/migrations/20261114_hardened_rls_data_protection.sql');
   assert.ok(fs.existsSync(migPath), 'Tệp migration bảo mật P0 phải tồn tại');
   const content = fs.readFileSync(migPath, 'utf8');
 

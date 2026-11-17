@@ -162,7 +162,7 @@ runTest('4. Kiểm tra Danh mục chính xác 39 đơn vị hoạt động & Khu
 
 // 5. Kiểm tra Lược đồ Cơ sở dữ liệu quan hệ 22 bảng & Trigger kiểm soát bậc nghề nghiệp
 runTest('5. Kiểm tra Lược đồ CSDL quan hệ 22 bảng (PostgreSQL / Supabase Migration)', () => {
-  const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20261107_init_vtvl_hcmute.sql'), 'utf8');
+  const sql = fs.readFileSync(path.join(root, 'trash/supabase/migrations/20261107_init_vtvl_hcmute.sql'), 'utf8');
   const expectedTables = [
     'dm_don_vi', 'dm_chuc_danh_tt31', 'dm_vtvl_khung_truong', 'dm_san_pham',
     'c1_vtvl', 'a1_nhiem_vu', 'a2_cong_viec', 'b1_khoi_luong',
@@ -188,7 +188,7 @@ runTest('5. Kiểm tra Lược đồ CSDL quan hệ 22 bảng (PostgreSQL / Supa
   const bamGio = fs.readFileSync(path.join(root, 'src/app/bam-gio/page.tsx'), 'utf8');
   const mergeSec = fs.readFileSync(path.join(root, 'src/components/tao-tep/MergeStepSection.tsx'), 'utf8');
   const raSoat = fs.readFileSync(path.join(root, 'src/app/ra-soat/page.tsx'), 'utf8');
-  const supaSync = fs.readFileSync(path.join(root, 'src/services/supabase/vtvl-sync.ts'), 'utf8');
+  const supaSync = fs.readFileSync(path.join(root, 'src/services/storage/vtvl-sync.ts'), 'utf8');
 
   assert.ok(activityLog.includes('timeSessions') && activityLog.includes('lastMergedVersion') && activityLog.includes('lastAuditFixCount'), 'ActiveUnitSession phải lưu trữ xuyên suốt timeSessions, lastMergedVersion và lastAuditFixCount');
   assert.ok(bamGio.includes('buildPersonalTimerWorkbookFile') && bamGio.includes('saveActiveUnitSession'), 'Giai đoạn 3 (Bấm giờ) phải tự động đóng gói tệp khảo sát chuyển sang Giai đoạn 4');

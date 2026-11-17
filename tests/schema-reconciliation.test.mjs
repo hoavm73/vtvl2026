@@ -24,7 +24,7 @@ console.log(' BỘ KIỂM THỬ TĨNH RECONCILIATION SCHEMA & SECURITY VTVL 360 
 console.log(' Kiểm định chặt chẽ: NOT NULL unit_name_vi, Service Role, Compensation');
 console.log('================================================================');
 
-const MIGRATION_PATH = path.join(root, 'supabase/migrations/20261114220000_reconcile_production_schema.sql');
+const MIGRATION_PATH = path.join(root, 'trash/supabase/migrations/20261114220000_reconcile_production_schema.sql');
 
 runTest('1. Tệp migration 20261114220000_reconcile_production_schema.sql tồn tại', () => {
   assert.ok(fs.existsSync(MIGRATION_PATH), 'Tệp migration reconciliation phải tồn tại');
@@ -297,7 +297,7 @@ runTest('14. Tra cứu đơn vị findHcmuteUnit & Tương thích ngược Alias
 });
 
 runTest('15. Tệp migration 20261115000000_sync_units_catalog_48.sql an toàn Transaction & Dynamic Snapshot', () => {
-  const migPath = path.join(root, 'supabase/migrations/20261115000000_sync_units_catalog_48.sql');
+  const migPath = path.join(root, 'trash/supabase/migrations/20261115000000_sync_units_catalog_48.sql');
   assert.ok(fs.existsSync(migPath), 'Tệp migration 20261115000000_sync_units_catalog_48.sql phải tồn tại');
 
   const sql = fs.readFileSync(migPath, 'utf8');
@@ -391,7 +391,7 @@ runTest('16. Kiểm tra ranh giới tiền tố: FE không nhầm lẫn với FE
 });
 
 runTest('17. Kiểm tra snapshot/restore trigger an toàn khi 0 trigger tồn tại trên production', () => {
-  const migPath = path.join(root, 'supabase/migrations/20261115000000_sync_units_catalog_48.sql');
+  const migPath = path.join(root, 'trash/supabase/migrations/20261115000000_sync_units_catalog_48.sql');
   const sql = fs.readFileSync(migPath, 'utf8');
 
   // 1. Tuyệt đối không cast ::regproc
@@ -409,8 +409,8 @@ runTest('17. Kiểm tra snapshot/restore trigger an toàn khi 0 trigger tồn t�
 });
 
 runTest('18. Chuẩn hóa thư mục supabase/rollbacks & Migration 20261115140000_reconcile_vtvl_39_units_and_versions.sql', () => {
-  const migrationsDir = path.join(root, 'supabase/migrations');
-  const rollbacksDir = path.join(root, 'supabase/rollbacks');
+  const migrationsDir = path.join(root, 'trash/supabase/migrations');
+  const rollbacksDir = path.join(root, 'trash/supabase/rollbacks');
   assert.ok(fs.existsSync(rollbacksDir), 'Thư mục supabase/rollbacks phải tồn tại');
 
   const migrationFiles = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
@@ -449,7 +449,7 @@ runTest('18. Chuẩn hóa thư mục supabase/rollbacks & Migration 202611151400
 });
 
 runTest('19. Đối soát 100% tên cột & hàm trong 20261115140000_reconcile_vtvl_39_units_and_versions.sql với schema thực tế trên Supabase', () => {
-  const newMigPath = path.join(root, 'supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql');
+  const newMigPath = path.join(root, 'trash/supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql');
   const sql = fs.readFileSync(newMigPath, 'utf8');
 
   // 1. dm_don_vi phải dùng đúng cột thực tế: ma_don_vi, ten_don_vi_vi, ten_don_vi_en, khoi_don_vi, linh_vuc, chuc_danh_thu_truong_vi, chuc_danh_thu_truong_en, so_nhan_su_mac_dinh, is_active

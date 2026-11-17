@@ -9,7 +9,7 @@ import { generateUnitFiles } from '@/services/excel-split/workbook-builder';
 import { HD07_CONSTANTS } from '@/configs/hcmute-hd07-catalog';
 import { AuditResultTabs } from '@/components/ra-soat/AuditResultTabs';
 import { getActiveUnitDefinition, getActiveUnitSession, getRealtimeDateYYYYMMDD, getSessionFilesForUnit, recordActivity, saveActiveUnitSession, setSessionRootWorkbook } from '@/services/telemetry/activity-log';
-import { syncAuditResultToSupabase } from '@/services/supabase/vtvl-sync';
+import { syncAuditResultToSupabase } from '@/services/storage/vtvl-sync';
 
 export default function RaSoatPage() {
   const [activeUnit, setActiveUnit] = useState<HcmuteUnit>(() => getActiveUnitDefinition());

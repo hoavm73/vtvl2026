@@ -479,7 +479,7 @@ async function main() {
 
   // RBAC-08: Cầu nối danh tính SQL (resolve_trusted_actor, app.actor_id, SECURITY DEFINER, search_path, REVOKE/GRANT)
   await runTest('RBAC-08', 'Kiểm tra cầu nối danh tính SQL resolve_trusted_actor, chặn giả mạo app.actor_id và RLS bất biến', () => {
-    const sql = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql'), 'utf8');
+    const sql = fs.readFileSync(path.join(process.cwd(), 'trash/supabase/migrations/20261115140000_reconcile_vtvl_39_units_and_versions.sql'), 'utf8');
     assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public.resolve_trusted_actor'), 'Phải có hàm resolve_trusted_actor');
     assert.ok(sql.includes("current_setting('app.actor_id', true)"), 'Phải kiểm tra ngữ cảnh app.actor_id');
     assert.ok(sql.includes("PERFORM set_config('app.actor_id', lower(v_account.email), true);"), 'Phải thiết lập SET LOCAL (is_local=true) cho app.actor_id trong phạm vi transaction để chống rò rỉ qua connection pool');

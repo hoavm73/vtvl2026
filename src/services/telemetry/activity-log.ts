@@ -2,7 +2,7 @@ import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { getCurrentOperatorSession } from './operator-session';
 import { buildDefaultProposedPositionsForUnit } from '@/configs/hcmute-nd232-catalog';
 import { HcmuteUnit, NgachAllocationRow, ProposedVtvlRow, TimeSessionRow, UnitGroupKind, UnitScaleMetrics } from '@/types/vtvl';
-import { syncActivityToSupabase } from '@/services/supabase/vtvl-sync';
+import { syncActivityToSupabase } from '@/services/storage/vtvl-sync';
 
 export interface ActivityLogEntry {
   id: string;

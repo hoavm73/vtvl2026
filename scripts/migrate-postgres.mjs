@@ -47,7 +47,7 @@ function collectSqlMigrations(rootDir) {
     if (fs.existsSync(fp)) entries.push({ filename: bootstrap, fullPath: fp });
   }
 
-  for (const relDir of ['supabase/migrations', 'db/migrations']) {
+  for (const relDir of ['trash/supabase/migrations', 'db/migrations']) {
     const dir = path.join(rootDir, relDir);
     if (!fs.existsSync(dir)) continue;
     for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {

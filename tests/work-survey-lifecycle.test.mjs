@@ -1082,7 +1082,7 @@ runTest('Ca 23: Hiển thị đề xuất phối hợp theo Đơn vị, highligh
   try {
     const sideCardSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedSideCard.tsx'), 'utf8');
     const relTabSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/WorkRelationshipsTab.tsx'), 'utf8');
-    const migSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
+    const migSql = fs.readFileSync(path.join(root, 'trash/supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
     assert.ok(sideCardSrc.includes('Đang chọn VTVL:') && sideCardSrc.includes('Đã được kê khai'), 'ProposedCoordinatedSideCard phải highlight & hiện nhãn theo VTVL đang chọn');
     assert.ok(relTabSrc.includes('Mối quan hệ công việc phối hợp') && relTabSrc.includes('Đã được lãnh đạo 2 đơn vị duyệt'), 'WorkRelationshipsTab phải có nhãn phê duyệt 2 phía & TCNS');
     assert.ok(migSql.includes('CREATE TABLE IF NOT EXISTS public.work_relationships'), 'Migration phải tạo bảng work_relationships');
@@ -1196,10 +1196,10 @@ runTest('Ca 24: Chuẩn hóa luồng lưu dữ liệu UI/CTA -> API -> Supabase 
     backups.set(name, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
   }
   try {
-    const migSql = fs.readFileSync(path.join(root, 'supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
-    const rollbackSql = fs.readFileSync(path.join(root, 'supabase/rollbacks/20261116210000_rollback_work_relationships.sql'), 'utf8');
+    const migSql = fs.readFileSync(path.join(root, 'trash/supabase/migrations/20261116210000_create_work_relationships.sql'), 'utf8');
+    const rollbackSql = fs.readFileSync(path.join(root, 'trash/supabase/rollbacks/20261116210000_rollback_work_relationships.sql'), 'utf8');
     const relSyncSrc = fs.readFileSync(path.join(root, 'src/services/storage/server-workbook-relational-sync.ts'), 'utf8');
-    const vtvlSyncSrc = fs.readFileSync(path.join(root, 'src/services/supabase/vtvl-sync.ts'), 'utf8');
+    const vtvlSyncSrc = fs.readFileSync(path.join(root, 'src/services/storage/vtvl-sync.ts'), 'utf8');
     const coordModalSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/CoordinatedTaskModal.tsx'), 'utf8');
     const adminSessionsSrc = fs.readFileSync(path.join(root, 'src/components/admin/AdminSessionsTab.tsx'), 'utf8');
     const revRouteSrc = fs.readFileSync(path.join(root, 'src/app/api/workbooks/[id]/revisions/route.ts'), 'utf8');

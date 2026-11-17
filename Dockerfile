@@ -40,7 +40,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts/migrate-postgres.mjs ./scripts/migrate-postgres.mjs
 COPY --from=builder /app/deploy/postgres ./deploy/postgres
-COPY --from=builder /app/supabase/migrations ./supabase/migrations
+COPY --from=builder /app/trash/supabase/migrations ./trash/supabase/migrations
 
 RUN mkdir -p .next .data \
   && chown -R nextjs:nodejs .next .data

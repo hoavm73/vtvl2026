@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { startGoogleOAuthLogin, consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 import { GoogleLogoSvg } from '@/components/auth/GoogleOAuthButton';
@@ -15,7 +16,9 @@ import { LoginSuccessCard } from '@/components/auth/LoginSuccessCard';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: nextAuthSession, status: nextAuthStatus } = useSession();
   const redirectParam = searchParams.get('redirect') || searchParams.get('next') || '';
+  const oauthError = searchParams.get('error') || '';
   const isAdminIntent = searchParams.get('admin') === 'true' || redirectParam === '/admin' || searchParams.get('reason') === 'admin_required';
 
   const [email, setEmail] = useState(isAdminIntent ? 'tcns@hcmute.edu.vn' : '');
@@ -30,39 +33,45 @@ function LoginForm() {
   const [redirectMessage, setRedirectMessage] = useState('Đã đăng nhập thành công, đang chuyển hướng…');
 
   useEffect(() => {
-    const oauthSession = consumeGoogleOAuthCallback();
-    if (oauthSession) {
+    if (oauthError === 'AccountSuspended') setError('Tài khoản của bạn hiện đang tạm khóa.');
+    else if (oauthError === 'AccessDeniedDomain') setError('Email không thuộc tên miền được cấp phép đăng nhập.');
+  }, [oauthError]);
+
+  useEffect(() => {
+    const tryCompleteLogin = () => {
+      const oauthSession = consumeGoogleOAuthCallback();
+      const active = oauthSession || getCurrentOperatorSession();
+      if (!active) return false;
+      if (isAdminIntent && active.role !== 'admin' && active.email !== 'tcns@hcmute.edu.vn') return false;
+      if (searchParams.get('switch')) return false;
+
       setIsRedirecting(true);
-      setRedirectMessage(`Đã đăng nhập thành công (${oauthSession.email}), đang chuyển hướng…`);
-      syncOperatorAccountWithServer(oauthSession).then(({ account }) => {
-        const role = account?.role || oauthSession.role || 'staff';
-        const isAdm = role === 'admin' || account?.email === 'tcns@hcmute.edu.vn';
-        router.replace(redirectParam || (isAdm ? '/admin' : '/'));
-      });
-      return;
-    }
-
-    const active = getCurrentOperatorSession();
-    if (!active) return;
-
-    if (isAdminIntent && active.role !== 'admin' && active.email !== 'tcns@hcmute.edu.vn') {
-      return;
-    }
-
-    if ((active.role === 'admin' || active.email === 'tcns@hcmute.edu.vn') && redirectParam) {
-      setIsRedirecting(true);
-      router.replace(redirectParam);
-      return;
-    }
-
-    if (!searchParams.get('switch') && !isAdminIntent) {
-      setIsRedirecting(true);
+      setRedirectMessage(`Đã đăng nhập thành công (${active.email}), đang chuyển hướng…`);
       syncOperatorAccountWithServer(active).then(({ account }) => {
         const role = account?.role || active.role || 'staff';
-        router.replace(redirectParam || (role === 'admin' ? '/admin' : '/'));
+        const isAdm = role === 'admin' || active.email === 'tcns@hcmute.edu.vn';
+        router.replace(redirectParam || (isAdm ? '/admin' : '/'));
       });
+      return true;
+    };
+
+    if (tryCompleteLogin()) return;
+
+    if (nextAuthStatus === 'authenticated' && nextAuthSession?.user?.email && !searchParams.get('switch')) {
+      const role = nextAuthSession.user.role || 'staff';
+      const isAdm = role === 'admin' || nextAuthSession.user.email === 'tcns@hcmute.edu.vn';
+      if (!isAdminIntent || isAdm) {
+        setIsRedirecting(true);
+        setRedirectMessage(`Đã đăng nhập thành công (${nextAuthSession.user.email}), đang chuyển hướng…`);
+        router.replace(redirectParam || (isAdm ? '/admin' : '/'));
+        return;
+      }
     }
-  }, [router, redirectParam, isAdminIntent, searchParams]);
+
+    const onOperatorReady = () => { tryCompleteLogin(); };
+    window.addEventListener('vtvl-operator-changed', onOperatorReady);
+    return () => window.removeEventListener('vtvl-operator-changed', onOperatorReady);
+  }, [router, redirectParam, isAdminIntent, searchParams, nextAuthStatus, nextAuthSession]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +119,7 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
-    const callbackTarget = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login';
+    const callbackTarget = redirectParam || '/';
     const res = await startGoogleOAuthLogin(callbackTarget);
     if (!res.ok) {
       setError(res.message || 'Không thể khởi tạo đăng nhập Google.');

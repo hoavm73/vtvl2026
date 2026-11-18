@@ -227,7 +227,7 @@ async function runAttackSuite() {
   }));
   assert.strictEqual(r21.status, 403, 'V21: Phải chặn 403 khi tự phong role admin');
 
-  // Vector 22: Cán bộ Alice cố ý ghi đè trực tiếp bảng 15 biểu thay vì nộp phiếu
+  // Vector 22: Cán bộ Alice cố ý ghi đè trực tiếp bảng 10 biểu thay vì nộp phiếu
   const r22 = await putWorkbook(new NextRequest('http://localhost:3000/api/workbooks/wb_FIT_2026', {
     method: 'PUT',
     headers: { authorization: 'Bearer ' + tokenAlice, 'content-type': 'application/json' },

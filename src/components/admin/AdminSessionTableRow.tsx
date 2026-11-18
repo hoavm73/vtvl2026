@@ -100,7 +100,7 @@ export function AdminSessionTableRow({
 
       <td className="p-3 border-r border-[#cbd5e1]">
         <div className="text-[13px] font-bold text-[#004776]">{s.totalRows || 0} dòng</div>
-        <div className="text-xs text-[#64748b] mt-0.5">{s.populatedSheetsCount || 0}/15 sheet</div>
+        <div className="text-xs text-[#64748b] mt-0.5">{s.populatedSheetsCount || 0}/10 biểu</div>
       </td>
 
       <td className="p-3 text-[#64748b] border-r border-[#cbd5e1] whitespace-nowrap">
@@ -118,7 +118,7 @@ export function AdminSessionTableRow({
             onClick={() => onView(s)}
             disabled={isViewingThis}
             className="inline-flex items-center gap-1.5 h-9 px-3 text-xs sm:text-[13px] font-bold text-white bg-[#004776] hover:bg-[#00385c] rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-            title="Xem dữ liệu 15 biểu"
+            title="Xem dữ liệu 10 biểu"
           >
             <Eye className={`w-3.5 h-3.5 ${isViewingThis ? 'animate-spin' : ''}`} />
             <span>{isViewingThis ? 'Đang mở...' : 'Xem'}</span>

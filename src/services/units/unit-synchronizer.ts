@@ -83,7 +83,7 @@ export function migrateWorkbookSheets(
     maDonVi: cleanNew,
     tenDonVi: newNameVi,
     nguoiThucHien: 'Quản trị viên hệ thống [TCNS]',
-    noiDungThayDoi: `Đồng bộ tự động mã đơn vị (${cleanOld} ➔ ${cleanNew}) và tên đơn vị trên toàn bộ 15 biểu`,
+    noiDungThayDoi: `Đồng bộ tự động mã đơn vị (${cleanOld} ➔ ${cleanNew}) và tên đơn vị trên toàn bộ 10 biểu`,
     trangThai: 'Đã đồng bộ'
   };
   recalculated.S = [syncLog, ...(recalculated.S || [])];

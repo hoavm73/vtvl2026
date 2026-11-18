@@ -97,7 +97,7 @@ export async function syncOperatorAccountWithServer(
       body: JSON.stringify({
         email: session.email,
         displayName: session.displayName,
-        unitCode: session.unitCode,
+        unitCode: session.email === 'tcns@hcmute.edu.vn' ? 'TCNS' : session.unitCode,
         title: session.title,
         avatarUrl: session.avatarUrl,
         authProvider: session.authProvider || 'email',
@@ -113,10 +113,7 @@ export async function syncOperatorAccountWithServer(
       }
       const latest = getCurrentOperatorSession();
       const baseSession = latest && latest.email === account.email ? latest : session;
-      const effectiveUnitCode =
-        account.role === 'admin' && baseSession.unitCode
-          ? baseSession.unitCode
-          : account.unitCode;
+      const effectiveUnitCode = account.email === 'tcns@hcmute.edu.vn' ? 'TCNS' : account.unitCode;
       const changed =
         account.role !== baseSession.role ||
         (account.displayName && account.displayName !== baseSession.displayName) ||

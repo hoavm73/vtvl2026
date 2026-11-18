@@ -65,7 +65,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
     items: [
       {
         href: '/bang-tinh',
-        label: 'Bảng tính 15 biểu',
+        label: 'Bảng tính 10 biểu',
         icon: FileSpreadsheet
       }
     ]

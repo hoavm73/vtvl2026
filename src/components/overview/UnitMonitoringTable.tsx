@@ -264,7 +264,7 @@ export function UnitMonitoringTable({
                           className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors"
                         >
                           <FileSpreadsheet className="w-3 h-3 text-[#006cee]" />
-                          <span>15 biểu</span>
+                          <span>10 biểu</span>
                         </Link>
                       </div>
                     </td>

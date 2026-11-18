@@ -198,7 +198,7 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
         unitNameVi: wb.unitNameVi,
         category: 'workbook',
         actionLabel: `Bảng tính v${r.revision}`,
-        title: `Cập nhật bộ 15 biểu đơn vị [${wb.unitId}]`,
+        title: `Cập nhật bộ 10 biểu đơn vị [${wb.unitId}]`,
         details: r.changeSummary || 'Lưu cập nhật bảng tính đơn vị',
         actorEmail: r.actorEmail || 'system',
         statusBadge: `Rev #${r.revision}`,

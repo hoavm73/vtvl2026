@@ -166,7 +166,7 @@ export function AdminUnitsTab() {
         <div className="flex items-center gap-1.5 min-w-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           <span className="text-xs font-medium text-[#004776] truncate">
-            Đồng bộ thời gian thực với dropdown và công thức của 15 bảng tính
+            Đồng bộ thời gian thực với dropdown và công thức của 10 biểu tính
           </span>
         </div>
         <span className="font-bold text-[11px] text-[#64748b] bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shrink-0">

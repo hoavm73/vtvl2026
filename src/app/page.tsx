@@ -197,7 +197,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-[#e1edf8] hover:bg-[#e3ecf6] text-[#004776] border border-[#d8e3ef] text-xs font-semibold transition-colors cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4 text-[#004776]" />
-              <span>Bảng tính 15 biểu</span>
+              <span>Bảng tính 10 biểu</span>
             </Link>
             <Link
               href="/bang-tinh"

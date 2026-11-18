@@ -59,9 +59,10 @@ function persistDeletedAccountEmails(): void {
 }
 
 function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): UserAccountRecord {
-  const email = normalizeEmail(item.email), unit = findHcmuteUnit(item.unitCode || 'CNTT'), now = new Date().toLocaleString('vi-VN');
+  const email = normalizeEmail(item.email), now = new Date().toLocaleString('vi-VN');
   const isTcns = email === 'tcns@hcmute.edu.vn';
-  const role: UserRole = isValidRole(item.role) ? item.role : (item.title ? getRoleFromTitle(item.title) : undefined) || (isTcns ? 'admin' : 'staff');
+  const unit = findHcmuteUnit(isTcns ? 'TCNS' : (item.unitCode || 'CNTT'));
+  const role: UserRole = isTcns ? 'admin' : isValidRole(item.role) ? item.role : (item.title ? getRoleFromTitle(item.title) : undefined) || 'staff';
   return {
     email, displayName: (item.displayName || email.split('@')[0]).trim(), unitCode: unit.code, unitNameVi: unit.nameVi,
     title: getRoleTitle(role), role, authProvider: item.authProvider === 'google' ? 'google' : 'email',

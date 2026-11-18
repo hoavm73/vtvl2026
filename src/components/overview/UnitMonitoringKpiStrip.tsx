@@ -94,7 +94,7 @@ export function UnitMonitoringKpiStrip({
               className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-full bg-white hover:bg-[#e1edf8] border border-[#cbd5e1] text-[#004776] text-xs font-semibold transition-colors"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-[#006cee]" />
-              <span>Bảng 15 biểu</span>
+              <span>Bảng 10 biểu</span>
             </Link>
             <button
               type="button"

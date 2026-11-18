@@ -230,7 +230,7 @@ export function AdminSessionsTab() {
             {params.sq || params.user ? 'Không tìm thấy hồ sơ phù hợp với bộ lọc.' : 'Máy chủ hiện chưa có hồ sơ.'}
           </p>
           <p className="text-xs text-[#64748b] mt-1 max-w-md mx-auto">
-            Khi cán bộ tại các đơn vị thao tác và lưu bảng biểu, toàn bộ 15 sheet sẽ được đồng bộ lên máy chủ.
+            Khi cán bộ tại các đơn vị thao tác và lưu bảng biểu, toàn bộ 10 biểu sẽ được đồng bộ lên máy chủ.
           </p>
         </div>
       )}

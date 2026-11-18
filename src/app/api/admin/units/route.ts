@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Đồng bộ bảng tính 15 biểu
+      // 2. Đồng bộ bảng tính 10 biểu
       await syncServerWorkbooksFromSupabase();
       const wb = getWorkbookById(`wb_${normOldCode}_2026`);
       if (wb && !wb.isDeleted) {

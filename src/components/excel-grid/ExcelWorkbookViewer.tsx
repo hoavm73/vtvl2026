@@ -65,11 +65,12 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
     if (session.role === 'admin' && requestedUnitCode && !adminManualUnitRef.current) {
       const reqCode = findHcmuteUnit(requestedUnitCode).code;
       const reqUpper = reqCode.toUpperCase();
+      adminManualUnitRef.current = reqUpper;
       if (unitCode.toUpperCase() !== reqUpper) gridHandleUnitChange(reqCode);
-      if (session.unitCode.toUpperCase() !== reqUpper) updateSessionUnit(reqCode);
+      updateSessionUnit(reqCode);
       return;
     }
-    if (session.unitCode && session.unitCode !== unitCode) {
+    if (!adminManualUnitRef.current && session.unitCode && session.unitCode !== unitCode) {
       gridHandleUnitChange(session.unitCode);
     }
   }, [session, requestedUnitCode, unitCode, gridHandleUnitChange, updateSessionUnit]);
@@ -201,7 +202,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         onOpenUnlockModal={() => setShowUnlockModal(true)}
       />
 
-      {/* 2. DẢI TAB 15 BIỂU CUỘN NGANG (UNDERLINE TABS) */}
+      {/* 2. DẢI TAB 10 BIỂU CUỘN NGANG (UNDERLINE TABS) */}
       <ExcelSheetTabs
         activeSheet={activeSheet}
         sheetOrder={currentSheetOrder}

@@ -226,7 +226,7 @@ export function WorkspaceActionsRow({
                 className="sm:hidden w-full text-left px-3.5 py-2.5 text-xs text-[#004776] hover:bg-[#f8fafc] flex items-center gap-2 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#004776]" />
-                <span>Kiểm tra dữ liệu 15 biểu</span>
+                <span>Kiểm tra dữ liệu 10 biểu</span>
               </button>
               <button
                 type="button"

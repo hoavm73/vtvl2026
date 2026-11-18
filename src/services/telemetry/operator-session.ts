@@ -56,6 +56,7 @@ export function getCurrentOperatorSession(): OperatorSession | null {
     const session: OperatorSession = JSON.parse(raw);
     if (session) {
       session.email = normalizeEmail(session.email);
+      if (session.email === 'tcns@hcmute.edu.vn') { const u = findHcmuteUnit('TCNS'); session.unitCode = u.code; session.unitNameVi = u.nameVi; session.role = 'admin'; }
     }
     return session;
   } catch {
@@ -69,7 +70,7 @@ export function registerOperatorSession(
   title: string
 ): EmailSessionRecord {
   const normEmail = normalizeEmail(email);
-  const unit = findHcmuteUnit(unitCode);
+  const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
   const all = getAllEmailSessions();
   const existingIdx = all.findIndex((s) => s.email === normEmail);
@@ -77,14 +78,14 @@ export function registerOperatorSession(
   let record: EmailSessionRecord;
   if (existingIdx >= 0) {
     record = {
-      ...all[existingIdx], unitCode, unitNameVi: unit.nameVi,
+      ...all[existingIdx], unitCode: unit.code, unitNameVi: unit.nameVi,
       title: title.trim() || all[existingIdx].title,
       lastSavedAt: all[existingIdx].lastSavedAt || `Khởi tạo ${now}`
     };
     all[existingIdx] = record;
   } else {
     record = {
-      email: normEmail, unitCode, unitNameVi: unit.nameVi,
+      email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi,
       title: title.trim() || 'Chuyên viên', lastSavedAt: `Khởi tạo ${now}`, touchedCells: []
     };
     all.unshift(record);
@@ -114,7 +115,7 @@ export function saveCurrentOperatorSession(
   }
 ): OperatorSession {
   const normEmail = normalizeEmail(email);
-  const unit = findHcmuteUnit(unitCode);
+  const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
   const existing = getCurrentOperatorSession();
   const session: OperatorSession = {
@@ -144,7 +145,7 @@ export function saveCurrentOperatorSession(
 export function updateOperatorSessionUnit(unitCode: string): OperatorSession | null {
   const cur = getCurrentOperatorSession();
   if (!cur) return null;
-  const unit = findHcmuteUnit(unitCode);
+  const unit = findHcmuteUnit(cur.email === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const updated: OperatorSession = {
     ...cur,
     unitCode: unit.code,
@@ -237,7 +238,7 @@ export function saveEmailSessionData(
 ): void {
   if (typeof window === 'undefined') return;
   const normEmail = normalizeEmail(email);
-  const unit = findHcmuteUnit(unitCode);
+  const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
 
   const sheetSummaries: Partial<Record<ExcelSheetKey, number>> = {};
@@ -251,7 +252,7 @@ export function saveEmailSessionData(
   }
 
   const newRecord: EmailSessionRecord = {
-    email: normEmail, unitCode, unitNameVi: unit.nameVi,
+    email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi,
     title: title.trim() || 'Chuyên viên', lastSavedAt: now,
     touchedCells: touchedCells || [], totalRows, sheetSummaries
   };

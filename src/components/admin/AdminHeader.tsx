@@ -48,7 +48,7 @@ export function AdminHeader({ onLogout, onOpenOrgTree }: AdminHeaderProps) {
           className="h-9 sm:h-10 flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 text-xs sm:text-[13px] font-semibold text-[#004776] bg-[#f8fafc] hover:bg-[#e2e8f0] border border-[#cbd5e1] rounded-xl transition-colors cursor-pointer whitespace-nowrap"
         >
           <FileSpreadsheet className="w-4 h-4 text-[#0072BC] shrink-0" />
-          <span>Bảng tính 15 biểu</span>
+          <span>Bảng tính 10 biểu</span>
         </Link>
 
         <button

@@ -47,7 +47,7 @@ const VTVL_FIVE_STEPS = [
   },
   {
     step: 5,
-    title: 'Thẩm định 15 biểu & Hoàn tất đề án',
+    title: 'Thẩm định 10 biểu & Hoàn tất đề án',
     sheets: '8. C3 · 10. D2 · 13. K_KiemTra',
     icon: CheckSquare,
     desc: 'Xác định số người cần thiết (FTE), lập phương án biên chế 5 năm 2026–2030, kiểm tra chéo 6 chỉ tiêu đạt chuẩn và xuất tệp nộp về Phòng TCNS.',
@@ -110,7 +110,7 @@ export function OverviewProcessAndLegal() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-[#20446c] mt-1 font-medium">
-              Chu trình khép kín từ nạp chức năng nhiệm vụ đến thẩm định và hoàn thiện 15 biểu
+              Chu trình khép kín từ nạp chức năng nhiệm vụ đến thẩm định và hoàn thiện 10 biểu
             </p>
           </div>
           <Link

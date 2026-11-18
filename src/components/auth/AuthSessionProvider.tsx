@@ -54,11 +54,7 @@ function CookieSessionSynchronizer({ children }: { children: React.ReactNode }) 
         const acc = data.account as UserAccountRecord;
         const existing = getCurrentOperatorSession();
         const isTcns = acc.email === 'tcns@hcmute.edu.vn';
-        // Cho phép Admin giữ đơn vị đang làm việc nếu đang chuyển đổi xem đơn vị khác
-        const effectiveUnit =
-          acc.role === 'admin' && existing?.email === acc.email && existing?.unitCode
-            ? existing.unitCode
-            : acc.unitCode;
+        const effectiveUnit = isTcns ? 'TCNS' : acc.unitCode;
         const hasSelected = isTcns || Boolean(acc.hasSelectedUnit) || acc.role === 'admin' || acc.role === 'unit_leader';
 
         if (hasSelected) {

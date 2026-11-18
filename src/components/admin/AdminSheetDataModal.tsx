@@ -155,7 +155,7 @@ export function AdminSheetDataModal({ session, onClose }: AdminSheetDataModalPro
           </div>
         </div>
 
-        {/* Thanh chọn sheet biểu (15 sheet) */}
+        {/* Thanh chọn sheet biểu (10 biểu) */}
         <div className="bg-[#f8fafc] border-b border-[#cbd5e1] px-4 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-thin shrink-0">
           {EXCEL_NATURAL_SHEET_ORDER.map((key) => {
             const meta = EXCEL_SHEET_METAS[key];

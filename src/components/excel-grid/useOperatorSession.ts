@@ -107,15 +107,16 @@ export function useOperatorSession() {
     const cur = getCurrentOperatorSession();
     if (cur?.hasSelectedUnit && cur.role !== 'admin' && cur.unitCode !== newUnitCode) return;
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    const updated = updateOperatorSessionUnit(newUnitCode);
+    const isTcns = cur?.email === 'tcns@hcmute.edu.vn';
+    const updated = isTcns ? cur : updateOperatorSessionUnit(newUnitCode);
     if (updated) {
       setSession(updated);
-      setWorkbookId(`wb_${updated.unitCode}_2026`);
+      setWorkbookId(`wb_${newUnitCode}_2026`);
       setCurrentRevision(1);
       setRemoteWorkbook(null);
       setDataSource('sample');
-      saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
-      loadUnitWorkbookFromServer(updated.unitCode, updated);
+      if (!isTcns) saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
+      loadUnitWorkbookFromServer(newUnitCode, updated);
     }
   }, [loadUnitWorkbookFromServer]);
 

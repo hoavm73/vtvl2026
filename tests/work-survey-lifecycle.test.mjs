@@ -306,7 +306,7 @@ runTest('Ca 12: Banner Tổng quan VTVL dùng đúng ảnh cổng gốc, màu #0
     bannerCode.includes("role !== 'staff'") &&
     bannerCode.includes('Trang quản trị') &&
     bannerCode.includes('Phiếu công việc') &&
-    bannerCode.includes('Bảng tính 15 biểu'),
+    bannerCode.includes('Bảng tính 10 biểu'),
     'Banner giữ nguyên phân quyền hiển thị 3 nút cho Admin/Lãnh đạo/Cán bộ'
   );
   assert.ok(

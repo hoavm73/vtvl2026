@@ -206,7 +206,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
             {role !== 'staff' && (
               <Link href="/bang-tinh" className={`${baseActionCls} ${outlineBtnCls}`}>
                 <LayoutGrid className="w-4 h-4 stroke-[2] shrink-0" />
-                <span>Bảng tính 15 biểu</span>
+                <span>Bảng tính 10 biểu</span>
               </Link>
             )}
           </div>

@@ -161,7 +161,7 @@ export async function PUT(req: Request, context: RouteContext) {
       unitCode: targetUnit,
       unitName: existingWb?.unitNameVi || targetUnit,
       action: 'SỬA_BIỂU',
-      details: commitMessage || 'Cập nhật bảng tính 15 biểu',
+      details: commitMessage || 'Cập nhật bảng tính 10 biểu',
       actorEmail: caller.email,
       actorRole: caller.role
     });

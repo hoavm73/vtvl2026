@@ -164,7 +164,7 @@ export function ExcelCommandBar({
             onClick={onSaveNow}
             disabled={syncStatus === 'saving'}
             className="inline-flex items-center gap-1.5 h-9 px-3 bg-white hover:bg-[#eef5fc] border border-[#cbd5e1] hover:border-[#004776] text-[#004776] rounded-xl font-semibold text-[13px] transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
-            title="Lưu đồng bộ toàn bộ 15 bảng tính lên máy chủ HCM-UTE"
+            title="Lưu đồng bộ toàn bộ 10 biểu lên máy chủ HCM-UTE"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Lưu máy chủ</span>
@@ -179,7 +179,7 @@ export function ExcelCommandBar({
           type="button"
           onClick={onOpenQualityModal}
           className="h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-          title="Kiểm tra chất lượng và rà soát lỗi dữ liệu 15 biểu"
+          title="Kiểm tra chất lượng và rà soát lỗi dữ liệu 10 biểu"
         >
           <ShieldCheck className="w-4 h-4 text-[#004776]" />
           <span className="sm:hidden">Kiểm tra</span>

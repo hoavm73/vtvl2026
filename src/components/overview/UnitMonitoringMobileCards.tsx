@@ -111,7 +111,7 @@ export function UnitMonitoringMobileCards({
                 className="flex-1 h-9 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776]"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-[#006cee]" />
-                <span>Bảng 15 biểu</span>
+                <span>Bảng 10 biểu</span>
               </Link>
             </div>
           </div>

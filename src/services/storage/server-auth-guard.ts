@@ -271,7 +271,7 @@ export function canAccessUnit(caller: CallerAuthContext, targetUnitCode: string)
   return targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
 }
 
-/** Ma trận quyền: Chỉ Admin và Lãnh đạo đơn vị được sửa 15 biểu của đơn vị */
+/** Ma trận quyền: Chỉ Admin và Lãnh đạo đơn vị được sửa 10 biểu của đơn vị */
 export function canEditUnitWorkbook(caller: CallerAuthContext, targetUnitCode: string): boolean {
   if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
   if (caller.isAdmin) return true;

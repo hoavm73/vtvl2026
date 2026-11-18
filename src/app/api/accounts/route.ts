@@ -99,7 +99,8 @@ export async function POST(req: NextRequest) {
       existing?.role === 'admin' ||
       (Boolean(existing?.unitCode) && existing?.unitCode !== 'CNTT' && existing?.unitCode !== 'FIT')
     );
-    const targetUnitCode = hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'CNTT');
+    const isTcns = email === 'tcns@hcmute.edu.vn';
+    const targetUnitCode = isTcns ? 'TCNS' : (hasExistingAssignment ? existing!.unitCode : (body.unitCode || existing?.unitCode || 'CNTT'));
     const targetTitle = hasExistingAssignment ? existing!.title : (body.title || existing?.title);
     const targetRole = hasExistingAssignment ? existing!.role : undefined;
     const targetHasSelectedUnit = hasExistingAssignment
@@ -201,7 +202,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const targetUnitCode = body.unitCode || existing?.unitCode;
+    const targetUnitCode = email === 'tcns@hcmute.edu.vn' ? 'TCNS' : (body.unitCode || existing?.unitCode);
     const targetHasSelectedUnit = body.hasSelectedUnit !== undefined
       ? Boolean(body.hasSelectedUnit)
       : (Boolean(body.unitCode) || Boolean(existing?.hasSelectedUnit));

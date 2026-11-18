@@ -387,7 +387,7 @@ async function main() {
   });
 
   // RBAC-05: Cán bộ gọi trực tiếp API duyệt / trả lại / gộp / sửa bảng tính / quản trị đơn vị
-  await runTest('RBAC-05', 'Cán bộ gọi trực tiếp API duyệt, yêu cầu bổ sung, gộp phiếu, sửa 15 biểu và quản trị đều bị chặn 403', async () => {
+  await runTest('RBAC-05', 'Cán bộ gọi trực tiếp API duyệt, yêu cầu bổ sung, gộp phiếu, sửa 10 biểu và quản trị đều bị chặn 403', async () => {
     for (const act of ['approve', 'request_changes', 'merge']) {
       const res = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
         method: 'PATCH',
@@ -413,8 +413,8 @@ async function main() {
     assert.strictEqual(unitPost.status, 403, 'Cán bộ không được sửa danh mục đơn vị');
   });
 
-  // RBAC-06: Lãnh đạo sửa toàn bộ 15 biểu (bao gồm C1) của đơn vị mình nhưng bị chặn ở đơn vị khác
-  await runTest('RBAC-06', 'Lãnh đạo sửa được 15 biểu (bao gồm Biểu C1) của đơn vị mình (SDH) nhưng bị chặn 403 ở đơn vị khác (QTTHTT)', async () => {
+  // RBAC-06: Lãnh đạo sửa toàn bộ 10 biểu (bao gồm C1) của đơn vị mình nhưng bị chặn ở đơn vị khác
+  await runTest('RBAC-06', 'Lãnh đạo sửa được 10 biểu (bao gồm Biểu C1) của đơn vị mình (SDH) nhưng bị chặn 403 ở đơn vị khác (QTTHTT)', async () => {
     const ownWbPut = await putWorkbook(new NextRequest(\`http://localhost:3360/api/workbooks/\${wbSdh.id}\`, {
       method: 'PUT',
       headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },

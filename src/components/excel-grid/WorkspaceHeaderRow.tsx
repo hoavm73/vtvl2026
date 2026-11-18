@@ -67,12 +67,12 @@ export function WorkspaceHeaderRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 min-h-[58px] px-3.5 sm:px-5 py-2.5 border-b border-[#e2ecf7] bg-white min-w-0">
       <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-        {/* 1. Popover chọn biểu trong 15 biểu mẫu */}
+        {/* 1. Popover chọn biểu trong 10 biểu mẫu */}
         <Popover>
           <PopoverTrigger>
             <span
               className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-[#004776] hover:bg-[#00365c] text-white rounded-xl text-[13.5px] font-bold transition-colors shadow-2xs"
-              title="Đổi nhanh biểu khác trong 15 biểu mẫu"
+              title="Đổi nhanh biểu khác trong 10 biểu mẫu"
             >
               <span>{activeMeta.sheetName}</span>
               <ChevronDown className="w-4 h-4 text-white/85" />

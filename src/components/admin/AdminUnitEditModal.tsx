@@ -104,7 +104,7 @@ export function AdminUnitEditModal({
                 {isEditing ? `Chỉnh sửa đơn vị [${unit?.code}]` : 'Thêm đơn vị mới'}
               </h3>
               <p className="text-[11px] text-white/90">
-                Đồng bộ vào danh mục đơn vị trong toàn bộ 15 bảng tính
+                Đồng bộ vào danh mục đơn vị trong toàn bộ 10 biểu tính
               </p>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function AdminUnitEditModal({
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
           {isEditing && (
             <div className="p-2.5 bg-[#f0f7fd] border border-[#d0e4f5] rounded-xl text-xs text-[#004776] leading-relaxed">
-              <span className="font-bold text-[#0072BC]">Đồng bộ tự động:</span> Khi thay đổi mã hoặc tên đơn vị, hệ thống sẽ tự động cập nhật toàn bộ mã nhiệm vụ ([MÃ_ĐV].NVxx), mã công việc ([Mã NV].CVxx), mã VTVL, công thức tính toán và dữ liệu trên 15 biểu.
+              <span className="font-bold text-[#0072BC]">Đồng bộ tự động:</span> Khi thay đổi mã hoặc tên đơn vị, hệ thống sẽ tự động cập nhật toàn bộ mã nhiệm vụ ([MÃ_ĐV].NVxx), mã công việc ([Mã NV].CVxx), mã VTVL, công thức tính toán và dữ liệu trên 10 biểu.
             </div>
           )}
 

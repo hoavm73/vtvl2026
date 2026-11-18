@@ -122,7 +122,9 @@ export function getActiveUnitSession(): ActiveUnitSession {
       return def;
     }
     const parsed = JSON.parse(raw) as Partial<ActiveUnitSession>;
-    const targetCode = parsed.unitCode || op?.unitCode || HCMUTE_UNITS[0].code;
+    const isTcns = op?.email === 'tcns@hcmute.edu.vn';
+    const isSameActor = Boolean(op?.email && parsed.actorEmail && parsed.actorEmail.toLowerCase() === op.email.toLowerCase());
+    const targetCode = isTcns ? 'TCNS' : ((isSameActor ? parsed.unitCode : op?.unitCode) || op?.unitCode || parsed.unitCode || 'TCNS');
     const unit = findHcmuteUnit(targetCode);
     const proposed =
       Array.isArray(parsed.proposedPositions) && parsed.proposedPositions.length > 0

@@ -88,9 +88,9 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
         {/* 1. Tên biểu */}
         <Popover className="min-w-[170px] flex-1">
           <PopoverTrigger className="w-full min-w-0" ariaLabel={`Chọn biểu tính (đang mở ${activeMeta.sheetName})`}>
-            <span className="inline-flex items-center justify-between gap-1.5 min-h-[42px] px-3 w-full bg-[#006cee] text-white rounded-xl text-xs font-bold shadow-2xs min-w-0">
+            <span className="inline-flex items-center justify-between gap-1.5 min-h-[42px] px-3 w-full bg-[#eef5ff] text-[#004776] border border-[#bfdbfe] rounded-xl text-xs font-bold shadow-2xs min-w-0">
               <span className="truncate text-left">{activeMeta.sheetName}</span>
-              <ChevronDown className="w-4 h-4 text-white/85 shrink-0" />
+              <ChevronDown className="w-4 h-4 text-[#006cee] shrink-0" />
             </span>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[min(21rem,calc(100vw-1rem))] p-2 max-h-80 overflow-y-auto z-50">
@@ -125,7 +125,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
               type="button"
               onClick={props.onSaveNow}
               disabled={props.syncStatus === 'saving'}
-              className="min-h-[42px] px-3 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
+              className="min-h-[42px] px-3 rounded-xl bg-[#eef5ff] hover:bg-[#dcebff] border border-[#bfdbfe] text-[#006cee] text-xs font-bold inline-flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
             >
               <Save className="w-3.5 h-3.5 shrink-0" />
               <span>Lưu</span>

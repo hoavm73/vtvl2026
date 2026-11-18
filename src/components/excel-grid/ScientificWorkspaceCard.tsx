@@ -81,8 +81,8 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
         onOpenUnlockModal={props.onOpenUnlockModal}
       />
 
-      {/* Desktop & Tablet (>= 768px): Page Header + Command Bar */}
-      <div className="hidden md:flex md:flex-col w-full max-w-full min-w-0">
+      {/* Desktop & Tablet (>= 768px): Header & Command Bar hợp nhất trong 1 khối gọn */}
+      <div className="hidden md:flex md:flex-col gap-2 px-3.5 sm:px-4 py-2.5 bg-white border-b border-[#e2ecf7] w-full max-w-full min-w-0">
         <WorkspaceHeaderRow
           activeSheet={props.activeSheet}
           currentUnit={props.currentUnit}
@@ -90,13 +90,8 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
           activeStep={props.activeStep}
           activeSheetIndex={props.activeSheetIndex}
           totalSheets={props.totalSheets}
-          orderMode={props.orderMode}
-          qualityReport={props.qualityReport}
           session={props.session}
-          onSelectSheet={props.onSelectSheet}
           onUnitChange={props.onUnitChange}
-          onOpenGuidance={props.onOpenGuidance}
-          onOpenQualityModal={props.onOpenQualityModal}
         />
 
         <ExcelCommandBar
@@ -104,6 +99,7 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
           activeSheet={props.activeSheet}
           session={props.session}
           revision={props.revision}
+          fixCount={props.qualityReport.summary.fixCount}
           syncStatus={props.syncStatus}
           dataSource={props.dataSource}
           apiError={props.apiError}
@@ -115,7 +111,7 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
           isC1Unlocked={props.isC1Unlocked}
           onSwitchSession={props.onSwitchSession}
           onSaveNow={props.onSaveNow}
-          onOpenQualityModal={props.onOpenQualityModal}
+          onOpenGuidance={props.onOpenGuidance}
           onSaveSheet={props.onSaveSheet}
           onSaveAndNext={props.onSaveAndNext}
           onToggleOrderMode={props.onToggleOrderMode}

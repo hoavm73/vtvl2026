@@ -1,18 +1,37 @@
 import { NextResponse } from 'next/server';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
+import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { getTicketCounts, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
+import { getAllActiveServerWorkbooks, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    await syncTicketsFromSupabase().catch(() => {});
+    await Promise.all([
+      syncTicketsFromSupabase().catch(() => {}),
+      syncServerWorkbooksFromSupabase(true).catch(() => {})
+    ]);
   } catch {
     // ignore
   }
 
   const ticketCounts = getTicketCounts();
   const totalUnits = HCMUTE_UNITS.length;
-  const totalPositions = ND232_2026_VTVL_CATALOG.length;
+
+  const workbooks = getAllActiveServerWorkbooks();
+  const wbByUnit = new Map(workbooks.map((w) => [w.unitId.toUpperCase(), w]));
+
+  let totalC1Positions = 0;
+  for (const u of HCMUTE_UNITS) {
+    const wb = wbByUnit.get(u.code.toUpperCase());
+    const c1Rows = Array.isArray(wb?.data?.C1) && wb.data.C1.length > 0
+      ? wb.data.C1
+      : buildRecommendedC1Rows(u.code, u.group);
+    const validRows = c1Rows.filter((r) => String(r?.maVtvl || r?.tenVtvl || '').trim().length > 0);
+    totalC1Positions += validRows.length;
+  }
 
   const unitGroups = UNIT_GROUPS.map((g) => ({
     id: g.id,
@@ -21,13 +40,18 @@ export async function GET() {
     shortDesc: g.shortDesc
   }));
 
-  return NextResponse.json({
-    totalUnits,
-    totalPositions,
-    approvedPositions: ticketCounts.approved,
-    pendingPositions: ticketCounts.pending,
-    draftPositions: ticketCounts.draft,
-    totalTickets: ticketCounts.total,
-    unitGroups
-  });
+  return NextResponse.json(
+    {
+      totalUnits,
+      totalPositions: totalC1Positions,
+      frameworkPositions: ND232_2026_VTVL_CATALOG.length,
+      approvedPositions: ticketCounts.approved,
+      pendingPositions: ticketCounts.pending,
+      draftPositions: ticketCounts.draft,
+      totalTickets: ticketCounts.total,
+      unitGroups,
+      updatedAt: new Date().toISOString()
+    },
+    { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+  );
 }

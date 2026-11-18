@@ -247,7 +247,7 @@ export function getTicketCounts(): { approved: number; pending: number; draft: n
     total++;
     const s = toCanonicalStatus(t.status);
     if (s === 'approved') approved++;
-    else if (s === 'submitted' || s === 'resubmitted') pending++;
+    else if (s === 'submitted' || s === 'resubmitted' || s === 'changes_requested') pending++;
     else draft++;
   }
   return { approved, pending, draft, total };

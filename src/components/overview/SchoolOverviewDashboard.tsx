@@ -1,52 +1,87 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Building2, Briefcase, CheckCircle2, Clock,
-  ShieldCheck, Layers, Landmark, GraduationCap, Building, ArrowRight
+  ShieldCheck, Layers, Landmark, GraduationCap, Building, ArrowRight, FileText
 } from 'lucide-react';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
-import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
+import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 
 interface OverviewStats {
   totalUnits: number;
   totalPositions: number;
   approvedPositions: number;
   pendingPositions: number;
-  draftPositions?: number;
-  totalTickets?: number;
+  draftPositions: number;
+  totalTickets: number;
 }
+
+const DEFAULT_C1_TOTAL = HCMUTE_UNITS.reduce(
+  (sum, u) => sum + buildRecommendedC1Rows(u.code, u.group).length,
+  0
+);
 
 export function SchoolOverviewDashboard() {
   const [stats, setStats] = useState<OverviewStats>({
     totalUnits: HCMUTE_UNITS.length,
-    totalPositions: ND232_2026_VTVL_CATALOG.length,
+    totalPositions: DEFAULT_C1_TOTAL,
     approvedPositions: 0,
-    pendingPositions: 2
+    pendingPositions: 0,
+    draftPositions: 0,
+    totalTickets: 0
   });
 
-  useEffect(() => {
-    let isMounted = true;
-    fetch('/api/stats/overview', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && isMounted) {
-          setStats({
-            totalUnits: data.totalUnits || HCMUTE_UNITS.length,
-            totalPositions: data.totalPositions || ND232_2026_VTVL_CATALOG.length,
-            approvedPositions: data.approvedPositions ?? 0,
-            pendingPositions: data.pendingPositions ?? 0,
-            draftPositions: data.draftPositions,
-            totalTickets: data.totalTickets
-          });
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
+  const fetchRealtimeStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stats/overview', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data) {
+        setStats({
+          totalUnits: data.totalUnits || HCMUTE_UNITS.length,
+          totalPositions: data.totalPositions || DEFAULT_C1_TOTAL,
+          approvedPositions: data.approvedPositions ?? 0,
+          pendingPositions: data.pendingPositions ?? 0,
+          draftPositions: data.draftPositions ?? 0,
+          totalTickets: data.totalTickets ?? ((data.approvedPositions ?? 0) + (data.pendingPositions ?? 0) + (data.draftPositions ?? 0))
+        });
+      }
+    } catch {
+      // ignore network error
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRealtimeStats();
+    const timer = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        fetchRealtimeStats();
+      }
+    }, 10000);
+
+    const onRefresh = () => { void fetchRealtimeStats(); };
+    window.addEventListener('focus', onRefresh);
+    window.addEventListener('vtvl-activity-updated', onRefresh);
+    window.addEventListener('vtvl-operator-changed', onRefresh);
+    window.addEventListener('storage', onRefresh);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      bc = new BroadcastChannel('hcmute_vtvl_realtime');
+      bc.onmessage = onRefresh;
+    }
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', onRefresh);
+      window.removeEventListener('vtvl-activity-updated', onRefresh);
+      window.removeEventListener('vtvl-operator-changed', onRefresh);
+      window.removeEventListener('storage', onRefresh);
+      bc?.close();
+    };
+  }, [fetchRealtimeStats]);
 
   const unitGroupStats = UNIT_GROUPS.map((g) => ({
     ...g,
@@ -68,13 +103,12 @@ export function SchoolOverviewDashboard() {
 
   return (
     <section className="bg-white rounded-3xl border border-[#d8e3ef] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
-      {/* Tiêu đề & huy hiệu */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ecf7] pb-3.5">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#e1edf8] text-[#004776]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#0072BC]" />
-              Số liệu chuẩn hóa toàn trường
+              Số liệu chuẩn hóa toàn trường (Realtime)
             </span>
             <span className="text-[11px] font-medium text-[#476885]">Giai đoạn 2026–2030</span>
           </div>
@@ -84,8 +118,7 @@ export function SchoolOverviewDashboard() {
         </div>
       </div>
 
-      {/* Lưới 4 chỉ số chính theo yêu cầu */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Chỉ số 1: Đơn vị trực thuộc */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1.5">
           <div className="flex items-center justify-between">
@@ -98,40 +131,45 @@ export function SchoolOverviewDashboard() {
             <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight tabular-nums">{stats.totalUnits}</span>
             <span className="text-xs font-semibold text-[#0072BC]">đơn vị trực thuộc</span>
           </div>
+          <p className="text-[11px] text-[#476885]">39 đơn vị hoạt động thuộc Trường</p>
         </div>
 
-        {/* Chỉ số 2: Vị trí việc làm Toàn trường */}
+        {/* Chỉ số 2: Vị trí việc làm cụ thể (Biểu C1) toàn trường */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f8fbff] to-[#eef6fc] border border-[#dbe8f5] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#20446c]">Vị trí việc làm</span>
+            <span className="text-xs font-medium text-[#20446c]">Vị trí việc làm (Biểu C1)</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#d8e3ef] flex items-center justify-center text-[#0072BC]">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#004776] tracking-tight tabular-nums">{stats.totalPositions}</span>
-            <span className="text-xs font-semibold text-[#0072BC]">vị trí toàn trường</span>
+            <span className="text-xs font-semibold text-[#0072BC]">vị trí cụ thể (Biểu C1)</span>
           </div>
+          <p className="text-[11px] text-[#476885]">Tổng hợp thời gian thực từ Biểu C1 của 39 đơn vị</p>
         </div>
 
-        {/* Chỉ số 3: Vị trí đã phê duyệt */}
+        {/* Chỉ số 3: Phiếu đã phê duyệt */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f6fcf8] to-[#edf9f1] border border-[#cbeed7] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-800">Đã phê duyệt</span>
+            <span className="text-xs font-medium text-emerald-800">Phiếu đã phê duyệt</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#cbeed7] flex items-center justify-center text-emerald-600">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight tabular-nums">{stats.approvedPositions}</span>
-            <span className="text-xs font-semibold text-emerald-600">vị trí đã phê duyệt</span>
+            <span className="text-xs font-semibold text-emerald-600">phiếu đã phê duyệt</span>
           </div>
+          <p className="text-[11px] font-medium text-emerald-800/80 tabular-nums">
+            Tổng phiếu toàn trường: <strong className="text-[#004776]">{stats.totalTickets}</strong> phiếu
+          </p>
         </div>
 
-        {/* Chỉ số 4: Vị trí đang chờ duyệt */}
+        {/* Chỉ số 4: Phiếu đang chờ duyệt & Nháp */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#fffdf5] to-[#fef9e8] border border-[#fae8b2] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-800">Đang chờ duyệt</span>
+            <span className="text-xs font-medium text-amber-800">Phiếu công việc</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#fae8b2] flex items-center justify-center text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
@@ -139,15 +177,25 @@ export function SchoolOverviewDashboard() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-baseline gap-1.5 min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-amber-700 tracking-tight tabular-nums">{stats.pendingPositions}</span>
-              <span className="text-xs font-semibold text-amber-600 truncate">chờ duyệt</span>
+              <span className="text-xs font-semibold text-amber-600 truncate">phiếu chờ duyệt</span>
             </div>
             <Link
-              href="/phieu-cong-viec?tab=pending"
+              href="/phieu-don-vi?mode=pending"
               className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#0072BC] hover:bg-[#004776] active:scale-95 rounded-lg shadow-sm hover:shadow transition-all shrink-0 cursor-pointer"
             >
               <span>Duyệt</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-[#004776] tabular-nums">
+            <span className="text-amber-700">Đang chờ duyệt: {stats.pendingPositions}</span>
+            <span>•</span>
+            <span className="text-emerald-700">Đã phê duyệt: {stats.approvedPositions}</span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-0.5 text-[#476885]">
+              <FileText className="w-3 h-3" />
+              <span>Nháp: {stats.draftPositions}</span>
+            </span>
           </div>
         </div>
       </div>

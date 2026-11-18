@@ -8,6 +8,7 @@ import {
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { isDatabaseConfigured, prisma, toIsoString } from '@/services/storage/prisma';
+import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -87,6 +88,7 @@ export async function POST(req: Request, context: RouteContext) {
       actorEmail: caller.email, actorRole: caller.role
     });
     await persistAuditLogToSupabase(audit);
+    invalidateUnitMutationCache(updated.serverWorkbook.unitId);
     return NextResponse.json({ success: true, currentRevision: updated.currentRevision, workbook: updated.serverWorkbook });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Lỗi hệ thống' }, { status: 500 });

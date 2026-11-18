@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import {
@@ -30,7 +31,7 @@ const STAGE_TO_TICKET_TAB: Record<StageFilterKey, string> = {
 /**
  * Dashboard theo dõi tiến trình, số liệu kê khai & lịch sử đơn vị dành cho Phòng TCNS và Quản trị viên.
  */
-export function UnitMonitoringDashboard() {
+export function UnitMonitoringDashboard({ compactOverviewMode = false }: { compactOverviewMode?: boolean }) {
   const { state: filterState, setField: setFilterField } = usePersistedListState('unit-monitor-filters', {
     unit: 'ALL',
     group: 'ALL',
@@ -203,6 +204,13 @@ export function UnitMonitoringDashboard() {
               </span>
             )}
           </button>
+          <Link
+            href="/admin/tham-dinh"
+            className="h-9.5 px-3.5 rounded-[10px] bg-[#004776] hover:bg-[#00365c] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Thẩm định TCNS</span>
+          </Link>
         </div>
       </div>
 
@@ -260,13 +268,15 @@ export function UnitMonitoringDashboard() {
             onToggleIncludeTest={setIncludeTest}
           />
 
-          <UnitMonitoringHistoryPanel
-            selectedUnit={selectedUnit}
-            tickets={tickets}
-            history={history}
-            externalStatusSync={STAGE_TO_TICKET_TAB[stageFilter]}
-            onSelectUnit={setSelectedUnit}
-          />
+          {!compactOverviewMode && (
+            <UnitMonitoringHistoryPanel
+              selectedUnit={selectedUnit}
+              tickets={tickets}
+              history={history}
+              externalStatusSync={STAGE_TO_TICKET_TAB[stageFilter]}
+              onSelectUnit={setSelectedUnit}
+            />
+          )}
         </>
       )}
     </section>

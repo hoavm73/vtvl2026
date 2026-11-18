@@ -100,6 +100,7 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
         />
 
         <ExcelCommandBar
+          unitCode={props.unitCode}
           activeSheet={props.activeSheet}
           session={props.session}
           revision={props.revision}

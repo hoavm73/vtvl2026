@@ -22,6 +22,15 @@ export interface UnitSummaryRow {
   progressPercent: number;
   stageLabel: string;
   lastUpdatedAt: string | null;
+  reviewStatus?: string;
+  reviewStatusLabel?: string;
+  submittedAt?: string | null;
+  submittedBy?: string | null;
+  submittedRevision?: number | null;
+  reviewerEmail?: string | null;
+  reviewedAt?: string | null;
+  reviewNote?: string | null;
+  errorCount?: number;
 }
 
 export interface MonitorTotals {

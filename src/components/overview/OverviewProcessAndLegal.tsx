@@ -51,7 +51,7 @@ const VTVL_FIVE_STEPS = [
     sheets: '8. C3 · 10. D2 · 13. K_KiemTra',
     icon: CheckSquare,
     desc: 'Xác định số người cần thiết (FTE), lập phương án biên chế 5 năm 2026–2030, kiểm tra chéo 6 chỉ tiêu đạt chuẩn và xuất tệp nộp về Phòng TCNS.',
-    href: '/ra-soat',
+    href: '/nghiep-vu-don-vi?tab=check',
     color: 'from-emerald-600 to-green-700'
   }
 ];

@@ -291,7 +291,7 @@ async function runBrowserE2E() {
         const selectTrigger = document.querySelector('#staff-ticket-form-card button[aria-haspopup="listbox"]');
         if (!textarea || !selectTrigger) return null;
         return {
-          hasStaffTabs: text.includes('Phiếu của tôi') && text.includes('Chờ duyệt') && text.includes('Đã duyệt') && text.includes('Phiếu toàn đơn vị (Chỉ đọc)'),
+          hasStaffTabs: text.includes('Phiếu của tôi') && text.includes('Tạo phiếu công việc') && text.includes('Công việc phối hợp với tôi') && text.includes('Mối quan hệ công việc'),
           hasTextarea: Boolean(textarea),
           hasSelectTrigger: Boolean(selectTrigger),
         };
@@ -300,7 +300,7 @@ async function runBrowserE2E() {
 
     assert(
       Boolean(staffFormReady && staffFormReady.hasStaffTabs),
-      'DOM /phieu-cong-viec (Staff) hiển thị đúng 5 tab ("Phiếu của tôi", "Chờ duyệt", "Đã duyệt", "Phiếu toàn đơn vị (Chỉ đọc)")'
+      'DOM /phieu-cong-viec (Staff) hiển thị đúng 4 tab cá nhân ("Phiếu của tôi", "Tạo phiếu công việc", "Công việc phối hợp với tôi", "Mối quan hệ công việc")'
     );
 
     // Click mission dropdown inside #staff-ticket-form-card to verify full mission text without truncation
@@ -425,18 +425,18 @@ async function runBrowserE2E() {
       }),
     });
 
-    // Switch browser to Leader and verify all 3 tabs + Pending Review queue in DOM
+    // Switch browser to Leader via legacy /phieu-cong-viec?tab=pending -> auto redirects to /phieu-don-vi
     await switchBrowserRole(qaLeader, '/phieu-cong-viec?tab=pending');
     const leaderPendingDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
-        if (!document.body || window.location.pathname !== '/phieu-cong-viec') return null;
+        if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const text = document.body.innerText || '';
-        const hasAll3Tabs = text.includes('Phiếu của tôi') && text.includes('Chờ duyệt') && text.includes('Toàn bộ phiếu đơn vị');
+        const hasAll3Tabs = text.includes('Toàn bộ phiếu đơn vị') && text.includes('Chờ duyệt') && text.includes('Đã duyệt');
         const hasTicket = text.includes('Thiết kế bộ nhận diện sự kiện tuyển sinh 2026') && text.includes('Đã nộp');
         return hasAll3Tabs && hasTicket ? true : null;
       })()`);
     }, 12000);
-    assert(Boolean(leaderPendingDom), 'Trưởng đơn vị mở trình duyệt thấy đủ 3 tab (Phiếu của tôi, Chờ duyệt, Toàn bộ phiếu đơn vị) và thấy phiếu vừa nộp (v1) trong tab "Chờ duyệt"');
+    assert(Boolean(leaderPendingDom), 'Trưởng đơn vị mở ?tab=pending chuyển hướng sạch sang /phieu-don-vi, thấy đủ 3 tab đơn vị và thấy phiếu vừa nộp (v1)');
 
     // Leader returns #1 (passing `reason` to PATCH /api/tickets)
     await fetch(`${BASE_URL}/api/tickets`, {
@@ -514,11 +514,11 @@ async function runBrowserE2E() {
       }),
     });
 
-    // 6. Switch browser to Leader, inspect "Toàn bộ phiếu đơn vị", check "Gộp vào B1/B2" label & open Detail Modal -> "Thay đổi so với bản trước" (v1/v2/v3 diff)
-    await switchBrowserRole(qaLeader, '/phieu-cong-viec?tab=unit');
+    // 6. Switch browser to Leader on /phieu-don-vi?tab=all, check "Gộp vào B1/B2" label & open Detail Modal -> "Thay đổi so với bản trước" (v1/v2/v3 diff)
+    await switchBrowserRole(qaLeader, '/phieu-don-vi?tab=all');
     const leaderApprovedDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
-        if (!document.body || window.location.pathname !== '/phieu-cong-viec') return null;
+        if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const buttons = Array.from(document.querySelectorAll('button'));
         const hasMergeBtn = buttons.some((b) => b.textContent.includes('Gộp vào B1/B2'));
         const hasWrongBtn = buttons.some((b) => b.textContent.includes('Gộp vào A2 & B1'));
@@ -583,17 +583,18 @@ async function runBrowserE2E() {
     await cdp.send('Page.reload', { ignoreCache: true });
     const mergedBadgeDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
-        if (!document.body || window.location.pathname !== '/phieu-cong-viec') return null;
+        if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const text = document.body.innerText || '';
         return text.includes('Đã gộp B1/B2');
       })()`);
     }, 12000);
     assert(Boolean(mergedBadgeDom), 'Sau khi gộp và reload trình duyệt, phiếu hiển thị huy hiệu "Đã gộp B1/B2"');
 
-    // Switch to "Phiếu của tôi" tab and click "Xem trước bản in A4"
+    // Switch back to personal /phieu-cong-viec and click "Xem trước bản in A4"
+    await switchBrowserRole(qaStaff, '/phieu-cong-viec');
     const printPreviewDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
-        if (!document.body) return null;
+        if (!document.body || window.location.pathname !== '/phieu-cong-viec') return null;
         const buttons = Array.from(document.querySelectorAll('button'));
         const myTab = buttons.find((b) => b.textContent.includes('Phiếu của tôi'));
         if (myTab) myTab.click();
@@ -602,14 +603,14 @@ async function runBrowserE2E() {
         const text = document.body.innerText || '';
         return text.includes('PHIẾU KHẢO SÁT') || text.includes('Xem trước bản in A4');
       })()`);
-    }, 5000);
+    }, 8000);
     assert(Boolean(printPreviewDom), 'Chuyển sang chế độ "Xem trước bản in A4" trên trình duyệt hoạt động mượt mà');
 
-    // 7. Role 3: Admin opens /phieu-cong-viec and views unit QTTHTT
+    // 7. Role 3: Admin opens /phieu-don-vi (also verifying compatibility from /phieu-cong-viec?tab=unit) and views unit QTTHTT
     await switchBrowserRole({ ...qaAdmin, unitCode: 'QTTHTT', unitNameVi: 'Phòng Quản trị thương hiệu và Truyền thông' }, '/phieu-cong-viec?tab=unit');
     const adminViewDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
-        if (!document.body || window.location.pathname !== '/phieu-cong-viec') return null;
+        if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const text = document.body.innerText || '';
         return text.includes('Thiết kế bộ nhận diện sự kiện tuyển sinh 2026') && text.includes('Đã gộp B1/B2');
       })()`);

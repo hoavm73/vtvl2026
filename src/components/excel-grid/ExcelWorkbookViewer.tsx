@@ -18,6 +18,7 @@ import { MobileStickyActionBar } from './MobileStickyActionBar';
 import { useOperatorSession } from './useOperatorSession';
 import { validateWorkbookData } from '@/services/validation';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { syncContextQueryParams } from '@/services/context/workbook-context';
 
 interface ExcelWorkbookViewerProps {
   initialUnitCode?: string;
@@ -152,10 +153,11 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   }, [handleSave]);
 
   const handleSelectSheetSafe = (targetKey: ExcelSheetKey) => {
-    if (dirtySheets.has(activeSheet)) {
-      handleSave();
-    }
+    if (dirtySheets.has(activeSheet)) handleSave();
     setActiveSheet(targetKey);
+    if (typeof window !== 'undefined' && (window.location.pathname === '/bang-tinh' || window.location.pathname === '/nghiep-vu-don-vi')) {
+      syncContextQueryParams(window.location.pathname === '/bang-tinh' ? { unit: unitCode, sheet: targetKey } : { sheet: targetKey }, 'replace');
+    }
   };
 
   const qualityReport = useMemo(() => {
@@ -186,7 +188,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         isExporting={isExporting}
         isC1Unlocked={effectiveC1Unlocked}
         onSelectSheet={handleSelectSheetSafe}
-        onUnitChange={(u) => { adminManualUnitRef.current = u.toUpperCase(); gridHandleUnitChange(u); updateSessionUnit(u); setDirtySheets(new Set()); }}
+        onUnitChange={(u) => { adminManualUnitRef.current = u.toUpperCase(); gridHandleUnitChange(u); updateSessionUnit(u); setDirtySheets(new Set()); if (typeof window !== 'undefined' && window.location.pathname === '/bang-tinh') syncContextQueryParams({ unit: u.toUpperCase(), sheet: activeSheet }, 'replace'); }}
         onSwitchSession={switchSession}
         onSaveNow={handleSave}
         onToggleOrderMode={setOrderMode}

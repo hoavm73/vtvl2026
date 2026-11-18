@@ -77,7 +77,7 @@ export default function HuongDanDonViPage() {
               <Download className="w-4 h-4 text-[var(--primary)]" />
               <span>Tải Sơ đồ quy trình (.png)</span>
             </a>
-            <Link href="/tao-tep?step=1" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold shadow-2xs">
+            <Link href="/bang-tinh?sheet=A1" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold shadow-2xs">
               <span>Bắt đầu Giai đoạn 1</span>
               <ArrowRight className="w-4 h-4" />
             </Link>

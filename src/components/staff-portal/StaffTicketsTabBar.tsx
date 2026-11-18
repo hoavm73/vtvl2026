@@ -3,23 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  AlertTriangle,
-  Building2,
-  CheckCircle2,
-  Clock,
-  Edit3,
-  FileSpreadsheet,
-  Handshake,
-  LogOut,
-  Network,
-  Plus,
-  User,
-  Users
+  AlertTriangle, Building2, Edit3, FileSpreadsheet,
+  Handshake, LogOut, Network, Plus, PlusCircle, User
 } from 'lucide-react';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 
-export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed' | 'relationships';
+export type StaffTicketsTabKey = 'my-tickets' | 'create' | 'coordination' | 'relationships';
 
 interface StaffPortalHeaderBannerProps {
   unitCode: string;
@@ -80,25 +70,19 @@ export function StaffPortalHeaderBanner({
 interface StaffTicketsTabBarProps {
   activeTab: StaffTicketsTabKey;
   onSelectTab: (tab: StaffTicketsTabKey) => void;
+  myCount: number;
   draftCount: number;
-  pendingCount: number;
-  approvedCount: number;
-  unitCount: number;
   proposedCount: number;
   relationshipsCount?: number;
-  isLeader: boolean;
 }
 
 export function StaffTicketsTabBar({
   activeTab,
   onSelectTab,
+  myCount,
   draftCount,
-  pendingCount,
-  approvedCount,
-  unitCount,
   proposedCount,
-  relationshipsCount = 0,
-  isLeader
+  relationshipsCount = 0
 }: StaffTicketsTabBarProps) {
   const baseBtn =
     'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer';
@@ -114,29 +98,24 @@ export function StaffTicketsTabBar({
     badgeCls?: string;
   }[] = [
     {
-      key: 'my', label: 'Phiếu của tôi',
-      countLabel: draftCount > 0 ? `(Nháp: ${draftCount})` : '', Icon: User,
-      badge: draftCount > 0 ? `Nháp: ${draftCount}` : undefined,
+      key: 'my-tickets', label: 'Phiếu của tôi',
+      countLabel: draftCount > 0 ? `(Nháp: ${draftCount})` : `(${myCount})`, Icon: User,
+      badge: draftCount > 0 ? `Nháp: ${draftCount}` : myCount,
       badgeCls: 'h-5 px-2 bg-[#eef5ff] text-[#006cee]'
     },
     {
-      key: 'pending', label: 'Chờ duyệt', countLabel: `(${pendingCount})`, Icon: Clock,
-      badge: pendingCount,
-      badgeCls: `min-w-[20px] h-5 px-1.5 ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
+      key: 'create', label: 'Tạo phiếu công việc',
+      countLabel: '', Icon: PlusCircle
     },
     {
-      key: 'approved', label: 'Đã duyệt', countLabel: `(${approvedCount})`, Icon: CheckCircle2,
-      badge: approvedCount,
-      badgeCls: `min-w-[20px] h-5 px-1.5 ${approvedCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
-    },
-    { key: 'unit', label: `${isLeader ? 'Toàn bộ phiếu đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} (${unitCount})`, countLabel: '', Icon: Users },
-    {
-      key: 'proposed', label: 'Nhiệm vụ được đề xuất phối hợp', countLabel: `(${proposedCount})`, Icon: Handshake,
+      key: 'coordination', label: 'Công việc phối hợp với tôi',
+      countLabel: `(${proposedCount})`, Icon: Handshake,
       badge: proposedCount,
       badgeCls: `min-w-[22px] h-5 px-1.5 ${proposedCount > 0 ? 'bg-[#006cee] text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
     },
     {
-      key: 'relationships', label: 'Mối quan hệ công việc', countLabel: `(${relationshipsCount})`, Icon: Network,
+      key: 'relationships', label: 'Mối quan hệ công việc',
+      countLabel: `(${relationshipsCount})`, Icon: Network,
       badge: relationshipsCount,
       badgeCls: `min-w-[22px] h-5 px-1.5 ${relationshipsCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
     }
@@ -144,14 +123,13 @@ export function StaffTicketsTabBar({
 
   return (
     <div className="print:hidden">
-      {/* Mobile (< 768px): Bộ chọn chế độ xem đầy đủ, không cắt chữ + các nút tab chính */}
       <div className="md:hidden pb-2 space-y-2">
         <label htmlFor="mobile-ticket-view-mode" className="block text-xs font-semibold text-[#20446c]">
-          Chế độ xem danh sách
+          Chế độ xem phiếu cá nhân
         </label>
         <select
           id="mobile-ticket-view-mode"
-          aria-label="Chế độ xem"
+          aria-label="Chế độ xem phiếu cá nhân"
           value={activeTab}
           onChange={(e) => onSelectTab(e.target.value as StaffTicketsTabKey)}
           className="w-full min-h-[44px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-sm font-bold text-[#004776] outline-hidden focus:border-[#006cee]"
@@ -162,26 +140,11 @@ export function StaffTicketsTabBar({
             </option>
           ))}
         </select>
-        <div className="grid grid-cols-3 gap-1.5">
-          {tabOptions.slice(0, 3).map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              onClick={() => onSelectTab(opt.key)}
-              className={`min-h-[40px] px-2 rounded-[10px] text-xs font-semibold cursor-pointer truncate transition-colors ${
-                activeTab === opt.key ? 'bg-[#006cee] text-white' : 'bg-[#eef5ff] text-[#004776] hover:bg-[#dce8f5]'
-              }`}
-            >
-              {opt.key === 'my' ? opt.label : `${opt.label} ${opt.countLabel}`}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Tablet & Desktop (>= 768px): Dải tab nằm trực tiếp dưới tiêu đề */}
       <div
         role="tablist"
-        aria-label="Chế độ xem phiếu công việc"
+        aria-label="Phân hệ phiếu công việc cá nhân"
         className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar"
       >
         {tabOptions.map((opt) => {
@@ -214,14 +177,14 @@ interface ChangesRequestedAlertBannerProps {
   count: number;
   firstTicket: StaffWorkTicket;
   onEditNow: (ticket: StaffWorkTicket) => void;
-  onOpenPendingTab: () => void;
+  onOpenMyTab: () => void;
 }
 
 export function ChangesRequestedAlertBanner({
   count,
   firstTicket,
   onEditNow,
-  onOpenPendingTab
+  onOpenMyTab
 }: ChangesRequestedAlertBannerProps) {
   return (
     <div className="p-3.5 rounded-2xl bg-[#fff8eb] border border-[#fcd34d] flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
@@ -248,10 +211,10 @@ export function ChangesRequestedAlertBanner({
         </button>
         <button
           type="button"
-          onClick={onOpenPendingTab}
+          onClick={onOpenMyTab}
           className="h-8 px-3 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fffbeb] text-[#b45309] text-xs font-semibold cursor-pointer"
         >
-          Xem trong Chờ duyệt
+          Xem danh sách phiếu
         </button>
       </div>
     </div>

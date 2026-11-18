@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   User, CheckCircle2, RefreshCw, AlertTriangle, WifiOff,
   Save, Database, ShieldCheck, ArrowRight
@@ -11,6 +12,7 @@ import { SyncStatusKind, DataSourceKind, ApiSyncError } from './useOperatorSessi
 import { ExcelCommandToolsMenu } from './ExcelCommandToolsMenu';
 
 interface ExcelCommandBarProps {
+  unitCode?: string;
   activeSheet: ExcelSheetKey;
   session: OperatorSession | null;
   revision: number;
@@ -38,6 +40,7 @@ interface ExcelCommandBarProps {
 }
 
 export function ExcelCommandBar({
+  unitCode = 'TCNS',
   activeSheet,
   session,
   revision,
@@ -147,62 +150,49 @@ export function ExcelCommandBar({
 
         <span className="text-[#cbd5e1] hidden sm:inline">·</span>
 
-        <span className="font-medium text-[#004776] shrink-0">
+        <Link
+          href={`/nghiep-vu-don-vi?tab=history&unitCode=${encodeURIComponent(unitCode)}`}
+          className="font-medium text-[#004776] hover:text-[#006cee] hover:underline shrink-0"
+          title="Xem lịch sử thay đổi và khôi phục phiên bản"
+        >
           Phiên bản: <strong className="font-semibold">v{revision}</strong>
-        </span>
+        </Link>
 
         <span className="text-[#cbd5e1] hidden sm:inline">·</span>
 
         <div className="truncate max-w-[260px] sm:max-w-none">
           {getSyncStatusContent()}
         </div>
-
-        {/* Nút Lưu máy chủ nhỏ gọn đặt ngay cạnh trạng thái máy chủ */}
-        {!isReadOnlyViewer && (
-          <button
-            type="button"
-            onClick={onSaveNow}
-            disabled={syncStatus === 'saving'}
-            className="inline-flex items-center gap-1.5 h-9 px-3 bg-white hover:bg-[#eef5fc] border border-[#cbd5e1] hover:border-[#004776] text-[#004776] rounded-xl font-semibold text-[13px] transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
-            title="Lưu đồng bộ toàn bộ 10 biểu lên máy chủ HCM-UTE"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>Lưu máy chủ</span>
-          </button>
-        )}
       </div>
 
-      {/* KHỐI PHẢI: 4 thao tác trực tiếp duy nhất */}
+      {/* KHỐI PHẢI: Thao tác chuẩn (Kiểm tra · Lưu · Lưu & tiếp · Công cụ) */}
       <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-between lg:justify-end pt-1 lg:pt-0 border-t lg:border-t-0 border-[#e2e8f0]/70">
-        {/* 1. Kiểm tra dữ liệu (Ghost button) */}
-        <button
-          type="button"
-          onClick={onOpenQualityModal}
-          className="h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-          title="Kiểm tra chất lượng và rà soát lỗi dữ liệu 10 biểu"
+        <Link
+          href={`/nghiep-vu-don-vi?tab=check&unitCode=${encodeURIComponent(unitCode)}`}
+          className="h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl inline-flex items-center gap-1.5 transition-colors"
+          title="Mở trang kiểm tra chéo K_KiemTra và gửi hồ sơ TCNS"
         >
           <ShieldCheck className="w-4 h-4 text-[#004776]" />
           <span className="sm:hidden">Kiểm tra</span>
           <span className="hidden sm:inline">Kiểm tra dữ liệu</span>
-        </button>
+        </Link>
 
-        {/* 2. Lưu biểu (Ghost button - trên mobile nằm trong menu Công cụ) */}
         {!isReadOnlyViewer && (
           <button
             type="button"
-            onClick={onSaveSheet}
-            className="hidden sm:inline-flex relative h-9 px-3 text-[13px] font-semibold text-[#004776] hover:bg-[#eef5fc] rounded-xl items-center gap-1.5 cursor-pointer transition-colors"
-            title="Lưu dữ liệu biểu hiện tại vào bộ nhớ cục bộ"
+            onClick={() => { onSaveSheet(); onSaveNow(); }}
+            disabled={syncStatus === 'saving'}
+            className="hidden sm:inline-flex relative h-9 px-3 text-[13px] font-semibold text-[#004776] border border-[#cbd5e1] bg-white hover:bg-[#eef5fc] rounded-xl items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50"
+            title="Lưu biểu hiện tại và đồng bộ lên máy chủ HCM-UTE"
           >
             <Save className="w-4 h-4 text-[#004776]" />
-            <span>Lưu biểu</span>
+            <span>Lưu</span>
             {isDirty && (
               <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="Có thay đổi chưa lưu" />
             )}
           </button>
         )}
 
-        {/* 3. Lưu & sang biểu tiếp (Primary CTA) */}
         <button
           type="button"
           onClick={onSaveAndNext}
@@ -211,12 +201,12 @@ export function ExcelCommandBar({
           title={isReadOnlyViewer ? 'Chuyển sang biểu nghiệp vụ tiếp theo' : 'Lưu biểu này và tự động chuyển sang biểu nghiệp vụ tiếp theo'}
         >
           <span className="sm:hidden">{isReadOnlyViewer ? 'Sang tiếp' : 'Lưu & tiếp'}</span>
-          <span className="hidden sm:inline">{isReadOnlyViewer ? 'Sang biểu tiếp' : 'Lưu & sang biểu tiếp'}</span>
+          <span className="hidden sm:inline">{isReadOnlyViewer ? 'Sang biểu tiếp' : 'Lưu & tiếp'}</span>
           <ArrowRight className="w-4 h-4 shrink-0" />
         </button>
 
-        {/* 4. Menu Công cụ ▾ */}
         <ExcelCommandToolsMenu
+          unitCode={unitCode}
           activeSheet={activeSheet}
           orderMode={orderMode}
           isExporting={isExporting}
@@ -224,7 +214,6 @@ export function ExcelCommandBar({
           onToggleOrderMode={onToggleOrderMode}
           onOpenOrgTreeModal={onOpenOrgTreeModal}
           onOpenChartModal={onOpenChartModal}
-          onSaveSheet={onSaveSheet}
           onLoadTcnsData={onLoadTcnsData}
           onLoadRecommendedVtvls={onLoadRecommendedVtvls}
           onExportWorkbook={onExportWorkbook}

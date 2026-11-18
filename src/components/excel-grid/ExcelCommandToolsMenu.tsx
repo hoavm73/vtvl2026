@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   ChevronDown, ArrowUpDown, Network, BarChart3,
-  Download, Lock, Unlock, Lightbulb, SlidersHorizontal, RefreshCw, Save
+  Download, Lock, Unlock, Lightbulb, SlidersHorizontal, RefreshCw, Timer, PackagePlus, History
 } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode } from './excel-grid-types';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose } from '@/components/ui/Popover';
 
 interface ExcelCommandToolsMenuProps {
+  unitCode?: string;
   activeSheet: ExcelSheetKey;
   orderMode: SheetOrderMode;
   isExporting: boolean;
@@ -16,7 +18,6 @@ interface ExcelCommandToolsMenuProps {
   onToggleOrderMode: (mode: SheetOrderMode) => void;
   onOpenOrgTreeModal?: () => void;
   onOpenChartModal?: () => void;
-  onSaveSheet?: () => void;
   onLoadTcnsData: () => void;
   onLoadRecommendedVtvls: () => void;
   onExportWorkbook: () => void;
@@ -24,6 +25,7 @@ interface ExcelCommandToolsMenuProps {
 }
 
 export function ExcelCommandToolsMenu({
+  unitCode = 'TCNS',
   activeSheet,
   orderMode,
   isExporting,
@@ -31,7 +33,6 @@ export function ExcelCommandToolsMenu({
   onToggleOrderMode,
   onOpenOrgTreeModal,
   onOpenChartModal,
-  onSaveSheet,
   onLoadTcnsData,
   onLoadRecommendedVtvls,
   onExportWorkbook,
@@ -51,14 +52,22 @@ export function ExcelCommandToolsMenu({
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-72 p-2 space-y-0.5">
-        {onSaveSheet && (
-          <PopoverClose onClick={onSaveSheet}>
-            <div className="sm:hidden w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-semibold">
-              <Save className="w-4 h-4 text-[#004776]" />
-              <span>Lưu dữ liệu biểu này</span>
-            </div>
-          </PopoverClose>
-        )}
+        <Link href={`/bam-gio?step=3&unitCode=${encodeURIComponent(unitCode)}`} className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
+          <Timer className="w-4 h-4 text-[#006cee]" />
+          <span>Đo định mức thời gian (B1)</span>
+        </Link>
+
+        <Link href={`/tao-tep?mode=wizard&unitCode=${encodeURIComponent(unitCode)}`} className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
+          <PackagePlus className="w-4 h-4 text-[#006cee]" />
+          <span>Xuất gói tệp / Khởi tạo (.xlsx/.zip)</span>
+        </Link>
+
+        <Link href={`/nghiep-vu-don-vi?tab=history&unitCode=${encodeURIComponent(unitCode)}`} className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
+          <History className="w-4 h-4 text-[#006cee]" />
+          <span>Lịch sử &amp; khôi phục phiên bản</span>
+        </Link>
+
+        <div className="my-1 border-t border-[#e8eff7]" />
 
         <PopoverClose onClick={() => onToggleOrderMode(orderMode === 'excel' ? 'technical' : 'excel')}>
           <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center justify-between gap-2 font-medium">

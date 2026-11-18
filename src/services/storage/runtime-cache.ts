@@ -7,7 +7,30 @@ export type CacheTag =
   | 'units'
   | 'overview-stats'
   | 'unit-monitor'
-  | 'coordination';
+  | 'coordination'
+  | 'audit-history'
+  | 'review-submission';
+
+export function buildScopedCacheKey(
+  prefix: string,
+  scope: {
+    unitCode?: string;
+    workbookId?: string;
+    revision?: number;
+    role?: string;
+    email?: string;
+  }
+): string {
+  const parts = [
+    prefix,
+    scope.unitCode ? `u:${scope.unitCode.toUpperCase()}` : '',
+    scope.workbookId ? `wb:${scope.workbookId}` : '',
+    typeof scope.revision === 'number' ? `r:${scope.revision}` : '',
+    scope.role ? `role:${scope.role}` : '',
+    scope.email ? `e:${scope.email.toLowerCase()}` : ''
+  ].filter(Boolean);
+  return parts.join('|');
+}
 
 interface CacheEntry<T> {
   value: T;
@@ -88,6 +111,10 @@ export async function cacheGetOrSet<T>(
 export function invalidateCacheTags(tags: CacheTag[]): void {
   if (!tags.length) return;
   const tagSet = new Set(tags);
+  if (tagSet.has('workbooks') || tagSet.has('tickets') || tagSet.has('unit-monitor')) {
+    tagSet.add('audit-history');
+    tagSet.add('review-submission');
+  }
   for (const [key, entry] of memoryCache.entries()) {
     for (const t of entry.tags) {
       if (tagSet.has(t)) {
@@ -95,6 +122,25 @@ export function invalidateCacheTags(tags: CacheTag[]): void {
         break;
       }
     }
+  }
+}
+
+export function invalidateUnitMutationCache(unitCode?: string): void {
+  const target = unitCode ? `|u:${unitCode.trim().toUpperCase()}` : '';
+  const allTags = new Set<CacheTag>([
+    'workbooks',
+    'tickets',
+    'coordination',
+    'overview-stats',
+    'unit-monitor',
+    'audit-history',
+    'review-submission'
+  ]);
+  for (const [key, entry] of memoryCache.entries()) {
+    const matchesTag = Array.from(entry.tags).some((t) => allTags.has(t));
+    if (!matchesTag) continue;
+    const isScopedOtherUnit = Boolean(target && key.includes('|u:') && !key.includes(target));
+    if (!isScopedOtherUnit) memoryCache.delete(key);
   }
 }
 

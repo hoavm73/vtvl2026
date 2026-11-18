@@ -12,6 +12,7 @@ import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/se
 import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
 import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
+import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -174,6 +175,7 @@ export async function PUT(req: Request, context: RouteContext) {
       actorRole: caller.role
     });
     await persistAuditLogToSupabase(audit);
+    invalidateUnitMutationCache(targetUnit);
 
     return NextResponse.json({ success: true, workbook: finalResult });
   } catch (error) {
@@ -194,6 +196,7 @@ export async function DELETE(req: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const ok = await deleteServerWorkbook(id);
+    if (ok) invalidateUnitMutationCache();
     return NextResponse.json({ success: ok });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';

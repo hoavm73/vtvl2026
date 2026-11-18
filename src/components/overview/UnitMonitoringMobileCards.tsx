@@ -91,7 +91,7 @@ export function UnitMonitoringMobileCards({
 
             <div className="flex items-center gap-2 pt-0.5">
               <Link
-                href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`}
+                href={`/phieu-don-vi?unitCode=${encodeURIComponent(u.unitCode)}&tab=all`}
                 aria-label={`Xem phiếu đơn vị ${u.unitCode}`}
                 onClick={() => {
                   onAnchorClick(u.unitCode);

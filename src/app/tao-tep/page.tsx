@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, BookOpenCheck } from 'lucide-react';
 import { WorkflowSidebar, focusTaskTarget } from '@/components/layout/MilestonesBar';
 import { HCMUTE_UNITS, UNIT_GROUPS, findHcmuteUnit, getActiveHcmuteUnits } from '@/configs/hcmute-units';
@@ -21,12 +22,12 @@ import { FormField, FormFieldState, SaveLifecycleState, SegmentedControl, ToastN
 import { TextInput, DateInput, Select } from '@/components/ui/FormInputs';
 import { buildDefaultNgachAllocations, buildDefaultScaleMetrics, formatCurrentHHMM, getActiveUnitSession, getRealtimeDateYYYYMMDD, recordActivity, saveActiveUnitSession, setSessionRootWorkbook } from '@/services/telemetry/activity-log';
 import { syncUnitSplitToSupabase } from '@/services/storage/vtvl-sync';
-import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer';
 
 const ROLE_PRESETS = ['Trưởng đơn vị (Trưởng khoa / Viện trưởng / Trưởng phòng / Giám đốc)', 'Phó Trưởng đơn vị phụ trách VTVL', 'Thư ký Tổ công tác VTVL đơn vị', 'Trưởng Bộ môn / Trưởng Ngành', 'Chuyên viên / Thư ký khoa tổng hợp hồ sơ'];
 
 export default function TaoTepPage() {
-  const [viewMode, setViewMode] = useState<'excel' | 'wizard'>('excel');
+  const router = useRouter();
+  const [viewMode, setViewMode] = useState<'redirect' | 'wizard'>('wizard');
   const [activeStep, setActiveStep] = useState<number>(1);
   const [wizardStage, setWizardStage] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [visitedStages, setVisitedStages] = useState<number[]>([1]);
@@ -70,11 +71,27 @@ export default function TaoTepPage() {
   };
 
   useEffect(() => {
-    applySessionToState(getActiveUnitSession());
+    const sess = getActiveUnitSession();
+    applySessionToState(sess);
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('mode') === 'wizard') setViewMode('wizard');
-      const sp = params.get('step'); const stg = Number(params.get('stage'));
+      const mode = params.get('mode');
+      const sp = params.get('step');
+      const stg = Number(params.get('stage'));
+      const unitParam = params.get('unitCode') || params.get('unit') || sess.unitCode;
+      const isExplicitWizard = mode === 'wizard' || sp === '1' || sp === '2' || sp === '5' || sp === '6' || sp === '7' || (stg >= 1 && stg <= 5);
+      if (!isExplicitWizard) {
+        setViewMode('redirect');
+        if (sp === '8') {
+          router.replace(`/nghiep-vu-don-vi?tab=check${unitParam ? `&unitCode=${encodeURIComponent(unitParam)}` : ''}`);
+        } else if (sp === '3' || sp === '4') {
+          router.replace(`/bam-gio?step=${sp}${unitParam ? `&unitCode=${encodeURIComponent(unitParam)}` : ''}`);
+        } else {
+          router.replace(`/bang-tinh${unitParam ? `?unit=${encodeURIComponent(unitParam)}` : ''}`);
+        }
+        return;
+      }
+      setViewMode('wizard');
       if (sp === '1') { setActiveStep(1); setWizardStage(1); }
       else if (sp === '2') { setActiveStep(1); setWizardStage(2); }
       else if (sp === '5') { setActiveStep(1); setWizardStage(3); }
@@ -88,7 +105,7 @@ export default function TaoTepPage() {
     const bc = 'BroadcastChannel' in window ? new BroadcastChannel('hcmute_vtvl_realtime') : null;
     if (bc) bc.onmessage = () => applySessionToState(getActiveUnitSession());
     return () => { window.removeEventListener('popstate', syncFromUrl); window.removeEventListener('storage', onStorage); bc?.close(); };
-  }, []);
+  }, [router]);
 
   const unitsOfGroup = useMemo(() => HCMUTE_UNITS.filter((u) => u.group === kind), [kind]);
   const currentUnit = useMemo(() => unitsOfGroup.find((u) => u.code === selectedUnitCode) || unitsOfGroup[0] || HCMUTE_UNITS[0], [unitsOfGroup, selectedUnitCode]);
@@ -157,8 +174,19 @@ export default function TaoTepPage() {
     <div className="w-full max-w-none px-3.5 sm:px-5 lg:px-6 py-4 min-w-0">
       <ToastRegion toasts={toasts} onDismiss={(id) => setToasts((p) => p.filter((t) => t.id !== id))} />
 
-      {viewMode === 'excel' ? (
-        <ExcelWorkbookViewer initialUnitCode={selectedUnitCode} />
+      {viewMode === 'redirect' ? (
+        <div className="max-w-[760px] mx-auto my-10 rounded-[14px] border border-[#e2e8f0] bg-white p-6 text-center space-y-3 min-w-0">
+          <h1 className="text-base font-bold text-[#004776]">Trình chỉnh sửa 10 biểu đã thống nhất tại Bảng tính đơn vị</h1>
+          <p className="text-xs sm:text-sm text-[#476885]">Đang chuyển sang Bảng tính 10 biểu. Nếu muốn mở trình hướng dẫn khởi tạo / xuất gói .xlsx/.zip theo từng chặng, chọn bên dưới.</p>
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
+            <Link href={`/bang-tinh?unit=${encodeURIComponent(currentUnit.code)}`} className="inline-flex items-center gap-1.5 h-9 px-4 rounded-[8px] bg-[#006cee] text-white text-xs font-semibold">
+              <span>Mở Bảng tính 10 biểu</span><ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <button type="button" onClick={() => setViewMode('wizard')} className="inline-flex items-center gap-1.5 h-9 px-4 rounded-[8px] border border-[#cbd5e1] bg-white text-[#004776] text-xs font-semibold cursor-pointer">
+              <span>Mở trình khởi tạo / xuất gói tệp</span>
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="w-full max-w-[1360px] mx-auto flex flex-col lg:flex-row gap-4 items-start min-w-0">
           <WorkflowSidebar activeStep={wizardStage === 1 ? 1 : wizardStage === 2 ? 2 : wizardStage === 3 ? 5 : wizardStage === 4 ? 6 : 7} errorStep={validationErrors.length > 0 && activeStep > 1 ? 1 : null} onSelectStep={(s) => { const map: Record<number, 1 | 2 | 3 | 4 | 5> = { 1: 1, 2: 2, 5: 3, 6: 4, 7: 5 }; if (map[s]) handleStageChange(map[s], true); }} unitCode={currentUnit.code} />
@@ -202,7 +230,7 @@ export default function TaoTepPage() {
                   <MergeStepSection unit={currentUnit} />
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)]">
                     <button type="button" onClick={() => handleStageChange(4, true)} className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-[var(--border)] bg-[var(--sheet)] text-sm font-medium cursor-pointer"><ArrowLeft className="w-4 h-4" /><span>Quay lại Chặng 4</span></button>
-                    <Link href="/ra-soat" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--primary)] text-white text-sm font-semibold shadow-2xs"><span>Sang Kiểm tra 10 biểu &amp; Gửi kết quả</span><ArrowRight className="w-4 h-4" /></Link>
+                    <Link href={`/nghiep-vu-don-vi?tab=check&unitCode=${encodeURIComponent(currentUnit.code)}`} className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--primary)] text-white text-sm font-semibold shadow-2xs"><span>Sang Kiểm tra 10 biểu &amp; Gửi kết quả</span><ArrowRight className="w-4 h-4" /></Link>
                   </div>
                 </div>
               )}

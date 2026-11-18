@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Building2, CheckCircle2, History, Clock, AlertTriangle, FileSpreadsheet, ArrowRight, BarChart3, LayoutDashboard
+  Building2, CheckCircle2, History, Clock, AlertTriangle, FileText, ArrowRight, BarChart3, LayoutDashboard
 } from 'lucide-react';
 import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBanner';
 import { SchoolOverviewDashboard } from '@/components/overview/SchoolOverviewDashboard';
@@ -18,6 +18,7 @@ import {
 } from '@/services/telemetry/activity-log';
 import { OperatorSession, getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
+import { syncContextQueryParams } from '@/services/context/workbook-context';
 
 export default function HomePage() {
   const router = useRouter();
@@ -91,9 +92,8 @@ export default function HomePage() {
 
   const handleSwitchTab = (nextTab: 'overview' | 'unit-monitor') => {
     setActiveTab(nextTab);
+    syncContextQueryParams({ tab: nextTab === 'unit-monitor' ? 'unit-monitor' : null }, 'push');
     if (typeof window !== 'undefined') {
-      const nextUrl = nextTab === 'unit-monitor' ? '/?tab=unit-monitor' : '/';
-      window.history.replaceState(null, '', nextUrl);
       window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
     }
   };
@@ -172,7 +172,7 @@ export default function HomePage() {
       )}
 
       {isTcnsOrAdmin && activeTab === 'unit-monitor' ? (
-        <UnitMonitoringDashboard />
+        <UnitMonitoringDashboard compactOverviewMode={true} />
       ) : (
         <>
           {/* 2. Dashboard gọn các con số của trường (ai cũng xem được, nằm dưới phần xin chào) */}
@@ -201,17 +201,17 @@ export default function HomePage() {
 
               <div className="flex flex-wrap items-center gap-2.5">
                 <Link
-                  href="/bang-tinh"
+                  href="/phieu-cong-viec"
                   className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] hover:bg-[#eef5ff] text-[#004776] border border-[#cbd5e1] text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-[#006cee]" />
-                  <span>Bảng tính 10 biểu</span>
+                  <FileText className="w-4 h-4 text-[#006cee]" />
+                  <span>Phiếu công việc cá nhân</span>
                 </Link>
                 <Link
-                  href="/bang-tinh"
+                  href={operator?.role === 'staff' ? `/bang-tinh?unit=${encodeURIComponent(activeUnit.code)}` : `/nghiep-vu-don-vi?tab=overview&unitCode=${encodeURIComponent(activeUnit.code)}`}
                   className="inline-flex items-center gap-2 h-10 px-5 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold transition-colors active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Mở hồ sơ đơn vị</span>
+                  <span>{operator?.role === 'staff' ? 'Xem bảng tính đơn vị' : 'Mở hồ sơ đơn vị'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

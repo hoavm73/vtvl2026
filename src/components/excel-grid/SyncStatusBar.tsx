@@ -88,18 +88,9 @@ export function SyncStatusBar({
           )}
         </div>
 
-        {/* Bên phải: Nút đồng bộ máy chủ */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onSaveNow}
-            disabled={syncStatus === 'saving'}
-            className="inline-flex items-center gap-1.5 h-8 px-3 bg-[#004776] hover:bg-[#00385c] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
-            title="Lưu ngay lập tức dữ liệu 10 biểu lên máy chủ"
-          >
-            <Save className="w-3 h-3" />
-            <span>Lưu máy chủ</span>
-          </button>
+        {/* Bên phải: Nhắc thao tác lưu thống nhất ở thanh công cụ */}
+        <div className="text-[11px] text-[#476885] font-medium">
+          Nhấn <strong className="text-[#004776]">Lưu</strong> hoặc <strong className="text-[#004776]">Ctrl+S</strong> để đồng bộ
         </div>
       </div>
 

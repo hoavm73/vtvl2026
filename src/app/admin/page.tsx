@@ -3,14 +3,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, RefreshCw, BarChart3
+  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, BarChart3, ShieldCheck, History
 } from 'lucide-react';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminStatusStrip } from '@/components/admin/AdminStatusStrip';
 import { AdminSessionsTab } from '@/components/admin/AdminSessionsTab';
 import { AdminAccountsTab } from '@/components/admin/AdminAccountsTab';
 import { AdminSessionControlTab } from '@/components/admin/AdminSessionControlTab';
 import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
+import { TcnsReviewListPanel } from '@/components/admin/TcnsReviewListPanel';
+import { AdminSystemLogsTab } from '@/components/admin/AdminSystemLogsTab';
 import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
 import { AdminSkeletonLoading } from '@/components/admin/AdminSkeletonLoading';
@@ -18,15 +21,22 @@ import { getCurrentOperatorSession } from '@/services/telemetry/operator-session
 import { loginAsAdminSession } from '@/services/auth/admin-auth-client';
 import { performFullLogout } from '@/services/auth/google-auth';
 import { getAdminUnits } from '@/services/units/unit-management';
+import { syncContextQueryParams } from '@/services/context/workbook-context';
 
-type AdminTabKey = 'unit-monitor' | 'sessions' | 'accounts' | 'session-control' | 'units';
+type AdminTabKey = 'overview' | 'sessions' | 'review' | 'accounts' | 'units' | 'session-control' | 'system-logs';
+
+function parseAdminTab(raw: string | null): AdminTabKey {
+  if (raw === 'unit-monitor' || raw === 'overview') return 'overview';
+  if (raw === 'sessions' || raw === 'review' || raw === 'accounts' || raw === 'units' || raw === 'session-control' || raw === 'system-logs') return raw;
+  return 'overview';
+}
 
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<'admin' | 'unit_leader' | 'staff'>('admin');
-  const [activeTab, setActiveTab] = useState<AdminTabKey>('unit-monitor');
+  const [activeTab, setActiveTab] = useState<AdminTabKey>('overview');
 
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [accountCount, setAccountCount] = useState<number | null>(null);
@@ -39,10 +49,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const tabParam = new URLSearchParams(window.location.search).get('tab');
-    if (tabParam === 'unit-monitor' || tabParam === 'accounts' || tabParam === 'sessions' || tabParam === 'session-control' || tabParam === 'units') {
-      setActiveTab(tabParam);
-    }
+    const syncFromUrl = () => setActiveTab(parseAdminTab(new URLSearchParams(window.location.search).get('tab')));
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
 
   const checkAuthAndLoadStats = useCallback(async () => {
@@ -185,11 +195,7 @@ export default function AdminPage() {
 
   const selectAdminTab = (tabKey: AdminTabKey) => {
     setActiveTab(tabKey);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', tabKey);
-      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-    }
+    syncContextQueryParams({ tab: tabKey }, 'push');
   };
 
   const sessBadge = sessionCount === null ? '…' : sessionCount;
@@ -198,11 +204,13 @@ export default function AdminPage() {
   const tabs: { key: AdminTabKey; label: string; shortLabel: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
     ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accBadge})`, shortLabel: `Tài khoản ĐV (${accBadge})`, icon: Users }]
     : [
-        { key: 'unit-monitor', label: 'Dashboard theo dõi đơn vị', shortLabel: 'Theo dõi ĐV', icon: BarChart3 },
-        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessBadge})`, shortLabel: `1. Hồ sơ (${sessBadge})`, icon: FileSpreadsheet },
-        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accBadge})`, shortLabel: `2. Tài khoản (${accBadge})`, icon: Users },
-        { key: 'session-control', label: '3. Quản trị phiên', shortLabel: '3. Phiên', icon: UserCheck },
-        { key: 'units', label: `4. Quản trị đơn vị (${unitCount})`, shortLabel: `4. Đơn vị (${unitCount})`, icon: Building2 }
+        { key: 'overview', label: '1. Tổng quan theo dõi ĐV', shortLabel: 'Tổng quan', icon: BarChart3 },
+        { key: 'sessions', label: `2. Phiên & Bảng biểu (${sessBadge})`, shortLabel: `Hồ sơ (${sessBadge})`, icon: FileSpreadsheet },
+        { key: 'review', label: '3. Thẩm định cấp trường', shortLabel: 'Thẩm định', icon: ShieldCheck },
+        { key: 'accounts', label: `4. Tài khoản & Phân quyền (${accBadge})`, shortLabel: `Tài khoản (${accBadge})`, icon: Users },
+        { key: 'units', label: `5. Đơn vị (${unitCount})`, shortLabel: `Đơn vị (${unitCount})`, icon: Building2 },
+        { key: 'session-control', label: '6. Quản trị phiên', shortLabel: 'Phiên', icon: UserCheck },
+        { key: 'system-logs', label: '7. Nhật ký hệ thống', shortLabel: 'Nhật ký', icon: History }
       ];
 
   return (
@@ -214,39 +222,17 @@ export default function AdminPage() {
             onOpenOrgTree={isLeader ? undefined : () => setIsOrgTreeModalOpen(true)}
           />
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1 text-xs font-semibold text-[#20446c] min-w-0">
-            {!isLeader && (
-              <div className="inline-flex items-center gap-1.5">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-                <span className="text-[#004776]">{sessionCount === null ? 'Đang tải hồ sơ…' : `${sessionCount} hồ sơ`}</span>
-                <button type="button" onClick={handleManualRefresh} aria-label="Làm mới dữ liệu từ máy chủ" title="Làm mới dữ liệu từ máy chủ" className="ml-0.5 text-[#004776]/70 hover:text-[#004776] cursor-pointer">
-                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            )}
-            <div className="inline-flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-              <span className="text-[#004776]">{accountCount === null ? 'Đang tải tài khoản…' : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 max-w-full sm:max-w-md truncate min-w-0" title={activeUnitCode}>
-              <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-              <span className="truncate text-emerald-800">Phiên: {activeUnitCode}</span>
-            </div>
-            {!isLeader && (
-              <div className="inline-flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-                <span className="text-[#004776]">{unitCount} đơn vị</span>
-              </div>
-            )}
-            {!isLeader && migrationSummary && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#e9f0f8] text-[#004776]">{migrationSummary}</span>
-            )}
-            {statsError && (
-              <button type="button" onClick={handleManualRefresh} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-50 text-[#b42318] cursor-pointer">
-                <AlertCircle className="w-3.5 h-3.5" /><span>{statsError} Thử lại</span>
-              </button>
-            )}
-          </div>
+          <AdminStatusStrip
+            isLeader={isLeader}
+            sessionCount={sessionCount}
+            accountCount={accountCount}
+            activeUnitCode={activeUnitCode}
+            unitCount={unitCount}
+            migrationSummary={migrationSummary}
+            statsError={statsError}
+            isRefreshing={isRefreshing}
+            onRefresh={handleManualRefresh}
+          />
 
           <div className="sm:hidden">
             <label htmlFor="admin-mobile-view-select" className="sr-only">Chế độ xem quản trị</label>
@@ -276,11 +262,15 @@ export default function AdminPage() {
         </header>
 
         <div className="w-full max-w-full min-w-0">
-          {activeTab === 'unit-monitor' && !isLeader && <UnitMonitoringDashboard />}
+          {activeTab === 'overview' && !isLeader && <UnitMonitoringDashboard />}
           {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
+          {activeTab === 'review' && !isLeader && (
+            <TcnsReviewListPanel onSelectUnit={(u, wb) => router.push(`/admin/tham-dinh?unitCode=${encodeURIComponent(u)}&workbookId=${encodeURIComponent(wb)}`)} />
+          )}
           {activeTab === 'accounts' && <AdminAccountsTab />}
-          {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}
           {activeTab === 'units' && !isLeader && <AdminUnitsTab />}
+          {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}
+          {activeTab === 'system-logs' && !isLeader && <AdminSystemLogsTab />}
         </div>
 
         {!isLeader && (

@@ -5,7 +5,7 @@ import { MISSIONS_BY_GROUP } from '@/configs/hcmute-hd07-catalog';
 import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { getWorkbookById, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
-import { invalidateCacheTags } from '@/services/storage/runtime-cache';
+import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
       'ma_don_vi'
     );
 
-    invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
+    invalidateUnitMutationCache(summary.unitCode);
 
     return NextResponse.json({ success: true, message: 'Đồng bộ hồ sơ máy chủ thành công.' });
   } catch (error: unknown) {

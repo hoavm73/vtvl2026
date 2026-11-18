@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
+import { execSync } from 'child_process';
 
 const root = process.cwd();
 let passed = 0;
@@ -188,12 +189,13 @@ runTest('5. Kiểm tra Lược đồ CSDL quan hệ 22 bảng (PostgreSQL / Supa
   const bamGio = fs.readFileSync(path.join(root, 'src/app/bam-gio/page.tsx'), 'utf8');
   const mergeSec = fs.readFileSync(path.join(root, 'src/components/tao-tep/MergeStepSection.tsx'), 'utf8');
   const raSoat = fs.readFileSync(path.join(root, 'src/app/ra-soat/page.tsx'), 'utf8');
+  const checkPanel = fs.readFileSync(path.join(root, 'src/components/ra-soat/UnitWorkbookCheckPanel.tsx'), 'utf8');
   const supaSync = fs.readFileSync(path.join(root, 'src/services/storage/vtvl-sync.ts'), 'utf8');
 
   assert.ok(activityLog.includes('timeSessions') && activityLog.includes('lastMergedVersion') && activityLog.includes('lastAuditFixCount'), 'ActiveUnitSession phải lưu trữ xuyên suốt timeSessions, lastMergedVersion và lastAuditFixCount');
   assert.ok(bamGio.includes('buildPersonalTimerWorkbookFile') && bamGio.includes('saveActiveUnitSession'), 'Giai đoạn 3 (Bấm giờ) phải tự động đóng gói tệp khảo sát chuyển sang Giai đoạn 4');
   assert.ok(mergeSec.includes('buildPersonalTimerWorkbookFile') && mergeSec.includes('session.timeSessions'), 'Giai đoạn 4 (Gộp phiếu) phải tự động khôi phục phiếu bấm giờ từ session.timeSessions kể cả khi tải lại trang');
-  assert.ok(raSoat.includes('syncAuditResultToSupabase') && supaSync.includes('sldv_quy_mo_don_vi') && supaSync.includes('ra_soat_chua_du_can_cu'), 'Giai đoạn 2, 4, 5 phải đồng bộ đầy đủ dữ liệu lên các bảng quan hệ Supabase');
+  assert.ok(checkPanel.includes('syncAuditResultToSupabase') && raSoat.includes('/nghiep-vu-don-vi') && supaSync.includes('sldv_quy_mo_don_vi') && supaSync.includes('ra_soat_chua_du_can_cu'), 'Kiểm tra hồ sơ tích hợp đồng bộ dữ liệu lên CSDL và /ra-soat chuyển hướng chuẩn sang /nghiep-vu-don-vi');
 });
 
 // 6. Kiểm tra bắt buộc nhập Email & Chức vụ, Bảng mã ngạch (Tách & D1), 4 tệp xuất & Can_cu_goi_y
@@ -335,9 +337,103 @@ runTest('10. Kiểm tra bộ quy tắc Data Quality Checker và Validation Engin
   assert.ok(viewer.includes('DataQualityReportModal') && viewer.includes('validateWorkbookData'), 'ExcelWorkbookViewer phải tích hợp DataQualityReportModal và validateWorkbookData');
 });
 
-// 11. Kiểm tra phản hồi HTTP 200 OK trên máy chủ cục bộ (nếu đang chạy)
+// 11. Kiểm tra kiến trúc điều hướng mới, context guard, redirect tương thích & API lịch sử/thẩm định TCNS
+runTest('11. Kiến trúc 5 nhóm điều hướng, Context Guard, Redirect không 404 và API /api/workbooks/[id]/history', () => {
+  for (const rel of ['src/app/nghiep-vu-don-vi/page.tsx', 'src/app/admin/tham-dinh/page.tsx', 'src/app/gop-phieu/page.tsx', 'src/app/phieu-don-vi/page.tsx']) {
+    assert.ok(fs.existsSync(path.join(root, rel)), `Thiếu route bắt buộc: ${rel}`);
+  }
+  const gopPhieu = fs.readFileSync(path.join(root, 'src/app/gop-phieu/page.tsx'), 'utf8');
+  assert.ok(gopPhieu.includes('/phieu-don-vi'), '/gop-phieu phải redirect tương thích sang /phieu-don-vi');
+
+  const bamGioSrc = fs.readFileSync(path.join(root, 'src/app/bam-gio/page.tsx'), 'utf8');
+  assert.ok(!bamGioSrc.includes('tạm ẩn'), '/bam-gio không được chứa thông báo mâu thuẫn đang tạm ẩn');
+
+  const taoTepSrc = fs.readFileSync(path.join(root, 'src/app/tao-tep/page.tsx'), 'utf8');
+  assert.ok(!taoTepSrc.includes('<ExcelWorkbookViewer'), '/tao-tep không được render trùng trình soạn thảo ExcelWorkbookViewer với /bang-tinh');
+
+  const dataDir = path.join(root, '.data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const backupNames = ['server_accounts.json', 'accounts.json', 'server_workbooks.json', 'audit_logs.json', 'audit-logs.json', 'staff_tickets.json'];
+  const backups = new Map();
+  for (const n of backupNames) {
+    const p = path.join(dataDir, n);
+    backups.set(n, fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+  }
+  try {
+    const tsxCode = `
+      const assert = require('assert');
+      const { verifyWorkbookContextMatch, resolveSafeUnitCode, extractUnitCodeFromWorkbookId } = require('./src/services/context/workbook-context');
+      const { generateUserSessionToken } = require('./src/services/storage/server-auth-guard');
+      const { upsertUserAccount } = require('./src/services/storage/server-account-store');
+
+      assert.strictEqual(extractUnitCodeFromWorkbookId('wb_CNTT_170000_abcd'), 'CNTT');
+      assert.strictEqual(resolveSafeUnitCode({ role: 'unit_leader', unitCode: 'CK' }, 'CNTT'), 'CK');
+      assert.strictEqual(resolveSafeUnitCode({ role: 'admin', unitCode: 'TCNS' }, 'CNTT'), 'CNTT');
+      const mismatch = verifyWorkbookContextMatch({ expectedUnitCode: 'CK', fileUnitCode: 'CNTT' });
+      assert.strictEqual(mismatch.valid, false);
+      assert.strictEqual(mismatch.code, 'UNIT_MISMATCH');
+
+      (async () => {
+        await upsertUserAccount({ email: 'cb_ck@hcmute.edu.vn', displayName: 'CB CK', unitCode: 'CK', unitNameVi: 'Khoa Cơ khí', title: 'Giảng viên', role: 'staff', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: 'ld_ck@hcmute.edu.vn', displayName: 'LD CK', unitCode: 'CK', unitNameVi: 'Khoa Cơ khí', title: 'Trưởng khoa', role: 'unit_leader', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+        await upsertUserAccount({ email: 'tcns@hcmute.edu.vn', displayName: 'Admin TCNS', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Quản trị', role: 'admin', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
+
+        const { GET: getHistory, POST: postHistory } = require('./src/app/api/workbooks/[id]/history/route');
+        const tokStaff = generateUserSessionToken({ email: 'cb_ck@hcmute.edu.vn', role: 'staff', unitCode: 'CK' });
+        const tokLeader = generateUserSessionToken({ email: 'ld_ck@hcmute.edu.vn', role: 'unit_leader', unitCode: 'CK' });
+        const tokAdmin = generateUserSessionToken({ email: 'tcns@hcmute.edu.vn', role: 'admin', unitCode: 'TCNS' });
+
+        // Staff bị chặn 403 khi gửi hồ sơ hoặc xem chéo đơn vị
+        const staffCross = await getHistory(new Request('http://localhost:3360/api/workbooks/wb_CNTT_2026/history', { headers: { authorization: 'Bearer ' + tokStaff } }), { params: Promise.resolve({ id: 'wb_CNTT_2026' }) });
+        assert.strictEqual(staffCross.status, 403);
+        const staffSubmit = await postHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { method: 'POST', headers: { authorization: 'Bearer ' + tokStaff, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'submit_to_tcns', unitCode: 'CK' }) }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(staffSubmit.status, 403);
+
+        // Đảm bảo khởi tạo hồ sơ CK trước
+        const initGet = await getHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { headers: { authorization: 'Bearer ' + tokLeader } }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(initGet.status, 200);
+
+        // Lãnh đạo CK gửi hồ sơ -> 200 cho_tham_dinh, nhưng bị chặn 403 nếu tự duyệt tcns_approve
+        const leaderSubmit = await postHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { method: 'POST', headers: { authorization: 'Bearer ' + tokLeader, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'submit_to_tcns', unitCode: 'CK' }) }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(leaderSubmit.status, 200);
+        const leaderSubmitJson = await leaderSubmit.json();
+        assert.strictEqual(leaderSubmitJson.reviewMeta.status, 'cho_tham_dinh');
+
+        const leaderApproveFail = await postHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { method: 'POST', headers: { authorization: 'Bearer ' + tokLeader, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'tcns_approve', unitCode: 'CK' }) }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(leaderApproveFail.status, 403);
+
+        // Admin TCNS yêu cầu bổ sung rồi xác nhận đạt -> cập nhật trạng thái và timeline
+        const adminFix = await postHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { method: 'POST', headers: { authorization: 'Bearer ' + tokAdmin, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'tcns_request_changes', unitCode: 'CK', note: 'Bổ sung minh chứng B1' }) }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(adminFix.status, 200);
+        assert.strictEqual((await adminFix.json()).reviewMeta.status, 'can_bo_sung');
+
+        const adminApprove = await postHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { method: 'POST', headers: { authorization: 'Bearer ' + tokAdmin, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'tcns_approve', unitCode: 'CK', note: 'Đạt chuẩn 6/6 chỉ tiêu' }) }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        assert.strictEqual(adminApprove.status, 200);
+        const approvedJson = await adminApprove.json();
+        assert.strictEqual(approvedJson.reviewMeta.status, 'dat_yeu_cau');
+
+        const afterGet = await getHistory(new Request('http://localhost:3360/api/workbooks/wb_CK_2026/history', { headers: { authorization: 'Bearer ' + tokAdmin } }), { params: Promise.resolve({ id: 'wb_CK_2026' }) });
+        const afterJson = await afterGet.json();
+        assert.strictEqual(afterJson.reviewMeta.status, 'dat_yeu_cau');
+        assert.ok(afterJson.timeline.some((ev) => ev.action === 'THAM_DINH_DAT'));
+      })().catch((e) => { console.error(e); process.exit(1); });
+    `;
+    execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, {
+      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      stdio: 'pipe'
+    });
+  } finally {
+    for (const [n, c] of backups.entries()) {
+      const p = path.join(dataDir, n);
+      if (c === null) { if (fs.existsSync(p)) fs.unlinkSync(p); }
+      else fs.writeFileSync(p, c, 'utf8');
+    }
+  }
+});
+
+// 12. Kiểm tra phản hồi HTTP 200 OK trên máy chủ cục bộ (nếu đang chạy)
 const checkLocalServer = async () => {
-  const routes = ['/', '/tao-tep', '/bang-tinh', '/bam-gio', '/ra-soat', '/huong-dan'];
+  const routes = ['/', '/tao-tep', '/bang-tinh', '/bam-gio', '/ra-soat', '/huong-dan', '/nghiep-vu-don-vi', '/phieu-don-vi', '/gop-phieu', '/admin/tham-dinh'];
   try {
     const ping = await fetch('http://localhost:3360/');
     if (ping.ok) {

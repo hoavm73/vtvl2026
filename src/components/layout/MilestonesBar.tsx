@@ -110,7 +110,7 @@ export function WorkflowSidebar({
   }, [drawerOpen]);
   const closeDrawer = () => { setDrawerOpen(false); setTimeout(() => triggerBtnRef.current?.focus(), 40); };
 
-  const currentStep = activeStep ?? (pathname === '/bam-gio' ? 3 : pathname === '/ra-soat' ? 8 : 1);
+  const currentStep = activeStep ?? (pathname === '/bam-gio' ? 3 : pathname === '/nghiep-vu-don-vi' ? 8 : 1);
   const activeStepObj = SIDEBAR_EIGHT_STEPS.find((s) => s.num === currentStep) || SIDEBAR_EIGHT_STEPS[0];
   const hasStep1Done = Boolean(actorInfo.email && actorInfo.title && actorInfo.posCount > 0);
   const stageDoneFlags = [
@@ -272,7 +272,7 @@ export function WorkflowSidebar({
                   onSelectStep ? (
                     <button type="button" onClick={() => { onSelectStep(1); focusTaskTarget('task-1-unit'); }} className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline shrink-0 cursor-pointer"><RefreshCw className="w-3 h-3" /><span>Đổi</span></button>
                   ) : (
-                    <Link href="/tao-tep?step=1&task=task-1-unit" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline shrink-0"><RefreshCw className="w-3 h-3" /><span>Đổi</span></Link>
+                    <Link href="/bang-tinh?sheet=A1" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline shrink-0"><RefreshCw className="w-3 h-3" /><span>Đổi</span></Link>
                   )
                 )}
               </div>

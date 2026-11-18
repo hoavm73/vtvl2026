@@ -4,19 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileSpreadsheet, FileText, ClipboardCheck, Clock, Home,
-  Menu, X, ShieldCheck
+  FileSpreadsheet, FileText, ClipboardCheck, Home,
+  Menu, X, ShieldCheck, Building2, BookOpen, Settings
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
 
-const MOBILE_NAV_ITEMS = [
+const MOBILE_NAV_ITEMS: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles?: ('admin' | 'unit_leader' | 'staff')[] }[] = [
   { href: '/', label: 'Tổng quan hệ thống', icon: Home },
   { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText },
-  { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck },
+  { href: '/nghiep-vu-don-vi', label: 'Hồ sơ đơn vị', icon: Building2, roles: ['admin', 'unit_leader'] },
   { href: '/bang-tinh', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
-  { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
+  { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck, roles: ['admin', 'unit_leader'] },
+  { href: '/admin/tham-dinh', label: 'Thẩm định cấp trường', icon: ShieldCheck, roles: ['admin'] },
+  { href: '/admin', label: 'Quản trị hệ thống', icon: Settings, roles: ['admin', 'unit_leader'] },
+  { href: '/huong-dan', label: 'Hướng dẫn nghiệp vụ', icon: BookOpen }
 ];
 
 export function Header() {
@@ -34,13 +37,11 @@ export function Header() {
   }, []);
 
   const isLoggedIn = Boolean(session);
-  const isAdmin = Boolean(session?.role === 'admin' || session?.email === 'tcns@hcmute.edu.vn');
+  const currentRole = session?.role || (session?.email === 'tcns@hcmute.edu.vn' ? 'admin' : 'staff');
 
   const mobileNavItems = !isLoggedIn
     ? []
-    : isAdmin
-    ? MOBILE_NAV_ITEMS
-    : MOBILE_NAV_ITEMS.filter((item) => item.href !== '/admin');
+    : MOBILE_NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(currentRole));
 
   useEffect(() => {
     setMobileOpen(false);
@@ -150,12 +151,14 @@ export function Header() {
                 {mobileNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = item.href === '/bang-tinh'
-                    ? pathname === '/bang-tinh' || pathname === '/tao-tep'
-                    : item.href === '/phieu-cong-viec'
-                      ? pathname === '/phieu-cong-viec'
-                      : item.href === '/'
-                        ? pathname === '/'
-                        : pathname.startsWith(item.href);
+                    ? pathname === '/bang-tinh'
+                    : item.href === '/admin/tham-dinh'
+                      ? pathname.startsWith('/admin/tham-dinh')
+                      : item.href === '/admin'
+                        ? pathname === '/admin'
+                        : item.href === '/'
+                          ? pathname === '/'
+                          : pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}

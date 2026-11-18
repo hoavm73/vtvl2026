@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Timer, Play, Pause, Plus, Download, CheckCircle2, Trash2, ArrowRight, UserCheck, ClipboardList, Edit3, FileText, AlertTriangle } from 'lucide-react';
+import { Timer, Play, Pause, Plus, Download, CheckCircle2, Trash2, ArrowRight, UserCheck, ClipboardList, Edit3, FileText } from 'lucide-react';
 import { WorkflowSidebar, InfoTip } from '@/components/layout/MilestonesBar';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { NGACH_LIST_BY_GROUP, TASK_TEMPLATES_BY_GROUP } from '@/configs/hcmute-quotas';
@@ -150,19 +150,15 @@ export default function BamGioPage() {
       <div className="flex flex-col lg:flex-row gap-4 items-start min-w-0">
         <WorkflowSidebar activeStep={stepMode} onSelectStep={(s) => { if (s === 3 || s === 4) handleSwitchStep(s); }} unitCode={unit.code} />
         <div className="flex-1 w-full space-y-4 min-w-0">
-          <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-amber-900">Tính năng bấm giờ đo định mức đang tạm ẩn</h2>
-              </div>
+          <div className="rounded-[12px] border border-[#dbe8f5] bg-[#f4f8ff] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <Timer className="w-4 h-4 text-[#006cee] shrink-0" />
+              <div className="text-xs text-[#20446c]"><strong className="text-[#004776]">Công cụ đo định mức (Biểu B1 &amp; B2_CT):</strong> Dữ liệu tự động đồng bộ vào bộ biểu của [{unit.code}].</div>
             </div>
-            <Link href="/phieu-cong-viec" className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005a96] text-white text-xs font-semibold shrink-0 transition-colors">
-              <FileText className="w-3.5 h-3.5" />
-              <span>Về Phiếu công việc</span>
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href={`/bang-tinh?sheet=B1&unit=${encodeURIComponent(unit.code)}`} className="px-3 py-1.5 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-[#004776] text-xs font-semibold">Quay về Biểu B1</Link>
+              <Link href="/phieu-cong-viec" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold"><FileText className="w-3.5 h-3.5" /><span>Phiếu công việc</span></Link>
+            </div>
           </div>
 
           <section className="bg-white rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 shadow-2xs">

@@ -4,6 +4,11 @@ import { getAllActiveServerWorkbooks } from '@/services/storage/server-workbook-
 import { getAllUserAccounts } from '@/services/storage/server-account-store';
 import { getAuditLogs } from '@/services/storage/server-audit-store';
 import { toCanonicalStatus, StaffWorkTicket } from '@/types/staff-ticket';
+import {
+  deriveReviewMetaFromWorkbook,
+  REVIEW_STATUS_LABELS,
+  summarizeErrorCountFromWorkbookData
+} from '@/services/workbooks/workbook-history-service';
 
 export interface UnitMonitorHistoryItem {
   id: string;
@@ -24,6 +29,14 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
   const workbooks = getAllActiveServerWorkbooks();
   const wbByUnit = new Map(workbooks.map((w) => [w.unitId.toUpperCase(), w]));
   const allAccounts = getAllUserAccounts();
+  const allAuditLogs = getAuditLogs({ unitCode: filterUnit || undefined, limit: 300 });
+  const auditsByUnit = new Map<string, typeof allAuditLogs>();
+  for (const log of allAuditLogs) {
+    const uc = (log.unitCode || '').toUpperCase();
+    const list = auditsByUnit.get(uc) || [];
+    list.push(log);
+    auditsByUnit.set(uc, list);
+  }
 
   const allTicketsRaw: StaffWorkTicket[] = [];
   for (const u of HCMUTE_UNITS) {
@@ -102,6 +115,8 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
     }
 
     const groupInfo = UNIT_GROUPS.find((g) => g.id === unit.group);
+    const reviewMeta = deriveReviewMetaFromWorkbook(wb, auditsByUnit.get(uc) || []);
+    const errorCount = wb ? summarizeErrorCountFromWorkbookData(wb.data) : 0;
 
     return {
       unitCode: unit.code,
@@ -127,7 +142,16 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
       staffCount,
       progressPercent,
       stageLabel,
-      lastUpdatedAt: lastUpdatedAt || null
+      lastUpdatedAt: lastUpdatedAt || null,
+      reviewStatus: reviewMeta.status,
+      reviewStatusLabel: REVIEW_STATUS_LABELS[reviewMeta.status],
+      submittedAt: reviewMeta.submittedAt,
+      submittedBy: reviewMeta.submittedBy,
+      submittedRevision: reviewMeta.submittedRevision,
+      reviewerEmail: reviewMeta.reviewerEmail,
+      reviewedAt: reviewMeta.reviewedAt,
+      reviewNote: reviewMeta.reviewNote,
+      errorCount
     };
   });
 

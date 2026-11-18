@@ -247,7 +247,10 @@ export function UnitMonitoringTable({
                     </td>
                     <td className="py-2.5 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
-                        <Link href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#f1f5f9] hover:bg-[#e1edf8] text-[11px] font-semibold text-[#004776] transition-colors">
+                        <Link href={`/nghiep-vu-don-vi?unitCode=${encodeURIComponent(u.unitCode)}`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#eef5ff] hover:bg-[#dce8f5] text-[11px] font-semibold text-[#006cee] transition-colors">
+                          <span>Hồ sơ ĐV</span>
+                        </Link>
+                        <Link href={`/phieu-don-vi?unitCode=${encodeURIComponent(u.unitCode)}&tab=all`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#f1f5f9] hover:bg-[#e1edf8] text-[11px] font-semibold text-[#004776] transition-colors">
                           <span>Phiếu</span><ExternalLink className="w-3 h-3 text-[#006cee]" />
                         </Link>
                         <Link href={`/bang-tinh?unit=${encodeURIComponent(u.unitCode)}`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#f1f5f9] hover:bg-[#e1edf8] text-[11px] font-semibold text-[#004776] transition-colors">

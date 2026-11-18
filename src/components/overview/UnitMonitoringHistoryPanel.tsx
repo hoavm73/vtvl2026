@@ -171,7 +171,7 @@ export function UnitMonitoringHistoryPanel({
                       </div>
 
                       <Link
-                        href={`/phieu-cong-viec?unitCode=${encodeURIComponent(t.unitCode)}&tab=unit`}
+                        href={`/phieu-don-vi?unitCode=${encodeURIComponent(t.unitCode)}&tab=all`}
                         onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', t.unitCode); }}
                         className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#006cee] hover:text-[#004776] shrink-0"
                       >

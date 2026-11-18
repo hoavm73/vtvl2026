@@ -4,15 +4,17 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileText,
-  FileSpreadsheet,
+  Building2,
   ClipboardCheck,
+  FileSpreadsheet,
+  FileText,
   ShieldCheck,
   BookOpen,
   Home,
   ChevronLeft,
   ChevronRight,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 
@@ -32,61 +34,37 @@ interface NavGroupDef {
 
 const SIDEBAR_GROUPS: NavGroupDef[] = [
   {
-    groupTitle: 'Tổng quan hệ thống',
+    groupTitle: 'Tổng quan',
     items: [
-      {
-        href: '/',
-        label: 'Trang chủ tổng quan',
-        icon: Home
-      },
-      {
-        href: '/?tab=unit-monitor',
-        label: 'Theo dõi đơn vị',
-        icon: BarChart3,
-        roles: ['admin']
-      }
+      { href: '/', label: 'Trang chủ tổng quan', icon: Home },
+      { href: '/?tab=unit-monitor', label: 'Theo dõi đơn vị', icon: BarChart3, roles: ['admin'] }
     ]
   },
   {
     groupTitle: 'Nghiệp vụ cá nhân',
     items: [
-      {
-        href: '/phieu-cong-viec',
-        label: 'Phiếu công việc cá nhân',
-        icon: FileText
-      }
+      { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText }
     ]
   },
   {
     groupTitle: 'Nghiệp vụ đơn vị',
     items: [
-      {
-        href: '/phieu-don-vi',
-        label: 'Quản lý phiếu đơn vị',
-        icon: ClipboardCheck,
-        roles: ['admin', 'unit_leader']
-      },
-      {
-        href: '/bang-tinh',
-        label: 'Bảng tính 10 biểu',
-        icon: FileSpreadsheet
-      }
+      { href: '/nghiep-vu-don-vi', label: 'Hồ sơ đơn vị', icon: Building2, roles: ['admin', 'unit_leader'] },
+      { href: '/bang-tinh', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
+      { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck, roles: ['admin', 'unit_leader'] }
     ]
   },
   {
-    groupTitle: 'Hệ thống & tra cứu',
+    groupTitle: 'Kiểm tra & thẩm định TCNS',
     items: [
-      {
-        href: '/admin',
-        label: 'Quản trị hệ thống',
-        icon: ShieldCheck,
-        roles: ['admin', 'unit_leader']
-      },
-      {
-        href: '/huong-dan',
-        label: 'Hướng dẫn nghiệp vụ',
-        icon: BookOpen
-      }
+      { href: '/admin/tham-dinh', label: 'Thẩm định cấp trường', icon: ShieldCheck, roles: ['admin'] }
+    ]
+  },
+  {
+    groupTitle: 'Quản trị & tra cứu',
+    items: [
+      { href: '/admin', label: 'Quản trị hệ thống', icon: Settings, roles: ['admin', 'unit_leader'] },
+      { href: '/huong-dan', label: 'Hướng dẫn nghiệp vụ', icon: BookOpen }
     ]
   }
 ];
@@ -126,6 +104,9 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const isItemActive = (href: string) => {
     if (href === '/') return pathname === '/' && !isMonitorTab;
     if (href === '/?tab=unit-monitor') return pathname === '/' && isMonitorTab;
+    if (href === '/admin/tham-dinh') return pathname.startsWith('/admin/tham-dinh');
+    if (href === '/admin') return pathname === '/admin';
+    if (href === '/nghiep-vu-don-vi') return pathname.startsWith('/nghiep-vu-don-vi');
     if (href === '/phieu-don-vi') return pathname === '/phieu-don-vi';
     if (href === '/bang-tinh') return pathname === '/bang-tinh';
     if (href === '/phieu-cong-viec') return pathname === '/phieu-cong-viec';

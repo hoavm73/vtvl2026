@@ -81,7 +81,7 @@ export function UnitMonitoringKpiStrip({
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Link
-              href={`/phieu-cong-viec?unitCode=${encodeURIComponent(activeUnitRow.unitCode)}&tab=unit`}
+              href={`/phieu-don-vi?unitCode=${encodeURIComponent(activeUnitRow.unitCode)}&tab=all`}
               onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', activeUnitRow.unitCode); }}
               className="inline-flex items-center gap-1.5 h-8.5 px-3.5 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold transition-colors"
             >

@@ -53,7 +53,7 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; actions: ActionCardItem[] 
       {
         id: 'admin-audit',
         title: 'Giám sát tiến độ & Thẩm định đề án các đơn vị',
-        href: '/ra-soat',
+        href: '/admin/tham-dinh',
         btnLabel: 'Thẩm định đề án',
         icon: ShieldCheck,
         tag: 'Thẩm định đề án'
@@ -73,9 +73,9 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; actions: ActionCardItem[] 
       },
       {
         id: 'lead-share-form',
-        title: 'Phát hành phiếu khảo sát & Mã QR',
-        href: '/phieu-cong-viec',
-        btnLabel: 'Phát hành phiếu',
+        title: 'Quản lý, duyệt & gộp phiếu công việc đơn vị',
+        href: '/phieu-don-vi',
+        btnLabel: 'Quản lý phiếu ĐV',
         icon: Share2,
         tag: 'Khảo sát định mức'
       },
@@ -97,9 +97,9 @@ const ROLE_ACTIONS: Record<UserRole, { label: string; actions: ActionCardItem[] 
       },
       {
         id: 'lead-review-submit',
-        title: 'Kiểm tra chéo 6 chỉ tiêu & Xuất nộp hồ sơ',
-        href: '/ra-soat',
-        btnLabel: 'Kiểm tra & Nộp đề án',
+        title: 'Kiểm tra chéo 6 chỉ tiêu & Gửi hồ sơ TCNS',
+        href: '/nghiep-vu-don-vi?tab=check',
+        btnLabel: 'Kiểm tra & Gửi TCNS',
         icon: CheckSquare,
         tag: 'Hoàn tất đề án'
       }

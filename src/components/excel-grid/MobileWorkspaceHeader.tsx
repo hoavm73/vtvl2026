@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   ChevronDown, Check, MoreHorizontal, Save, ShieldCheck, AlertTriangle,
   HelpCircle, ArrowUpDown, Download, RefreshCw, Lightbulb, Lock, Unlock,
-  Network, BarChart3, ArrowRight, Building2, User
+  Network, BarChart3, ArrowRight, Building2, User, Timer, History
 } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { EXCEL_SHEET_METAS } from './excel-sheet-metas';
@@ -179,12 +180,18 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
               </PopoverClose>
             )}
 
-            <PopoverClose onClick={props.onOpenQualityModal}>
-              <div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-[#004776] hover:bg-[#f4f7fb]">
-                <span className="inline-flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[#006cee]" /><span>Kiểm tra chất lượng dữ liệu</span></span>
-                {fixCount > 0 ? <span className="px-2 py-0.5 rounded-full bg-[#fdeceb] text-[#b42318] text-[11px] font-bold">{fixCount} mục</span> : <span className="text-emerald-700 text-[11px] font-bold">Hợp lệ</span>}
-              </div>
-            </PopoverClose>
+            <Link href={`/nghiep-vu-don-vi?tab=check&unitCode=${encodeURIComponent(props.unitCode)}`} className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-[#004776] hover:bg-[#f4f7fb]">
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[#006cee]" /><span>Kiểm tra hồ sơ (K_KiemTra)</span></span>
+              {fixCount > 0 ? <span className="px-2 py-0.5 rounded-full bg-[#fdeceb] text-[#b42318] text-[11px] font-bold">{fixCount} mục</span> : <span className="text-emerald-700 text-[11px] font-bold">Hợp lệ</span>}
+            </Link>
+
+            <Link href={`/nghiep-vu-don-vi?tab=history&unitCode=${encodeURIComponent(props.unitCode)}`} className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]">
+              <History className="w-4 h-4 text-[#006cee]" /><span>Lịch sử &amp; khôi phục phiên bản</span>
+            </Link>
+
+            <Link href={`/bam-gio?step=3&unitCode=${encodeURIComponent(props.unitCode)}`} className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]">
+              <Timer className="w-4 h-4 text-[#006cee]" /><span>Đo định mức thời gian (B1)</span>
+            </Link>
 
             <PopoverClose onClick={props.onOpenGuidance}>
               <div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]">

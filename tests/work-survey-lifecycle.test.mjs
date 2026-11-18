@@ -251,18 +251,23 @@ runTest('Ca 10: Thanh công cụ và cột lưới trang Phiếu công việc ch
   assert.ok(pageCode.includes('xl:col-span-6 min-w-0'), 'Các cột xl:col-span-6 tại trang phiếu công việc phải có min-w-0');
 });
 
-runTest('Ca 11: Phân tách 5 tab (có Đã duyệt & Chờ duyệt gồm Yêu cầu bổ sung) và tinh gọn cột phải Phiếu của tôi', () => {
+runTest('Ca 11: Tách rõ 4 tab cá nhân tại /phieu-cong-viec và 3 tab duyệt/gộp đơn vị tại /phieu-don-vi', () => {
   const tabBarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketsTabBar.tsx'), 'utf8');
+  const unitHeaderCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/UnitTicketsHeaderBar.tsx'), 'utf8');
   const filterBarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/UnitTicketsFilterBar.tsx'), 'utf8');
   const sideCardCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedSideCard.tsx'), 'utf8');
 
   assert.ok(
-    tabBarCode.includes("export type StaffTicketsTabKey = 'my' | 'pending' | 'approved' | 'unit' | 'proposed' | 'relationships';"),
-    'StaffTicketsTabBar phải khai báo đủ 6 tab gồm proposed và relationships'
+    tabBarCode.includes("export type StaffTicketsTabKey = 'my-tickets' | 'create' | 'coordination' | 'relationships';"),
+    'StaffTicketsTabBar phải khai báo đúng 4 tab cá nhân'
   );
   assert.ok(
-    tabBarCode.includes('Chờ duyệt') && tabBarCode.includes('Đã duyệt') && tabBarCode.includes('Nhiệm vụ được đề xuất phối hợp') && tabBarCode.includes('Mối quan hệ công việc'),
-    'StaffTicketsTabBar phải hiển thị nhãn Chờ duyệt, Đã duyệt, Nhiệm vụ được đề xuất phối hợp và Mối quan hệ công việc'
+    tabBarCode.includes('Phiếu của tôi') && tabBarCode.includes('Tạo phiếu công việc') && tabBarCode.includes('Công việc phối hợp với tôi') && tabBarCode.includes('Mối quan hệ công việc'),
+    'StaffTicketsTabBar phải hiển thị đúng 4 nhãn tab cá nhân'
+  );
+  assert.ok(
+    unitHeaderCode.includes('Toàn bộ phiếu đơn vị') && unitHeaderCode.includes('Chờ duyệt') && unitHeaderCode.includes('Đã duyệt'),
+    'UnitTicketsHeaderBar trên /phieu-don-vi phải hiển thị đủ 3 tab quản lý phiếu đơn vị'
   );
   assert.ok(
     reviewListCode.includes("c === 'submitted' || c === 'resubmitted' || c === 'changes_requested'"),
@@ -278,7 +283,7 @@ runTest('Ca 11: Phân tách 5 tab (có Đã duyệt & Chờ duyệt gồm Yêu c
     pageCode.includes('UnitVtvlLookupCard') &&
     pageCode.includes('ProposedCoordinatedSideCard') &&
     sideCardCode.includes('Các nhiệm vụ được đề xuất phối hợp'),
-    'Cột phải tab Phiếu của tôi chỉ hiển thị bản nháp khi có (loại bỏ phiếu đã gửi duyệt), kèm Danh mục VTVL và Các nhiệm vụ được đề xuất phối hợp'
+    'Trang /phieu-cong-viec phải hiển thị danh sách phiếu cá nhân, Danh mục VTVL và Các nhiệm vụ được đề xuất phối hợp'
   );
 });
 
@@ -923,10 +928,10 @@ runTest('Ca 19: Kiểm tra kiến trúc Mobile-First (#11-#14): Phiếu mặc đ
 });
 
 runTest('Ca 20: Modal Yêu cầu bổ sung / Thu hồi / Hủy xóa sạch dữ liệu cũ mỗi lần mở phiếu khác (unmount + key + autoComplete=off)', () => {
-  const pageSrc = fs.readFileSync(path.join(root, 'src/app/phieu-cong-viec/page.tsx'), 'utf8');
+  const unitPageSrc = fs.readFileSync(path.join(root, 'src/app/phieu-don-vi/page.tsx'), 'utf8');
   assert.ok(
-    pageSrc.includes('{moderationModal && <StaffTicketRevisionModal key=') && pageSrc.includes('moderationModal.seq'),
-    'Trang /phieu-cong-viec phải unmount StaffTicketRevisionModal khi đóng và gắn key duy nhất theo seq mỗi lần mở'
+    unitPageSrc.includes('{moderationModal && <StaffTicketRevisionModal key=') && unitPageSrc.includes('moderationModal.seq'),
+    'Trang /phieu-don-vi phải unmount StaffTicketRevisionModal khi đóng và gắn key duy nhất theo seq mỗi lần mở'
   );
 
   const modalSrc = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketRevisionModal.tsx'), 'utf8');

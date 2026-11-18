@@ -12,34 +12,29 @@ import { ProposedCoordinatedTasksTab } from '@/components/staff-portal/ProposedC
 import { ProposedCoordinatedSideCard } from '@/components/staff-portal/ProposedCoordinatedSideCard';
 import { WorkRelationshipsTab } from '@/components/staff-portal/WorkRelationshipsTab';
 import { StaffMyTicketsList } from '@/components/staff-portal/StaffMyTicketsList';
-import { UnitTicketsReviewList } from '@/components/staff-portal/UnitTicketsReviewList';
 import { UnitVtvlLookupCard } from '@/components/staff-portal/UnitVtvlLookupCard';
 import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrintModal';
 import { StaffTicketDetailModal } from '@/components/staff-portal/StaffTicketDetailModal';
-import { StaffTicketRevisionModal, TicketModerationModalMode } from '@/components/staff-portal/StaffTicketRevisionModal';
-import { StaffTicketMergePreviewModal } from '@/components/staff-portal/StaffTicketMergePreviewModal';
 import { CoordinatedTaskModal } from '@/components/staff-portal/CoordinatedTaskModal';
 import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
+import { syncContextQueryParams } from '@/services/context/workbook-context';
 
 export default function StaffWorkTicketsPage() {
   const router = useRouter();
   const [session, setSession] = useState<OperatorSession | null>(null);
   const [unitNameVi, setUnitNameVi] = useState('');
   const [myTickets, setMyTickets] = useState<StaffWorkTicket[]>([]);
-  const [unitTickets, setUnitTickets] = useState<StaffWorkTicket[]>([]);
   const [a1Missions, setA1Missions] = useState<GenericGridRow[]>([]);
   const [c1Vtvls, setC1Vtvls] = useState<GenericGridRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<StaffTicketsTabKey>('my');
+  const [activeTab, setActiveTab] = useState<StaffTicketsTabKey>('my-tickets');
   const [proposedItems, setProposedItems] = useState<ProposedCoordinatedTaskItem[]>([]), [relationships, setRelationships] = useState<WorkRelationshipItem[]>([]);
   const [myVtvlAssignments, setMyVtvlAssignments] = useState<{ id: string; unitCode: string; maVtvl: string; tenVtvl?: string }[]>([]);
   const [pickedVtvl, setPickedVtvl] = useState<{ code: string; seq: number } | null>(null), [activeVtvlCode, setActiveVtvlCode] = useState('');
 
   const [editingTicket, setEditingTicket] = useState<StaffWorkTicket | null>(null), [detailTicket, setDetailTicket] = useState<StaffWorkTicket | null>(null);
-  const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
-  const [moderationModal, setModerationModal] = useState<{ ticket: StaffWorkTicket; mode: TicketModerationModalMode; seq: number } | null>(null);
-  const [mergeTicket, setMergeTicket] = useState<StaffWorkTicket | null>(null), [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
+  const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null), [coordTicket, setCoordTicket] = useState<StaffWorkTicket | null>(null);
 
   const lastLoadedKeyRef = useRef<string>('');
   const isSyncingTokenRef = useRef(false);
@@ -69,10 +64,10 @@ export default function StaffWorkTicketsPage() {
         const json = await res.json();
         setUnitNameVi(op.role === 'admin' ? op.unitNameVi : (json.unitNameVi || op.unitNameVi));
         const loadedMy: StaffWorkTicket[] = json.myTickets || [], loadedUnit: StaffWorkTicket[] = json.unitTickets || [];
-        setMyTickets(loadedMy); setUnitTickets(loadedUnit); setA1Missions(json.a1Missions || []); setC1Vtvls(json.c1Vtvls || []);
+        setMyTickets(loadedMy); setA1Missions(json.a1Missions || []); setC1Vtvls(json.c1Vtvls || []);
         const editId = isInitial && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('editId') : null;
         const foundEdit = editId ? (loadedMy.find((t) => t.id === editId) || loadedUnit.find((t) => t.id === editId)) : null;
-        if (foundEdit) { setEditingTicket(foundEdit); setActiveTab('my'); }
+        if (foundEdit) { setEditingTicket(foundEdit); setActiveTab('create'); }
       }
       if (coordRes.ok) {
         const cJson = await coordRes.json();
@@ -98,28 +93,33 @@ export default function StaffWorkTicketsPage() {
 
   const selectTab = useCallback((nextTab: StaffTicketsTabKey) => {
     setActiveTab(nextTab);
-    if (nextTab === 'pending' || nextTab === 'my' || nextTab === 'approved' || nextTab === 'unit') {
+    if (nextTab === 'my-tickets') {
       const cur = getCurrentOperatorSession();
       if (cur) loadData(cur, false);
     }
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (nextTab === 'my') url.searchParams.delete('tab');
-      else url.searchParams.set('tab', nextTab);
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    }
+    syncContextQueryParams({ tab: nextTab === 'my-tickets' ? null : nextTab }, 'push');
   }, [loadData]);
 
   useEffect(() => {
     syncWithSession(getCurrentOperatorSession(), true);
-    if (typeof window !== 'undefined') {
-      const tabParam = new URLSearchParams(window.location.search).get('tab');
-      if (tabParam === 'pending' || tabParam === 'review') setActiveTab('pending');
-      else if (tabParam === 'approved') setActiveTab('approved');
-      else if (tabParam === 'unit') setActiveTab('unit');
-      else if (tabParam === 'proposed') setActiveTab('proposed');
+    const applyUrlTab = () => {
+      const p = new URLSearchParams(window.location.search);
+      const tabParam = p.get('tab');
+      const unitParam = p.get('unitCode') || p.get('unit');
+      if (tabParam === 'pending' || tabParam === 'approved' || tabParam === 'unit' || tabParam === 'review') {
+        const mappedTab = tabParam === 'unit' ? 'all' : tabParam === 'review' ? 'pending' : tabParam;
+        const qs = new URLSearchParams({ tab: mappedTab });
+        if (unitParam) qs.set('unitCode', unitParam);
+        router.replace(`/phieu-don-vi?${qs.toString()}`);
+        return;
+      }
+      if (tabParam === 'proposed' || tabParam === 'coordination') setActiveTab('coordination');
+      else if (tabParam === 'create') setActiveTab('create');
       else if (tabParam === 'relationships') setActiveTab('relationships');
-    }
+      else setActiveTab('my-tickets');
+    };
+    applyUrlTab();
+    window.addEventListener('popstate', applyUrlTab);
     const onUp = () => {
       const op = getCurrentOperatorSession();
       if (!op) { router.replace('/login'); return; }
@@ -129,18 +129,15 @@ export default function StaffWorkTicketsPage() {
     const onFocus = () => { const cur = getCurrentOperatorSession(); if (cur) loadData(cur, false); };
     window.addEventListener('vtvl-operator-changed', onUp);
     window.addEventListener('focus', onFocus);
-    return () => { window.removeEventListener('vtvl-operator-changed', onUp); window.removeEventListener('focus', onFocus); };
+    return () => {
+      window.removeEventListener('popstate', applyUrlTab);
+      window.removeEventListener('vtvl-operator-changed', onUp);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [syncWithSession, loadData, router]);
 
-  const isLeader = session?.role === 'unit_leader' || session?.role === 'admin';
   const myDraftTickets = useMemo(() => myTickets.filter((t) => toCanonicalStatus(t.status) === 'draft'), [myTickets]);
   const myChangesRequestedTickets = useMemo(() => myTickets.filter((t) => toCanonicalStatus(t.status) === 'changes_requested'), [myTickets]);
-  const reviewSourceTickets = useMemo(() => (isLeader ? unitTickets : myTickets), [isLeader, unitTickets, myTickets]);
-  const pendingCount = useMemo(() => reviewSourceTickets.filter((t) => {
-    const c = toCanonicalStatus(t.status);
-    return c === 'submitted' || c === 'resubmitted' || c === 'changes_requested';
-  }).length, [reviewSourceTickets]);
-  const approvedCount = useMemo(() => reviewSourceTickets.filter((t) => toCanonicalStatus(t.status) === 'approved').length, [reviewSourceTickets]);
 
   const sendPatchAction = async (payload: Record<string, unknown>) => {
     if (!session) return false;
@@ -153,25 +150,6 @@ export default function StaffWorkTicketsPage() {
     return false;
   };
 
-  const handleApprove = async (t: StaffWorkTicket) => {
-    if (!session) return;
-    let fresh = t;
-    try {
-      const headers: Record<string, string> = { 'x-actor-email': session.email };
-      if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
-      const r = await fetch(`/api/tickets?id=${encodeURIComponent(t.id)}`, { headers, cache: 'no-store' });
-      if (r.ok) { const j = await r.json(); if (j.ticket) fresh = j.ticket; }
-    } catch { /* fallback to current ticket */ }
-    if (!window.confirm(`Xác nhận phê duyệt phiếu [${fresh.maCongViec} - ${fresh.tenCongViec}] (v${fresh.currentVersionNo || 1}) và tự động đưa vào Biểu A2 & B1?`)) return;
-    await sendPatchAction({ ticketId: fresh.id, action: 'approve', unitCode: fresh.unitCode });
-  };
-  const handleRevisionSubmit = (t: StaffWorkTicket, mode: TicketModerationModalMode) => setModerationModal({ ticket: t, mode, seq: Date.now() });
-  const handleModerationSubmit = async (t: StaffWorkTicket, reason: string) => {
-    const mode = moderationModal?.mode || 'request_changes';
-    const ok = await sendPatchAction({ ticketId: t.id, action: mode === 'request_changes' ? 'changes_requested' : mode, reason, unitCode: t.unitCode });
-    if (ok && editingTicket?.id === t.id) setEditingTicket(null);
-  };
-  const handleMergeSubmit = async (t: StaffWorkTicket) => { await sendPatchAction({ ticketId: t.id, action: 'merge', unitCode: t.unitCode }); };
   const handleSubmitMyTicket = async (t: StaffWorkTicket, isResubmit: boolean) => {
     const missing: string[] = [];
     if (!t.maNhiemVu) missing.push('Mã nhiệm vụ');
@@ -185,8 +163,8 @@ export default function StaffWorkTicketsPage() {
     if (!t.phutThucTe || Number(t.phutThucTe) <= 0) missing.push('Thời gian thực tế (phút/SP)');
     if (isResubmit && !t.lastChangeSummary?.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa');
     if (missing.length > 0) {
-      setEditingTicket(t); selectTab('my');
-      alert(`Vui lòng hoàn thiện các trường bắt buộc ở biểu mẫu bên trái trước khi nộp (trừ các trường "nếu có"):\n• ${missing.join('\n• ')}`);
+      setEditingTicket(t); selectTab('create');
+      alert(`Vui lòng hoàn thiện các trường bắt buộc trước khi nộp:\n• ${missing.join('\n• ')}`);
       return;
     }
     const msg = isResubmit ? `Nộp lại phiếu [${t.maCongViec}] sau khi hoàn thiện?` : `Nộp phiếu [${t.maCongViec}] cho Lãnh đạo đơn vị duyệt?`;
@@ -208,18 +186,24 @@ export default function StaffWorkTicketsPage() {
       <div className="max-w-[1440px] mx-auto space-y-4 print:space-y-0 print:max-w-none print:w-full">
         <StaffPortalHeaderBanner
           unitCode={session.unitCode} unitNameVi={unitNameVi}
-          onCreateNew={() => { selectTab('my'); setEditingTicket(null); }}
+          onCreateNew={() => { setEditingTicket(null); selectTab('create'); }}
           onLogout={() => { void performFullLogout('/login'); }}
         />
         <StaffTicketsTabBar
-          activeTab={activeTab} onSelectTab={selectTab} draftCount={myDraftTickets.length} pendingCount={pendingCount}
-          approvedCount={approvedCount} unitCount={unitTickets.length} proposedCount={proposedItems.length} relationshipsCount={relationships.length} isLeader={Boolean(isLeader)}
+          activeTab={activeTab} onSelectTab={selectTab}
+          myCount={myTickets.length} draftCount={myDraftTickets.length}
+          proposedCount={proposedItems.length} relationshipsCount={relationships.length}
         />
 
-        {activeTab === 'my' && (
+        {(activeTab === 'my-tickets' || activeTab === 'create') && (
           <div className="space-y-4 print:space-y-0">
             {myChangesRequestedTickets.length > 0 && (
-              <ChangesRequestedAlertBanner count={myChangesRequestedTickets.length} firstTicket={myChangesRequestedTickets[0]} onEditNow={setEditingTicket} onOpenPendingTab={() => selectTab('pending')} />
+              <ChangesRequestedAlertBanner
+                count={myChangesRequestedTickets.length}
+                firstTicket={myChangesRequestedTickets[0]}
+                onEditNow={(t) => { setEditingTicket(t); selectTab('create'); }}
+                onOpenMyTab={() => selectTab('my-tickets')}
+              />
             )}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start print:block">
               <div className="xl:col-span-6 min-w-0 print:w-full">
@@ -243,7 +227,7 @@ export default function StaffWorkTicketsPage() {
                   <StaffMyTicketsList
                     title={myDraftTickets.length > 0 ? 'Phiếu của tôi (Nháp & Chờ duyệt)' : 'Phiếu của tôi'}
                     tickets={myTickets} loading={loading}
-                    onEditTicket={(t) => { setEditingTicket(t); selectTab('my'); }}
+                    onEditTicket={(t) => { setEditingTicket(t); selectTab('create'); }}
                     onPrintTicket={setPrintTicket} onViewTicket={setDetailTicket}
                     onCoordTicket={setCoordTicket} onDeleteTicket={handleDelete} onSubmitTicket={handleSubmitMyTicket}
                   />
@@ -252,41 +236,20 @@ export default function StaffWorkTicketsPage() {
                   unitCode={session.unitCode} c1Vtvls={c1Vtvls}
                   onSelectVtvl={(code) => { setPickedVtvl({ code, seq: Date.now() }); setActiveVtvlCode(code); setEditingTicket((prev) => (prev ? { ...prev, maVtvl: code } : null)); }}
                 />
-                <ProposedCoordinatedSideCard items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode} loading={loading} onOpenFullTab={() => selectTab('proposed')} />
+                <ProposedCoordinatedSideCard items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode} loading={loading} onOpenFullTab={() => selectTab('coordination')} />
               </div>
             </div>
           </div>
         )}
 
-        {(activeTab === 'pending' || activeTab === 'approved' || activeTab === 'unit') && (
-          <div className="print:hidden">
-            <UnitTicketsReviewList
-              tickets={activeTab === 'unit' ? unitTickets : reviewSourceTickets} loading={loading} mode={activeTab === 'unit' ? 'all' : activeTab}
-              currentUserRole={session.role} currentUserEmail={session.email} onViewTicket={setDetailTicket} onPrintTicket={setPrintTicket}
-              onEditTicket={(t) => { setEditingTicket(t); selectTab('my'); }} onCoordTicket={setCoordTicket} onSubmitTicket={handleSubmitMyTicket}
-              onApproveTicket={isLeader && activeTab !== 'approved' ? handleApprove : undefined}
-              onRequestChanges={isLeader && activeTab !== 'approved' ? (t) => handleRevisionSubmit(t, 'request_changes') : undefined}
-              onMergeTicket={isLeader && activeTab !== 'pending' ? setMergeTicket : undefined}
-              onRevokeApproval={isLeader ? (t) => handleRevisionSubmit(t, 'revoke_approval') : undefined}
-              onCancelTicket={isLeader ? (t) => handleRevisionSubmit(t, 'cancel_ticket') : undefined}
-            />
-          </div>
-        )}
-
-        {activeTab === 'proposed' && <div className="print:hidden"><ProposedCoordinatedTasksTab items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode} loading={loading} /></div>}
+        {activeTab === 'coordination' && <div className="print:hidden"><ProposedCoordinatedTasksTab items={proposedItems} myAssignments={myVtvlAssignments} unitCode={session.unitCode} selectedVtvl={activeVtvlCode} loading={loading} /></div>}
         {activeTab === 'relationships' && <div className="print:hidden"><WorkRelationshipsTab relationships={relationships} unitCode={session.unitCode} userRole={session.role || 'staff'} selectedVtvl={activeVtvlCode} loading={loading} onRefresh={() => loadData(session)} /></div>}
       </div>
 
       <StaffTicketDetailModal
         ticket={detailTicket} unitNameVi={unitNameVi} currentUserRole={session.role} currentUserEmail={session.email} onClose={() => setDetailTicket(null)} onPrint={setPrintTicket}
-        onApprove={isLeader ? async (t) => { setDetailTicket(null); await handleApprove(t); } : undefined}
-        onRequestChanges={isLeader ? (t) => { setDetailTicket(null); handleRevisionSubmit(t, 'request_changes'); } : undefined}
-        onRevokeApproval={isLeader ? (t) => { setDetailTicket(null); handleRevisionSubmit(t, 'revoke_approval'); } : undefined}
-        onCancelTicket={isLeader ? (t) => { setDetailTicket(null); handleRevisionSubmit(t, 'cancel_ticket'); } : undefined}
       />
       <StaffTicketPrintModal ticket={printTicket} unitNameVi={unitNameVi} onClose={() => setPrintTicket(null)} />
-      {moderationModal && <StaffTicketRevisionModal key={`${moderationModal.ticket.id}-${moderationModal.mode}-${moderationModal.seq}`} ticket={moderationModal.ticket} mode={moderationModal.mode} onClose={() => setModerationModal(null)} onSubmit={handleModerationSubmit} />}
-      <StaffTicketMergePreviewModal ticket={mergeTicket} onClose={() => setMergeTicket(null)} onConfirmMerge={handleMergeSubmit} />
       <CoordinatedTaskModal ticket={coordTicket} onClose={() => setCoordTicket(null)} onSaved={() => loadData(session)} />
     </div>
   );

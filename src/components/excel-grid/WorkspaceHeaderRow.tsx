@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Building2, ChevronDown, Layers, AlertTriangle, HelpCircle, ShieldCheck, Check } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { EXCEL_SHEET_METAS } from './excel-sheet-metas';
@@ -175,27 +176,25 @@ export function WorkspaceHeaderRow({
           <span className="whitespace-nowrap">Bước {activeStep}/8 · Biểu {activeSheetIndex + 1}/{totalSheets}</span>
         </span>
 
-        {/* 5. Cảnh báo QA */}
+        {/* 5. Cảnh báo QA -> dẫn tới bộ kiểm tra thống nhất */}
         {fixCount > 0 ? (
-          <button
-            type="button"
-            onClick={onOpenQualityModal}
-            className="inline-flex items-center gap-1.5 h-9 px-3 bg-[#fdeceb] hover:bg-[#fbd5d3] border border-[#f8b4af] rounded-xl text-[13px] font-bold text-[#b42318] cursor-pointer transition-colors shrink-0"
-            title="Xem chi tiết các điểm cần bổ sung hoặc xem lại"
+          <Link
+            href={`/nghiep-vu-don-vi?tab=check&unitCode=${encodeURIComponent(unitCode)}`}
+            className="inline-flex items-center gap-1.5 h-9 px-3 bg-[#fdeceb] hover:bg-[#fbd5d3] border border-[#f8b4af] rounded-xl text-[13px] font-bold text-[#b42318] transition-colors shrink-0"
+            title="Mở bộ kiểm tra chéo K_KiemTra để xem chi tiết các điểm cần xử lý"
           >
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             <span className="whitespace-nowrap">{fixCount} mục cần xem</span>
-          </button>
+          </Link>
         ) : (
-          <button
-            type="button"
-            onClick={onOpenQualityModal}
-            className="inline-flex items-center gap-1.5 h-9 px-3 bg-[#e3f5ec] hover:bg-[#ccecd9] border border-[#a3e2c3] rounded-xl text-[13px] font-bold text-[#13653f] cursor-pointer transition-colors shrink-0"
+          <Link
+            href={`/nghiep-vu-don-vi?tab=check&unitCode=${encodeURIComponent(unitCode)}`}
+            className="inline-flex items-center gap-1.5 h-9 px-3 bg-[#e3f5ec] hover:bg-[#ccecd9] border border-[#a3e2c3] rounded-xl text-[13px] font-bold text-[#13653f] transition-colors shrink-0"
             title="Dữ liệu biểu mẫu hoàn tất và đạt chuẩn"
           >
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             <span className="whitespace-nowrap">Dữ liệu hợp lệ</span>
-          </button>
+          </Link>
         )}
       </div>
 

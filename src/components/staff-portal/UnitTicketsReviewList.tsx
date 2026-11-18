@@ -165,7 +165,7 @@ export function UnitTicketsReviewList({
               <div key={t.id} className="relative pl-4 sm:pl-5 pr-4 sm:pr-5 py-4 hover:bg-[#f8fbff]/80 transition-colors">
                 <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${meta.stripeCls}`} />
 
-                <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-4">
+                <div className="flex flex-col xl:flex-row xl:items-stretch justify-between gap-4">
                   <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2.5">
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -248,8 +248,8 @@ export function UnitTicketsReviewList({
                     )}
                   </div>
 
-                  <div className="lg:w-[415px] xl:w-[450px] shrink-0 flex flex-col lg:items-end justify-between gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#e8eff7] lg:pl-4">
-                    <div className="flex flex-wrap items-center lg:justify-end gap-1.5">
+                  <div className="xl:w-auto xl:min-w-[440px] shrink-0 flex flex-col xl:items-end justify-between gap-2.5 pt-3 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[#e8eff7] xl:pl-4">
+                    <div className="flex flex-wrap items-center xl:justify-end gap-1.5">
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
                         <StatusIcon className="w-3 h-3" />
                         {meta.label}

@@ -21,12 +21,13 @@ interface WorkforceStructureChartModalProps {
   c1Rows: GenericGridRow[];
   d2Rows: GenericGridRow[];
   onSelectSheet?: (sheet: ExcelSheetKey) => void;
+  inline?: boolean;
 }
 
 export function WorkforceStructureChartModal({
-  isOpen, onClose, unitCode, unitNameVi, c1Rows, d2Rows, onSelectSheet
+  isOpen, onClose, unitCode, unitNameVi, c1Rows, d2Rows, onSelectSheet, inline = false
 }: WorkforceStructureChartModalProps) {
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(!inline);
 
   const combinedItems = useMemo(() => {
     return buildCombinedWorkforceItems(c1Rows, d2Rows);
@@ -76,78 +77,44 @@ export function WorkforceStructureChartModal({
 
   if (!isOpen) return null;
 
-  return (
-    <ModalPortal>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="workforce-chart-modal-title"
-        className={`fixed inset-0 z-[100] flex items-center justify-center bg-[#004776]/35 backdrop-blur-xs select-none ${isFullscreen ? 'p-0' : 'p-0 sm:p-3'}`}
-        onClick={onClose}
-      >
-        <div
-          className={`bg-white overflow-hidden flex flex-col transition-all duration-150 ${
-            isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none' : 'relative w-full max-w-7xl h-[100dvh] sm:h-[92dvh] rounded-none sm:rounded-2xl shadow-2xl border border-[#cbd5e1]'
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#cbd5e1] shrink-0">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
-                title="Trở lại giao diện trước"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Trở lại</span>
-              </button>
-              <div className="w-9 h-9 rounded-xl bg-[#0072BC] text-white flex items-center justify-center shrink-0">
-                <BarChart3 className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 id="workforce-chart-modal-title" className="text-sm sm:text-base font-bold text-[#004776]">
-                    Biểu đồ cơ cấu nhân lực (Biểu C1 &amp; D2)
-                  </h2>
-                  <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#0072BC]/10 text-[#0072BC] border border-[#0072BC]/20">
-                    [{unitCode}] {unitNameVi}
-                  </span>
-                </div>
-                <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (3. C1_VTVL) và phương án bố trí biên chế (11. D2_PhuongAn)</p>
-              </div>
-            </div>
+  const closeOrShrink = () => (inline && isFullscreen ? setIsFullscreen(false) : onClose());
+  const cardCls = inline && !isFullscreen
+    ? 'bg-white rounded-[16px] border border-[#cbd5e1] overflow-hidden flex flex-col shadow-xs'
+    : `bg-white overflow-hidden flex flex-col transition-all duration-150 ${isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none' : 'relative w-full max-w-7xl h-[100dvh] sm:h-[92dvh] rounded-none sm:rounded-2xl shadow-2xl border border-[#cbd5e1]'}`;
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              {onSelectSheet && (
-                <>
-                  <button type="button" onClick={() => { onSelectSheet('C1'); onClose(); }} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold cursor-pointer transition-colors">
-                    <span>Mở Biểu C1</span><ArrowUpRight className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" onClick={() => { onSelectSheet('D2'); onClose(); }} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold cursor-pointer transition-colors">
-                    <span>Mở Biểu D2</span><ArrowUpRight className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer"
-                title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Đóng biểu đồ"
-                className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 inline-flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+  const chartCard = (
+    <div className={cardCls} onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#cbd5e1] shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {(!inline || isFullscreen) && (
+            <button type="button" onClick={closeOrShrink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold transition-colors cursor-pointer shrink-0" title="Trở lại giao diện trước">
+              <ArrowLeft className="w-4 h-4" /><span>Trở lại</span>
+            </button>
+          )}
+          <div className="w-9 h-9 rounded-xl bg-[#0072BC] text-white flex items-center justify-center shrink-0"><BarChart3 className="w-5 h-5" /></div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 id="workforce-chart-modal-title" className="text-sm sm:text-base font-bold text-[#0072BC]">Biểu đồ cơ cấu nhân lực (Biểu C1 &amp; D2)</h2>
+              <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#0072BC]/10 text-[#0072BC] border border-[#0072BC]/20">[{unitCode}] {unitNameVi}</span>
             </div>
+            <p className="text-xs text-[#476885] truncate">Trực quan hóa danh mục vị trí việc làm (3. C1_VTVL) và phương án bố trí biên chế (11. D2_PhuongAn)</p>
           </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onSelectSheet && (
+            <>
+              <button type="button" onClick={() => { onSelectSheet('C1'); closeOrShrink(); }} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold cursor-pointer transition-colors"><span>Mở Biểu C1</span><ArrowUpRight className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => { onSelectSheet('D2'); closeOrShrink(); }} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold cursor-pointer transition-colors"><span>Mở Biểu D2</span><ArrowUpRight className="w-3.5 h-3.5" /></button>
+            </>
+          )}
+          <button type="button" onClick={() => setIsFullscreen(!isFullscreen)} className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer" title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}>
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+          {(!inline || isFullscreen) && (
+            <button type="button" onClick={closeOrShrink} aria-label="Đóng biểu đồ" className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 inline-flex items-center justify-center cursor-pointer transition-colors"><X className="w-5 h-5" /></button>
+          )}
+        </div>
+      </div>
 
           {/* Filter Bar */}
           <div className="px-3.5 sm:px-6 py-2 bg-[#f8fafc] border-b border-[#cbd5e1] grid grid-cols-1 sm:grid-cols-12 gap-2.5 shrink-0">
@@ -268,28 +235,23 @@ export function WorkforceStructureChartModal({
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between shrink-0">
+          <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between gap-2 shrink-0">
             <span className="text-xs text-[#64748b]">Trực quan hóa cơ cấu nhân lực tự động theo màu xanh #0072BC và đỏ #ED1C24 của HCM-UTE.</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#0072BC] text-white hover:bg-[#005c96] transition-colors cursor-pointer shadow-2xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Trở lại</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-[#004776] border border-[#cbd5e1] hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                Đóng biểu đồ
-              </button>
-            </div>
+            {(!inline || isFullscreen) && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button type="button" onClick={closeOrShrink} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#0072BC] text-white hover:bg-[#005c96] transition-colors cursor-pointer shadow-2xs"><ArrowLeft className="w-3.5 h-3.5" /><span>Trở lại</span></button>
+                <button type="button" onClick={closeOrShrink} className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-[#004776] border border-[#cbd5e1] hover:bg-slate-100 transition-colors cursor-pointer">Đóng biểu đồ</button>
+              </div>
+            )}
           </div>
         </div>
+  );
+
+  if (inline && !isFullscreen) return chartCard;
+  return (
+    <ModalPortal>
+      <div role="dialog" aria-modal="true" aria-labelledby="workforce-chart-modal-title" className={`fixed inset-0 z-[100] flex items-center justify-center bg-[#004776]/35 backdrop-blur-xs select-none ${isFullscreen ? 'p-0' : 'p-0 sm:p-3'}`} onClick={closeOrShrink}>
+        {chartCard}
       </div>
     </ModalPortal>
   );

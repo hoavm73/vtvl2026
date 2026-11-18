@@ -2,41 +2,39 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Building2, LayoutDashboard, FileSpreadsheet, ClipboardList, History, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Building2, LayoutDashboard, FileSpreadsheet, ClipboardList, History, ShieldCheck, ExternalLink, Network, BarChart3 } from 'lucide-react';
 import { HCMUTE_UNITS, findHcmuteUnit, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { useOperatorSession } from '@/components/excel-grid/useOperatorSession';
 import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer';
-import { ExcelSheetKey } from '@/components/excel-grid/excel-grid-types';
+import { ExcelSheetKey, GenericGridRow } from '@/components/excel-grid/excel-grid-types';
+import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
 import { UnitWorkbookHistoryPanel } from '@/components/nghiep-vu-don-vi/UnitWorkbookHistoryPanel';
 import { UnitProfileOverviewPanel } from '@/components/nghiep-vu-don-vi/UnitProfileOverviewPanel';
 import { UnitWorkspaceTicketsPanel } from '@/components/nghiep-vu-don-vi/UnitWorkspaceTicketsPanel';
 import { UnitWorkbookCheckPanel } from '@/components/ra-soat/UnitWorkbookCheckPanel';
+import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
+import { WorkforceStructureChartModal } from '@/components/excel-grid/WorkforceStructureChartModal';
 import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent } from '@/services/workbooks/workbook-history-service';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
-import {
-  getCanonicalWorkbookId,
-  persistUnitContextSelection,
-  resolveSafeUnitCode,
-  syncContextQueryParams
-} from '@/services/context/workbook-context';
+import { getCanonicalWorkbookId, persistUnitContextSelection, resolveSafeUnitCode, syncContextQueryParams } from '@/services/context/workbook-context';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 
-type UnitWorkspaceTabKey = 'overview' | 'workbook' | 'tickets' | 'history' | 'check';
+type UnitWorkspaceTabKey = 'overview' | 'workbook' | 'tickets' | 'org-tree' | 'workforce-chart' | 'history' | 'check';
 
 const UNIT_TABS: { key: UnitWorkspaceTabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: 'overview', label: 'Tổng quan đơn vị', icon: LayoutDashboard },
   { key: 'workbook', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
   { key: 'tickets', label: 'Phiếu đơn vị', icon: ClipboardList },
+  { key: 'org-tree', label: 'Sơ đồ VTVL dự kiến', icon: Network },
+  { key: 'workforce-chart', label: 'Biểu đồ cơ cấu nhân lực', icon: BarChart3 },
   { key: 'history', label: 'Lịch sử & khôi phục', icon: History },
   { key: 'check', label: 'Kiểm tra trước khi gửi', icon: ShieldCheck }
 ];
 
-function parseTab(raw: string | null): UnitWorkspaceTabKey {
-  if (raw === 'workbook' || raw === 'tickets' || raw === 'history' || raw === 'check') return raw;
-  return 'overview';
-}
+const VALID_UNIT_TABS: ReadonlySet<string> = new Set(['overview', 'workbook', 'tickets', 'org-tree', 'workforce-chart', 'history', 'check']);
+const parseTab = (raw: string | null): UnitWorkspaceTabKey => (raw && VALID_UNIT_TABS.has(raw) ? (raw as UnitWorkspaceTabKey) : 'overview');
 
 export default function NghiepVuDonViPage() {
   const { session } = useOperatorSession();
@@ -49,6 +47,7 @@ export default function NghiepVuDonViPage() {
   const [summary, setSummary] = useState<UnitSummaryRow | null>(null);
   const [recentEvents, setRecentEvents] = useState<WorkbookHistoryTimelineEvent[]>([]);
   const [unitTickets, setUnitTickets] = useState<StaffWorkTicket[]>([]);
+  const [workbookData, setWorkbookData] = useState<Record<string, GenericGridRow[]> | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isSyncingTokenRef = useRef(false);
@@ -57,14 +56,17 @@ export default function NghiepVuDonViPage() {
     const applyFromUrl = () => {
       const p = new URLSearchParams(window.location.search);
       setActiveTab(parseTab(p.get('tab')));
-      const reqUnit = p.get('unitCode') || p.get('unit');
-      setSelectedUnitCode(resolveSafeUnitCode(session, reqUnit));
-      const sh = p.get('sheet') as ExcelSheetKey | null;
-      setSheetParam(sh || undefined);
+      setSelectedUnitCode(resolveSafeUnitCode(session, p.get('unitCode') || p.get('unit')));
+      setSheetParam((p.get('sheet') as ExcelSheetKey | null) || undefined);
+    };
+    const onUnitTab = (ev: Event) => {
+      const next = (ev as CustomEvent<{ tab?: string }>).detail?.tab;
+      if (next) setActiveTab(parseTab(next));
     };
     applyFromUrl();
     window.addEventListener('popstate', applyFromUrl);
-    return () => window.removeEventListener('popstate', applyFromUrl);
+    window.addEventListener('vtvl-unit-tab-changed', onUnitTab);
+    return () => { window.removeEventListener('popstate', applyFromUrl); window.removeEventListener('vtvl-unit-tab-changed', onUnitTab); };
   }, [session]);
 
   const canonicalWbId = getCanonicalWorkbookId(selectedUnitCode);
@@ -91,9 +93,10 @@ export default function NghiepVuDonViPage() {
       if (curOp?.email) headers['x-actor-email'] = curOp.email;
       if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
 
-      const [histRes, ticketRes] = await Promise.all([
+      const [histRes, ticketRes, wbRes] = await Promise.all([
         fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, { headers, cache: 'no-store' }),
-        fetch(`/api/tickets?unitCode=${encodeURIComponent(selectedUnitCode)}`, { headers, cache: 'no-store' })
+        fetch(`/api/tickets?unitCode=${encodeURIComponent(selectedUnitCode)}`, { headers, cache: 'no-store' }),
+        fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}`, { headers, cache: 'no-store' })
       ]);
       const histJson = await histRes.json();
       if (!histRes.ok) {
@@ -104,13 +107,17 @@ export default function NghiepVuDonViPage() {
       }
       if (ticketRes.ok) {
         const tJson = await ticketRes.json();
-        const list = Array.isArray(tJson.unitTickets)
-          ? tJson.unitTickets
-          : Array.isArray(tJson.tickets)
-            ? tJson.tickets
-            : [];
-        setUnitTickets(list);
+        setUnitTickets(Array.isArray(tJson.unitTickets) ? tJson.unitTickets : Array.isArray(tJson.tickets) ? tJson.tickets : []);
       }
+      let nextWb: Record<string, GenericGridRow[]> | undefined;
+      if (wbRes.ok) {
+        const wbJson = await wbRes.json().catch(() => null);
+        if (wbJson?.workbook?.data) nextWb = wbJson.workbook.data;
+      }
+      if (!nextWb && typeof window !== 'undefined') {
+        try { const raw = localStorage.getItem(`hcmute_vtvl_grid_${selectedUnitCode}`); if (raw) nextWb = JSON.parse(raw); } catch { /* ignore */ }
+      }
+      setWorkbookData(nextWb || buildDefaultGridWorkbook(selectedUnitCode));
     } catch {
       setError('Lỗi kết nối khi đồng bộ dữ liệu hồ sơ đơn vị.');
     } finally {
@@ -128,6 +135,7 @@ export default function NghiepVuDonViPage() {
   const handleSelectTab = (tab: UnitWorkspaceTabKey) => {
     setActiveTab(tab);
     syncContextQueryParams({ tab, unitCode: selectedUnitCode, workbookId: canonicalWbId }, 'push');
+    window.dispatchEvent(new CustomEvent('vtvl-unit-tab-changed', { detail: { tab } }));
   };
 
   const handleUnitChange = (nextUnit: string) => {
@@ -236,6 +244,23 @@ export default function NghiepVuDonViPage() {
           loading={loading}
           session={session || getCurrentOperatorSession()}
           onRefresh={() => void loadUnitWorkspaceData()}
+        />
+      )}
+
+      {activeTab === 'org-tree' && (
+        <UnitOrgTreeModal isOpen={true} inline={true} onClose={() => handleSelectTab('overview')} defaultUnitCode={selectedUnitCode} workbookData={workbookData} />
+      )}
+
+      {activeTab === 'workforce-chart' && (
+        <WorkforceStructureChartModal
+          isOpen={true}
+          inline={true}
+          onClose={() => handleSelectTab('overview')}
+          unitCode={selectedUnitCode}
+          unitNameVi={activeUnit.nameVi}
+          c1Rows={workbookData?.C1 || []}
+          d2Rows={workbookData?.D2 || []}
+          onSelectSheet={(sh) => { setSheetParam(sh); handleSelectTab('workbook'); }}
         />
       )}
 

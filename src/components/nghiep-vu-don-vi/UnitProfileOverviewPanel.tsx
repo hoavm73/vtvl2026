@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FileSpreadsheet, ShieldCheck, ClipboardCheck, History, ArrowRight, AlertTriangle } from 'lucide-react';
+import { FileSpreadsheet, ShieldCheck, ClipboardCheck, History, ArrowRight, AlertTriangle, Network, BarChart3 } from 'lucide-react';
 import { UnitSummaryRow, formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent } from '@/services/workbooks/workbook-history-service';
 import { InlineSkeleton, TimelineListSkeleton } from '@/components/ui/Skeleton';
@@ -23,7 +23,7 @@ interface UnitProfileOverviewPanelProps {
   loading: boolean;
   error: string | null;
   recentEvents: WorkbookHistoryTimelineEvent[];
-  onSelectTab: (tab: 'workbook' | 'tickets' | 'history' | 'check') => void;
+  onSelectTab: (tab: 'workbook' | 'tickets' | 'org-tree' | 'workforce-chart' | 'history' | 'check') => void;
 }
 
 export function UnitProfileOverviewPanel({
@@ -141,6 +141,20 @@ export function UnitProfileOverviewPanel({
           </div>
           <ArrowRight className="w-4 h-4 text-[#006cee] shrink-0" />
         </Link>
+        <button type="button" onClick={() => onSelectTab('org-tree')} className="text-left p-3 rounded-[10px] hover:bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between gap-2 cursor-pointer transition-colors">
+          <div>
+            <div className="text-xs font-bold text-[#004776] flex items-center gap-1"><Network className="w-3.5 h-3.5 text-[#006cee]" /><span>Sơ đồ VTVL dự kiến</span></div>
+            <div className="text-[11px] text-[#476885] mt-0.5">Xem cây phân cấp vị trí việc làm và đầu việc</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-[#006cee] shrink-0" />
+        </button>
+        <button type="button" onClick={() => onSelectTab('workforce-chart')} className="text-left p-3 rounded-[10px] hover:bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between gap-2 cursor-pointer transition-colors">
+          <div>
+            <div className="text-xs font-bold text-[#004776] flex items-center gap-1"><BarChart3 className="w-3.5 h-3.5 text-[#006cee]" /><span>Biểu đồ cơ cấu nhân lực</span></div>
+            <div className="text-[11px] text-[#476885] mt-0.5">Trực quan hóa cơ cấu C1 và phương án D2</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-[#006cee] shrink-0" />
+        </button>
         <button type="button" onClick={() => onSelectTab('history')} className="text-left p-3 rounded-[10px] hover:bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between gap-2 cursor-pointer transition-colors">
           <div>
             <div className="text-xs font-bold text-[#004776] flex items-center gap-1"><History className="w-3.5 h-3.5 text-[#006cee]" /><span>Lịch sử &amp; khôi phục phiên bản</span></div>

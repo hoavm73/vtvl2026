@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   FileSpreadsheet, FileText, ClipboardCheck, Home,
-  Menu, X, ShieldCheck, Building2, BookOpen, Settings
+  Menu, X, ShieldCheck, Building2, BookOpen, Settings, Network, BarChart3
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
@@ -18,6 +18,8 @@ const MOBILE_NAV_ITEMS: { href: string; label: string; icon: React.ComponentType
   { href: '/nghiep-vu-don-vi', label: 'Hồ sơ đơn vị', icon: Building2, roles: ['admin', 'unit_leader'] },
   { href: '/bang-tinh', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
   { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck, roles: ['admin', 'unit_leader'] },
+  { href: '/nghiep-vu-don-vi?tab=org-tree', label: 'Sơ đồ VTVL dự kiến', icon: Network },
+  { href: '/nghiep-vu-don-vi?tab=workforce-chart', label: 'Biểu đồ cơ cấu nhân lực', icon: BarChart3 },
   { href: '/admin/tham-dinh', label: 'Thẩm định cấp trường', icon: ShieldCheck, roles: ['admin'] },
   { href: '/admin', label: 'Quản trị hệ thống', icon: Settings, roles: ['admin', 'unit_leader'] },
   { href: '/huong-dan', label: 'Hướng dẫn nghiệp vụ', icon: BookOpen }
@@ -159,20 +161,33 @@ export function Header() {
               <nav aria-label="Menu di động" className="space-y-1.5">
                 {mobileNavItems.map((item) => {
                   const Icon = item.icon;
+                  const currentTab = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('tab') || '') : '';
                   const active = item.href === '/bang-tinh'
                     ? pathname === '/bang-tinh'
-                    : item.href === '/admin/tham-dinh'
-                      ? pathname.startsWith('/admin/tham-dinh')
-                      : item.href === '/admin'
-                        ? pathname === '/admin'
-                        : item.href === '/'
-                          ? pathname === '/'
-                          : pathname.startsWith(item.href);
+                    : item.href === '/nghiep-vu-don-vi?tab=org-tree'
+                      ? pathname.startsWith('/nghiep-vu-don-vi') && currentTab === 'org-tree'
+                      : item.href === '/nghiep-vu-don-vi?tab=workforce-chart'
+                        ? pathname.startsWith('/nghiep-vu-don-vi') && currentTab === 'workforce-chart'
+                        : item.href === '/nghiep-vu-don-vi'
+                          ? pathname.startsWith('/nghiep-vu-don-vi') && currentTab !== 'org-tree' && currentTab !== 'workforce-chart'
+                          : item.href === '/admin/tham-dinh'
+                            ? pathname.startsWith('/admin/tham-dinh')
+                            : item.href === '/admin'
+                              ? pathname === '/admin'
+                              : item.href === '/'
+                                ? pathname === '/'
+                                : pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setMobileOpen(false)}
+                      onClick={() => {
+                        setMobileOpen(false);
+                        if (item.href.startsWith('/nghiep-vu-don-vi')) {
+                          const nextTab = item.href.includes('tab=org-tree') ? 'org-tree' : item.href.includes('tab=workforce-chart') ? 'workforce-chart' : 'overview';
+                          window.dispatchEvent(new CustomEvent('vtvl-unit-tab-changed', { detail: { tab: nextTab } }));
+                        }
+                      }}
                       className={`flex items-center gap-3 px-3.5 min-h-[44px] rounded-xl text-sm transition-colors ${
                         active
                           ? 'bg-[#0072BC] text-white font-bold shadow-xs'

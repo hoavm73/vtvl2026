@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Network,
   Settings
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
@@ -51,7 +52,9 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
     items: [
       { href: '/nghiep-vu-don-vi', label: 'Hồ sơ đơn vị', icon: Building2, roles: ['admin', 'unit_leader'] },
       { href: '/bang-tinh', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
-      { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck, roles: ['admin', 'unit_leader'] }
+      { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck, roles: ['admin', 'unit_leader'] },
+      { href: '/nghiep-vu-don-vi?tab=org-tree', label: 'Sơ đồ VTVL dự kiến', icon: Network },
+      { href: '/nghiep-vu-don-vi?tab=workforce-chart', label: 'Biểu đồ cơ cấu nhân lực', icon: BarChart3 }
     ]
   },
   {
@@ -78,35 +81,38 @@ interface AppSidebarProps {
 export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
   const currentRole = session?.role || 'staff';
-  const [isMonitorTab, setIsMonitorTab] = useState(false);
+  const [activeQueryTab, setActiveQueryTab] = useState<string>('');
 
   useEffect(() => {
     const syncTab = (ev?: Event) => {
       const custom = ev as CustomEvent<{ tab?: string }> | undefined;
-      if (custom?.detail?.tab) {
-        setIsMonitorTab(custom.detail.tab === 'unit-monitor');
+      if (custom?.detail?.tab !== undefined) {
+        setActiveQueryTab(custom.detail.tab === 'overview' ? '' : custom.detail.tab);
         return;
       }
       if (typeof window !== 'undefined') {
-        const tabParam = new URLSearchParams(window.location.search).get('tab');
-        setIsMonitorTab(window.location.pathname === '/' && tabParam === 'unit-monitor');
+        setActiveQueryTab(new URLSearchParams(window.location.search).get('tab') || '');
       }
     };
     syncTab();
     window.addEventListener('popstate', syncTab);
     window.addEventListener('vtvl-home-tab-changed', syncTab);
+    window.addEventListener('vtvl-unit-tab-changed', syncTab);
     return () => {
       window.removeEventListener('popstate', syncTab);
       window.removeEventListener('vtvl-home-tab-changed', syncTab);
+      window.removeEventListener('vtvl-unit-tab-changed', syncTab);
     };
   }, [pathname]);
 
   const isItemActive = (href: string) => {
-    if (href === '/') return pathname === '/' && !isMonitorTab;
-    if (href === '/?tab=unit-monitor') return pathname === '/' && isMonitorTab;
+    if (href === '/') return pathname === '/' && activeQueryTab !== 'unit-monitor';
+    if (href === '/?tab=unit-monitor') return pathname === '/' && activeQueryTab === 'unit-monitor';
     if (href === '/admin/tham-dinh') return pathname.startsWith('/admin/tham-dinh');
     if (href === '/admin') return pathname === '/admin';
-    if (href === '/nghiep-vu-don-vi') return pathname.startsWith('/nghiep-vu-don-vi');
+    if (href === '/nghiep-vu-don-vi?tab=org-tree') return pathname.startsWith('/nghiep-vu-don-vi') && activeQueryTab === 'org-tree';
+    if (href === '/nghiep-vu-don-vi?tab=workforce-chart') return pathname.startsWith('/nghiep-vu-don-vi') && activeQueryTab === 'workforce-chart';
+    if (href === '/nghiep-vu-don-vi') return pathname.startsWith('/nghiep-vu-don-vi') && activeQueryTab !== 'org-tree' && activeQueryTab !== 'workforce-chart';
     if (href === '/phieu-don-vi') return pathname === '/phieu-don-vi';
     if (href === '/bang-tinh') return pathname === '/bang-tinh';
     if (href === '/phieu-cong-viec') return pathname === '/phieu-cong-viec';
@@ -174,8 +180,16 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                     onClick={() => {
                       if (item.href === '/' || item.href === '/?tab=unit-monitor') {
                         const nextTab = item.href === '/?tab=unit-monitor' ? 'unit-monitor' : 'overview';
-                        setIsMonitorTab(nextTab === 'unit-monitor');
+                        setActiveQueryTab(nextTab === 'unit-monitor' ? 'unit-monitor' : '');
                         window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
+                      } else if (item.href.startsWith('/nghiep-vu-don-vi')) {
+                        const nextTab = item.href.includes('tab=org-tree')
+                          ? 'org-tree'
+                          : item.href.includes('tab=workforce-chart')
+                            ? 'workforce-chart'
+                            : 'overview';
+                        setActiveQueryTab(nextTab === 'overview' ? '' : nextTab);
+                        window.dispatchEvent(new CustomEvent('vtvl-unit-tab-changed', { detail: { tab: nextTab } }));
                       }
                     }}
                     className={`flex items-center gap-2.5 min-h-[40px] rounded-xl transition-all group ${

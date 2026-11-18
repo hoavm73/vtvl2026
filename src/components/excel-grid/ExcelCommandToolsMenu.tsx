@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, ArrowUpDown, Network, BarChart3,
+  ChevronDown, ArrowUpDown,
   Download, Lock, Unlock, Lightbulb, SlidersHorizontal, RefreshCw, Timer, PackagePlus, History
 } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode } from './excel-grid-types';
@@ -80,24 +80,6 @@ export function ExcelCommandToolsMenu({
             </span>
           </div>
         </PopoverClose>
-
-        {onOpenOrgTreeModal && (
-          <PopoverClose onClick={onOpenOrgTreeModal}>
-            <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
-              <Network className="w-4 h-4 text-[#004776]" />
-              <span>Sơ đồ VTVL dự kiến</span>
-            </div>
-          </PopoverClose>
-        )}
-
-        {onOpenChartModal && (
-          <PopoverClose onClick={onOpenChartModal}>
-            <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
-              <BarChart3 className="w-4 h-4 text-[#004776]" />
-              <span>Biểu đồ cơ cấu nhân lực</span>
-            </div>
-          </PopoverClose>
-        )}
 
         <div className="my-1 border-t border-[#e8eff7]" />
 

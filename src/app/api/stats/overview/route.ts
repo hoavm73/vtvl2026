@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
-import { getTicketCounts, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
+import { getTicketCounts, loadTickets, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { getAllActiveServerWorkbooks, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,13 @@ export async function GET() {
   }
 
   const ticketCounts = getTicketCounts();
+  const appliedVtvlSet = new Set<string>();
+  for (const t of loadTickets().values()) {
+    if (t.isTestData || t.isArchived) continue;
+    const code = String(t.maVtvl || '').trim().toUpperCase();
+    if (code) appliedVtvlSet.add(`${t.unitCode.toUpperCase()}__${code}`);
+  }
+  const appliedPositions = appliedVtvlSet.size;
   const totalUnits = HCMUTE_UNITS.length;
 
   const workbooks = getAllActiveServerWorkbooks();
@@ -45,6 +52,7 @@ export async function GET() {
       totalUnits,
       totalPositions: totalC1Positions,
       frameworkPositions: ND232_2026_VTVL_CATALOG.length,
+      appliedPositions,
       approvedPositions: ticketCounts.approved,
       pendingPositions: ticketCounts.pending,
       draftPositions: ticketCounts.draft,

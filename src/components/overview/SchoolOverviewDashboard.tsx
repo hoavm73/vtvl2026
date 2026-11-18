@@ -12,6 +12,7 @@ import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 interface OverviewStats {
   totalUnits: number;
   totalPositions: number;
+  appliedPositions: number;
   approvedPositions: number;
   pendingPositions: number;
   draftPositions: number;
@@ -27,6 +28,7 @@ export function SchoolOverviewDashboard() {
   const [stats, setStats] = useState<OverviewStats>({
     totalUnits: HCMUTE_UNITS.length,
     totalPositions: DEFAULT_C1_TOTAL,
+    appliedPositions: 0,
     approvedPositions: 0,
     pendingPositions: 0,
     draftPositions: 0,
@@ -42,6 +44,7 @@ export function SchoolOverviewDashboard() {
         setStats({
           totalUnits: data.totalUnits || HCMUTE_UNITS.length,
           totalPositions: data.totalPositions || DEFAULT_C1_TOTAL,
+          appliedPositions: data.appliedPositions ?? data.approvedPositions ?? 0,
           approvedPositions: data.approvedPositions ?? 0,
           pendingPositions: data.pendingPositions ?? 0,
           draftPositions: data.draftPositions ?? 0,
@@ -149,20 +152,20 @@ export function SchoolOverviewDashboard() {
           <p className="text-[11px] text-[#476885]">Tổng hợp thời gian thực từ Biểu C1 của 39 đơn vị</p>
         </div>
 
-        {/* Chỉ số 3: Phiếu đã phê duyệt */}
+        {/* Chỉ số 3: Vị trí việc làm được áp dụng tại đơn vị */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-[#f6fcf8] to-[#edf9f1] border border-[#cbeed7] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-800">Phiếu đã phê duyệt</span>
+            <span className="text-xs font-medium text-emerald-800">Vị trí việc làm được áp dụng tại đơn vị</span>
             <div className="w-7 h-7 rounded-xl bg-white/90 border border-[#cbeed7] flex items-center justify-center text-emerald-600">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight tabular-nums">{stats.approvedPositions}</span>
-            <span className="text-xs font-semibold text-emerald-600">phiếu đã phê duyệt</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight tabular-nums">{stats.appliedPositions}</span>
+            <span className="text-xs font-semibold text-emerald-600">vị trí được áp dụng</span>
           </div>
           <p className="text-[11px] font-medium text-emerald-800/80 tabular-nums">
-            Tổng phiếu toàn trường: <strong className="text-[#004776]">{stats.totalTickets}</strong> phiếu
+            Tổng phiếu khảo sát toàn trường: <strong className="text-[#004776]">{stats.totalTickets}</strong> phiếu
           </p>
         </div>
 

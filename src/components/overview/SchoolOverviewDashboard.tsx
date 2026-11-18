@@ -108,7 +108,7 @@ export function SchoolOverviewDashboard() {
     <section className="bg-white rounded-[16px] border border-[#e2e8f0] p-4 sm:p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
         <div className="space-y-0.5">
-          <h2 className="text-base sm:text-lg font-bold text-[#004776]">
+          <h2 className="text-base sm:text-lg font-bold text-[#0072BC]">
             Các con số trọng yếu về Đề án Vị trí việc làm HCM-UTE
           </h2>
           <p className="text-xs font-medium text-[#476885]">Giai đoạn 2026–2030</p>
@@ -190,7 +190,7 @@ export function SchoolOverviewDashboard() {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-[#006cee]" />
-          <h3 className="text-xs sm:text-sm font-bold text-[#004776]">
+          <h3 className="text-xs sm:text-sm font-bold text-[#0072BC]">
             Phân bổ theo khối đơn vị
           </h3>
         </div>

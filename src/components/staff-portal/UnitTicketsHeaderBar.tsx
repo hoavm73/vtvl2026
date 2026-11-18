@@ -55,7 +55,7 @@ export function UnitTicketsHeaderBar({
             {isAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
             <span>{isAdmin ? `Phòng Tổ chức – Nhân sự · ${activeUnitTitle}` : activeUnitTitle}</span>
           </div>
-          <h1 className="text-lg sm:text-2xl font-bold text-[#004776] flex items-center gap-2">
+          <h1 className="text-lg sm:text-2xl font-bold text-[#0072BC] flex items-center gap-2">
             <ClipboardCheck className="w-6 h-6 text-[#006cee] shrink-0" />
             <span>Quản lý &amp; xử lý phiếu công việc đơn vị</span>
           </h1>

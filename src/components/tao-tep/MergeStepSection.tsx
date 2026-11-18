@@ -117,7 +117,7 @@ export function MergeStepSection({ unit: propUnit }: MergeStepSectionProps) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center">
             <span className="w-7 h-7 rounded-full bg-[var(--primary)] text-white font-extrabold text-xs flex items-center justify-center mr-2.5 shrink-0">7</span>
-            <h2 id="h4s" className="text-base sm:text-xl font-extrabold text-[var(--foreground)]">Bước 7/8 (HD 07) — Đối chiếu nhân lực (D1), Gộp phiếu khảo sát &amp; Phương án biên chế (D2)</h2>
+            <h2 id="h4s" className="text-base sm:text-xl font-extrabold text-[#0072BC]">Bước 7/8 (HD 07) — Đối chiếu nhân lực (D1), Gộp phiếu khảo sát &amp; Phương án biên chế (D2)</h2>
             <InfoTip title="Quy tắc gộp phiếu & kiểm soát xung đột">
               <p>Phiếu đầy đủ và phiếu từng vị trí được gộp theo mã công việc; hai phiếu ghi khác nhau cho cùng một việc sẽ được liệt kê chi tiết để đầu mối đối chiếu và sửa, không tự chọn ngẫu nhiên.</p>
               <p>Phiếu của đơn vị khác bị từ chối tự động. Dòng giữ nguyên phút gợi ý được ghi là mức tham khảo, chưa đo thực tế.</p>

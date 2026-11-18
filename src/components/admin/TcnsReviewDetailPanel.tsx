@@ -136,7 +136,7 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
           <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs font-semibold text-[#006cee] hover:underline cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /><span>Quay lại danh sách hồ sơ 39 đơn vị</span>
           </button>
-          <h2 className="text-base sm:text-lg font-bold text-[#004776]">Hồ sơ [{unit.code}] {unit.nameVi} — phiên bản v{currentRevision}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-[#0072BC]">Hồ sơ [{unit.code}] {unit.nameVi} — phiên bản v{currentRevision}</h2>
           <div className="flex flex-wrap items-center gap-2 text-xs text-[#476885]">
             <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] font-semibold">
               {loading && !reviewMeta ? <InlineSkeleton className="h-3.5 w-20" /> : (reviewMeta?.statusLabel || 'Chưa gửi')}

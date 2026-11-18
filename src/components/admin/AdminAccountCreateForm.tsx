@@ -80,7 +80,7 @@ export function AdminAccountCreateForm({
         <div className="w-8 h-8 rounded-lg bg-[#004776] text-white flex items-center justify-center shrink-0">
           <UserPlus className="w-4 h-4" />
         </div>
-        <h2 className="text-sm font-bold text-[#004776]">Cấp tài khoản và phân quyền nhanh</h2>
+        <h2 className="text-sm font-bold text-[#0072BC]">Cấp tài khoản và phân quyền nhanh</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

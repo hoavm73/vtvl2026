@@ -120,7 +120,7 @@ export default function AdminThamDinhPage() {
             <ShieldCheck className="w-4 h-4" />
             <span>Thẩm định cấp trường — Phòng Tổ chức – Nhân sự</span>
           </div>
-          <h1 className="page-title text-[#004776]">Thẩm định hồ sơ Đề án Vị trí việc làm</h1>
+          <h1 className="page-title text-[#0072BC]">Thẩm định hồ sơ Đề án Vị trí việc làm</h1>
           <p className="text-xs sm:text-sm text-[#476885]">
             Tiếp nhận hồ sơ 39 đơn vị gửi lên, kiểm tra chéo 9 biểu mẫu, ghi nhận xét hoặc yêu cầu bổ sung / xác nhận đạt.
           </p>

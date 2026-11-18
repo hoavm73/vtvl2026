@@ -60,7 +60,7 @@ export default function HuongDanDonViPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3.5">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-[var(--primary)] shrink-0" />
-            <h1 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)]">
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#0072BC]">
               Quy trình 08 bước, 10 biểu HD 07-HD/BTCTW &amp; phân công đơn vị
             </h1>
             <InfoTip title="Thành phần hồ sơ trình Phòng TCNS">
@@ -89,7 +89,7 @@ export default function HuongDanDonViPage() {
           {ROLE_CARDS.map((card) => (
             <div key={card.role} className="bg-[#f8fafc] rounded-lg p-3.5 space-y-1.5 border border-[var(--border-subtle)]">
               <div className="flex items-start justify-between gap-1">
-                <h2 className="text-xs sm:text-sm font-semibold text-[var(--foreground)] leading-snug">{card.role}</h2>
+                <h2 className="text-xs sm:text-sm font-semibold text-[#0072BC] leading-snug">{card.role}</h2>
                 <InfoTip title="Nhiệm vụ chi tiết" align="right">
                   <ul className="list-disc pl-3.5 space-y-1">
                     {card.details.map((d, i) => <li key={i}>{d}</li>)}
@@ -107,7 +107,7 @@ export default function HuongDanDonViPage() {
         <div className="border-t border-[var(--border-subtle)] pt-3.5 space-y-2.5">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4 text-[var(--primary)]" />
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">
+            <h2 className="text-sm font-semibold text-[#0072BC]">
               Bộ tài liệu gốc Hướng dẫn số 07-HD/BTCTW
             </h2>
           </div>
@@ -135,7 +135,7 @@ export default function HuongDanDonViPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <CheckSquare className="w-4 h-4 text-[var(--primary)]" />
-                <h2 className="text-sm font-semibold text-[var(--foreground)]">
+                <h2 className="text-sm font-semibold text-[#0072BC]">
                   {checklistMode === '8buoc' ? 'Quy trình 08 bước HD 07' : '12 bước nhập Excel'}
                 </h2>
               </div>
@@ -213,7 +213,7 @@ export default function HuongDanDonViPage() {
           <div className="space-y-2.5">
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-[var(--warn)]" />
-              <h2 className="text-sm font-semibold text-[var(--foreground)]">4 lưu ý quan trọng khi kiểm tra chéo</h2>
+              <h2 className="text-sm font-semibold text-[#0072BC]">4 lưu ý quan trọng khi kiểm tra chéo</h2>
             </div>
             <div className="divide-y divide-[var(--border-subtle)] rounded-lg border border-[var(--border-subtle)] bg-white overflow-hidden">
               {COMMON_PITFALLS.map((err) => (

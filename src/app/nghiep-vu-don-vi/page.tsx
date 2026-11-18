@@ -145,7 +145,7 @@ export default function NghiepVuDonViPage() {
             <Building2 className="w-4 h-4" />
             <span>Hồ sơ Vị trí việc làm theo đơn vị</span>
           </div>
-          <h1 className="page-title text-[#004776]">Hồ sơ &amp; nghiệp vụ đơn vị [{activeUnit.code}]</h1>
+          <h1 className="page-title text-[#0072BC]">Hồ sơ &amp; nghiệp vụ đơn vị [{activeUnit.code}]</h1>
           <p className="text-xs sm:text-sm text-[#476885]">{activeUnit.nameVi}</p>
         </div>
 

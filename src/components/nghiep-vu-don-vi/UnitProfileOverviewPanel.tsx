@@ -56,7 +56,7 @@ export function UnitProfileOverviewPanel({
               </span>
             )}
           </div>
-          <h2 className="text-base sm:text-lg font-bold text-[#004776]">{unitNameVi}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-[#0072BC]">{unitNameVi}</h2>
           <p className="text-xs text-[#476885]">
             {loading && !summary ? <InlineSkeleton className="h-3.5 w-44" /> : (summary?.stageLabel || 'Đang đồng bộ trạng thái hồ sơ...')}
             {summary?.submittedAt ? ` · Gửi TCNS: ${summary.submittedAt}` : ''}
@@ -153,7 +153,7 @@ export function UnitProfileOverviewPanel({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#20446c]">Hoạt động gần đây</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#0072BC]">Hoạt động gần đây</h3>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
             </span>

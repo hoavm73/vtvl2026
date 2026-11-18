@@ -148,7 +148,7 @@ export function UnitWorkbookHistoryPanel({
         <div className="space-y-0.5">
           <div className="flex flex-wrap items-center gap-2">
             <History className="w-4 h-4 text-[#006cee]" />
-            <h2 className="text-sm font-bold text-[#004776]">Lịch sử thay đổi, S_NhatKy & thẩm định [{unitCode}]</h2>
+            <h2 className="text-sm font-bold text-[#0072BC]">Lịch sử thay đổi, S_NhatKy & thẩm định [{unitCode}]</h2>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
             </span>

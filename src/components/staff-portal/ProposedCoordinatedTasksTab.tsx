@@ -153,7 +153,7 @@ export function ProposedCoordinatedTasksTab({
     <div className="bg-white border border-t-0 border-[#cbd5e1] rounded-b-2xl p-4 sm:p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
         <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#004776]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0072BC]">
             <Lock className="w-3.5 h-3.5 text-[#006cee]" />
             <span>Đề xuất phối hợp gửi về đơn vị [{unitCode || 'của bạn'}] (Chế độ xem tham khảo)</span>
           </div>

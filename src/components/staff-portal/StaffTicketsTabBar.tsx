@@ -33,7 +33,7 @@ export function StaffPortalHeaderBanner({
           <Building2 className="w-3.5 h-3.5" />
           <span>{unitNameVi || unitInfo.nameVi} ({unitInfo.code})</span>
         </div>
-        <h1 className="text-lg sm:text-2xl font-bold text-[#004776]">
+        <h1 className="text-lg sm:text-2xl font-bold text-[#0072BC]">
           Phiếu khảo sát khối lượng công việc cá nhân HCM-UTE
         </h1>
       </div>

@@ -18,7 +18,7 @@ export function AdminActivityLogsCard({ logs, onClear }: AdminActivityLogsCardPr
             <History className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-[#004776]">
+            <h2 className="text-sm font-semibold text-[#0072BC]">
               Nhật ký thao tác Telemetry ({logs.length} sự kiện gần nhất)
             </h2>
             <p className="text-xs text-[#64748b]">

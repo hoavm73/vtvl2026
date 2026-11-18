@@ -19,7 +19,7 @@ export function AdminHeader({ onLogout, onOpenOrgTree }: AdminHeaderProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-xl font-bold text-[#004776] tracking-tight leading-snug">
+            <h1 className="text-lg sm:text-xl font-bold text-[#0072BC] tracking-tight leading-snug">
               Trung tâm quản trị VTVL
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 shrink-0">

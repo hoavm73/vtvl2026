@@ -96,7 +96,7 @@ export function WorkRelationshipsTab({
     <div className="bg-white border border-t-0 border-[#cbd5e1] rounded-b-2xl p-4 sm:p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#004776]">
+          <div className="flex items-center gap-2 text-sm font-bold text-[#0072BC]">
             <Network className="w-4 h-4 text-[#006cee]" />
             <span>Mối quan hệ công việc phối hợp giữa các đơn vị</span>
           </div>

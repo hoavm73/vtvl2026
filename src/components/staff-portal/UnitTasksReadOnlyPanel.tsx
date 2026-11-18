@@ -34,7 +34,7 @@ export function UnitTasksReadOnlyPanel({
     <div className="xl:col-span-5 bg-white rounded-2xl border border-[#cbd5e1] shadow-xs overflow-hidden xl:sticky xl:top-20 max-h-[calc(100vh-6rem)] flex flex-col">
       <div className="px-5 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5">
         <div>
-          <h2 className="text-base font-bold text-[#004776]">
+          <h2 className="text-base font-bold text-[#0072BC]">
             Danh sách công việc của đơn vị ({searchQuery ? `${filteredTasks.length}/${unitA2Tasks.length}` : unitA2Tasks.length})
           </h2>
           <p className="text-xs text-[#64748b]">

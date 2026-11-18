@@ -93,7 +93,7 @@ export function UnitMonitoringTable({
           type="button"
           onClick={() => setListExpanded((v) => !v)}
           aria-expanded={listExpanded}
-          className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-[#004776] cursor-pointer"
+          className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-[#0072BC] cursor-pointer"
         >
           <span>Danh sách đơn vị ({displayRows.length})</span>
           <ChevronDown className={`w-4 h-4 text-[#476885] transition-transform ${listExpanded ? 'rotate-180' : ''}`} />

@@ -105,7 +105,7 @@ export function OverviewProcessAndLegal() {
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-[#e1edf8] text-[#004776] border border-[#cbd5e1]/60 font-semibold">Chu trình 5 bước</Badge>
-              <h2 className="text-lg sm:text-xl font-bold text-[#004776]">
+              <h2 className="text-lg sm:text-xl font-bold text-[#0072BC]">
                 Quy trình lập đề án Vị trí việc làm 360
               </h2>
             </div>
@@ -171,7 +171,7 @@ export function OverviewProcessAndLegal() {
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-[#004776]">
+              <h2 className="text-base sm:text-lg font-bold text-[#0072BC]">
                 Hệ thống văn bản chỉ đạo &amp; Căn cứ pháp lý
               </h2>
               <p className="text-xs text-[#476885] font-medium">

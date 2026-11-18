@@ -110,7 +110,7 @@ export function AdminSessionControlTab() {
             <div className="w-8 h-8 rounded-lg bg-[var(--surface-tint)] border border-[var(--primary)]/20 flex items-center justify-center text-[#004776]">
               <UserCheck className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-semibold text-[#004776]">
+            <h2 className="text-sm font-semibold text-[#0072BC]">
               Phiên làm việc hiện tại trên trình duyệt
             </h2>
           </div>
@@ -181,7 +181,7 @@ export function AdminSessionControlTab() {
           <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
             <PlusCircle className="w-4 h-4" />
           </div>
-          <h2 className="text-sm font-semibold text-[#004776]">
+          <h2 className="text-sm font-semibold text-[#0072BC]">
             Thiết lập / Chuyển đổi phiên làm việc
           </h2>
         </div>

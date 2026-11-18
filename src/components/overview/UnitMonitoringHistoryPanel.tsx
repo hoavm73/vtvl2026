@@ -110,7 +110,7 @@ export function UnitMonitoringHistoryPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setTicketsExpanded((v) => !v)} aria-expanded={ticketsExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
-              <h3 className="text-sm font-bold text-[#004776]">Phiếu khảo sát hiện có ({filteredTickets.length})</h3>
+              <h3 className="text-sm font-bold text-[#0072BC]">Phiếu khảo sát hiện có ({filteredTickets.length})</h3>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">{selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}</span>
               <ChevronDown className={`w-4 h-4 text-[#476885] transition-transform ${ticketsExpanded ? 'rotate-180' : ''}`} />
             </button>
@@ -217,7 +217,7 @@ export function UnitMonitoringHistoryPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setHistoryExpanded((v) => !v)} aria-expanded={historyExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <History className="w-4 h-4 text-[#006cee] shrink-0" />
-              <h3 className="text-sm font-bold text-[#004776]">Nhật ký hoạt động ({filteredHistory.length})</h3>
+              <h3 className="text-sm font-bold text-[#0072BC]">Nhật ký hoạt động ({filteredHistory.length})</h3>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
               </span>

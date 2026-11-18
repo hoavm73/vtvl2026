@@ -77,7 +77,7 @@ export function UnitTicketsFilterBar({
       return (
         <>
           <Clock className="w-4 h-4 text-[#f99c00]" />
-          <h2 className="text-base font-bold text-[#004776]">
+          <h2 className="text-base font-bold text-[#0072BC]">
             {isLeader ? 'Phiếu chờ duyệt & yêu cầu bổ sung' : 'Phiếu chờ duyệt & yêu cầu bổ sung của tôi'} ({displayedCount})
           </h2>
         </>
@@ -87,7 +87,7 @@ export function UnitTicketsFilterBar({
       return (
         <>
           <CheckCircle2 className="w-4 h-4 text-[#00a86b]" />
-          <h2 className="text-base font-bold text-[#004776]">
+          <h2 className="text-base font-bold text-[#0072BC]">
             {isLeader ? 'Phiếu đã duyệt' : 'Phiếu đã duyệt của tôi'} ({displayedCount})
           </h2>
         </>
@@ -96,7 +96,7 @@ export function UnitTicketsFilterBar({
     return (
       <>
         <Users className="w-4 h-4 text-[#006cee]" />
-        <h2 className="text-base font-bold text-[#004776]">
+        <h2 className="text-base font-bold text-[#0072BC]">
           {isLeader ? 'Toàn bộ phiếu của đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} ({displayedCount})
         </h2>
       </>

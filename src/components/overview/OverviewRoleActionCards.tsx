@@ -144,7 +144,7 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
     <section className="bg-white rounded-[16px] border border-[#e2e8f0] p-4 sm:p-6 space-y-3">
       {/* Tiêu đề & Segmented Tabs vai trò phẳng */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3.5">
-        <h2 className="text-base sm:text-lg font-bold text-[#004776]">
+        <h2 className="text-base sm:text-lg font-bold text-[#0072BC]">
           Tác vụ nhanh theo vai trò
         </h2>
 

@@ -90,7 +90,7 @@ export function UnitWorkspaceTicketsPanel({
       <div className={`space-y-4 ${(printTicket || detailTicket) ? 'print:hidden' : ''}`}>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
           <div>
-            <h2 className="text-sm font-bold text-[#004776]">Phiếu công việc đơn vị [{unitCode}]</h2>
+            <h2 className="text-sm font-bold text-[#0072BC]">Phiếu công việc đơn vị [{unitCode}]</h2>
             <p className="text-xs text-[#476885]">
               Quản lý, xem chi tiết, in PDF (A4), phê duyệt và gộp phiếu đã duyệt vào Biểu A2/B1 của {unitNameVi}.
             </p>

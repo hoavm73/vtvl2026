@@ -62,7 +62,7 @@ export function AdminSystemLogsTab() {
           <History className="w-4 h-4 text-[#006cee]" />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-[#004776]">Nhật ký hệ thống &amp; kiểm toán bảo mật</h2>
+              <h2 className="text-sm font-bold text-[#0072BC]">Nhật ký hệ thống &amp; kiểm toán bảo mật</h2>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
               </span>

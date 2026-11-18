@@ -98,7 +98,7 @@ export function ProposedCoordinatedSideCard({
             <span className="p-1.5 rounded-[8px] bg-[#eef5ff] text-[#006cee] shrink-0">
               <Handshake className="w-4 h-4" />
             </span>
-            <h3 className="text-sm font-bold text-[#004776] truncate">
+            <h3 className="text-sm font-bold text-[#0072BC] truncate">
               Các nhiệm vụ được đề xuất phối hợp
             </h3>
           </div>

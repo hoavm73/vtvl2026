@@ -96,7 +96,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
             <span className="p-1.5 rounded-[8px] bg-[#eef5ff] text-[#0072BC]">
               <Briefcase className="w-4 h-4" />
             </span>
-            <h3 className="text-sm font-bold text-[#004776]">
+            <h3 className="text-sm font-bold text-[#0072BC]">
               Danh mục vị trí việc làm của đơn vị [{unit.code}]
             </h3>
           </div>

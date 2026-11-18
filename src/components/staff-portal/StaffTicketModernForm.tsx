@@ -57,7 +57,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
       {/* Nhóm 1: Nhiệm vụ & Vị trí việc làm */}
       <div className="pb-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
+          <h3 className="text-sm sm:text-[15px] font-bold text-[#0072BC] leading-normal">
             1. Nhiệm vụ &amp; vị trí việc làm
           </h3>
           <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">
@@ -154,7 +154,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
       {/* Nhóm 2: Sản phẩm đầu ra & Căn cứ */}
       <div className="py-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
+          <h3 className="text-sm sm:text-[15px] font-bold text-[#0072BC] leading-normal">
             2. Sản phẩm đầu ra &amp; tiêu chuẩn
           </h3>
           <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">
@@ -213,7 +213,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
       {/* Nhóm 3: Định mức thời gian & Sản lượng */}
       <div className="pt-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
+          <h3 className="text-sm sm:text-[15px] font-bold text-[#0072BC] leading-normal">
             3. Định mức thời gian &amp; sản lượng hằng năm
           </h3>
           <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">

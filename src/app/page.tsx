@@ -188,8 +188,8 @@ export default function HomePage() {
                 <span className="text-xs font-bold text-[#006cee] uppercase tracking-wider">
                   Hồ sơ đề án đang thực hiện
                 </span>
-                <div className="text-base sm:text-lg font-bold text-[#004776] flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-[#004776] shrink-0" />
+                <div className="text-base sm:text-lg font-bold text-[#0072BC] flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#0072BC] shrink-0" />
                   <span>[{activeUnit.code}] {activeUnit.nameVi}</span>
                 </div>
                 <p className="text-xs text-[#20446c]">
@@ -252,8 +252,8 @@ export default function HomePage() {
               <div className="pt-4 md:pt-0 md:pl-6 space-y-2">
                 <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-[#004776]" />
-                    <h3 className="text-xs font-bold text-[#004776]">Nhật ký thao tác gần đây</h3>
+                    <History className="w-4 h-4 text-[#0072BC]" />
+                    <h3 className="text-xs font-bold text-[#0072BC]">Nhật ký thao tác gần đây</h3>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10px] font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
                     </span>

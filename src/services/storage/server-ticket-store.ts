@@ -127,9 +127,10 @@ export async function syncTicketsFromSupabase(unitCode?: string, force = false):
   const remoteHistory = await fetchStatusHistoryFromSupabase(unitCode);
   if (unitCode) {
     const uc = unitCode.toUpperCase();
-    for (const [id, t] of Array.from(store.entries())) {
-      if (t.unitCode.toUpperCase() === uc) store.delete(id);
-    }
+    for (const [id, t] of Array.from(store.entries())) { if (t.unitCode.toUpperCase() === uc) store.delete(id); }
+  } else {
+    const remoteIds = new Set(remote.map((t) => t.id));
+    for (const id of Array.from(store.keys())) { if (!remoteIds.has(id)) store.delete(id); }
   }
   for (const t of remote) {
     const existing = store.get(t.id);

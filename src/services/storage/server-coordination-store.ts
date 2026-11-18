@@ -32,8 +32,10 @@ export interface CoordinationDiskState {
 }
 
 let memoryState: CoordinationDiskState | null = null;
+let lastVersionSyncAt = 0;
 export function resetCoordinationMemoryStore(): void {
   memoryState = null;
+  lastVersionSyncAt = 0;
 }
 registerCacheInvalidator(resetCoordinationMemoryStore);
 
@@ -137,8 +139,11 @@ export function removeCoordinationDataForSurvey(surveyId: string): void {
 }
 
 /** Đồng bộ toàn bộ snapshot phiên bản phiếu từ PostgreSQL qua Prisma. */
-export async function syncVersionsCacheFromSupabase(): Promise<void> {
+export async function syncVersionsCacheFromSupabase(force = false): Promise<void> {
   if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
+  const now = Date.now();
+  if (!force && now - lastVersionSyncAt < 3000) return;
+  lastVersionSyncAt = now;
   try {
     const rows = await prisma.work_survey_versions.findMany({
       orderBy: { version_no: 'asc' }

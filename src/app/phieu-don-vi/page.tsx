@@ -253,6 +253,7 @@ export default function UnitTicketsManagementPage() {
           currentUserEmail={session.email}
           onViewTicket={setDetailTicket}
           onPrintTicket={setPrintTicket}
+          onEditTicket={(t) => router.push(`/phieu-cong-viec?editId=${encodeURIComponent(t.id)}`)}
           onApproveTicket={isLeader ? handleApprove : undefined}
           onRequestChanges={isLeader ? (t) => handleRevisionSubmit(t, 'request_changes') : undefined}
           onMergeTicket={isLeader ? setMergeTicket : undefined}

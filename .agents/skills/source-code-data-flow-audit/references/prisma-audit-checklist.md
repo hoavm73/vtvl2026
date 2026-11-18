@@ -1,6 +1,6 @@
 # Prisma & PostgreSQL 16 Data-Flow Audit Checklist
 
-Tài liệu tham chiếu kiểm toán tầng **Database (PostgreSQL 16) ↔ Prisma ORM ↔ Server Memory/File Store** cho hệ thống HCM-UTE VTVL 360.
+Tài liệu tham chiếu kiểm toán tầng **Database (PostgreSQL 16) ↔ Prisma ORM ↔ Server Memory/File Store** dựa trên tài liệu chính thức của Prisma (`v6.19+`).
 
 ---
 
@@ -13,35 +13,39 @@ Tài liệu tham chiếu kiểm toán tầng **Database (PostgreSQL 16) ↔ Pris
 
 ---
 
-## 2. Tính nguyên tử & Giao dịch (`prisma.$transaction` & Compensation)
+## 2. Xử lý mã lỗi chuẩn của Prisma (`PrismaClientKnownRequestError`)
 
-- **Khi nào bắt buộc dùng Transaction hoặc Compensation:**
-  1. **Nộp / Cập nhật / Nộp lại phiếu (`POST /api/tickets`, `PATCH /api/tickets`):**
-     - Ghi phiếu (`staff_work_tickets`)
-     - Tạo bản chụp phiên bản bất biến (`work_survey_versions`)
-     - Ghi lịch sử chuyển trạng thái (`work_survey_status_history`)
-     - Lưu mã công việc cũ đã thay thế khi đổi mã nhiệm vụ (`replaced_work_codes`)
-     - Đồng bộ đề xuất phối hợp VTVL (`work_survey_coordinated_vtvls` & `work_relationships`)
-  2. **Duyệt & Gộp phiếu vào Biểu A2/B1/B2 (`mergeApprovedTicketToUnitWorkbook`):**
-     - Khóa theo đơn vị bằng `withUnitWorkbookLock(unitCode, ...)`
-     - Cập nhật `workbooks` (Biểu A2, B1, B2_CT, tính lại công thức B2, C3, D2, K)
-     - Ghi liên kết dòng gộp (`work_survey_merge_links`)
-     - Cập nhật cờ `is_merged_to_b1_b2 = true` trên `staff_work_tickets`
-  3. **Thu hồi duyệt / Xóa phiếu (`executeRevokeOrCancelTicket`):**
-     - Gỡ chính xác dòng `a2-${ticket.id}` và `b1-${ticket.id}` khỏi bảng tính đơn vị mà không làm mất dòng của cán bộ khác có cùng mã công việc.
+Không chỉ kiểm tra chuỗi thông báo lỗi thô; cần đối chiếu mã lỗi chuẩn của Prisma (`e.code`):
+- **`P2002` (Unique constraint violation):** Vi phạm ràng buộc duy nhất (ví dụ: `uq_staff_ticket_unit_task` trên `(unit_code, ma_cong_viec)` hoặc `email` trên `user_accounts`). Phải trả về `409 Conflict` hoặc tự động cấp mã công việc tiếp theo thay vì trả `500`.
+- **`P2003` (Foreign key constraint failed):** Vi phạm khóa ngoại (ví dụ: `unit_code` tham chiếu `dm_don_vi(ma_don_vi)`, hoặc `owner_email` / `approved_by` / `merged_by` / `revision_requested_by` tham chiếu `user_accounts(email)`).
+- **`P2025` (Record not found):** Bản ghi cần `update` hoặc `delete` không tồn tại trên CSDL (dùng `deleteMany` / `updateMany` hoặc `upsert` để tránh crash).
+- **`P2034` (Transaction write conflict / Deadlock):** Xung đột ghi đồng thời trong transaction; cần kết hợp `withCrossProcessLock` / `withUnitWorkbookLock` hoặc retry an toàn.
 
 ---
 
-## 3. Đối chiếu ánh xạ trường (`snake_case` ↔ `camelCase`)
+## 3. Kiểm tra độ lệch lược đồ (`prisma migrate diff`) & An toàn Raw SQL
 
-Khi thêm hoặc sửa bất kỳ trường nào trên phiếu khảo sát, tài khoản hoặc bảng tính, phải kiểm tra đủ 4 điểm chạm:
+- **Kiểm tra Schema Drift:**
+  ```bash
+  npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script
+  ```
+- **Chống SQL Injection khi dùng Raw SQL:**
+  - Ưu tiên dùng Tagged Template `prisma.$queryRaw\`SELECT ... WHERE email = ${email}\`` (tự động tham số hóa `$1`).
+  - Nếu bắt buộc truyền tên bảng/cột động, phải kiểm tra qua **Whitelist cứng** trước khi đưa vào `Prisma.raw()`.
 
-1. **`prisma/schema.prisma`**: Cột đã khai báo đúng kiểu (`String`, `Int`, `Boolean`, `Json`, `DateTime @db.Timestamptz(6)`) chưa?
-2. **`src/services/storage/server-*-db.ts`**:
-   - Hàm `fetch*FromSupabase()` có `select` và ánh xạ cột đó sang object kết quả không?
-   - Hàm `persist*ToSupabase()` có đưa cột đó vào cả `create` và `update` trong `prisma.<table>.upsert()` không?
-3. **`src/services/storage/server-*-store.ts`**:
-   - Hàm `enrich*()` / `normalizeRecord()` có bảo toàn trường đó khi gộp với `existing` trong bộ nhớ không?
-4. **Ràng buộc Khóa ngoại (`dm_don_vi`):**
-   - Bảng `dm_don_vi` chỉ lưu **39 đơn vị hoạt động**.
-   - Với 4 tài khoản thuộc **Ban Giám hiệu (`BGH`)** (`hientt@hcmute.edu.vn`, `haiqt@hcmute.edu.vn`, `gianglh@hcmute.edu.vn`, `chdthanh@hcmute.edu.vn`), khi ghi xuống bảng `user_accounts` (có FK `unit_code -> dm_don_vi.ma_don_vi`), phải lưu `unit_code: 'TCNS'` và `unit_name_vi: 'Ban Giám hiệu'`, sau đó khôi phục `unitCode: 'BGH'`, `unitNameVi: 'Ban Giám hiệu'` khi đọc lên để vừa bảo toàn FK vừa không tính `BGH` vào số liệu của 39 đơn vị.
+---
+
+## 4. Tính nguyên tử, Đồng bộ 2 chiều & Đối chiếu ánh xạ trường (`snake_case` ↔ `camelCase`)
+
+Khi kiểm toán một luồng dữ liệu qua Prisma, bắt buộc kiểm tra 5 điểm nghẽn thường gặp:
+
+1. **Xóa bản ghi trên DB nhưng còn kẹt trong RAM (`sync*FromSupabase`):**
+   - Khi đồng bộ toàn bộ (`unitCode === undefined`), phải đối chiếu `remoteIds = new Set(remote.map(r => r.id))` để loại bỏ các bản ghi trong bộ nhớ RAM đã bị xóa trên PostgreSQL.
+2. **Rơi rớt trường mở rộng khi gộp lịch sử (`mergeTicketStatusHistory`):**
+   - Bảng `work_survey_status_history` trên PostgreSQL lưu nội dung chi tiết trong cột `reason`. Khi đọc từ DB (`fetchStatusHistoryFromSupabase`) và gộp với `localList`, phải khôi phục hoặc bảo toàn các trường cấu trúc (`oldMissionCode`, `newMissionCode`, `oldWorkCode`, `newWorkCode`, `fromVersionNo`, `toVersionNo`).
+3. **Đồng bộ bảng phụ (`work_survey_versions`):**
+   - Khi mở chi tiết phiếu (`GET /api/tickets?id=...`) hoặc trang `/phieu-don-vi`, phải đảm bảo `syncVersionsCacheFromSupabase()` đã được gọi để khôi phục lịch sử phiên bản (`v1`, `v2`...) sau khi máy chủ khởi động lại.
+4. **Remote-First Persistence & Cache Invalidation:**
+   - Mọi hàm `upsert*` / `delete*` phải ghi PostgreSQL thành công trước khi cập nhật RAM, đồng thời gọi `invalidateCacheTags(...)` để xóa Runtime Cache ngay lập tức.
+5. **Ràng buộc Khóa ngoại `dm_don_vi` (39 đơn vị) với tài khoản `BGH`:**
+   - Bảng `dm_don_vi` chỉ lưu 39 đơn vị hoạt động. Với 4 tài khoản Ban Giám hiệu (`BGH`), lưu `unit_code: 'TCNS'`, `unit_name_vi: 'Ban Giám hiệu'` ở tầng vật lý PostgreSQL và ánh xạ lại `unitCode: 'BGH'`, `unitNameVi: 'Ban Giám hiệu'` ở tầng ứng dụng.

@@ -68,10 +68,11 @@ export default function StaffWorkTicketsPage() {
       if (res.ok) {
         const json = await res.json();
         setUnitNameVi(op.role === 'admin' ? op.unitNameVi : (json.unitNameVi || op.unitNameVi));
-        setMyTickets(json.myTickets || []);
-        setUnitTickets(json.unitTickets || []);
-        setA1Missions(json.a1Missions || []);
-        setC1Vtvls(json.c1Vtvls || []);
+        const loadedMy: StaffWorkTicket[] = json.myTickets || [], loadedUnit: StaffWorkTicket[] = json.unitTickets || [];
+        setMyTickets(loadedMy); setUnitTickets(loadedUnit); setA1Missions(json.a1Missions || []); setC1Vtvls(json.c1Vtvls || []);
+        const editId = isInitial && typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('editId') : null;
+        const foundEdit = editId ? (loadedMy.find((t) => t.id === editId) || loadedUnit.find((t) => t.id === editId)) : null;
+        if (foundEdit) { setEditingTicket(foundEdit); setActiveTab('my'); }
       }
       if (coordRes.ok) {
         const cJson = await coordRes.json();

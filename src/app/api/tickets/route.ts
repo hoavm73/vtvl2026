@@ -6,7 +6,7 @@ import {
 import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
 import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
 import { createImmutableSurveyVersion, compensateRemoveSurveyVersion, ensureLegacyBaselineVersion } from '@/services/storage/server-ticket-version-store';
-import { compensateRemoveReplacedWorkCode, recordReplacedWorkCode } from '@/services/storage/server-coordination-store';
+import { compensateRemoveReplacedWorkCode, recordReplacedWorkCode, syncVersionsCacheFromSupabase } from '@/services/storage/server-coordination-store';
 import { withCrossProcessLock } from '@/services/storage/server-file-lock';
 import { getOrCreateWorkbook, normalizeEmail, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
 
   const singleTicketId = (req.nextUrl.searchParams.get('id') || '').trim();
   if (singleTicketId) {
+    await syncVersionsCacheFromSupabase().catch(() => {});
     let found = getTicketById(singleTicketId);
     if (!found) { await syncTicketsFromSupabase().catch(() => {}); found = getTicketById(singleTicketId); }
     if (!found || (found.isArchived && !caller.isAdmin)) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });

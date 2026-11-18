@@ -1,234 +1,261 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, CheckSquare, AlertTriangle, ArrowRight, Download, FileSpreadsheet, ListOrdered } from 'lucide-react';
-import { InfoTip } from '@/components/layout/MilestonesBar';
-import { HD07_12_STEP_ORDER, HD07_EIGHT_STEPS_PROCESS, HD07_OFFICIAL_DOCS } from '@/configs/hcmute-hd07-catalog';
+import {
+  BookOpen, Printer, Copy, Check, ArrowRight, CheckCircle2,
+  AlertTriangle, FileSpreadsheet, Download, Layers, User, Building2, ShieldCheck
+} from 'lucide-react';
+import { HD07_OFFICIAL_DOCS } from '@/configs/hcmute-hd07-catalog';
+import { TECHDOC_META, TECHDOC_ROLE_GUIDES, TechDocRoleId } from '@/configs/hcmute-techdoc-roles';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
-const ROLE_CARDS = [
-  {
-    role: '1. Thủ trưởng đơn vị',
-    sheets: 'A1 · C1 · C3 · D2',
-    summary: 'Phê duyệt danh mục nhiệm vụ, tên VTVL cụ thể, bậc nghề nghiệp và ký Tờ trình gửi Phòng TCNS.',
-    details: [
-      'Phê duyệt danh mục nhiệm vụ (Biểu A1), Tên VTVL cụ thể tại đơn vị và Bậc nghề nghiệp theo Hướng dẫn số 02 (1907/HD-ĐHCNKT).',
-      'Rà soát điều kiện chuyển tiếp đối với viên chức giữ chức danh Trợ giảng (V.07.01.23) theo khoản 5 Điều 15 Thông tư 31/2026/TT-BGDĐT.',
-      'Thống nhất nhu cầu nhân lực năm cơ sở (Biểu C3) và ký Tờ trình đề nghị thẩm định.'
-    ]
-  },
-  {
-    role: '2. Tổ thư ký đơn vị',
-    sheets: 'A2 · D1 · K_KiemTra · S_NhatKy',
-    summary: 'Khởi tạo tệp gốc v1 (Giai đoạn 1–2), kê khai nhân sự D1, gộp phiếu khảo sát v2 (Giai đoạn 4) và thẩm định (Giai đoạn 5).',
-    details: [
-      'Khởi tạo bộ biểu gốc 22 trang tính (v1) và gói tệp nén (.zip) chứa phiếu khảo sát theo từng vị trí việc làm.',
-      'Kê khai danh sách nhân sự hiện có của đơn vị chốt tại ngày 30/9/2026 trên biểu 9. D1_NhanLuc.',
-      'Tổng hợp tự động các phiếu khảo sát (v1 → v2) và chạy kiểm tra chéo đạt 6/6 chỉ tiêu tại biểu 13. K_KiemTra.'
-    ]
-  },
-  {
-    role: '3. Giảng viên & Chuyên viên',
-    sheets: 'B1 · B2_CT · C2',
-    summary: 'Kê khai định mức thời gian, sản lượng năm học (Biểu B1) và công đoạn chuyển đổi số (Biểu B2_CT).',
-    details: [
-      'Thực hiện kê khai định mức thời gian xử lý công việc và sản lượng thực tế tại Phiếu công việc cá nhân.',
-      'Kê khai sản lượng thực tế phát sinh trong kỳ 01/10/2025–30/9/2026 (Cột C biểu B1), ghi rõ nguồn xác thực (Cột H, I).',
-      'Kê khai chi tiết các công đoạn đã ứng dụng chuyển đổi số tại biểu 5. B2_CT_TacDong.'
-    ]
-  }
-];
+const ROLE_ICONS: Record<TechDocRoleId, React.ComponentType<{ className?: string }>> = {
+  staff: User,
+  unit_leader: Building2,
+  admin: ShieldCheck
+};
 
-const COMMON_PITFALLS = [
-  { code: 'Lưu ý 1 (Biểu B1 - Cột H, I)', title: 'Chưa cập nhật nguồn văn bản xác thực sản lượng và thời gian', fix: 'Ghi rõ tên văn bản, báo cáo hoặc hệ thống quản trị thực tế của đơn vị.' },
-  { code: 'Lưu ý 2 (Biểu B1 - Cột S)', title: 'Thời gian thực tế lệch trên 30% so với chuẩn nhưng chưa thuyết minh', fix: 'Nếu Trung bình phút/SP (Cột D) lệch trên 30% so với chuẩn, ghi rõ nguyên nhân đặc thù tại Cột S.' },
-  { code: 'Lưu ý 3 (Phụ lục II HD 1907)', title: 'Đặt Tên VTVL cụ thể hoặc chọn Bậc nghề nghiệp vượt giới hạn', fix: 'Đặt tên theo công thức [Khung VTVL] + [lĩnh vực phụ trách / số thứ tự] và chọn bậc trong giới hạn quy định.' },
-  { code: 'Lưu ý 4 (Biểu D1 - Cột A, E, F)', title: 'Kê khai trùng mã nguồn lực hoặc vượt quỹ giờ chuẩn năm', fix: 'Mỗi viên chức chỉ kê khai 1 dòng duy nhất tại biểu D1_NhanLuc; tổng giờ phân bổ không vượt quỹ giờ chuẩn.' }
-];
+const FLOW_TONE_CLS = {
+  main: 'bg-[#F0F9FF] border-[#0072BC] text-[#004776] hover:bg-[#e1f2ff]',
+  decision: 'bg-[#FEF3C7] border-[#D97706] text-[#8f4f00] hover:bg-[#fde68a]/60',
+  done: 'bg-[#F0FDF4] border-[#16A34A] text-[#13653f] hover:bg-[#dcfce7]'
+} as const;
 
 export default function HuongDanDonViPage() {
-  const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({ 1: true, 2: true });
-  const [checklistMode, setChecklistMode] = useState<'8buoc' | '12buoc'>('8buoc');
-  const toggleStep = (step: number) => setCheckedSteps((prev) => ({ ...prev, [step]: !prev[step] }));
-  const totalSteps = checklistMode === '8buoc' ? 8 : 12;
-  const completedCount = Object.entries(checkedSteps).filter(([k, v]) => Number(k) <= totalSteps && v).length;
+  const [selectedRole, setSelectedRole] = useState<TechDocRoleId>('staff');
+  const [showAllRoles, setShowAllRoles] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const cur = getCurrentOperatorSession();
+    if (cur?.role === 'admin' || cur?.role === 'unit_leader' || cur?.role === 'staff') {
+      setSelectedRole(cur.role);
+    }
+  }, []);
+
+  const visibleGuides = showAllRoles
+    ? TECHDOC_ROLE_GUIDES
+    : TECHDOC_ROLE_GUIDES.filter((g) => g.id === selectedRole);
+
+  const handleCopySummary = async () => {
+    const text = TECHDOC_ROLE_GUIDES.map(
+      (g) => `${g.title}\n- Điều kiện: ${g.quickAction.prerequisite}\n${g.quickAction.coreSteps.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`
+    ).join('\n\n');
+    try {
+      await navigator.clipboard.writeText(`${TECHDOC_META.title} (${TECHDOC_META.version})\n\n${text}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
 
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 space-y-4">
-      {/* KHỐI WORKSPACE CHÍNH */}
-      <section className="bg-white rounded-xl border border-[var(--border)] p-4 sm:p-6 space-y-4 shadow-2xs">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3.5">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[var(--primary)] shrink-0" />
-            <h1 className="text-xl sm:text-2xl font-semibold text-[#0072BC]">
-              Quy trình 08 bước, 10 biểu HD 07-HD/BTCTW &amp; phân công đơn vị
+    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5 text-[#004776] print:p-0 print:max-w-none print:space-y-4">
+      {/* Tiêu ngữ hành chính chỉ hiển thị khi in PDF A4 */}
+      <div className="hidden print:block border-b-2 border-[#004776] pb-3 mb-4 text-center space-y-0.5">
+        <div className="text-xs font-medium uppercase">Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE) · Phòng Tổ chức - Nhân sự</div>
+        <div className="text-base font-bold uppercase text-[#0072BC]">{TECHDOC_META.title}</div>
+        <div className="text-[11px] text-[#476885]">Phiên bản {TECHDOC_META.version} · Ban hành ngày {TECHDOC_META.updatedAt}</div>
+      </div>
+
+      {/* Thanh tiêu đề & DocumentMetaBar */}
+      <header className="bg-white rounded-[18px] border border-[#e2e8f0] p-4 sm:p-6 space-y-4 print:border-0 print:p-0">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e3f5ec] text-[#13653f] font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /><span>{TECHDOC_META.status}</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#0072BC] font-semibold">{TECHDOC_META.version}</span>
+              <span className="text-[#476885]">Cập nhật: {TECHDOC_META.updatedAt}</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0072BC] tracking-tight flex items-center gap-2">
+              <BookOpen className="w-5 h-5 shrink-0" /><span>{TECHDOC_META.title}</span>
             </h1>
-            <InfoTip title="Thành phần hồ sơ trình Phòng TCNS">
-              <p>1. Tệp dữ liệu đơn vị (.xlsx) gồm 10 biểu nghiệp vụ (A1–D2) đạt 6/6 chỉ tiêu tại K_KiemTra.</p>
-              <p>2. Tờ trình đề nghị thẩm định đề án vị trí việc làm trình ký qua E-Office.</p>
-            </InfoTip>
+            <p className="text-xs sm:text-sm text-[#20446c] leading-relaxed">{TECHDOC_META.subtitle}</p>
+            <p className="text-[11.5px] font-medium text-[#476885]">{TECHDOC_META.issuer}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              href="/tai-ve/so-do-quy-trinh-vtvl-hcmute.png"
-              download="so-do-quy-trinh-vtvl-hcmute.png"
-              className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-[#cbd5e1] bg-white text-[var(--foreground)] text-xs font-medium hover:bg-[#f8fafc]"
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
+            <button
+              type="button"
+              onClick={() => setShowAllRoles((v) => !v)}
+              className={`min-h-[44px] sm:min-h-[38px] px-3.5 rounded-[10px] border text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+                showAllRoles ? 'bg-[#0072BC] text-white border-[#0072BC]' : 'bg-white border-[#cbd5e1] text-[#004776] hover:bg-[#eef5ff]'
+              }`}
             >
-              <Download className="w-4 h-4 text-[var(--primary)]" />
-              <span>Tải Sơ đồ quy trình (.png)</span>
-            </a>
-            <Link href="/bang-tinh?sheet=A1" className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold shadow-2xs">
-              <span>Bắt đầu Giai đoạn 1</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+              <Layers className="w-4 h-4" /><span>{showAllRoles ? 'Xem 1 vai trò' : 'Xem tất cả 3 vai trò'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCopySummary()}
+              className="min-h-[44px] sm:min-h-[38px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              {copied ? <Check className="w-4 h-4 text-[#13653f]" /> : <Copy className="w-4 h-4 text-[#0072BC]" />}
+              <span>{copied ? 'Đã sao chép' : 'Sao chép tóm tắt'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="min-h-[44px] sm:min-h-[38px] px-4 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-4 h-4" /><span>In / Xuất PDF A4</span>
+            </button>
           </div>
         </div>
 
-        {/* 3 NHÓM PHÂN CÔNG VAI TRÒ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {ROLE_CARDS.map((card) => (
-            <div key={card.role} className="bg-[#f8fafc] rounded-lg p-3.5 space-y-1.5 border border-[var(--border-subtle)]">
-              <div className="flex items-start justify-between gap-1">
-                <h2 className="text-xs sm:text-sm font-semibold text-[#0072BC] leading-snug">{card.role}</h2>
-                <InfoTip title="Nhiệm vụ chi tiết" align="right">
-                  <ul className="list-disc pl-3.5 space-y-1">
-                    {card.details.map((d, i) => <li key={i}>{d}</li>)}
-                  </ul>
-                </InfoTip>
-              </div>
-              <div className="text-[11px] font-medium text-[var(--primary)] bg-white px-2 py-0.5 rounded border border-[#e2e8f0]">
-                {card.sheets}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* TÀI LIỆU GỐC TẢI VỀ */}
-        <div className="border-t border-[var(--border-subtle)] pt-3.5 space-y-2.5">
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-[var(--primary)]" />
-            <h2 className="text-sm font-semibold text-[#0072BC]">
-              Bộ tài liệu gốc Hướng dẫn số 07-HD/BTCTW
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {HD07_OFFICIAL_DOCS.map((doc) => (
-              <a
-                key={doc.code}
-                href={doc.href}
-                download
-                className="rounded-lg border border-[var(--border-subtle)] bg-white hover:bg-[#f8fafc] p-2.5 flex items-center justify-between gap-2 transition-colors"
+        {/* Bộ chọn 3 vai trò */}
+        <div role="tablist" aria-label="Chọn hướng dẫn theo vai trò" className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 border-t border-[#e2e8f0] print:hidden">
+          {TECHDOC_ROLE_GUIDES.map((g) => {
+            const Icon = ROLE_ICONS[g.id];
+            const isActive = !showAllRoles && selectedRole === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => { setShowAllRoles(false); setSelectedRole(g.id); }}
+                className={`text-left min-h-[48px] p-3.5 rounded-[12px] border transition-all cursor-pointer flex items-start gap-3 ${
+                  isActive
+                    ? 'bg-[#eef6ff] border-[#0072BC] ring-1 ring-[#0072BC]/25'
+                    : 'bg-[#f8fafc] border-[#e2e8f0] hover:bg-[#f0f7ff]'
+                }`}
               >
-                <div className="min-w-0">
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[var(--surface-tint)] text-[var(--primary)] mr-1">{doc.badge}</span>
-                  <span className="text-xs font-medium text-[var(--foreground)] block mt-0.5 truncate">{doc.title}</span>
-                </div>
-                <Download className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* TIẾN TRÌNH & LƯU Ý KIỂM TRA CHÉO */}
-        <div className="border-t border-[var(--border-subtle)] pt-3.5 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <CheckSquare className="w-4 h-4 text-[var(--primary)]" />
-                <h2 className="text-sm font-semibold text-[#0072BC]">
-                  {checklistMode === '8buoc' ? 'Quy trình 08 bước HD 07' : '12 bước nhập Excel'}
-                </h2>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setChecklistMode('8buoc')}
-                  className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer inline-flex items-center gap-1 ${checklistMode === '8buoc' ? 'bg-[var(--primary)] text-white' : 'bg-[#f1f5f9] text-[var(--foreground)]'}`}
-                >
-                  <ListOrdered className="w-3 h-3" />
-                  <span>08 bước</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChecklistMode('12buoc')}
-                  className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${checklistMode === '12buoc' ? 'bg-[var(--primary)] text-white' : 'bg-[#f1f5f9] text-[var(--foreground)]'}`}
-                >
-                  <span>12 bước</span>
-                </button>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--surface-tint)] text-[var(--primary)] tabular-nums">
-                  {completedCount}/{totalSteps}
+                <span className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 ${isActive ? 'bg-[#0072BC] text-white' : 'bg-white border border-[#dbe8f5] text-[#0072BC]'}`}>
+                  <Icon className="w-4 h-4" />
                 </span>
-              </div>
-            </div>
-            <div className="divide-y divide-[var(--border-subtle)] rounded-lg border border-[var(--border-subtle)] bg-[#f8fafc] max-h-72 overflow-y-auto">
-              {checklistMode === '8buoc'
-                ? HD07_EIGHT_STEPS_PROCESS.map((s) => {
-                    const done = Boolean(checkedSteps[s.step]);
-                    return (
-                      <label
-                        key={s.step}
-                        onClick={() => toggleStep(s.step)}
-                        className={`cursor-pointer px-3 py-2 flex items-center justify-between gap-2 text-xs transition-colors ${
-                          done ? 'bg-[var(--ok-soft)]/25' : 'bg-white hover:bg-[#f8fafc]'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2 min-w-0">
-                          <input type="checkbox" checked={done} onChange={() => {}} className="w-3.5 h-3.5 accent-[var(--primary)] mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <span className="font-medium text-[var(--foreground)] block leading-snug">{s.title}</span>
-                            <span className="text-[11px] text-[var(--primary)]">{s.sheets}</span>
-                          </div>
-                        </div>
-                        <InfoTip title={s.title} align="right">
-                          <p><strong>Kết quả:</strong> {s.result}</p>
-                          <p className="mt-1"><strong>Điều kiện:</strong> {s.condition}</p>
-                        </InfoTip>
-                      </label>
-                    );
-                  })
-                : HD07_12_STEP_ORDER.map((s) => {
-                    const done = Boolean(checkedSteps[s.step]);
-                    return (
-                      <label
-                        key={s.step}
-                        onClick={() => toggleStep(s.step)}
-                        className={`cursor-pointer px-3 py-2 flex items-center justify-between gap-2 text-xs transition-colors ${
-                          done ? 'bg-[var(--ok-soft)]/25' : 'bg-white hover:bg-[#f8fafc]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <input type="checkbox" checked={done} onChange={() => {}} className="w-3.5 h-3.5 accent-[var(--primary)]" />
-                          <span className="font-medium text-[var(--foreground)] shrink-0">Bước {s.step}:</span>
-                          <span className="text-[var(--primary)] truncate">{s.sheet}</span>
-                        </div>
-                        <InfoTip title={`Bước ${s.step}: ${s.sheet}`} align="right">
-                          <p>{s.title}</p>
-                        </InfoTip>
-                      </label>
-                    );
-                  })}
-            </div>
-          </div>
+                <span className="min-w-0 space-y-0.5">
+                  <span className="block text-xs sm:text-sm font-bold text-[#0072BC] leading-snug">{g.order}. {g.shortTitle}</span>
+                  <span className="block text-[11px] font-medium text-[#476885]">{g.badge}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </header>
 
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-[var(--warn)]" />
-              <h2 className="text-sm font-semibold text-[#0072BC]">4 lưu ý quan trọng khi kiểm tra chéo</h2>
+      {/* Nội dung TechDoc từng vai trò */}
+      <div className="space-y-6">
+        {visibleGuides.map((guide) => (
+          <article key={guide.id} className="bg-white rounded-[18px] border border-[#e2e8f0] p-4 sm:p-6 space-y-6 print:border-[#cbd5e1] print:break-inside-avoid-page">
+            {/* Tiêu đề vai trò */}
+            <div className="border-b border-[#e2e8f0] pb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="space-y-1">
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#eef5ff] text-[#0072BC] text-[11px] font-semibold">{guide.badge}</span>
+                <h2 className="text-lg sm:text-xl font-bold text-[#0072BC]">{guide.title}</h2>
+                <p className="text-xs sm:text-sm text-[#20446c]">{guide.description}</p>
+              </div>
+              <span className="text-xs font-mono font-semibold text-[#476885] bg-[#f8fafc] border border-[#e2e8f0] px-2.5 py-1 rounded-lg self-start shrink-0">
+                {guide.quickAction.entryPath}
+              </span>
             </div>
-            <div className="divide-y divide-[var(--border-subtle)] rounded-lg border border-[var(--border-subtle)] bg-white overflow-hidden">
-              {COMMON_PITFALLS.map((err) => (
-                <div key={err.code} className="p-3 flex items-start justify-between gap-2 hover:bg-[#f8fafc] transition-colors">
-                  <div className="space-y-0.5">
-                    <span className="text-[11px] font-semibold text-[var(--fix)] block">{err.code}</span>
-                    <strong className="text-xs text-[var(--foreground)] font-medium block">{err.title}</strong>
-                  </div>
-                  <InfoTip title="Cách khắc phục" align="right">
-                    <p>{err.fix}</p>
-                  </InfoTip>
+
+            {/* Khối Callout Thao tác nhanh dành cho Quý Thầy/Cô */}
+            <section aria-label="Thao tác nhanh" className="rounded-[14px] bg-[#F0F9FF] border border-[#0072BC]/35 p-4 sm:p-5 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-[#0072BC]">Thao tác nhanh dành cho Quý Thầy/Cô</h3>
+                <div className="flex flex-wrap gap-2 print:hidden">
+                  <Link href={guide.quickAction.primaryHref} className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 rounded-[9px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold">
+                    <span>{guide.quickAction.primaryLabel}</span><ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link href={guide.quickAction.secondaryHref} className="inline-flex items-center gap-1.5 min-h-[38px] px-3 rounded-[9px] border border-[#0072BC]/35 bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776]">
+                    <span>{guide.quickAction.secondaryLabel}</span>
+                  </Link>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+              <p className="text-xs text-[#20446c]"><strong>Điều kiện tiên quyết:</strong> {guide.quickAction.prerequisite}</p>
+              <ol className="space-y-1.5 text-xs sm:text-[13px] text-[#004776] list-decimal pl-5 font-medium">
+                {guide.quickAction.coreSteps.map((step, i) => (<li key={i}>{step}</li>))}
+              </ol>
+            </section>
+
+            {/* Sơ đồ luồng tương tác chuẩn màu Mermaid HCM-UTE */}
+            <section className="space-y-2.5">
+              <h3 className="text-sm font-bold text-[#0072BC]">Sơ đồ luồng thực hiện (nhấp vào từng bước để mở nhanh)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+                {guide.flowNodes.map((node) => (
+                  <Link
+                    key={node.id}
+                    href={node.href}
+                    className={`rounded-[12px] border p-3 transition-colors flex flex-col justify-between gap-1 ${FLOW_TONE_CLS[node.tone]}`}
+                  >
+                    <span className="text-xs font-bold leading-snug">{node.label}</span>
+                    <span className="text-[11px] opacity-90">{node.sublabel}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* Hướng dẫn chi tiết 3 tác vụ (Mục đích / Các bước / Kết quả / Lưu ý) */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-[#0072BC]">Quy trình thao tác chi tiết theo tác vụ</h3>
+              <div className="divide-y divide-[#e2e8f0] border-y border-[#e2e8f0]">
+                {guide.tasks.map((task) => (
+                  <div key={task.number} className="py-4 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <h4 className="text-sm sm:text-[15px] font-bold text-[#0072BC]">{task.title}</h4>
+                      <Link href={task.actionHref} className="inline-flex items-center gap-1 text-xs font-semibold text-[#006cee] hover:underline shrink-0 print:hidden">
+                        <span>{task.actionLabel}</span><ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 text-xs sm:text-[13px]">
+                      <div className="lg:col-span-4 space-y-1.5">
+                        <p><strong className="text-[#0072BC]">Mục đích:</strong> {task.purpose}</p>
+                        <p><strong className="text-[#13653f]">Kết quả:</strong> {task.result}</p>
+                        {task.note && (
+                          <p className="rounded-lg bg-[#FEF3C7]/70 border border-[#D97706]/30 px-2.5 py-1.5 text-[#8f4f00]">
+                            <strong>Lưu ý:</strong> {task.note}
+                          </p>
+                        )}
+                      </div>
+                      <div className="lg:col-span-8 rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                        <div className="font-bold text-[#004776] mb-1.5">Các bước thực hiện:</div>
+                        <ol className="space-y-1 list-decimal pl-5 text-[#004776]">
+                          {task.steps.map((s, idx) => (<li key={idx}>{s}</li>))}
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Các tình huống thường gặp và cách xử lý */}
+            <section className="space-y-2.5">
+              <h3 className="text-sm font-bold text-[#8f4f00] flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" /><span>Các tình huống thường gặp và cách xử lý</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {guide.troubleshooting.map((item, idx) => (
+                  <div key={idx} className="rounded-[12px] border border-[#e2e8f0] bg-[#fffaf0]/60 p-3.5 space-y-1 text-xs">
+                    <div className="font-bold text-[#004776]">{item.situation}</div>
+                    <p className="text-[#476885]"><strong>Nguyên nhân:</strong> {item.cause}</p>
+                    <p className="text-[#13653f]"><strong>Cách xử lý:</strong> {item.solution}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </article>
+        ))}
+      </div>
+
+      {/* Kho tài liệu gốc Hướng dẫn 07-HD/BTCTW */}
+      <section className="bg-white rounded-[18px] border border-[#e2e8f0] p-4 sm:p-5 space-y-3 print:hidden">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
+          <h2 className="text-sm font-bold text-[#0072BC]">Tệp biểu mẫu gốc theo Hướng dẫn số 07-HD/BTCTW</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {HD07_OFFICIAL_DOCS.map((doc) => (
+            <a key={doc.code} href={doc.href} download className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] hover:bg-[#eef5ff] p-3 flex items-center justify-between gap-2 transition-colors">
+              <div className="min-w-0">
+                <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded bg-[#eef5ff] text-[#0072BC]">{doc.badge}</span>
+                <span className="text-xs font-semibold text-[#004776] block mt-1 truncate">{doc.title}</span>
+              </div>
+              <Download className="w-4 h-4 text-[#0072BC] shrink-0" />
+            </a>
+          ))}
         </div>
       </section>
     </div>

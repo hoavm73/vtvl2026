@@ -67,105 +67,110 @@ export function StaffTicketDetailModal({
   return (
     <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-5xl max-h-[96vh] flex flex-col overflow-hidden">
-        {/* Thanh công cụ tiêu đề & các nút hành động */}
-        <div className="px-4 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="space-y-0.5 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2.5 py-0.5 rounded-md">
-                {ticket.maCongViec}
-              </span>
-              <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badge.pillCls}`}>
-                <StatusIcon className="w-3.5 h-3.5" />
-                {badge.label}
-              </span>
-              {versionCount > 0 && (
-                <span className="text-xs font-bold text-[#004776] bg-white px-2 py-0.5 rounded-md border border-[#cbd5e1]">
-                  v{versionCount}
+        {/* Thanh công cụ tiêu đề & thao tác gọn 2 hàng */}
+        <div className="px-4 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5 shrink-0">
+          {/* Hàng 1: Mã phiếu, trạng thái, tên công việc & nút đóng */}
+          <div className="flex items-start sm:items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                <span className="text-xs font-mono font-bold text-[#0072BC] bg-[#eef5ff] px-2.5 py-0.5 rounded-[6px]">
+                  {ticket.maCongViec}
                 </span>
-              )}
-              {ticket.isMergedToB1B2 && (
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  Đã gộp B1/B2
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badge.pillCls}`}>
+                  <StatusIcon className="w-3.5 h-3.5" />
+                  {badge.label}
                 </span>
-              )}
+                {versionCount > 0 && (
+                  <span className="text-xs font-bold text-[#004776] bg-white px-2 py-0.5 rounded-[6px] border border-[#cbd5e1] tabular-nums">
+                    v{versionCount}
+                  </span>
+                )}
+                {ticket.isMergedToB1B2 && (
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Đã gộp B1/B2
+                  </span>
+                )}
+              </div>
+              <h3 title={ticket.tenCongViec} className="text-sm sm:text-[15px] font-bold text-[#004776] truncate min-w-0 flex-1">
+                {ticket.tenCongViec}
+              </h3>
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-[#004776] truncate">
-              {ticket.tenCongViec}
-            </h3>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Đóng chi tiết phiếu"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-[8px] text-[#476885] hover:text-[#004776] hover:bg-[#e2e8f0] cursor-pointer shrink-0 transition-colors"
+              title="Đóng"
+            >
+              <X className="w-4.5 h-4.5" />
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Bộ chuyển tab: Biểu mẫu A4 & Thay đổi so với bản trước */}
-            <div className="inline-flex p-0.5 bg-[#e2e8f0] rounded-xl">
+          {/* Hàng 2: Tabs chế độ xem & cụm nút hành động trên 1 hàng */}
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 min-w-0">
+            <div className="inline-flex items-center p-0.5 bg-[#e2e8f0] rounded-[10px] overflow-x-auto no-scrollbar max-w-full">
               <button
                 type="button"
                 onClick={() => setActiveTab('a4')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                  activeTab === 'a4' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  activeTab === 'a4' ? 'bg-white text-[#004776]' : 'text-[#476885] hover:text-[#004776]'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5 shrink-0" />
                 <span>Chi tiết phiếu (A4)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('diff')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                  activeTab === 'diff' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  activeTab === 'diff' ? 'bg-white text-[#004776]' : 'text-[#476885] hover:text-[#004776]'
                 }`}
               >
-                <GitCompare className="w-3.5 h-3.5" />
+                <GitCompare className="w-3.5 h-3.5 shrink-0" />
                 <span>Thay đổi so với bản trước</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('history')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                  activeTab === 'history' ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#476885] hover:text-[#004776]'
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                  activeTab === 'history' ? 'bg-white text-[#004776]' : 'text-[#476885] hover:text-[#004776]'
                 }`}
               >
-                <History className="w-3.5 h-3.5" />
+                <History className="w-3.5 h-3.5 shrink-0" />
                 <span>Lịch sử phê duyệt</span>
               </button>
             </div>
 
-            {canReview && (
-              <>
-                <button type="button" onClick={() => onApprove?.(ticket)} className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
-                  <Check className="w-4 h-4" /><span>Duyệt phiếu</span>
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 w-full lg:w-auto lg:ml-auto min-w-0">
+              {canReview && (
+                <>
+                  <button type="button" onClick={() => onApprove?.(ticket)} className="h-8 px-2.5 rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors">
+                    <Check className="w-3.5 h-3.5 shrink-0" /><span>Duyệt phiếu</span>
+                  </button>
+                  <button type="button" onClick={() => onRequestChanges?.(ticket)} className="h-8 px-2.5 rounded-[8px] bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors">
+                    <CornerDownLeft className="w-3.5 h-3.5 shrink-0" /><span>Yêu cầu bổ sung</span>
+                  </button>
+                </>
+              )}
+              {canModerate && canonical === 'approved' && onRevokeApproval && (
+                <button type="button" onClick={() => onRevokeApproval(ticket)} className="h-8 px-2.5 rounded-[8px] border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors">
+                  <RotateCcw className="w-3.5 h-3.5 text-[#d97706] shrink-0" /><span>Thu hồi duyệt</span>
                 </button>
-                <button type="button" onClick={() => onRequestChanges?.(ticket)} className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
-                  <CornerDownLeft className="w-4 h-4" /><span>Yêu cầu bổ sung</span>
+              )}
+              {canModerate && canonical !== 'draft' && onCancelTicket && (
+                <button type="button" onClick={() => onCancelTicket(ticket)} className="h-8 px-2.5 rounded-[8px] border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" /><span>Xóa phiếu</span>
                 </button>
-              </>
-            )}
-            {canModerate && canonical === 'approved' && onRevokeApproval && (
-              <button type="button" onClick={() => onRevokeApproval(ticket)} className="h-9 px-3 rounded-xl border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
-                <RotateCcw className="w-3.5 h-3.5 text-[#d97706]" /><span>Thu hồi duyệt</span>
+              )}
+              <button
+                type="button"
+                onClick={() => (onPrint ? onPrint(ticket) : window.print())}
+                className="h-8 px-2.5 rounded-[8px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5 shrink-0" />
+                <span>In PDF (A4)</span>
               </button>
-            )}
-            {canModerate && canonical !== 'draft' && onCancelTicket && (
-              <button type="button" onClick={() => onCancelTicket(ticket)} className="h-9 px-3 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" /><span>Xóa phiếu</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => (onPrint ? onPrint(ticket) : window.print())}
-              className="h-9 px-3.5 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-            >
-              <Printer className="w-4 h-4" />
-              <span>In PDF (A4)</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-[#64748b] hover:bg-[#e2e8f0] cursor-pointer"
-              title="Đóng"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            </div>
           </div>
         </div>
 

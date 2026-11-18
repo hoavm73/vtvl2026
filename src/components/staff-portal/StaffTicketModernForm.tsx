@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { CoordinatedVtvlEntry } from '@/types/staff-ticket';
 import { CoordinatedVtvlPreviewPanel } from '@/components/staff-portal/CoordinatedVtvlSection';
@@ -84,7 +84,6 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
             </label>
             <div className="h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f1f5f9] flex items-center justify-between text-xs sm:text-sm font-mono font-bold text-[#0072BC]">
               <span className="truncate">{props.maCongViec || 'Tự động cấp mã...'}</span>
-              <Sparkles className="w-4 h-4 text-[#0072BC] shrink-0" />
             </div>
           </div>
 

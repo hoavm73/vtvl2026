@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CalendarClock, CheckCircle2, Clock, Eye, FileText, PackageCheck, Sparkles, UserCheck } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Clock, Eye, FileText, PackageCheck, UserCheck } from 'lucide-react';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
 import { normalizeCode } from '@/services/tickets/vtvl-coordination-helpers';
 
@@ -57,7 +57,7 @@ export function ProposedCoordinatedTaskCard({
           </span>
           {matchesSelected && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#006cee] text-white text-[11px] font-bold">
-              <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+              Đang chọn VTVL: {selectedVtvl}
             </span>
           )}
           {task.isDeclaredByTargetUnit ? (

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Sparkles } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 interface StaffTicketCoreFieldsProps {
@@ -72,7 +71,6 @@ export function StaffTicketCoreFields({
         <td className="border border-[#004776] p-2">
           <div className="h-9 px-3 rounded-lg border border-[#cbd5e1] bg-[#f1f5f9] flex items-center justify-between text-xs font-mono font-bold text-[#0072BC]">
             <span>{maCongViec || 'Chọn nhiệm vụ để tự sinh mã theo chuẩn...'}</span>
-            <Sparkles className="w-3.5 h-3.5 text-[#0072BC]" />
           </div>
         </td>
       </tr>

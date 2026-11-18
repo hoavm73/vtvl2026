@@ -74,14 +74,9 @@ export async function GET(req: NextRequest) {
   await syncTicketsFromSupabase(isAllUnits ? undefined : unit.code);
   await syncServerWorkbooksFromSupabase(true);
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-  if (!isAllUnits) {
-    await syncTicketsFromWorkbook(wb.data, unit.code);
-    await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0);
-  }
+  if (!isAllUnits) { await syncTicketsFromWorkbook(wb.data, unit.code); await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0); }
   const latestWb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-
-  const myTickets = getTicketsByOwner(caller.email, unit.code);
-  const rawUnitTickets = getTicketsByUnit(isAllUnits ? 'ALL' : unit.code);
+  const myTickets = getTicketsByOwner(caller.email, unit.code), rawUnitTickets = getTicketsByUnit(isAllUnits ? 'ALL' : unit.code);
   const unitTickets = caller.isAdmin ? rawUnitTickets : rawUnitTickets.filter((t) => normalizeEmail(t.ownerEmail) === normalizeEmail(caller.email) || toCanonicalStatus(t.status) !== 'draft');
 
   return NextResponse.json({

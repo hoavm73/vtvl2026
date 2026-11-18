@@ -43,9 +43,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         href: '/?tab=unit-monitor',
         label: 'Theo dõi đơn vị',
         icon: BarChart3,
-        roles: ['admin'],
-        badge: 'TCNS',
-        badgeColor: 'bg-blue-50 text-[#0072BC] border-blue-200'
+        roles: ['admin']
       }
     ]
   },
@@ -55,9 +53,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
       {
         href: '/phieu-cong-viec',
         label: 'Phiếu công việc cá nhân',
-        icon: FileText,
-        badge: 'Ưu tiên',
-        badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        icon: FileText
       }
     ]
   },
@@ -68,9 +64,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         href: '/phieu-don-vi',
         label: 'Quản lý phiếu đơn vị',
         icon: ClipboardCheck,
-        roles: ['admin', 'unit_leader'],
-        badge: 'Xử lý',
-        badgeColor: 'bg-blue-50 text-[#0072BC] border-blue-200'
+        roles: ['admin', 'unit_leader']
       },
       {
         href: '/bang-tinh',
@@ -86,9 +80,7 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
         href: '/admin',
         label: 'Quản trị hệ thống',
         icon: ShieldCheck,
-        roles: ['admin', 'unit_leader'],
-        badge: 'Admin',
-        badgeColor: 'bg-amber-50 text-amber-700 border-amber-200'
+        roles: ['admin', 'unit_leader']
       },
       {
         href: '/huong-dan',

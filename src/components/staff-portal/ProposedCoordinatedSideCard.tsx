@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, CalendarClock, CheckCircle2, Eye, Handshake, Lock, Search, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
+import { ArrowRight, CalendarClock, CheckCircle2, Eye, Handshake, Lock, Search, ShieldAlert, UserCheck } from 'lucide-react';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { normalizeCode, PROPOSED_TAB_EMPTY_MESSAGE } from '@/services/tickets/vtvl-coordination-helpers';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
@@ -123,7 +123,7 @@ export function ProposedCoordinatedSideCard({
         )}
         {selectedVtvl && (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#006cee] text-white font-bold">
-            <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+            Đang chọn VTVL: {selectedVtvl}
           </span>
         )}
         {myAssignments.length > 0 && myAssignments.map((a) => (
@@ -190,7 +190,7 @@ export function ProposedCoordinatedSideCard({
                     </span>
                     {matchesSelected && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#006cee] text-white text-[10.5px] font-bold">
-                        <Sparkles className="w-3 h-3" /> Đang chọn VTVL: {selectedVtvl}
+                        Đang chọn VTVL: {selectedVtvl}
                       </span>
                     )}
                     {task.isDeclaredByTargetUnit && (

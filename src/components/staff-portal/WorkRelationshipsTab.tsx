@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ArrowRightLeft, CheckCircle2, Clock, Network, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRightLeft, CheckCircle2, Clock, Network, Search, ShieldCheck } from 'lucide-react';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { normalizeCode } from '@/services/tickets/vtvl-coordination-helpers';
 import { WorkRelationshipItem } from '@/types/staff-ticket';
@@ -105,7 +105,7 @@ export function WorkRelationshipsTab({
         </div>
         {selectedVtvl && (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#006cee] text-white text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5" /> Highlight VTVL: {selectedVtvl}
+            VTVL: {selectedVtvl}
           </span>
         )}
       </div>

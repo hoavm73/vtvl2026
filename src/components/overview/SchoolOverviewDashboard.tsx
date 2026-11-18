@@ -108,16 +108,10 @@ export function SchoolOverviewDashboard() {
     <section className="bg-white rounded-3xl border border-[#d8e3ef] p-5 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ecf7] pb-3.5">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#e1edf8] text-[#004776]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0072BC]" />
-              Số liệu chuẩn hóa toàn trường (Realtime)
-            </span>
-            <span className="text-[11px] font-medium text-[#476885]">Giai đoạn 2026–2030</span>
-          </div>
           <h2 className="text-base sm:text-lg font-bold text-[#004776]">
             Các con số trọng yếu về Đề án Vị trí việc làm HCM-UTE
           </h2>
+          <p className="text-[11px] font-medium text-[#476885]">Giai đoạn 2026–2030</p>
         </div>
       </div>
 

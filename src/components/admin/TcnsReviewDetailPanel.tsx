@@ -204,11 +204,11 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
 
       {activeTab === 'overview' && (
         <div className="space-y-4">
-          <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Biểu có dữ liệu</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.populatedSheetsCount ?? 0}/10`}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Cảnh báo kiểm tra</div><div className="text-lg font-bold text-[#b42318] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.errorCount ?? 0)}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Phiếu công việc</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.totalTickets ?? 0)}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Tiến độ đơn vị</div><div className="text-lg font-bold text-[#006cee] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.progressPercent ?? 0}%`}</div></div>
+          <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-[#e2e8f0]">
+            <div className="p-3.5 bg-gradient-to-br from-[#eef6ff] via-[#f5f9ff] to-white"><div className="text-xs text-[#476885]">Biểu có dữ liệu</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.populatedSheetsCount ?? 0}/10`}</div></div>
+            <div className={`p-3.5 bg-gradient-to-br ${(summary?.errorCount ?? 0) > 0 ? 'from-[#fef2f2] via-[#fff7f7] to-white' : 'from-[#e8fbf2] via-[#f3fcf8] to-white'}`}><div className="text-xs text-[#476885]">Cảnh báo kiểm tra</div><div className={`text-lg font-bold tabular-nums ${(summary?.errorCount ?? 0) > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`}>{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.errorCount ?? 0)}</div></div>
+            <div className="p-3.5 bg-gradient-to-br from-[#fff6e5] via-[#fffaf0] to-white"><div className="text-xs text-[#476885]">Phiếu công việc</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.totalTickets ?? 0)}</div></div>
+            <div className="p-3.5 bg-gradient-to-br from-[#ecfeff]/85 via-[#f2f9ff] to-white"><div className="text-xs text-[#476885]">Tiến độ đơn vị</div><div className="text-lg font-bold text-[#006cee] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.progressPercent ?? 0}%`}</div></div>
           </div>
           {reviewMeta?.reviewNote && (
             <div className="rounded-[10px] bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3 text-xs text-[#004776]">

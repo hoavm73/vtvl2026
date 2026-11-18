@@ -20,6 +20,7 @@ interface KpiCardSpec {
   value: number;
   accentText: string;
   dotColor: string;
+  bgTint: string;
 }
 
 /**
@@ -38,13 +39,49 @@ export function UnitMonitoringKpiStrip({
       label: 'Tổng phiếu kê khai',
       value: totals.totalTickets,
       accentText: 'text-[#004776]',
-      dotColor: 'bg-[#004776]'
+      dotColor: 'bg-[#004776]',
+      bgTint: 'bg-gradient-to-br from-[#eef6ff]/90 via-[#f6faff] to-white'
     },
-    { filterKey: 'has_draft', label: 'Lưu nháp', value: totals.draftCount, accentText: 'text-[#20446c]', dotColor: 'bg-[#94b2d0]' },
-    { filterKey: 'has_pending', label: 'Gửi chờ duyệt', value: totals.submittedCount, accentText: 'text-[#006cee]', dotColor: 'bg-[#006cee]' },
-    { filterKey: 'has_changes', label: 'Yêu cầu bổ sung', value: totals.changesRequestedCount, accentText: 'text-[#c26d00]', dotColor: 'bg-[#f99c00]' },
-    { filterKey: 'has_approved', label: 'Đã phê duyệt', value: totals.approvedCount, accentText: 'text-[#008f5d]', dotColor: 'bg-[#00b87a]' },
-    { filterKey: 'has_merged', label: 'Đã gộp B1/B2', value: totals.mergedCount, accentText: 'text-[#6d28d9]', dotColor: 'bg-[#7c3aed]' }
+    {
+      filterKey: 'has_draft',
+      label: 'Lưu nháp',
+      value: totals.draftCount,
+      accentText: 'text-[#20446c]',
+      dotColor: 'bg-[#94b2d0]',
+      bgTint: 'bg-gradient-to-br from-[#f1f5f9]/90 via-[#f8fafc] to-white'
+    },
+    {
+      filterKey: 'has_pending',
+      label: 'Gửi chờ duyệt',
+      value: totals.submittedCount,
+      accentText: 'text-[#006cee]',
+      dotColor: 'bg-[#006cee]',
+      bgTint: 'bg-gradient-to-br from-[#e8f3ff]/90 via-[#f4f9ff] to-white'
+    },
+    {
+      filterKey: 'has_changes',
+      label: 'Yêu cầu bổ sung',
+      value: totals.changesRequestedCount,
+      accentText: 'text-[#c26d00]',
+      dotColor: 'bg-[#f99c00]',
+      bgTint: 'bg-gradient-to-br from-[#fff6e5]/90 via-[#fffaf0] to-white'
+    },
+    {
+      filterKey: 'has_approved',
+      label: 'Đã phê duyệt',
+      value: totals.approvedCount,
+      accentText: 'text-[#008f5d]',
+      dotColor: 'bg-[#00b87a]',
+      bgTint: 'bg-gradient-to-br from-[#e8fbf2]/90 via-[#f3fcf8] to-white'
+    },
+    {
+      filterKey: 'has_merged',
+      label: 'Đã gộp B1/B2',
+      value: totals.mergedCount,
+      accentText: 'text-[#6d28d9]',
+      dotColor: 'bg-[#7c3aed]',
+      bgTint: 'bg-gradient-to-br from-[#f3efff]/90 via-[#f9f7ff] to-white'
+    }
   ];
 
   const mergedOnly = Math.max(0, totals.mergedCount);
@@ -117,8 +154,8 @@ export function UnitMonitoringKpiStrip({
                 key={card.filterKey}
                 type="button"
                 onClick={() => onSelectStageFilter(isSelected && card.filterKey !== 'ALL' ? 'ALL' : card.filterKey)}
-                className={`group text-left px-4 py-3.5 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#006cee] ${
-                  isSelected ? 'bg-[#eef6ff]' : 'bg-white hover:bg-[#f8fafc]'
+                className={`group text-left px-4 py-3.5 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#006cee] ${
+                  isSelected ? 'bg-[#e2effe] ring-1 ring-inset ring-[#006cee]/30' : `${card.bgTint} hover:brightness-[0.985]`
                 }`}
               >
                 <div className="flex items-start justify-between gap-1.5">

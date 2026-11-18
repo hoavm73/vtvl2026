@@ -115,9 +115,9 @@ export function SchoolOverviewDashboard() {
         </div>
       </div>
 
-      {/* Vùng thống kê chung ngăn bằng divider: 2 cột (mobile) / 4 cột (desktop), không card lồng card */}
+      {/* Vùng thống kê chung ngăn bằng divider: 2 cột (mobile) / 4 cột (desktop), có nền ẩn màu sắc dịu nhẹ */}
       <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-[#e2e8f0]">
-        <div className="py-3.5 pr-3 sm:p-4 space-y-1.5">
+        <div className="p-3.5 sm:p-4 space-y-1.5 bg-gradient-to-br from-[#eef6ff] via-[#f5f9ff] to-white">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-[#20446c]">Đơn vị trực thuộc</span>
             <Building2 className="w-4 h-4 text-[#006cee] shrink-0" />
@@ -129,7 +129,7 @@ export function SchoolOverviewDashboard() {
           <p className="text-[11px] text-[#476885]">39 đơn vị hoạt động thuộc Trường</p>
         </div>
 
-        <div className="py-3.5 pl-3 sm:p-4 space-y-1.5">
+        <div className="p-3.5 sm:p-4 space-y-1.5 bg-gradient-to-br from-[#ecfeff]/85 via-[#f2f9ff] to-white">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-[#20446c]">Vị trí việc làm (Biểu C1)</span>
             <Briefcase className="w-4 h-4 text-[#006cee] shrink-0" />
@@ -141,7 +141,7 @@ export function SchoolOverviewDashboard() {
           <p className="text-[11px] text-[#476885]">Tổng hợp từ Biểu C1 của 39 đơn vị</p>
         </div>
 
-        <div className="py-3.5 pr-3 sm:p-4 space-y-1.5">
+        <div className="p-3.5 sm:p-4 space-y-1.5 bg-gradient-to-br from-[#e8fbf2] via-[#f3fcf8] to-white">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-[#13653f]">Vị trí việc làm được áp dụng tại đơn vị</span>
             <CheckCircle2 className="w-4 h-4 text-[#13653f] shrink-0" />
@@ -155,7 +155,7 @@ export function SchoolOverviewDashboard() {
           </p>
         </div>
 
-        <div className="py-3.5 pl-3 sm:p-4 space-y-1.5">
+        <div className="p-3.5 sm:p-4 space-y-1.5 bg-gradient-to-br from-[#fff6e5] via-[#fffaf0] to-white">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-[#8f4f00]">Phiếu công việc</span>
             <Clock className="w-4 h-4 text-[#8f4f00] shrink-0" />
@@ -195,13 +195,13 @@ export function SchoolOverviewDashboard() {
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 sm:divide-x divide-[#e2e8f0]">
+        <div className="border-y border-[#e2e8f0] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 sm:divide-x divide-[#e2e8f0]">
           {unitGroupStats.map((group) => {
             const IconComponent = getGroupIcon(group.id);
             return (
               <div
                 key={group.id}
-                className="py-2.5 sm:px-3.5 first:sm:pl-0 last:sm:pr-0 flex items-center justify-between gap-2"
+                className="px-3.5 py-2.5 bg-gradient-to-r from-[#f4f9ff]/90 via-[#f9fcff] to-white hover:from-[#eaf3ff] transition-colors flex items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <IconComponent className="w-4 h-4 text-[#006cee] shrink-0" />

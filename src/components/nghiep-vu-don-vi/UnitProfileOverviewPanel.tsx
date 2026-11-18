@@ -89,8 +89,8 @@ export function UnitProfileOverviewPanel({
         </div>
       )}
 
-      <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
-        <div className="py-3 px-4">
+      <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-[#e2e8f0]">
+        <div className="py-3 px-4 bg-gradient-to-br from-[#eef6ff] via-[#f5f9ff] to-white">
           <div className="text-xs text-[#476885]">Biểu đã nhập liệu</div>
           <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">
             {loading ? <InlineSkeleton className="h-6 w-14 mt-0.5" /> : sheetsDisplay}
@@ -99,14 +99,14 @@ export function UnitProfileOverviewPanel({
             {loading ? <InlineSkeleton className="h-3 w-24 mt-1" /> : summary ? `${summary.totalRows} dòng dữ liệu` : 'Đang đồng bộ'}
           </div>
         </div>
-        <div className="py-3 px-4">
+        <div className={`py-3 px-4 bg-gradient-to-br ${(summary?.errorCount ?? 0) > 0 ? 'from-[#fef2f2] via-[#fff7f7] to-white' : 'from-[#e8fbf2] via-[#f3fcf8] to-white'}`}>
           <div className="text-xs text-[#476885]">Cảnh báo rà soát</div>
           <div className={`text-xl font-bold tabular-nums mt-0.5 ${(summary?.errorCount ?? 0) > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`}>
             {loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : errCountDisplay}
           </div>
           <div className="text-[11px] text-[#64748b]">Kiểm tra chéo A1–D2</div>
         </div>
-        <div className="py-3 px-4">
+        <div className="py-3 px-4 bg-gradient-to-br from-[#fff6e5] via-[#fffaf0] to-white">
           <div className="text-xs text-[#476885]">Phiếu công việc</div>
           <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">
             {loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : ticketCountDisplay}
@@ -115,7 +115,7 @@ export function UnitProfileOverviewPanel({
             {loading ? <InlineSkeleton className="h-3 w-28 mt-1" /> : summary ? `Chờ duyệt: ${summary.submittedCount} · Đã gộp: ${summary.mergedCount}` : 'Theo dõi phiếu'}
           </div>
         </div>
-        <div className="py-3 px-4">
+        <div className="py-3 px-4 bg-gradient-to-br from-[#ecfeff]/85 via-[#f2f9ff] to-white">
           <div className="text-xs text-[#476885]">Tiến độ hoàn thiện</div>
           <div className="text-xl font-bold text-[#006cee] tabular-nums mt-0.5">
             {loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : progressDisplay}

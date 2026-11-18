@@ -23,34 +23,8 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto print:static print:bg-white print:p-0">
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 20mm 20mm 20mm 30mm;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #vtvl-a4-print-area,
-          #vtvl-a4-print-area * {
-            visibility: visible;
-          }
-          #vtvl-a4-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            box-shadow: none !important;
-            border: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-        }
-      `}</style>
-
-      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden print:max-h-none print:border-none print:shadow-none">
+    <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto print:static print:block print:bg-white print:backdrop-blur-none print:p-0 print:m-0 print:overflow-visible">
+      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden print:static print:block print:w-full print:max-w-none print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none">
         <div className="px-6 py-3.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex items-center justify-between print:hidden">
           <div>
             <h3 className="text-base font-bold text-[#004776]">
@@ -77,10 +51,10 @@ export function StaffTicketPrintModal({ ticket, unitNameVi, onClose }: StaffTick
         </div>
 
         {/* Khung giấy A4 mô phỏng lề 2-2-3-2 cm trên màn hình */}
-        <div className="p-6 overflow-y-auto bg-[#f1f5f9] flex justify-center print:p-0 print:bg-white print:overflow-visible">
+        <div className="p-6 overflow-y-auto bg-[#f1f5f9] flex justify-center print:static print:block print:p-0 print:m-0 print:bg-white print:overflow-visible">
           <div
             id="vtvl-a4-print-area"
-            className="bg-white w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed"
+            className="vtvl-printable-sheet bg-white w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed print:static print:block print:w-full print:max-w-none print:min-h-0 print:p-0 print:m-0 print:border-none print:shadow-none"
             style={{ fontFamily: '"Times New Roman", Times, serif' }}
           >
             {/* Quốc hiệu & Tên đơn vị */}

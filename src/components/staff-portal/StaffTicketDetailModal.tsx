@@ -64,11 +64,17 @@ export function StaffTicketDetailModal({
     { num: '11', label: 'Giờ bổ sung (Nếu có)', val: `${ticket.gioBoSung || 0} giờ / năm` }
   ];
 
+  const handlePrintA4 = () => {
+    if (onPrint) { onClose(); onPrint(ticket); return; }
+    if (activeTab !== 'a4') { setActiveTab('a4'); setTimeout(() => window.print(), 60); return; }
+    window.print();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-5xl max-h-[96vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#004776]/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:block print:bg-white print:backdrop-blur-none print:p-0 print:m-0 print:overflow-visible">
+      <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl w-full max-w-5xl max-h-[96vh] flex flex-col overflow-hidden print:static print:block print:w-full print:max-w-none print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none">
         {/* Thanh công cụ tiêu đề & thao tác gọn 2 hàng */}
-        <div className="px-4 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5 shrink-0">
+        <div className="px-4 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5 shrink-0 print:hidden">
           {/* Hàng 1: Mã phiếu, trạng thái, tên công việc & nút đóng */}
           <div className="flex items-start sm:items-center justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
@@ -162,11 +168,7 @@ export function StaffTicketDetailModal({
                   <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" /><span>Xóa phiếu</span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => (onPrint ? onPrint(ticket) : window.print())}
-                className="h-8 px-2.5 rounded-[8px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors"
-              >
+              <button type="button" onClick={handlePrintA4} className="h-8 px-2.5 rounded-[8px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors">
                 <Printer className="w-3.5 h-3.5 shrink-0" />
                 <span>In PDF (A4)</span>
               </button>
@@ -175,12 +177,12 @@ export function StaffTicketDetailModal({
         </div>
 
         {/* Nội dung theo tab */}
-        <div className="p-4 sm:p-6 overflow-y-auto bg-[#f1f5f9] flex flex-col items-center space-y-4">
-          <div className="w-full max-w-[210mm]">
+        <div className="p-4 sm:p-6 overflow-y-auto bg-[#f1f5f9] flex flex-col items-center space-y-4 print:static print:block print:p-0 print:m-0 print:bg-white print:overflow-visible print:space-y-0">
+          <div className="w-full max-w-[210mm] print:hidden">
             <TicketApprovalProgress ticket={ticket} variant="banner" />
           </div>
           {ticket.revisionReason && (
-            <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-[#004776] space-y-1 shadow-xs">
+            <div className="w-full max-w-[210mm] p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-[#004776] space-y-1 shadow-xs print:hidden">
               <div className="flex items-center gap-1.5 font-bold text-[#004776] text-xs sm:text-sm">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
                 <span>Ý kiến / Lý do yêu cầu bổ sung từ Lãnh đạo đơn vị:</span>
@@ -208,7 +210,7 @@ export function StaffTicketDetailModal({
           ) : (
             <div
               id="vtvl-ticket-detail-a4-sheet"
-              className="bg-white w-full max-w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed"
+              className="vtvl-printable-sheet bg-white w-full max-w-[210mm] min-h-[297mm] pt-[20mm] pr-[20mm] pb-[20mm] pl-[30mm] shadow-md border border-[#cbd5e1] text-[#004776] text-[13px] leading-relaxed print:static print:block print:w-full print:max-w-none print:min-h-0 print:p-0 print:m-0 print:border-none print:shadow-none"
               style={{ fontFamily: '"Times New Roman", Times, serif' }}
             >
               <div className="grid grid-cols-12 gap-2 text-center mb-5">
@@ -244,7 +246,7 @@ export function StaffTicketDetailModal({
                 </div>
               </div>
 
-              <div className="overflow-x-auto mb-6">
+              <div className="overflow-x-auto print:overflow-visible mb-6">
                 <table className="w-full border-collapse border border-[#004776] text-[12.5px]">
                   <tbody>
                     {tableFields.map((f) => (

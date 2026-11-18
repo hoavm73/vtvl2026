@@ -142,8 +142,8 @@ export default function UnitTicketsManagementPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6">
-      <div className="max-w-[1440px] mx-auto space-y-4">
+    <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6 print:p-0 print:m-0 print:bg-white print:min-h-0">
+      <div className={`max-w-[1440px] mx-auto space-y-4 print:space-y-0 print:max-w-none print:w-full ${(printTicket || detailTicket) ? 'print:hidden' : ''}`}>
         <UnitTicketsHeaderBar
           isAdmin={Boolean(isAdmin)}
           sessionUnitCode={session.unitCode}
@@ -183,7 +183,7 @@ export default function UnitTicketsManagementPage() {
 
       <StaffTicketDetailModal
         ticket={detailTicket} unitNameVi={detailTicket ? findHcmuteUnit(detailTicket.unitCode).nameVi : session.unitNameVi}
-        currentUserRole={session.role} currentUserEmail={session.email} onClose={() => setDetailTicket(null)} onPrint={setPrintTicket}
+        currentUserRole={session.role} currentUserEmail={session.email} onClose={() => setDetailTicket(null)}
         onApprove={isLeader ? async (t) => { setDetailTicket(null); await handleApprove(t); } : undefined}
         onRequestChanges={isLeader ? (t) => { setDetailTicket(null); handleRevisionSubmit(t, 'request_changes'); } : undefined}
         onRevokeApproval={isLeader ? (t) => { setDetailTicket(null); handleRevisionSubmit(t, 'revoke_approval'); } : undefined}

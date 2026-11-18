@@ -183,7 +183,7 @@ export default function StaffWorkTicketsPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6 print:p-0 print:m-0 print:bg-white print:min-h-0">
-      <div className="max-w-[1440px] mx-auto space-y-4 print:space-y-0 print:max-w-none print:w-full">
+      <div className={`max-w-[1440px] mx-auto space-y-4 print:space-y-0 print:max-w-none print:w-full ${(printTicket || detailTicket) ? 'print:hidden' : ''}`}>
         <StaffPortalHeaderBanner
           unitCode={session.unitCode} unitNameVi={unitNameVi}
           onCreateNew={() => { setEditingTicket(null); selectTab('create'); }}
@@ -247,7 +247,7 @@ export default function StaffWorkTicketsPage() {
       </div>
 
       <StaffTicketDetailModal
-        ticket={detailTicket} unitNameVi={unitNameVi} currentUserRole={session.role} currentUserEmail={session.email} onClose={() => setDetailTicket(null)} onPrint={setPrintTicket}
+        ticket={detailTicket} unitNameVi={unitNameVi} currentUserRole={session.role} currentUserEmail={session.email} onClose={() => setDetailTicket(null)}
       />
       <StaffTicketPrintModal ticket={printTicket} unitNameVi={unitNameVi} onClose={() => setPrintTicket(null)} />
       <CoordinatedTaskModal ticket={coordTicket} onClose={() => setCoordTicket(null)} onSaved={() => loadData(session)} />

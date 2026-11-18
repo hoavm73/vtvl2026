@@ -23,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col overflow-x-clip relative">
+      <body className="min-h-screen flex flex-col overflow-x-clip relative print:block print:overflow-visible print:min-h-0 print:bg-white">
         <AuthSessionProvider>
           <AppShell>{children}</AppShell>
         </AuthSessionProvider>

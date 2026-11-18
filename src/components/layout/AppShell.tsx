@@ -101,11 +101,11 @@ export function AppShell({ children }: AppShellProps) {
   const isLoggedIn = Boolean(session);
 
   return (
-    <div className="min-h-screen w-full max-w-full flex flex-col overflow-x-clip relative bg-[#f8fbff]">
+    <div className="min-h-screen w-full max-w-full flex flex-col overflow-x-clip relative bg-[#f8fbff] print:block print:overflow-visible print:min-h-0 print:bg-white">
       {!isLoginPage && isLoggedIn && <Header />}
 
       {isLoginPage ? (
-        <main className="flex-1 w-full max-w-full flex flex-col min-h-screen">{children}</main>
+        <main className="flex-1 w-full max-w-full flex flex-col min-h-screen print:block print:overflow-visible print:min-h-0">{children}</main>
       ) : !isLoggedIn ? (
         <main className="flex-1 w-full max-w-full flex flex-col items-center justify-center min-h-screen p-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-[#d8e3ef] flex items-center justify-center mb-4">
@@ -120,13 +120,13 @@ export function AppShell({ children }: AppShellProps) {
           </p>
         </main>
       ) : (
-        <div className="flex-1 flex w-full max-w-full min-w-0">
+        <div className="flex-1 flex w-full max-w-full min-w-0 print:block print:overflow-visible">
           <AppSidebar
             collapsed={collapsed}
             session={session}
             onToggle={handleToggleSidebar}
           />
-          <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
+          <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden print:block print:overflow-visible">
             {children}
           </main>
         </div>

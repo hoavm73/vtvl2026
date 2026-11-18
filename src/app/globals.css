@@ -420,6 +420,8 @@ textarea::placeholder {
 
   html,
   body {
+    display: block !important;
+    position: static !important;
     background: #ffffff !important;
     background-image: none !important;
     font-family: "Times New Roman", Times, serif !important;
@@ -428,20 +430,29 @@ textarea::placeholder {
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    max-height: none !important;
     overflow: visible !important;
   }
 
   main {
+    display: block !important;
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .vtvl-printable-sheet {
     display: block !important;
+    position: static !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;

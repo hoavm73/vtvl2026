@@ -57,7 +57,7 @@ export function LoginSupportModal({ isOpen, onClose }: LoginSupportModalProps) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full h-10 rounded-xl bg-[#004776] hover:bg-[#00385d] text-white text-xs font-bold transition-colors cursor-pointer"
+          className="w-full h-10 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold transition-colors cursor-pointer"
         >
           Đã hiểu
         </button>

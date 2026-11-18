@@ -146,7 +146,7 @@ export function AdminAccountsTab() {
             onClick={() => setRoleFilter((prev) => (prev === opt.value ? 'all' : opt.value))}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
               roleFilter === opt.value
-                ? 'bg-[#004776] text-white border-[#004776]'
+                ? 'bg-[#006cee] text-white border-[#006cee]'
                 : 'bg-white text-[#004776] border-[#d8e3ef] hover:bg-[#f4f7fb]'
             }`}
           >

@@ -181,7 +181,7 @@ export function WorkspaceActionsRow({
           type="button"
           onClick={onSaveAndNext}
           disabled={!canNext}
-          className="inline-flex items-center justify-center gap-1.5 h-10 sm:h-9 px-3.5 bg-[#005fa3] hover:bg-[#004776] text-white rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-1 sm:flex-initial"
+          className="inline-flex items-center justify-center gap-1.5 h-10 sm:h-9 px-3.5 bg-[#006cee] hover:bg-[#005ecc] text-white rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-1 sm:flex-initial"
         >
           <span>Lưu & sang biểu tiếp</span>
           <ArrowRight className="w-3.5 h-3.5 shrink-0" />

@@ -233,7 +233,7 @@ export function UserProfilePopover() {
 
             {isAdmin && (
               <>
-                <Link href="/admin" className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-[#004776] hover:bg-[#00385d] text-xs font-bold text-white transition-colors">
+                <Link href="/admin" className="w-full inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-[#006cee] hover:bg-[#005ecc] text-xs font-bold text-white transition-colors">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Bảng điều khiển Quản trị</span>
                 </Link>

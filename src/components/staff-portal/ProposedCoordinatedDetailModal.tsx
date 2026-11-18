@@ -164,7 +164,7 @@ export function ProposedCoordinatedDetailModal({ item, onClose }: ProposedCoordi
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-[#004776] hover:bg-[#003559] text-white text-xs font-bold transition-colors cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold transition-colors cursor-pointer"
           >
             Đóng
           </button>

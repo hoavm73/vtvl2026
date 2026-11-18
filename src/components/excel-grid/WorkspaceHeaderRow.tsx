@@ -72,7 +72,7 @@ export function WorkspaceHeaderRow({
         <Popover>
           <PopoverTrigger>
             <span
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-[#004776] hover:bg-[#00365c] text-white rounded-xl text-[13.5px] font-bold transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-[#006cee] hover:bg-[#005ecc] text-white rounded-xl text-[13.5px] font-bold transition-colors shadow-2xs"
               title="Đổi nhanh biểu khác trong 10 biểu mẫu"
             >
               <span>{activeMeta.sheetName}</span>

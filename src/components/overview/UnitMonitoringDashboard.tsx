@@ -212,7 +212,7 @@ export function UnitMonitoringDashboard({ compactOverviewMode = false }: { compa
           </button>
           <Link
             href="/admin/tham-dinh"
-            className="h-9.5 px-3.5 rounded-[10px] bg-[#004776] hover:bg-[#00365c] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+            className="h-9.5 px-3.5 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Thẩm định TCNS</span>

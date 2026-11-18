@@ -228,7 +228,7 @@ export function UnitMonitoringHistoryPanel({
           {historyExpanded && (
             <div className="flex flex-wrap items-center gap-1.5">
               {HISTORY_TABS.map((c) => (
-                <button key={c.id} type="button" onClick={() => setHistoryCatFilter(c.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
+                <button key={c.id} type="button" onClick={() => setHistoryCatFilter(c.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${historyCatFilter === c.id ? 'bg-[#006cee] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
                   {c.label}
                 </button>
               ))}

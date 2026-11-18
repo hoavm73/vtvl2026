@@ -187,7 +187,7 @@ export function UnitWorkbookHistoryPanel({
           <span>Xác nhận khôi phục bảng tính về phiên bản <strong>v{confirmRev}</strong>? Thao tác sẽ tạo phiên bản mới ghi nhận trạng thái cũ.</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setConfirmRev(null)} disabled={restoring} className="h-8 px-3 rounded-[8px] border border-[#cbd5e1] bg-white text-xs font-medium cursor-pointer">Hủy</button>
-            <button type="button" onClick={() => void handleRestore(confirmRev)} disabled={restoring} className="h-8 px-3 rounded-[8px] bg-[#004776] text-white text-xs font-semibold cursor-pointer disabled:opacity-50">
+            <button type="button" onClick={() => void handleRestore(confirmRev)} disabled={restoring} className="h-8 px-3 rounded-[8px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold cursor-pointer disabled:opacity-50">
               {restoring ? 'Đang khôi phục…' : `Xác nhận khôi phục v${confirmRev}`}
             </button>
           </div>

@@ -88,7 +88,7 @@ export function AuditResultTabs({ report }: Props) {
           return (
             <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#004776] text-[#004776] font-semibold' : 'border-transparent text-[#476885] font-medium hover:text-[#004776]'}`}>
               <span>{t.label}</span>
-              {t.count !== undefined && <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#004776] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>{t.count}</span>}
+              {t.count !== undefined && <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#006cee] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>{t.count}</span>}
             </button>
           );
         })}
@@ -99,12 +99,12 @@ export function AuditResultTabs({ report }: Props) {
         <div role="tabpanel" className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <button type="button" onClick={() => setSeverityFilter('all')} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-xs font-medium cursor-pointer transition-colors ${severityFilter === 'all' ? 'bg-[#004776] text-white' : 'bg-[#f1f5f9] text-[#004776] hover:bg-[#e2e8f0]'}`}>
+              <button type="button" onClick={() => setSeverityFilter('all')} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-xs font-medium cursor-pointer transition-colors ${severityFilter === 'all' ? 'bg-[#006cee] text-white' : 'bg-[#f1f5f9] text-[#004776] hover:bg-[#e2e8f0]'}`}>
                 <span>Tất cả</span>
                 <span className="tabular-nums">({report.totalIssues})</span>
               </button>
               {(['fix', 'evidence', 'review'] as AuditSeverity[]).map((sev) => (
-                <button key={sev} type="button" onClick={() => setSeverityFilter(sev)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-xs font-medium cursor-pointer transition-colors ${severityFilter === sev ? 'bg-[#004776] text-white' : SEVERITY_META[sev].chipClass}`}>
+                <button key={sev} type="button" onClick={() => setSeverityFilter(sev)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-xs font-medium cursor-pointer transition-colors ${severityFilter === sev ? 'bg-[#006cee] text-white' : SEVERITY_META[sev].chipClass}`}>
                   <span>{SEVERITY_META[sev].label}</span>
                   <span className="tabular-nums">({report.countsBySeverity[sev]})</span>
                 </button>

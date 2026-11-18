@@ -120,7 +120,7 @@ export function GuidanceDrawerModal({ isOpen, onClose, meta }: GuidanceDrawerMod
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-[#004776] text-white text-[13px] font-bold hover:bg-[#00365c] cursor-pointer shadow-2xs"
+              className="px-4 py-2 rounded-xl bg-[#006cee] text-white text-[13px] font-bold hover:bg-[#005ecc] cursor-pointer shadow-2xs"
             >
               Đóng
             </button>

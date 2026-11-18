@@ -225,7 +225,7 @@ export function ExcelRowCardEditor({
                   <span>Tiếp</span><ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <button type="button" onClick={closeRowEditor} className="min-h-[44px] px-5 rounded-xl bg-[#004776] text-white text-xs font-bold hover:bg-[#00385c] cursor-pointer shadow-xs">
+              <button type="button" onClick={closeRowEditor} className="min-h-[44px] px-5 rounded-xl bg-[#006cee] text-white text-xs font-bold hover:bg-[#005ecc] cursor-pointer shadow-xs">
                 Xong &amp; Đóng
               </button>
             </div>

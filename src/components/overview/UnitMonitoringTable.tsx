@@ -125,7 +125,7 @@ export function UnitMonitoringTable({
               key={g.id}
               type="button"
               onClick={() => { onSelectGroup(g.id); setField('limit', 10); }}
-              className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${selectedGroup === g.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}
+              className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${selectedGroup === g.id ? 'bg-[#006cee] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}
             >{g.label}</button>
           ))}
         </div>

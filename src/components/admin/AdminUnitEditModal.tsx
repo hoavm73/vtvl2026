@@ -220,7 +220,7 @@ export function AdminUnitEditModal({
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#004776] hover:bg-[#00385c] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#006cee] hover:bg-[#005ecc] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{isEditing ? 'Lưu thay đổi' : 'Thêm & Đồng bộ'}</span>

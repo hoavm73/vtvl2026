@@ -197,7 +197,7 @@ export function ExcelCommandBar({
           type="button"
           onClick={onSaveAndNext}
           disabled={!canNext}
-          className="h-9 px-3.5 text-[13px] font-bold text-white bg-[#004776] hover:bg-[#00365c] rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-9 px-3.5 text-[13px] font-bold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           title={isReadOnlyViewer ? 'Chuyển sang biểu nghiệp vụ tiếp theo' : 'Lưu biểu này và tự động chuyển sang biểu nghiệp vụ tiếp theo'}
         >
           <span className="sm:hidden">{isReadOnlyViewer ? 'Sang tiếp' : 'Lưu & tiếp'}</span>

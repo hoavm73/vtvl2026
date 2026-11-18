@@ -158,7 +158,7 @@ export function AdminUnitsTab() {
           <button
             type="button"
             onClick={handleCreate}
-            className="h-10 inline-flex items-center justify-center gap-1.5 px-3.5 text-xs font-bold text-white bg-[#004776] hover:bg-[#00385c] rounded-xl transition-colors cursor-pointer shadow-2xs flex-1 sm:flex-initial"
+            className="h-10 inline-flex items-center justify-center gap-1.5 px-3.5 text-xs font-bold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-xl transition-colors cursor-pointer shadow-2xs flex-1 sm:flex-initial"
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
             <span>Thêm đơn vị mới</span>

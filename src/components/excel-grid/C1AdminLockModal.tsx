@@ -120,7 +120,7 @@ export function C1AdminLockModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#004776] hover:bg-[#00385c] rounded-lg transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-lg transition-colors cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Unlock className="w-3.5 h-3.5" />
               <span>{isSubmitting ? 'Đang xác thực...' : 'Mở khóa chỉnh sửa'}</span>
@@ -176,7 +176,7 @@ export function C1AdminStatusBanner({
       <button
         type="button"
         onClick={onOpenUnlockModal}
-        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#004776] hover:bg-[#00385c] rounded-md transition-colors cursor-pointer shadow-2xs"
+        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-md transition-colors cursor-pointer shadow-2xs"
       >
         <KeyRound className="w-3 h-3" />
         <span>Mở khóa Admin</span>

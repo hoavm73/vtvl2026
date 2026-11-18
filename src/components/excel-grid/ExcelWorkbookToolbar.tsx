@@ -98,7 +98,7 @@ export function ExcelWorkbookToolbar({
               <button
                 type="button"
                 onClick={onSwitchSession}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold text-white bg-[#004776] hover:bg-[#00385c] active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 ml-0.5"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold text-white bg-[#006cee] hover:bg-[#005ecc] active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 ml-0.5"
                 title="Đổi tài khoản người thực hiện (Admin)"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
@@ -147,7 +147,7 @@ export function ExcelWorkbookToolbar({
           <button
             type="button"
             onClick={onSaveAndNext}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#004776] hover:bg-[#00385c] active:scale-95 rounded-xl cursor-pointer shadow-2xs transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#006cee] hover:bg-[#005ecc] active:scale-95 rounded-xl cursor-pointer shadow-2xs transition-all"
             title="Lưu dữ liệu hiện tại và tự động chuyển sang sheet tiếp theo"
           >
             <span>Lưu &amp; sang biểu tiếp</span>

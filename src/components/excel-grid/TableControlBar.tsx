@@ -61,7 +61,7 @@ export function TableControlBar({
           <button
             type="button"
             onClick={onAddRow}
-            className="inline-flex items-center gap-1.5 h-9 px-3 font-bold text-xs sm:text-[13px] text-white bg-[#004776] hover:bg-[#00385c] rounded-xl cursor-pointer transition-colors shadow-2xs shrink-0"
+            className="inline-flex items-center gap-1.5 h-9 px-3 font-bold text-xs sm:text-[13px] text-white bg-[#006cee] hover:bg-[#005ecc] rounded-xl cursor-pointer transition-colors shadow-2xs shrink-0"
             title="Thêm một dòng mới vào biểu hiện tại"
           >
             <Plus className="w-4 h-4 shrink-0" />

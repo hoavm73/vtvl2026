@@ -40,7 +40,7 @@ export function OperatorServerWorkbookPicker({
               onClick={() => onSelect(w)}
               className={`w-full text-left p-2 rounded-lg border text-[11px] transition-all flex items-center justify-between cursor-pointer ${
                 isSelected
-                  ? 'bg-[#004776] text-white border-[#004776] font-bold shadow-xs'
+                  ? 'bg-[#006cee] text-white border-[#006cee] font-bold shadow-xs'
                   : 'bg-white text-[#004776] border-blue-200 hover:bg-blue-100/60'
               }`}
             >

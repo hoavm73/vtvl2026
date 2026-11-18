@@ -119,7 +119,7 @@ export function WorkRelationshipsTab({
               onClick={() => setFilter(b.key)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                 filter === b.key
-                  ? 'bg-[#004776] text-white border-[#004776]'
+                  ? 'bg-[#006cee] text-white border-[#006cee]'
                   : 'bg-[#f8fbff] text-[#004776] border-[#cbd5e1] hover:bg-[#eef5ff]'
               }`}
             >

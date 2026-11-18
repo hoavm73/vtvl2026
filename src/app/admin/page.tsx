@@ -176,7 +176,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={checkAuthAndLoadStats}
-            className="w-full py-2.5 px-4 bg-[#004776] hover:bg-[#00385c] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+            className="w-full py-2.5 px-4 bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
           >
             Thử lại
           </button>

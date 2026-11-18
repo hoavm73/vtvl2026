@@ -126,7 +126,7 @@ export function DataQualityReportModal({
               type="button"
               onClick={() => setFilterSeverity('all')}
               className={`px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
-                filterSeverity === 'all' ? 'bg-[#004776] text-white font-bold' : 'bg-white text-[#475569] hover:bg-[#e2e8f0]'
+                filterSeverity === 'all' ? 'bg-[#006cee] text-white font-bold' : 'bg-white text-[#475569] hover:bg-[#e2e8f0]'
               }`}
             >
               Tất cả ({summary.totalIssues})
@@ -229,7 +229,7 @@ export function DataQualityReportModal({
                     <button
                       type="button"
                       onClick={() => handleJumpToSheet(issue.sheetKey)}
-                      className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#004776] hover:bg-[#00385d] transition-colors cursor-pointer"
+                      className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#006cee] hover:bg-[#005ecc] transition-colors cursor-pointer"
                       title="Chuyển ngay tới sheet này để xử lý"
                     >
                       <span>Sửa</span>
@@ -250,7 +250,7 @@ export function DataQualityReportModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#004776] text-white hover:bg-[#00365c] transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#006cee] text-white hover:bg-[#005ecc] transition-colors cursor-pointer"
           >
             Đóng
           </button>

@@ -127,7 +127,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
               onClick={() => setSelectedGroup('all')}
               className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
                 selectedGroup === 'all'
-                  ? 'bg-[#004776] text-white'
+                  ? 'bg-[#006cee] text-white'
                   : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
               }`}
             >
@@ -138,7 +138,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
               onClick={() => setSelectedGroup('quan-ly')}
               className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
                 selectedGroup === 'quan-ly'
-                  ? 'bg-[#004776] text-white'
+                  ? 'bg-[#006cee] text-white'
                   : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
               }`}
             >
@@ -149,7 +149,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
               onClick={() => setSelectedGroup('chuyen-mon')}
               className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
                 selectedGroup === 'chuyen-mon'
-                  ? 'bg-[#004776] text-white'
+                  ? 'bg-[#006cee] text-white'
                   : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
               }`}
             >
@@ -160,7 +160,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
               onClick={() => setSelectedGroup('ho-tro')}
               className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
                 selectedGroup === 'ho-tro'
-                  ? 'bg-[#004776] text-white'
+                  ? 'bg-[#006cee] text-white'
                   : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
               }`}
             >

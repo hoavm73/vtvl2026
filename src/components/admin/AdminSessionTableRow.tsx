@@ -117,7 +117,7 @@ export function AdminSessionTableRow({
             type="button"
             onClick={() => onView(s)}
             disabled={isViewingThis}
-            className="inline-flex items-center gap-1.5 h-9 px-3 text-xs sm:text-[13px] font-bold text-white bg-[#004776] hover:bg-[#00385c] rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 h-9 px-3 text-xs sm:text-[13px] font-bold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Xem dữ liệu 10 biểu"
           >
             <Eye className={`w-3.5 h-3.5 ${isViewingThis ? 'animate-spin' : ''}`} />

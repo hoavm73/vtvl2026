@@ -38,7 +38,7 @@ export function AdminAuthGate({ redirectUrl = '/login?redirect=/admin&admin=true
         <div className="pt-2 flex flex-col gap-2">
           <Link
             href={redirectUrl}
-            className="w-full py-2.5 px-4 bg-[#004776] hover:bg-[#00385c] text-white text-xs font-bold rounded-xl transition-all shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 px-4 bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold rounded-xl transition-all shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogIn className="w-4 h-4" />
             <span>Đăng nhập tài khoản Quản trị</span>

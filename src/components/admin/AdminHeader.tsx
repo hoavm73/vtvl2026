@@ -35,7 +35,7 @@ export function AdminHeader({ onLogout, onOpenOrgTree }: AdminHeaderProps) {
           <button
             type="button"
             onClick={onOpenOrgTree}
-            className="h-9 sm:h-10 flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold text-white bg-[#005fa3] hover:bg-[#004776] rounded-[10px] transition-colors cursor-pointer whitespace-nowrap"
+            className="h-9 sm:h-10 flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 text-xs sm:text-[13px] font-semibold text-white bg-[#006cee] hover:bg-[#005ecc] rounded-[10px] transition-colors cursor-pointer whitespace-nowrap"
             title="Xem sơ đồ cây vị trí việc làm và dự kiến công việc của đơn vị"
           >
             <Network className="w-4 h-4 text-white shrink-0" />

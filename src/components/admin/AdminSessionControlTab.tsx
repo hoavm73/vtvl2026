@@ -233,7 +233,7 @@ export function AdminSessionControlTab() {
               </div>
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 h-10 px-4 bg-[#004776] hover:bg-[#00385c] text-white font-medium rounded-lg text-xs transition-colors cursor-pointer shrink-0 shadow-2xs"
+                className="inline-flex items-center gap-1.5 h-10 px-4 bg-[#006cee] hover:bg-[#005ecc] text-white font-medium rounded-lg text-xs transition-colors cursor-pointer shrink-0 shadow-2xs"
               >
                 <span>Kích hoạt</span>
                 <ArrowRight className="w-3.5 h-3.5" />

@@ -88,7 +88,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
         {/* 1. Tên biểu */}
         <Popover className="min-w-[170px] flex-1">
           <PopoverTrigger className="w-full min-w-0" ariaLabel={`Chọn biểu tính (đang mở ${activeMeta.sheetName})`}>
-            <span className="inline-flex items-center justify-between gap-1.5 min-h-[42px] px-3 w-full bg-[#004776] text-white rounded-xl text-xs font-bold shadow-2xs min-w-0">
+            <span className="inline-flex items-center justify-between gap-1.5 min-h-[42px] px-3 w-full bg-[#006cee] text-white rounded-xl text-xs font-bold shadow-2xs min-w-0">
               <span className="truncate text-left">{activeMeta.sheetName}</span>
               <ChevronDown className="w-4 h-4 text-white/85 shrink-0" />
             </span>

@@ -114,6 +114,8 @@ done
 
 set -o pipefail
 docker exec -e GIT_COMMIT="$GIT_SHORT_SHA" utevtvl-app node scripts/migrate-postgres.mjs 2>&1 | tee -a "$WORK_DIR/migrations.log"
+echo "🧪 [4b/6] Kiểm thử hậu triển khai: đối soát 100% bảng Prisma & chỉ mục trên PostgreSQL..."
+docker exec utevtvl-app node scripts/verify-deployed-tables.mjs 2>&1 | tee -a "$WORK_DIR/migrations.log"
 
 for DOMAIN_NAME in kekhaivtvl.hcmute.edu.vn vtvl.utehub.vn; do
   if [ -d "/etc/nginx/sites-available" ] && [ -f "deploy/nginx/${DOMAIN_NAME}.conf" ] && [ -f "/etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem" ]; then

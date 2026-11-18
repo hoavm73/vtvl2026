@@ -39,6 +39,7 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts/migrate-postgres.mjs ./scripts/migrate-postgres.mjs
+COPY --from=builder /app/scripts/verify-deployed-tables.mjs ./scripts/verify-deployed-tables.mjs
 COPY --from=builder /app/deploy/postgres ./deploy/postgres
 COPY --from=builder /app/trash/supabase/migrations ./trash/supabase/migrations
 

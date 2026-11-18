@@ -82,14 +82,6 @@ export async function performFullLogout(redirectTo = '/login'): Promise<void> {
   }
 }
 
-export function signOutGoogleSession(options?: { redirect?: boolean; redirectTo?: string }): void {
-  if (options?.redirect === false) {
-    clearCurrentOperatorSession();
-    if (typeof window !== 'undefined') {
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'include', cache: 'no-store' }).catch(() => {});
-      signOut({ redirect: false }).catch(() => {});
-    }
-    return;
-  }
-  void performFullLogout(options?.redirectTo || '/login');
+export function signOutGoogleSession(): void {
+  void performFullLogout('/login');
 }

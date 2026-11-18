@@ -175,7 +175,7 @@ export function UnitSelectionModal({ isOpen, session, onConfirmed }: UnitSelecti
               <div className="text-center pt-1">
                 <button
                   type="button"
-                  onClick={signOutGoogleSession}
+                  onClick={() => signOutGoogleSession()}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#476885] hover:text-red-600 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />

@@ -106,7 +106,7 @@ export function UnitTicketActionButtons({
         </button>
       )}
 
-      {canModerateOthers && (canonical === 'approved' || canonical === 'submitted' || canonical === 'resubmitted' || canonical === 'changes_requested') && onCancelTicket && (
+      {canModerateOthers && (canonical === 'approved' || canonical === 'submitted' || canonical === 'resubmitted' || canonical === 'changes_requested' || canonical === 'draft') && onCancelTicket && (
         <button
           type="button"
           onClick={() => onCancelTicket(t)}

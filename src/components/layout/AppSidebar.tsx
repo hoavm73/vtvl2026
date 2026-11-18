@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   FileText,
   FileSpreadsheet,
+  ClipboardCheck,
   ShieldCheck,
   BookOpen,
   Home,
@@ -63,6 +64,14 @@ const SIDEBAR_GROUPS: NavGroupDef[] = [
   {
     groupTitle: 'Nghiệp vụ đơn vị',
     items: [
+      {
+        href: '/phieu-don-vi',
+        label: 'Quản lý phiếu đơn vị',
+        icon: ClipboardCheck,
+        roles: ['admin', 'unit_leader'],
+        badge: 'Xử lý',
+        badgeColor: 'bg-blue-50 text-[#0072BC] border-blue-200'
+      },
       {
         href: '/bang-tinh',
         label: 'Bảng tính 10 biểu',
@@ -125,6 +134,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const isItemActive = (href: string) => {
     if (href === '/') return pathname === '/' && !isMonitorTab;
     if (href === '/?tab=unit-monitor') return pathname === '/' && isMonitorTab;
+    if (href === '/phieu-don-vi') return pathname === '/phieu-don-vi';
     if (href === '/bang-tinh') return pathname === '/bang-tinh';
     if (href === '/phieu-cong-viec') return pathname === '/phieu-cong-viec';
     return pathname.startsWith(href);

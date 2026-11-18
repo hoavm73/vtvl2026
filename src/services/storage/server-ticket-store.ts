@@ -193,7 +193,7 @@ export function getTicketById(id: string): StaffWorkTicket | null {
 export function getTicketsByUnit(unitCode: string, includeTestAndArchived = false): StaffWorkTicket[] {
   const uc = (unitCode || '').trim().toUpperCase();
   return Array.from(loadTickets().values())
-    .filter((t) => t.unitCode.toUpperCase() === uc && (includeTestAndArchived || (!t.isTestData && !t.isArchived)))
+    .filter((t) => (uc === 'ALL' || t.unitCode.toUpperCase() === uc) && (includeTestAndArchived || (!t.isTestData && !t.isArchived)))
     .map(enrichTicket)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }

@@ -60,13 +60,14 @@ export default function StaffWorkTicketsPage() {
       }
       const headers: Record<string, string> = { 'x-actor-email': op.email };
       if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
+      const queryUnit = op.role === 'admin' ? 'ALL' : op.unitCode;
       const [res, coordRes] = await Promise.all([
-        fetch(`/api/tickets?email=${encodeURIComponent(op.email)}&unitCode=${encodeURIComponent(op.unitCode)}`, { headers, cache: 'no-store' }),
+        fetch(`/api/tickets?email=${encodeURIComponent(op.email)}&unitCode=${encodeURIComponent(queryUnit)}`, { headers, cache: 'no-store' }),
         fetch('/api/tickets/coordinated?scope=unit', { headers, cache: 'no-store' })
       ]);
       if (res.ok) {
         const json = await res.json();
-        setUnitNameVi(json.unitNameVi || op.unitNameVi);
+        setUnitNameVi(op.role === 'admin' ? op.unitNameVi : (json.unitNameVi || op.unitNameVi));
         setMyTickets(json.myTickets || []);
         setUnitTickets(json.unitTickets || []);
         setA1Missions(json.a1Missions || []);

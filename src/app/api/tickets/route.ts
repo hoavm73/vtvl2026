@@ -69,17 +69,19 @@ export async function GET(req: NextRequest) {
 
   const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
   if (!caller.isAdmin && unitCodeParam && unitCodeParam !== caller.unitCode) return NextResponse.json({ error: 'Bạn không có quyền truy cập dữ liệu của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
-
-  const unit = findHcmuteUnit(caller.isAdmin && unitCodeParam ? unitCodeParam : caller.unitCode);
-  await syncTicketsFromSupabase(unit.code);
+  const isAllUnits = caller.isAdmin && unitCodeParam === 'ALL';
+  const unit = findHcmuteUnit(caller.isAdmin && unitCodeParam && !isAllUnits ? unitCodeParam : caller.unitCode);
+  await syncTicketsFromSupabase(isAllUnits ? undefined : unit.code);
   await syncServerWorkbooksFromSupabase(true);
   const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-  await syncTicketsFromWorkbook(wb.data, unit.code);
-  await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0);
+  if (!isAllUnits) {
+    await syncTicketsFromWorkbook(wb.data, unit.code);
+    await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0);
+  }
   const latestWb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
 
   const myTickets = getTicketsByOwner(caller.email, unit.code);
-  const rawUnitTickets = getTicketsByUnit(unit.code);
+  const rawUnitTickets = getTicketsByUnit(isAllUnits ? 'ALL' : unit.code);
   const unitTickets = caller.isAdmin ? rawUnitTickets : rawUnitTickets.filter((t) => normalizeEmail(t.ownerEmail) === normalizeEmail(caller.email) || toCanonicalStatus(t.status) !== 'draft');
 
   return NextResponse.json({

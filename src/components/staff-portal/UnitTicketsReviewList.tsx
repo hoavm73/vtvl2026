@@ -20,6 +20,8 @@ interface UnitTicketsReviewListProps {
   currentUserRole?: 'admin' | 'unit_leader' | 'staff';
   currentUserEmail?: string;
   mode?: UnitReviewMode;
+  unitFilter?: string;
+  onUnitFilterChange?: (unitCode: string) => void;
   onViewTicket: (ticket: StaffWorkTicket) => void;
   onPrintTicket: (ticket: StaffWorkTicket) => void;
   onEditTicket?: (ticket: StaffWorkTicket) => void;
@@ -34,10 +36,21 @@ interface UnitTicketsReviewListProps {
 
 export function UnitTicketsReviewList({
   tickets, loading, currentUserRole, currentUserEmail, mode = 'all',
+  unitFilter: controlledUnitFilter, onUnitFilterChange,
   onViewTicket, onPrintTicket, onEditTicket, onCoordTicket, onSubmitTicket,
   onApproveTicket, onRequestChanges, onMergeTicket, onRevokeApproval, onCancelTicket
 }: UnitTicketsReviewListProps) {
   const isLeader = currentUserRole === 'unit_leader' || currentUserRole === 'admin';
+  const isAdmin = currentUserRole === 'admin';
+  const [internalUnitFilter, setInternalUnitFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'ALL';
+    return (new URLSearchParams(window.location.search).get('unitCode') || 'ALL').toUpperCase();
+  });
+  const activeUnitFilter = controlledUnitFilter !== undefined ? controlledUnitFilter : internalUnitFilter;
+  const handleUnitFilterChange = (nextUnit: string) => {
+    setInternalUnitFilter(nextUnit);
+    onUnitFilterChange?.(nextUnit);
+  };
   const [search, setSearch] = useState('');
   const [pendingSubFilter, setPendingSubFilter] = useState<PendingSubFilter>('ALL');
   const [approvedSubFilter, setApprovedSubFilter] = useState<ApprovedSubFilter>('ALL');
@@ -45,22 +58,37 @@ export function UnitTicketsReviewList({
   const [ownerFilter, setOwnerFilter] = useState('ALL');
   const [missionFilter, setMissionFilter] = useState('ALL');
 
-  const owners = useMemo(() => Array.from(new Set(tickets.map((t) => t.ownerName || t.ownerEmail))), [tickets]);
-  const missions = useMemo(() => Array.from(new Set(tickets.map((t) => t.maNhiemVu).filter(Boolean))), [tickets]);
+  const unitCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of tickets) {
+      const uc = (t.unitCode || '').toUpperCase();
+      if (uc) map[uc] = (map[uc] || 0) + 1;
+    }
+    return map;
+  }, [tickets]);
+
+  const unitScopedTickets = useMemo(() => {
+    if (!isAdmin || !activeUnitFilter || activeUnitFilter === 'ALL') return tickets;
+    const uc = activeUnitFilter.toUpperCase();
+    return tickets.filter((t) => (t.unitCode || '').toUpperCase() === uc);
+  }, [tickets, isAdmin, activeUnitFilter]);
+
+  const owners = useMemo(() => Array.from(new Set(unitScopedTickets.map((t) => t.ownerName || t.ownerEmail))), [unitScopedTickets]);
+  const missions = useMemo(() => Array.from(new Set(unitScopedTickets.map((t) => t.maNhiemVu).filter(Boolean))), [unitScopedTickets]);
 
   const { waitingCount, changesCount, unmergedCount, mergedCount } = useMemo(() => {
     let waitingCount = 0, changesCount = 0, unmergedCount = 0, mergedCount = 0;
-    for (const t of tickets) {
+    for (const t of unitScopedTickets) {
       const c = toCanonicalStatus(t.status);
       if (c === 'submitted' || c === 'resubmitted') waitingCount += 1;
       else if (c === 'changes_requested') changesCount += 1;
       else if (c === 'approved') { if (t.isMergedToB1B2) mergedCount += 1; else unmergedCount += 1; }
     }
     return { waitingCount, changesCount, unmergedCount, mergedCount };
-  }, [tickets]);
+  }, [unitScopedTickets]);
 
   const displayedTickets = useMemo(() => {
-    let list = [...tickets];
+    let list = [...unitScopedTickets];
     if (mode === 'pending') {
       list = list.filter((t) => {
         const c = toCanonicalStatus(t.status);
@@ -91,7 +119,7 @@ export function UnitTicketsReviewList({
       );
     }
     return list;
-  }, [tickets, mode, pendingSubFilter, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
+  }, [unitScopedTickets, mode, pendingSubFilter, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
 
   const emptyText = mode === 'pending'
     ? 'Hiện tại không có phiếu nào đang chờ duyệt hoặc yêu cầu bổ sung.'
@@ -100,7 +128,10 @@ export function UnitTicketsReviewList({
   return (
     <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
       <UnitTicketsFilterBar
-        mode={mode} isLeader={isLeader} displayedCount={displayedTickets.length}
+        mode={mode} isLeader={isLeader} showUnitFilter={isAdmin}
+        unitFilter={activeUnitFilter} onUnitFilterChange={handleUnitFilterChange}
+        unitCounts={unitCounts} totalAllUnitsCount={tickets.length}
+        displayedCount={displayedTickets.length}
         search={search} onSearchChange={setSearch}
         pendingSubFilter={pendingSubFilter} onPendingSubFilterChange={setPendingSubFilter}
         waitingCount={waitingCount} changesCount={changesCount}

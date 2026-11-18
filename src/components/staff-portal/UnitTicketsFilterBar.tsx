@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, Clock, Search, Users } from 'lucide-react';
+import { Building2, CheckCircle2, Clock, Search, Users } from 'lucide-react';
+import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 
 export type UnitReviewMode = 'pending' | 'approved' | 'all';
 export type PendingSubFilter = 'ALL' | 'WAITING' | 'CHANGES';
@@ -10,6 +11,11 @@ export type ApprovedSubFilter = 'ALL' | 'UNMERGED' | 'MERGED';
 interface UnitTicketsFilterBarProps {
   mode: UnitReviewMode;
   isLeader: boolean;
+  showUnitFilter?: boolean;
+  unitFilter?: string;
+  onUnitFilterChange?: (value: string) => void;
+  unitCounts?: Record<string, number>;
+  totalAllUnitsCount?: number;
   displayedCount: number;
   search: string;
   onSearchChange: (value: string) => void;
@@ -34,6 +40,11 @@ interface UnitTicketsFilterBarProps {
 export function UnitTicketsFilterBar({
   mode,
   isLeader,
+  showUnitFilter = false,
+  unitFilter = 'ALL',
+  onUnitFilterChange,
+  unitCounts = {},
+  totalAllUnitsCount = 0,
   displayedCount,
   search,
   onSearchChange,
@@ -96,6 +107,30 @@ export function UnitTicketsFilterBar({
     <>
       <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">{renderHeader()}</div>
+        {showUnitFilter && onUnitFilterChange && (
+          <div className="flex items-center gap-2 min-w-[240px] sm:min-w-[320px]">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#004776] whitespace-nowrap">
+              <Building2 className="w-3.5 h-3.5 text-[#006cee]" />
+              <span>Đơn vị:</span>
+            </span>
+            <select
+              value={unitFilter}
+              onChange={(e) => onUnitFilterChange(e.target.value)}
+              aria-label="Lọc phiếu theo đơn vị"
+              className="flex-1 h-8.5 px-2.5 text-xs font-semibold rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none cursor-pointer"
+            >
+              <option value="ALL">Tất cả 39 đơn vị toàn trường ({totalAllUnitsCount} phiếu)</option>
+              {HCMUTE_UNITS.map((u) => {
+                const cnt = unitCounts[u.code.toUpperCase()] || 0;
+                return (
+                  <option key={u.code} value={u.code}>
+                    [{u.code}] {u.nameVi} ({cnt} phiếu)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
       </div>
 
       {mode === 'pending' && (

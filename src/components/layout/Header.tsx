@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileSpreadsheet, FileText, Clock, Home,
+  FileSpreadsheet, FileText, ClipboardCheck, Clock, Home,
   Menu, X, ShieldCheck
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
@@ -14,6 +14,7 @@ import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry
 const MOBILE_NAV_ITEMS = [
   { href: '/', label: 'Tổng quan hệ thống', icon: Home },
   { href: '/phieu-cong-viec', label: 'Phiếu công việc cá nhân', icon: FileText },
+  { href: '/phieu-don-vi', label: 'Quản lý phiếu đơn vị', icon: ClipboardCheck },
   { href: '/bang-tinh', label: 'Bảng tính 10 biểu', icon: FileSpreadsheet },
   { href: '/admin', label: 'Quản trị hệ thống', icon: ShieldCheck }
 ];

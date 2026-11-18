@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FileSpreadsheet, ShieldCheck, ClipboardCheck, History, ArrowRight, AlertTriangle } from 'lucide-react';
 import { UnitSummaryRow, formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent } from '@/services/workbooks/workbook-history-service';
+import { InlineSkeleton, TimelineListSkeleton } from '@/components/ui/Skeleton';
 
 const EVENT_DOT_COLOR: Record<WorkbookHistoryTimelineEvent['source'], string> = {
   review: 'bg-[#006cee] ring-[#e6f1ff]',
@@ -57,7 +58,7 @@ export function UnitProfileOverviewPanel({
           </div>
           <h2 className="text-base sm:text-lg font-bold text-[#004776]">{unitNameVi}</h2>
           <p className="text-xs text-[#476885]">
-            {summary?.stageLabel || 'Đang đồng bộ trạng thái hồ sơ...'}
+            {loading && !summary ? <InlineSkeleton className="h-3.5 w-44" /> : (summary?.stageLabel || 'Đang đồng bộ trạng thái hồ sơ...')}
             {summary?.submittedAt ? ` · Gửi TCNS: ${summary.submittedAt}` : ''}
             {summary?.reviewerEmail ? ` · Phụ trách TCNS: ${summary.reviewerEmail}` : ''}
           </p>
@@ -91,23 +92,37 @@ export function UnitProfileOverviewPanel({
       <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
         <div className="py-3 px-4">
           <div className="text-xs text-[#476885]">Biểu đã nhập liệu</div>
-          <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">{sheetsDisplay}</div>
-          <div className="text-[11px] text-[#64748b] tabular-nums">{summary ? `${summary.totalRows} dòng dữ liệu` : 'Đang đồng bộ'}</div>
+          <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">
+            {loading ? <InlineSkeleton className="h-6 w-14 mt-0.5" /> : sheetsDisplay}
+          </div>
+          <div className="text-[11px] text-[#64748b] tabular-nums">
+            {loading ? <InlineSkeleton className="h-3 w-24 mt-1" /> : summary ? `${summary.totalRows} dòng dữ liệu` : 'Đang đồng bộ'}
+          </div>
         </div>
         <div className="py-3 px-4">
           <div className="text-xs text-[#476885]">Cảnh báo rà soát</div>
-          <div className={`text-xl font-bold tabular-nums mt-0.5 ${(summary?.errorCount ?? 0) > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`}>{errCountDisplay}</div>
+          <div className={`text-xl font-bold tabular-nums mt-0.5 ${(summary?.errorCount ?? 0) > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`}>
+            {loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : errCountDisplay}
+          </div>
           <div className="text-[11px] text-[#64748b]">Kiểm tra chéo A1–D2</div>
         </div>
         <div className="py-3 px-4">
           <div className="text-xs text-[#476885]">Phiếu công việc</div>
-          <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">{ticketCountDisplay}</div>
-          <div className="text-[11px] text-[#64748b] tabular-nums">{summary ? `Chờ duyệt: ${summary.submittedCount} · Đã gộp: ${summary.mergedCount}` : 'Theo dõi phiếu'}</div>
+          <div className="text-xl font-bold text-[#004776] tabular-nums mt-0.5">
+            {loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : ticketCountDisplay}
+          </div>
+          <div className="text-[11px] text-[#64748b] tabular-nums">
+            {loading ? <InlineSkeleton className="h-3 w-28 mt-1" /> : summary ? `Chờ duyệt: ${summary.submittedCount} · Đã gộp: ${summary.mergedCount}` : 'Theo dõi phiếu'}
+          </div>
         </div>
         <div className="py-3 px-4">
           <div className="text-xs text-[#476885]">Tiến độ hoàn thiện</div>
-          <div className="text-xl font-bold text-[#006cee] tabular-nums mt-0.5">{progressDisplay}</div>
-          <div className="text-[11px] text-[#64748b]">{summary?.lastUpdatedAt ? `Cập nhật: ${summary.lastUpdatedAt}` : 'Chưa phát sinh'}</div>
+          <div className="text-xl font-bold text-[#006cee] tabular-nums mt-0.5">
+            {loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : progressDisplay}
+          </div>
+          <div className="text-[11px] text-[#64748b]">
+            {loading ? <InlineSkeleton className="h-3 w-24 mt-1" /> : summary?.lastUpdatedAt ? `Cập nhật: ${summary.lastUpdatedAt}` : 'Chưa phát sinh'}
+          </div>
         </div>
       </div>
 
@@ -145,7 +160,11 @@ export function UnitProfileOverviewPanel({
           </div>
           <button type="button" onClick={() => onSelectTab('history')} className="text-xs font-semibold text-[#006cee] hover:underline cursor-pointer">Xem toàn bộ</button>
         </div>
-        {recentEvents.length === 0 ? (
+        {loading && recentEvents.length === 0 ? (
+          <div className="border-t border-[#e2e8f0] pt-3.5">
+            <TimelineListSkeleton rows={3} />
+          </div>
+        ) : recentEvents.length === 0 ? (
           <p className="text-xs text-[#476885] py-3">Chưa có sự kiện nào được ghi nhận cho đơn vị này.</p>
         ) : (
           <div className="border-t border-[#e2e8f0] pt-3.5">

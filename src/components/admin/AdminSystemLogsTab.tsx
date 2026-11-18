@@ -5,6 +5,7 @@ import { History, RefreshCw, Search } from 'lucide-react';
 import { ServerAuditLog } from '@/services/storage/server-audit-store';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
+import { TimelineListSkeleton } from '@/components/ui/Skeleton';
 
 function buildHeaders(): Record<string, string> {
   const cur = getCurrentOperatorSession();
@@ -80,7 +81,9 @@ export function AdminSystemLogsTab() {
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-xs text-[#476885]">Đang tải nhật ký hệ thống…</div>
+        <div className="border-t border-[#e2e8f0] pt-4">
+          <TimelineListSkeleton rows={4} />
+        </div>
       ) : error ? (
         <div className="p-4 rounded-[10px] bg-[#fdeceb] text-xs text-[#b42318] flex items-center justify-between">
           <span>{error}</span>

@@ -6,6 +6,7 @@ import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
 import { formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { TimelineListSkeleton } from '@/components/ui/Skeleton';
 
 function buildHistoryAuthHeaders(includeJson = false): Record<string, string> {
   const headers: Record<string, string> = {};
@@ -195,7 +196,9 @@ export function UnitWorkbookHistoryPanel({
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-xs text-[#476885]">Đang tải dữ liệu lịch sử từ máy chủ…</div>
+        <div className="border-t border-[#e2e8f0] pt-4">
+          <TimelineListSkeleton rows={4} />
+        </div>
       ) : error ? (
         <div className="py-6 px-4 rounded-[10px] bg-[#fdeceb] text-xs text-[#b42318] flex items-center justify-between gap-2">
           <span>{error}</span>

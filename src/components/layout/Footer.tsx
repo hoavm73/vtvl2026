@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Globe, Mail } from 'lucide-react';
 
@@ -8,9 +9,13 @@ export function Footer() {
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/85">
         <div className="flex items-center gap-3">
           <Link href="/" className="inline-flex items-center">
-            <img
+            <Image
               src="/horizontal-ute-logo-white.png"
               alt="HCM-UTE Logo"
+              width={140}
+              height={41}
+              sizes="140px"
+              loading="lazy"
               className="h-8 w-auto object-contain"
             />
           </Link>

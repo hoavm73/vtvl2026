@@ -14,6 +14,7 @@ import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrin
 import { StaffTicketRevisionModal, TicketModerationModalMode } from '@/components/staff-portal/StaffTicketRevisionModal';
 import { StaffTicketMergePreviewModal } from '@/components/staff-portal/StaffTicketMergePreviewModal';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
+import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 
 export default function UnitTicketsManagementPage() {
   const router = useRouter();
@@ -139,7 +140,13 @@ export default function UnitTicketsManagementPage() {
   };
   const handleMergeSubmit = async (t: StaffWorkTicket) => { await sendPatchAction({ ticketId: t.id, action: 'merge', unitCode: t.unitCode }); };
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-[#f8fbff] p-3 sm:p-6">
+        <PageWorkspaceSkeleton statusText="Đang tải không gian quản lý phiếu đơn vị..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6 print:p-0 print:m-0 print:bg-white print:min-h-0">

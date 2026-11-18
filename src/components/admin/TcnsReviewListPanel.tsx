@@ -7,6 +7,7 @@ import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { REVIEW_STATUS_LABELS, WorkbookReviewStatus } from '@/services/workbooks/workbook-history-service';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
+import { TableRowsSkeleton } from '@/components/ui/Skeleton';
 
 interface TcnsReviewListPanelProps {
   onSelectUnit: (unitCode: string, workbookId: string) => void;
@@ -143,7 +144,7 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-xs text-[#476885]">Đang tải danh sách hồ sơ 39 đơn vị…</div>
+        <TableRowsSkeleton rows={5} />
       ) : error ? (
         <div className="p-4 rounded-[10px] bg-[#fdeceb] border border-[#f8b4af] flex items-center justify-between gap-2 text-xs text-[#b42318]">
           <span>{error}</span>

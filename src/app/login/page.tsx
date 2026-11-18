@@ -117,6 +117,7 @@ function LoginForm() {
             alt="Logo Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)"
             width={76}
             height={104}
+            sizes="76px"
             priority
             className="h-16 sm:h-[72px] w-auto object-contain mx-auto"
           />

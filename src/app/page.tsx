@@ -10,6 +10,7 @@ import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBann
 import { SchoolOverviewDashboard } from '@/components/overview/SchoolOverviewDashboard';
 import { OverviewRoleActionCards } from '@/components/overview/OverviewRoleActionCards';
 import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
+import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
 import {
@@ -114,9 +115,8 @@ export default function HomePage() {
 
   if (!operator) {
     return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-3">
-        <div className="w-10 h-10 border-3 border-[#006cee] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-semibold text-[#004776]">Đang chuyển hướng tới cổng đăng nhập HCM-UTE…</p>
+      <div className="w-full min-h-[60vh]">
+        <PageWorkspaceSkeleton statusText="Đang chuyển hướng tới cổng đăng nhập HCM-UTE…" />
       </div>
     );
   }

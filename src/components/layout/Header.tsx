@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -73,17 +74,25 @@ export function Header() {
             aria-label="Trang chủ tổng quan Vị trí việc làm HCM-UTE"
             className="flex items-center gap-2.5 py-1 min-w-0 cursor-pointer"
           >
-            <img
+            <Image
               src="/ute_logo.png"
               alt="HCM-UTE Logo"
+              width={32}
+              height={32}
+              sizes="32px"
+              priority
               className="block h-8 w-auto md:hidden object-contain shrink-0"
             />
             <span className="md:hidden text-base font-bold text-[#004776] truncate">
               VTVL HCM-UTE
             </span>
-            <img
+            <Image
               src="/horizontal-ute-logo.png"
               alt="HCM-UTE Logo"
+              width={180}
+              height={44}
+              sizes="180px"
+              priority
               className="hidden h-9 lg:h-10 w-auto md:block object-contain shrink-0"
             />
           </Link>
@@ -132,7 +141,7 @@ export function Header() {
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-[#e2ecf7]">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img src="/ute_logo.png" alt="HCM-UTE Logo" className="h-8 w-auto object-contain shrink-0" />
+                  <Image src="/ute_logo.png" alt="HCM-UTE Logo" width={32} height={32} sizes="32px" className="h-8 w-auto object-contain shrink-0" />
                   <div className="min-w-0">
                     <div className="text-base font-bold text-[#004776]">VTVL HCM-UTE</div>
                   </div>

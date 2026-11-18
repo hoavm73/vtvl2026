@@ -18,6 +18,7 @@ import { StaffTicketDetailModal } from '@/components/staff-portal/StaffTicketDet
 import { CoordinatedTaskModal } from '@/components/staff-portal/CoordinatedTaskModal';
 import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
+import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 
 export default function StaffWorkTicketsPage() {
   const router = useRouter();
@@ -179,7 +180,13 @@ export default function StaffWorkTicketsPage() {
     if (res.ok) { if (editingTicket?.id === ticket.id) setEditingTicket(null); loadData(session); }
   };
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-[#f8fbff] p-3 sm:p-6">
+        <PageWorkspaceSkeleton statusText="Đang tải không gian phiếu công việc cá nhân..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fbff] text-[#004776] p-3 sm:p-6 print:p-0 print:m-0 print:bg-white print:min-h-0">
@@ -223,7 +230,7 @@ export default function StaffWorkTicketsPage() {
                 />
               </div>
               <div className="xl:col-span-6 min-w-0 print:hidden space-y-5">
-                {myTickets.length > 0 && (
+                {(loading || myTickets.length > 0) && (
                   <StaffMyTicketsList
                     title={myDraftTickets.length > 0 ? 'Phiếu của tôi (Nháp & Chờ duyệt)' : 'Phiếu của tôi'}
                     tickets={myTickets} loading={loading}

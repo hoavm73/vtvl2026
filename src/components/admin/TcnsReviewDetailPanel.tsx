@@ -14,6 +14,7 @@ import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer
 import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { InlineSkeleton } from '@/components/ui/Skeleton';
 
 function buildTcnsAuthHeaders(includeJson = false): Record<string, string> {
   const headers: Record<string, string> = {};
@@ -138,7 +139,7 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
           <h2 className="text-base sm:text-lg font-bold text-[#004776]">Hồ sơ [{unit.code}] {unit.nameVi} — phiên bản v{currentRevision}</h2>
           <div className="flex flex-wrap items-center gap-2 text-xs text-[#476885]">
             <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] font-semibold">
-              {reviewMeta?.statusLabel || 'Đang tải…'}
+              {loading && !reviewMeta ? <InlineSkeleton className="h-3.5 w-20" /> : (reviewMeta?.statusLabel || 'Chưa gửi')}
             </span>
             {reviewMeta?.submittedBy && <span>Người nộp: {reviewMeta.submittedBy} ({reviewMeta.submittedAt})</span>}
             {reviewMeta?.reviewerEmail && <span>· Phụ trách: {reviewMeta.reviewerEmail}</span>}
@@ -204,10 +205,10 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
       {activeTab === 'overview' && (
         <div className="space-y-4">
           <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Biểu có dữ liệu</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? '—' : `${summary?.populatedSheetsCount ?? 0}/10`}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Cảnh báo kiểm tra</div><div className="text-lg font-bold text-[#b42318] tabular-nums">{loading ? '—' : String(summary?.errorCount ?? 0)}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Phiếu công việc</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? '—' : String(summary?.totalTickets ?? 0)}</div></div>
-            <div className="p-3.5"><div className="text-xs text-[#476885]">Tiến độ đơn vị</div><div className="text-lg font-bold text-[#006cee] tabular-nums">{loading ? '—' : `${summary?.progressPercent ?? 0}%`}</div></div>
+            <div className="p-3.5"><div className="text-xs text-[#476885]">Biểu có dữ liệu</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.populatedSheetsCount ?? 0}/10`}</div></div>
+            <div className="p-3.5"><div className="text-xs text-[#476885]">Cảnh báo kiểm tra</div><div className="text-lg font-bold text-[#b42318] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.errorCount ?? 0)}</div></div>
+            <div className="p-3.5"><div className="text-xs text-[#476885]">Phiếu công việc</div><div className="text-lg font-bold text-[#004776] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-10 mt-0.5" /> : String(summary?.totalTickets ?? 0)}</div></div>
+            <div className="p-3.5"><div className="text-xs text-[#476885]">Tiến độ đơn vị</div><div className="text-lg font-bold text-[#006cee] tabular-nums">{loading ? <InlineSkeleton className="h-6 w-12 mt-0.5" /> : `${summary?.progressPercent ?? 0}%`}</div></div>
           </div>
           {reviewMeta?.reviewNote && (
             <div className="rounded-[10px] bg-[#f8fafc] border border-[#e2e8f0] px-4 py-3 text-xs text-[#004776]">

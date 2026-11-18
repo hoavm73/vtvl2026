@@ -6,6 +6,7 @@ import { getCurrentOperatorSession } from '@/services/telemetry/operator-session
 import { normalizeCode, PROPOSED_TAB_EMPTY_MESSAGE } from '@/services/tickets/vtvl-coordination-helpers';
 import { ProposedCoordinatedTaskItem } from '@/types/staff-ticket';
 import { ProposedCoordinatedDetailModal } from './ProposedCoordinatedDetailModal';
+import { TicketListSkeleton } from '@/components/ui/Skeleton';
 
 interface ViewerVtvlBadge {
   id: string;
@@ -159,9 +160,7 @@ export function ProposedCoordinatedSideCard({
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-xs font-semibold text-[#476b8e]">
-          Đang tải nhiệm vụ đề xuất phối hợp...
-        </div>
+        <TicketListSkeleton rows={2} />
       ) : filteredItems.length === 0 ? (
         <div className="py-8 px-4 text-center space-y-1.5">
           <Handshake className="w-6 h-6 text-[#006cee] mx-auto opacity-75" />

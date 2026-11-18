@@ -7,6 +7,7 @@ import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordina
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 import { formatApprovalDateTime } from './TicketApprovalHistoryTimeline';
 import { UnitTicketActionButtons } from './UnitTicketActionButtons';
+import { TicketListSkeleton } from '@/components/ui/Skeleton';
 import {
   ApprovedSubFilter,
   PendingSubFilter,
@@ -147,7 +148,7 @@ export function UnitTicketsReviewList({
 
       <div className="divide-y divide-[#eef3f8]">
         {loading && tickets.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#20446c]">Đang tải dữ liệu phiếu...</div>
+          <TicketListSkeleton rows={3} />
         ) : displayedTickets.length === 0 ? (
           <div className="p-6 text-center text-xs text-[#20446c]">{emptyText}</div>
         ) : (

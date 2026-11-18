@@ -52,6 +52,8 @@ export function LoginHeroPanel() {
           alt="Cổng chính Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)"
           width={1774}
           height={887}
+          sizes="(max-width: 1023px) 92vw, 50vw"
+          quality={85}
           priority
           className="w-full h-auto max-h-[26vh] sm:max-h-[32vh] lg:max-h-[44vh] xl:max-h-[48vh] 2xl:max-h-[52vh] object-contain object-bottom drop-shadow-[0_12px_32px_rgba(4,40,70,0.6)]"
         />

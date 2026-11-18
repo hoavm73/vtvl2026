@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import {
@@ -129,7 +130,7 @@ export function OperatorSessionModal({
         >
           <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-[#f8fafc] border-b border-[#cbd5e1] shrink-0">
             <div className="flex items-center gap-3.5 min-w-0">
-              <img src="/ute_logo.png" alt="HCM-UTE Logo" className="h-10 w-auto object-contain shrink-0" />
+              <Image src="/ute_logo.png" alt="HCM-UTE Logo" width={40} height={40} sizes="40px" className="h-10 w-auto object-contain shrink-0" />
               <div className="min-w-0">
                 <h3 className="text-lg font-bold text-[#004776] tracking-tight">Đăng nhập phiên làm việc</h3>
                 <p className="text-xs sm:text-sm font-medium text-[#476885] truncate">

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -95,11 +96,13 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
       {/* Phần trên: Logo + đường phân cách dọc + 3 dòng nhận diện bên trái, ảnh cổng HCM-UTE bên phải */}
       <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4 lg:gap-6 pb-3 sm:pb-5">
         <div className="flex items-center gap-3 sm:gap-5 lg:gap-6 min-w-0 flex-1">
-          <img
+          <Image
             src="/ute_logo.png"
             alt="Logo HCM-UTE"
             width={82}
             height={82}
+            sizes="(max-width: 640px) 44px, (max-width: 1024px) 64px, 82px"
+            priority
             className="w-11 h-11 sm:w-16 sm:h-16 lg:w-[82px] lg:h-[82px] object-contain shrink-0 select-none"
             style={{ filter: 'url(#hcmute-banner-logo-outline)' }}
           />
@@ -121,13 +124,14 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
         </div>
 
         <div className="hidden md:flex md:w-[240px] lg:w-[320px] xl:w-[440px] 2xl:w-[470px] shrink-0 self-end items-end justify-end pointer-events-none select-none -mb-3.5 sm:-mb-4 lg:-mt-4">
-          <img
+          <Image
             src="/assets/login/hcmute-gate-line-art-transparent.png"
             alt=""
             aria-hidden="true"
-            width={1774}
-            height={887}
-            decoding="async"
+            width={940}
+            height={470}
+            sizes="(max-width: 767px) 160px, (max-width: 1023px) 240px, (max-width: 1279px) 320px, 470px"
+            priority
             className="w-full h-auto max-h-[120px] lg:max-h-[160px] xl:max-h-[205px] object-contain object-right-bottom pointer-events-none select-none opacity-95 [mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)]"
           />
         </div>
@@ -165,6 +169,10 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
               <img
                 src={session.avatarUrl}
                 alt={rawName}
+                width={52}
+                height={52}
+                loading="lazy"
+                decoding="async"
                 className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-[12px] sm:rounded-[14px] object-cover shrink-0 border border-white/30 shadow-xs"
               />
             ) : (

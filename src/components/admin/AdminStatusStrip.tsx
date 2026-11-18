@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { FileSpreadsheet, Users, UserCheck, Building2, AlertCircle, RefreshCw } from 'lucide-react';
+import { InlineSkeleton } from '@/components/ui/Skeleton';
 
 interface AdminStatusStripProps {
   isLeader: boolean;
@@ -24,7 +25,7 @@ export function AdminStatusStrip({
       {!isLeader && (
         <div className="inline-flex items-center gap-1.5">
           <FileSpreadsheet className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-          <span className="text-[#004776]">{sessionCount === null ? 'Đang tải hồ sơ…' : `${sessionCount} hồ sơ`}</span>
+          <span className="text-[#004776]">{sessionCount === null ? <InlineSkeleton className="h-3.5 w-16" /> : `${sessionCount} hồ sơ`}</span>
           <button type="button" onClick={onRefresh} aria-label="Làm mới dữ liệu từ máy chủ" title="Làm mới dữ liệu từ máy chủ" className="ml-0.5 text-[#004776]/70 hover:text-[#004776] cursor-pointer">
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
@@ -32,7 +33,7 @@ export function AdminStatusStrip({
       )}
       <div className="inline-flex items-center gap-1.5">
         <Users className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
-        <span className="text-[#004776]">{accountCount === null ? 'Đang tải tài khoản…' : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
+        <span className="text-[#004776]">{accountCount === null ? <InlineSkeleton className="h-3.5 w-20" /> : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
       </div>
       <div className="inline-flex items-center gap-1.5 max-w-full sm:max-w-md truncate min-w-0" title={activeUnitCode}>
         <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />

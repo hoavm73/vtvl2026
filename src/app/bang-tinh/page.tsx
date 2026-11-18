@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer';
 import { EXCEL_SHEET_METAS } from '@/components/excel-grid/excel-sheet-metas';
 import { ExcelSheetKey } from '@/components/excel-grid/excel-grid-types';
+import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 
 function BangTinhContent() {
   const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ function BangTinhContent() {
 
 export default function BangTinhPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-[#004776]">Đang tải bảng tính Excel...</div>}>
+    <Suspense fallback={<div className="px-2.5 sm:px-5 lg:px-6 py-2.5 sm:py-4"><PageWorkspaceSkeleton statusText="Đang tải bảng tính 10 biểu Excel..." /></div>}>
       <BangTinhContent />
     </Suspense>
   );

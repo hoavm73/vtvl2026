@@ -5,6 +5,7 @@ import { ArrowRightLeft, CheckCircle2, Clock, Network, Search, ShieldCheck } fro
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { normalizeCode } from '@/services/tickets/vtvl-coordination-helpers';
 import { WorkRelationshipItem } from '@/types/staff-ticket';
+import { TicketListSkeleton } from '@/components/ui/Skeleton';
 
 type ApprovalFilterKey = 'all' | 'both_units' | 'tcns' | 'one_side';
 
@@ -146,7 +147,9 @@ export function WorkRelationshipsTab({
       )}
 
       {loading ? (
-        <div className="py-10 text-center text-xs font-semibold text-[#476b8e]">Đang tải danh sách mối quan hệ công việc...</div>
+        <div className="rounded-2xl border border-[#e2e8f0] bg-white overflow-hidden">
+          <TicketListSkeleton rows={3} />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fbff] space-y-1.5">
           <Network className="w-8 h-8 text-[#006cee] mx-auto opacity-75" />

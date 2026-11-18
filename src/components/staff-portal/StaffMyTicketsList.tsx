@@ -15,6 +15,7 @@ import { StaffWorkTicket } from '@/types/staff-ticket';
 import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
 import { TicketApprovalProgress, getTicketStatusMeta } from './TicketApprovalProgress';
 import { formatApprovalDateTime } from './TicketApprovalHistoryTimeline';
+import { TicketListSkeleton } from '@/components/ui/Skeleton';
 
 interface StaffMyTicketsListProps {
   title?: string;
@@ -49,7 +50,7 @@ export function StaffMyTicketsList({
 
       <div className="divide-y divide-[#eef3f8]">
         {loading && tickets.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#20446c]">Đang tải danh sách phiếu...</div>
+          <TicketListSkeleton rows={3} />
         ) : tickets.length === 0 ? (
           <div className="p-6 text-center text-xs text-[#20446c]">
             Bạn chưa có phiếu công việc nào trong danh sách. Hãy điền thông tin và bấm &quot;Lưu nháp&quot; hoặc &quot;Lưu và nộp&quot;.

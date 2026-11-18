@@ -6,6 +6,7 @@ import { useAuthHydration } from '@/components/auth/AuthSessionProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 import { syncUnitsWithServer } from '@/services/units/unit-management';
@@ -107,17 +108,10 @@ export function AppShell({ children }: AppShellProps) {
       {isLoginPage ? (
         <main className="flex-1 w-full max-w-full flex flex-col min-h-screen print:block print:overflow-visible print:min-h-0">{children}</main>
       ) : !isLoggedIn ? (
-        <main className="flex-1 w-full max-w-full flex flex-col items-center justify-center min-h-screen p-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-[#d8e3ef] flex items-center justify-center mb-4">
-            <img src="/ute_logo.png" alt="HCM-UTE Logo" className="w-10 h-10 object-contain" />
-          </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#004776] mb-1">
-            <span className="w-4 h-4 border-2 border-[#0072BC] border-t-transparent rounded-full animate-spin" />
-            <span>{sessionChecked ? 'Đang chuyển hướng đến Cổng đăng nhập...' : 'Đang khởi tạo phiên làm việc...'}</span>
-          </div>
-          <p className="text-xs text-[#64748b]">
-            Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)
-          </p>
+        <main className="flex-1 w-full max-w-full min-h-screen bg-[#f8fafc] py-4 sm:py-6">
+          <PageWorkspaceSkeleton
+            statusText={sessionChecked ? 'Đang chuyển hướng đến Cổng đăng nhập HCM-UTE…' : 'Đang khởi tạo phiên làm việc…'}
+          />
         </main>
       ) : (
         <div className="flex-1 flex w-full max-w-full min-w-0 print:block print:overflow-visible">

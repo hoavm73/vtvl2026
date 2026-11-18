@@ -12,6 +12,7 @@ import {
 } from '@/services/tickets/vtvl-coordination-helpers';
 import { ProposedCoordinatedDetailModal } from './ProposedCoordinatedDetailModal';
 import { ProposedCoordinatedTaskCard } from './ProposedCoordinatedTaskCard';
+import { TicketListSkeleton } from '@/components/ui/Skeleton';
 
 interface ViewerVtvlBadge {
   id: string;
@@ -206,8 +207,8 @@ export function ProposedCoordinatedTasksTab({
       )}
 
       {loading ? (
-        <div className="py-12 text-center text-sm text-[#476b8e] font-semibold">
-          Đang tải danh sách nhiệm vụ được đề xuất phối hợp...
+        <div className="rounded-2xl border border-[#e2e8f0] bg-white overflow-hidden">
+          <TicketListSkeleton rows={3} />
         </div>
       ) : groupedByUnit.length === 0 ? (
         <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fbff] space-y-2">

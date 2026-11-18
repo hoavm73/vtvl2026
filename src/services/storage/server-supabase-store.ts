@@ -3,7 +3,7 @@ import { ServerWorkbook } from './server-workbook-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
 import { syncWorkbookAtomicOrFallback } from './server-workbook-relational-sync';
-import { isDatabaseConfigured, prisma } from './prisma';
+import { getDbTestHook, isDatabaseConfigured, prisma } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
 
 const CACHE_TTL_MS = 5000;
@@ -17,6 +17,7 @@ export function invalidateSupabaseCache(): void {
 
 export async function fetchWorkbooksFromSupabase(forceRefresh = false): Promise<ServerWorkbook[]> {
   if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return [];
+  if (getDbTestHook() && !(process.env.DATABASE_URL || '').trim()) return [];
 
   const now = Date.now();
   if (!forceRefresh && cachedWorkbooks && now - lastFetchedAt < CACHE_TTL_MS) {
@@ -150,6 +151,11 @@ export async function persistWorkbookToSupabase(
       }
     }
 
+    const compactWorkbookForJsonb: ServerWorkbook = {
+      ...wb,
+      revisions: Array.isArray(wb.revisions) ? wb.revisions.slice(0, 3) : []
+    };
+
     const payload = {
       ma_don_vi: wb.unitId,
       ten_don_vi: wb.unitNameVi,
@@ -163,7 +169,7 @@ export async function persistWorkbookToSupabase(
       email_nguoi_thuc_hien: latestPart.email || null,
       chuc_vu_nguoi_thuc_hien: latestPart.roleLabel || null,
       du_lieu_ho_so_json: {
-        serverWorkbook: wb,
+        serverWorkbook: compactWorkbookForJsonb,
         actorEmail: latestPart.email,
         actorTitle: latestPart.roleLabel,
         lastSavedAt: wb.updatedAt

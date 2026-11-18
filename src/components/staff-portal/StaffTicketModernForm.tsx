@@ -67,10 +67,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
           <div className="sm:col-span-8 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-ma-nhiem-vu" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Mã nhiệm vụ (theo Biểu A1) *
             </label>
             <ShadcnSelect
+              id="field-ma-nhiem-vu"
+              ariaLabel="Mã nhiệm vụ theo Biểu A1"
               value={props.maNhiemVu}
               options={props.missionOptions}
               placeholder="-- Chọn nhiệm vụ theo Biểu A1 --"
@@ -79,19 +81,26 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-4 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-ma-cong-viec" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Mã công việc (tự sinh)
             </label>
-            <div className="h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f1f5f9] flex items-center justify-between text-xs sm:text-sm font-mono font-bold text-[#0072BC]">
-              <span className="truncate">{props.maCongViec || 'Tự động cấp mã...'}</span>
-            </div>
+            <input
+              id="field-ma-cong-viec"
+              type="text"
+              readOnly
+              value={props.maCongViec || 'Tự động cấp mã...'}
+              aria-label="Mã công việc tự sinh"
+              className="w-full h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f1f5f9] text-xs sm:text-sm font-mono font-bold text-[#0072BC] cursor-default outline-hidden"
+            />
           </div>
 
           <div className="sm:col-span-12 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-ten-cong-viec" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Tên công việc cụ thể *
             </label>
             <textarea
+              id="field-ten-cong-viec"
+              name="tenCongViec"
               rows={2}
               value={props.tenCongViec}
               onChange={(e) => props.onChangeTenCongViec(e.target.value)}
@@ -101,10 +110,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-ma-vtvl" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Mã VTVL chính (theo Biểu C1) *
             </label>
             <ShadcnSelect
+              id="field-ma-vtvl"
+              ariaLabel="Mã VTVL chính theo Biểu C1"
               value={props.maVtvl}
               options={props.vtvlOptions}
               placeholder="-- Chọn VTVL chính phụ trách --"
@@ -113,10 +124,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-ma-vtvl-phoi-hop" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Mã VTVL phối hợp (nếu có)
             </label>
             <ShadcnSelect
+              id="field-ma-vtvl-phoi-hop"
+              ariaLabel="Mã VTVL phối hợp nếu có"
               value={props.maVtvlPhoiHop}
               options={[{ value: '', label: '— Không chọn VTVL phối hợp —' }, ...props.vtvlOptions]}
               placeholder="Chọn VTVL phối hợp (nếu có)"
@@ -151,10 +164,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-san-pham" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Sản phẩm đầu ra cụ thể *
             </label>
             <textarea
+              id="field-san-pham"
+              name="sanPham"
               rows={2}
               value={props.sanPham}
               onChange={(e) => props.onChangeSanPham(e.target.value)}
@@ -164,10 +179,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-chat-luong" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Tiêu chuẩn chất lượng *
             </label>
             <textarea
+              id="field-chat-luong"
+              name="chatLuong"
               rows={2}
               value={props.chatLuong}
               onChange={(e) => props.onChangeChatLuong(e.target.value)}
@@ -177,10 +194,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-12 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-can-cu" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Căn cứ pháp lý / Quyết định giao việc *
             </label>
             <textarea
+              id="field-can-cu"
+              name="canCu"
               rows={2}
               value={props.canCu}
               onChange={(e) => props.onChangeCanCu(e.target.value)}
@@ -204,10 +223,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-so-sp-nam" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Số sản phẩm hoàn thành trong năm trong chu kỳ 1 năm (01/10/2025 đến 30/9/2026) *
             </label>
             <input
+              id="field-so-sp-nam"
+              name="soSpNam"
               type="number"
               min="0"
               step="any"
@@ -218,10 +239,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-nguon-so-lieu" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Nguồn số liệu kiểm chứng *
             </label>
             <textarea
+              id="field-nguon-so-lieu"
+              name="nguonSoLieu"
               rows={2}
               value={props.nguonSoLieu}
               onChange={(e) => props.onChangeNguon(e.target.value)}
@@ -231,10 +254,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-phut-thuc-te" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Thời gian thực hiện thực tế (phút/SP) *
             </label>
             <input
+              id="field-phut-thuc-te"
+              name="phutThucTe"
               type="number"
               min="0"
               step="any"
@@ -245,10 +270,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
           </div>
 
           <div className="sm:col-span-6 space-y-1.5">
-            <label className="text-xs sm:text-[13px] font-bold text-[#004776]">
+            <label htmlFor="field-gio-bo-sung" className="text-xs sm:text-[13px] font-bold text-[#004776]">
               Giờ bổ sung (Nếu có)
             </label>
             <input
+              id="field-gio-bo-sung"
+              name="gioBoSung"
               type="number"
               min="0"
               step="any"

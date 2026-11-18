@@ -5,6 +5,7 @@ import { HcmuteUnit, UnitGroupKind } from '@/types/vtvl';
 import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getDbTestHook, isDatabaseConfigured, prisma } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
+import { invalidateCacheTags } from './runtime-cache';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const UNITS_FILE = path.join(DATA_DIR, 'custom_units.json');
@@ -171,6 +172,7 @@ export function getServerUnits(): HcmuteUnit[] { return loadServerUnits(); }
 export function resetUnitMemoryStore(): void {
   memoryUnits = null;
   lastSupabaseSyncAt = 0;
+  invalidateCacheTags(['units', 'overview-stats', 'unit-monitor']);
 }
 
 export async function syncUnitsFromSupabase(force = false): Promise<HcmuteUnit[]> {
@@ -219,18 +221,34 @@ export async function syncUnitsFromSupabase(force = false): Promise<HcmuteUnit[]
 }
 
 export async function saveServerUnitsList(units: HcmuteUnit[]): Promise<HcmuteUnit[]> {
+  await persistUnitsToSupabase(units);
   memoryUnits = [...units];
   persistLocalUnits();
-  await persistUnitsToSupabase(units);
+  invalidateCacheTags(['units', 'overview-stats', 'unit-monitor']);
   return memoryUnits;
 }
 
 export async function upsertServerUnit(unit: HcmuteUnit, originalCode?: string): Promise<{ units: HcmuteUnit[]; oldUnit: HcmuteUnit | null }> {
   const current = [...getServerUnits()];
   const normCode = unit.code.trim().toUpperCase();
+  const lookupCode = (originalCode || normCode).trim().toUpperCase();
+  const idx = current.findIndex((u) => u.code.toUpperCase() === lookupCode);
+  const oldUnit = idx >= 0 ? current[idx] : null;
+
+  if (originalCode && lookupCode !== normCode) {
+    const duplicateIdx = current.findIndex((u) => u.code.toUpperCase() === normCode);
+    if (duplicateIdx >= 0 && duplicateIdx !== idx) {
+      throw Object.assign(
+        new Error(`Mã đơn vị mới [${normCode}] đã tồn tại trong danh mục đang hoạt động.`),
+        { code: 'UNIT_CODE_ALREADY_EXISTS', status: 409 }
+      );
+    }
+  }
+
   const clean: HcmuteUnit = {
     ...unit,
     code: normCode,
+    immutableUnitId: unit.immutableUnitId || oldUnit?.immutableUnitId || lookupCode,
     nameVi: unit.nameVi.trim(),
     nameEn: (unit.nameEn || unit.nameVi).trim(),
     domain: unit.domain?.trim() || `${normCode.toLowerCase()}.hcmute.edu.vn`,
@@ -238,9 +256,6 @@ export async function upsertServerUnit(unit: HcmuteUnit, originalCode?: string):
     headTitleEn: unit.headTitleEn?.trim() || 'Head of Department',
     defaultStaffCount: Number(unit.defaultStaffCount) || 10
   };
-  const lookupCode = (originalCode || normCode).toUpperCase();
-  const idx = current.findIndex((u) => u.code.toUpperCase() === lookupCode);
-  const oldUnit = idx >= 0 ? current[idx] : null;
   if (idx >= 0) current[idx] = clean;
   else current.unshift(clean);
   await saveServerUnitsList(current);

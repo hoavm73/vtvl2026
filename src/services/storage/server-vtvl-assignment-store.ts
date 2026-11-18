@@ -55,6 +55,14 @@ function persistLocalAssignments(list: UserVtvlAssignment[]): void {
   }
 }
 
+export function getRawAssignmentsSnapshot(): UserVtvlAssignment[] {
+  return JSON.parse(JSON.stringify(loadLocalAssignments())) as UserVtvlAssignment[];
+}
+
+export function commitAssignmentsSnapshot(list: UserVtvlAssignment[]): void {
+  persistLocalAssignments(list);
+}
+
 export async function syncVtvlAssignmentsFromSupabase(): Promise<void> {
   if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
   try {

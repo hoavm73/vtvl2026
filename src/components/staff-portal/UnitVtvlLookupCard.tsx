@@ -107,9 +107,12 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
       {/* Thanh tìm kiếm & lọc nhanh */}
       <div className="space-y-2.5">
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" />
+          <label htmlFor="unit-vtvl-lookup-search" className="sr-only">Tìm kiếm VTVL theo tên, mã hiệu hoặc ngạch chức danh</label>
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" aria-hidden="true" />
           <input
+            id="unit-vtvl-lookup-search"
             type="text"
+            aria-label="Tìm theo tên VTVL, mã hiệu, ngạch chức danh"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm theo tên VTVL, mã hiệu, ngạch chức danh..."

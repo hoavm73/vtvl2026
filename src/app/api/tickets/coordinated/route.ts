@@ -13,6 +13,7 @@ import {
   syncWorkRelationshipsFromSupabase
 } from '@/services/storage/server-work-relationship-store';
 import { resolveUnitCodeSafe } from '@/services/tickets/vtvl-coordination-helpers';
+import { invalidateCacheTags } from '@/services/storage/runtime-cache';
 import {
   queryProposedTaskDetailForUser,
   queryProposedTasksForUser
@@ -120,6 +121,7 @@ export async function PATCH(req: NextRequest) {
       approved: body.approved !== false,
       actorEmail: caller.email
     });
+    invalidateCacheTags(['coordination']);
     return NextResponse.json({ ok: true, relationship: updated });
   } catch {
     return NextResponse.json({ error: 'Không thể cập nhật trạng thái phê duyệt mối quan hệ công việc.' }, { status: 500 });

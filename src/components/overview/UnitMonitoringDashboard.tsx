@@ -181,7 +181,7 @@ export function UnitMonitoringDashboard() {
               aria-label="Chọn đơn vị cần theo dõi"
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="h-9.5 px-3 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 w-full sm:w-auto sm:max-w-[260px] min-w-0 flex-1 sm:flex-initial"
+              className="min-h-[42px] sm:h-9.5 px-3 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 w-full sm:w-auto sm:min-w-[210px] sm:max-w-[270px] order-last sm:order-none"
             >
               <option value="ALL">Lọc theo từng đơn vị…</option>
               {HCMUTE_UNITS.map((u) => (
@@ -208,8 +208,15 @@ export function UnitMonitoringDashboard() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-[#f4212e]">
-            {error}
+          <div role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#b42318]">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={fetchMonitorData}
+              className="px-3 h-8 rounded-lg bg-[#b42318] hover:bg-[#991b1b] text-white text-xs font-semibold cursor-pointer shrink-0"
+            >
+              Thử lại
+            </button>
           </div>
         )}
 

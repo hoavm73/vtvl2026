@@ -113,18 +113,23 @@ export function AdminUnitsTab() {
       <div className="flex flex-wrap items-center justify-between gap-2.5 min-h-[48px] sm:min-h-[52px] min-w-0">
         <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
           <div className="relative flex-1 min-w-0 sm:max-w-md w-full sm:w-auto">
-            <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" />
+            <label htmlFor="admin-unit-search" className="sr-only">Tìm theo mã đơn vị hoặc tên đơn vị</label>
+            <Search className="w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
             <input
+              id="admin-unit-search"
               type="text"
+              aria-label="Tìm theo mã đơn vị hoặc tên đơn vị"
               value={params.uq}
               onChange={(e) => { setParam('uq', e.target.value); setField('limit', e.target.value.trim() ? 39 : 10); }}
               placeholder="Tìm theo mã đơn vị hoặc tên đơn vị..."
-              className="w-full h-10 pl-9 pr-3 text-sm sm:text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#004776] font-medium focus:ring-2 focus:ring-[#004776] focus:outline-none"
+              className="w-full h-11 sm:h-10 pl-9 pr-3 text-sm sm:text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#004776] font-medium focus:ring-2 focus:ring-[#004776] focus:outline-none"
             />
           </div>
 
           <div className="relative flex items-center w-full sm:w-56 min-w-0">
             <ShadcnSelect
+              id="admin-unit-group-filter"
+              ariaLabel="Lọc theo khối phân nhóm đơn vị"
               value={params.ugroup}
               onValueChange={(v) => { setParam('ugroup', v); setField('limit', 10); }}
               options={[
@@ -235,7 +240,8 @@ export function AdminUnitsTab() {
                       <button
                         type="button"
                         onClick={() => handleEdit(u)}
-                        className="p-1.5 text-[#004776] hover:bg-[#e2e8f0] rounded-lg transition-colors cursor-pointer border border-[#cbd5e1]"
+                        aria-label={`Chỉnh sửa đơn vị ${u.code}`}
+                        className="p-2 text-[#004776] hover:bg-[#e2e8f0] rounded-lg transition-colors cursor-pointer border border-[#cbd5e1]"
                         title="Chỉnh sửa đơn vị"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -244,7 +250,8 @@ export function AdminUnitsTab() {
                       <button
                         type="button"
                         onClick={() => handleDelete(u.code)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-red-200"
+                        aria-label={`Xóa đơn vị ${u.code}`}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-red-200"
                         title="Xóa đơn vị"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

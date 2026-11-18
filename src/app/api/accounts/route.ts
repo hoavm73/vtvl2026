@@ -17,7 +17,9 @@ import {
   getCallerSession,
   generateUserSessionToken,
   setUserSessionCookie,
-  USER_SESSION_COOKIE_NAME
+  USER_SESSION_COOKIE_NAME,
+  DEFAULT_SESSION_TTL_HOURS,
+  DEFAULT_SESSION_MAX_AGE_SECONDS
 } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
@@ -125,7 +127,8 @@ export async function POST(req: NextRequest) {
     const sessionToken = generateUserSessionToken({
       email: rawAccount.email,
       role: rawAccount.role,
-      unitCode: rawAccount.unitCode
+      unitCode: rawAccount.unitCode,
+      ttlHours: DEFAULT_SESSION_TTL_HOURS
     });
     await setUserSessionCookie(sessionToken);
 
@@ -136,7 +139,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60
+      maxAge: DEFAULT_SESSION_MAX_AGE_SECONDS
     });
     return res;
   } catch (err: unknown) {
@@ -226,7 +229,8 @@ export async function PATCH(req: NextRequest) {
     const sessionToken = generateUserSessionToken({
       email: rawAccount.email,
       role: rawAccount.role,
-      unitCode: rawAccount.unitCode
+      unitCode: rawAccount.unitCode,
+      ttlHours: DEFAULT_SESSION_TTL_HOURS
     });
     await setUserSessionCookie(sessionToken);
 
@@ -237,7 +241,7 @@ export async function PATCH(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60
+      maxAge: DEFAULT_SESSION_MAX_AGE_SECONDS
     });
     return res;
   } catch (err: unknown) {

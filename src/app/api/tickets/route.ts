@@ -15,7 +15,7 @@ import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/se
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { executePatchTicketAction } from '@/services/tickets/ticket-workflow-handlers';
 import { compensateRemoveCoordinationProjection, syncSubmittedCoordinationProjection } from '@/services/tickets/vtvl-coordination-service';
-import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
+import { normalizeCoordinatedVtvls, resolveUnitCodeSafe } from '@/services/tickets/vtvl-coordination-helpers';
 import { computeWorkRelationshipsAndEnrichProposals } from '@/services/storage/server-work-relationship-store';
 
 function handleRouteError(err: unknown, defaultMessage: string) {
@@ -71,19 +71,22 @@ export async function GET(req: NextRequest) {
   const unitCodeParam = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
   if (!caller.isAdmin && unitCodeParam && unitCodeParam !== caller.unitCode) return NextResponse.json({ error: 'Bạn không có quyền truy cập dữ liệu của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
   const isAllUnits = caller.isAdmin && unitCodeParam === 'ALL';
-  const unit = findHcmuteUnit(caller.isAdmin && unitCodeParam && !isAllUnits ? unitCodeParam : caller.unitCode);
-  await syncTicketsFromSupabase(isAllUnits ? undefined : unit.code);
-  await syncServerWorkbooksFromSupabase(true);
-  const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-  if (!isAllUnits) { await syncTicketsFromWorkbook(wb.data, unit.code); await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0); }
-  const latestWb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role);
-  const myTickets = getTicketsByOwner(caller.email, unit.code), rawUnitTickets = getTicketsByUnit(isAllUnits ? 'ALL' : unit.code);
+  const requestedCode = caller.isAdmin && unitCodeParam && !isAllUnits ? resolveUnitCodeSafe(unitCodeParam) : caller.unitCode;
+  const unit = findHcmuteUnit(requestedCode);
+  const queryCode = isAllUnits ? 'ALL' : (caller.isAdmin && unitCodeParam ? requestedCode : unit.code);
+  const isKnownUnit = isAllUnits || unit.code.toUpperCase() === queryCode.toUpperCase();
+  await syncTicketsFromSupabase(isAllUnits ? undefined : queryCode);
+  if (isKnownUnit) await syncServerWorkbooksFromSupabase(true);
+  const wb = isKnownUnit ? getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role) : null;
+  if (!isAllUnits && wb) { await syncTicketsFromWorkbook(wb.data, unit.code); await reconcileApprovedUnitTicketsToWorkbook(unit.code, caller.email).catch(() => 0); }
+  const latestWb = isKnownUnit ? getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', caller.email, caller.role) : null;
+  const myTickets = getTicketsByOwner(caller.email, queryCode === 'ALL' ? unit.code : queryCode), rawUnitTickets = getTicketsByUnit(queryCode);
   const unitTickets = caller.isAdmin ? rawUnitTickets : rawUnitTickets.filter((t) => normalizeEmail(t.ownerEmail) === normalizeEmail(caller.email) || toCanonicalStatus(t.status) !== 'draft');
 
   return NextResponse.json({
-    myTickets, unitTickets, unitCode: unit.code, unitNameVi: unit.nameVi,
-    a1Missions: latestWb.data.A1 || [], c1Vtvls: latestWb.data.C1 || [],
-    unitA2Tasks: latestWb.data.A2 || [], unitB1Volumes: latestWb.data.B1 || []
+    myTickets, unitTickets, unitCode: queryCode === 'ALL' ? unit.code : queryCode, unitNameVi: isKnownUnit ? unit.nameVi : queryCode,
+    a1Missions: latestWb?.data.A1 || [], c1Vtvls: latestWb?.data.C1 || [],
+    unitA2Tasks: latestWb?.data.A2 || [], unitB1Volumes: latestWb?.data.B1 || []
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
 

@@ -1,4 +1,8 @@
-import { findHcmuteUnit, QD2266_UNIT_NAMES } from '@/configs/hcmute-units';
+import {
+  getActiveHcmuteUnits,
+  QD2266_UNIT_NAMES,
+  UNIT_CODE_ALIASES
+} from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import {
   CoordinatedVtvlEntry,
@@ -17,21 +21,28 @@ export function normalizeCode(val: unknown): string {
 export function resolveUnitCodeSafe(code: string): string {
   const clean = normalizeCode(code);
   if (!clean) return '';
+  if (clean === 'BGH' || clean === 'BAN GIÁM HIỆU') return 'BGH';
+  const alias = UNIT_CODE_ALIASES[clean];
+  if (alias) return alias;
   try {
-    return findHcmuteUnit(clean).code;
-  } catch {
-    return clean;
-  }
+    const units = getActiveHcmuteUnits();
+    const direct = units.find((u) => u.code.toUpperCase() === clean);
+    if (direct) return direct.code.toUpperCase();
+    const byName = units.find((u) => u.nameVi.toUpperCase() === clean);
+    if (byName) return byName.code.toUpperCase();
+  } catch { /* fallback */ }
+  return clean;
 }
 
 export function resolveUnitNameSafe(unitCode: string): string {
   const clean = resolveUnitCodeSafe(unitCode);
   if (!clean) return '';
   try {
-    return findHcmuteUnit(clean).nameVi;
-  } catch {
-    return QD2266_UNIT_NAMES[clean] || clean;
-  }
+    const units = getActiveHcmuteUnits();
+    const direct = units.find((u) => u.code.toUpperCase() === clean);
+    if (direct) return direct.nameVi;
+  } catch { /* fallback */ }
+  return QD2266_UNIT_NAMES[clean] || clean;
 }
 
 export function resolveCatalogVtvlName(maVtvl: string): string {

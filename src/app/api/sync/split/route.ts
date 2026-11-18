@@ -4,12 +4,22 @@ import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import { MISSIONS_BY_GROUP } from '@/configs/hcmute-hd07-catalog';
 import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { getWorkbookById, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+import { invalidateCacheTags } from '@/services/storage/runtime-cache';
+import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
 export async function POST(req: Request) {
   const caller = await getCallerSession(req);
   if (!caller.isAuthenticated) {
     return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
+  }
+  const sizeCheck = checkPayloadSizeLimit(req, MAX_WORKBOOK_PAYLOAD_BYTES);
+  if (!sizeCheck.allowed) {
+    return NextResponse.json(
+      { error: 'Dung lượng dữ liệu đồng bộ vượt quá giới hạn 5MB.', code: 'PAYLOAD_TOO_LARGE' },
+      { status: 413 }
+    );
   }
   try {
     const body = await req.json();
@@ -138,6 +148,12 @@ export async function POST(req: Request) {
       }
     }
 
+    await syncServerWorkbooksFromSupabase().catch(() => {});
+    const existingWb = getWorkbookById(`wb_${summary.unitCode}_2026`);
+    const preservedServerWorkbook = existingWb
+      ? { ...existingWb, revisions: Array.isArray(existingWb.revisions) ? existingWb.revisions.slice(0, 3) : [] }
+      : undefined;
+
     await postServerRestRequired(
       't_tien_do',
       {
@@ -152,6 +168,7 @@ export async function POST(req: Request) {
         chuc_vu_nguoi_thuc_hien: summary.actorTitle || caller.role,
         trang_thai_ra_soat: 'Đã khởi tạo và đồng bộ qua API máy chủ',
         du_lieu_ho_so_json: {
+          ...(preservedServerWorkbook ? { serverWorkbook: preservedServerWorkbook } : {}),
           unitFileName: summary.unitFileName,
           actorEmail: caller.email,
           actorTitle: summary.actorTitle || caller.role,
@@ -160,6 +177,8 @@ export async function POST(req: Request) {
       },
       'ma_don_vi'
     );
+
+    invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
 
     return NextResponse.json({ success: true, message: 'Đồng bộ hồ sơ máy chủ thành công.' });
   } catch (error: unknown) {

@@ -6,16 +6,36 @@ export function replaceUnitCodePrefix(code: string | undefined | null, oldCode: 
   if (!code) return '';
   const s = String(code).trim();
   const upper = s.toUpperCase();
-  const oldUpper = oldCode.toUpperCase();
-  const newUpper = newCode.toUpperCase();
+  const oldUpper = oldCode.trim().toUpperCase();
+  const newUpper = newCode.trim().toUpperCase();
+  if (!oldUpper || !newUpper) return s;
 
   if (upper.startsWith(`${oldUpper}.`)) {
     return `${newUpper}.${s.slice(oldUpper.length + 1)}`;
+  }
+  if (upper.startsWith(`${oldUpper}-`)) {
+    return `${newUpper}-${s.slice(oldUpper.length + 1)}`;
   }
   if (upper === oldUpper) {
     return newUpper;
   }
   return s;
+}
+
+export function replaceUnitCodeList(csvCodes: string | undefined | null, oldCode: string, newCode: string): string {
+  if (!csvCodes) return '';
+  const raw = String(csvCodes);
+  const parts = raw.split(',');
+  if (parts.length <= 1) {
+    return replaceUnitCodePrefix(raw, oldCode, newCode);
+  }
+  return parts
+    .map((part) => {
+      const trimmed = part.trim();
+      return trimmed ? replaceUnitCodePrefix(trimmed, oldCode, newCode) : '';
+    })
+    .filter(Boolean)
+    .join(', ');
 }
 
 export function migrateGridRow(
@@ -35,6 +55,9 @@ export function migrateGridRow(
   }
   if (updated.maVtvl) {
     updated.maVtvl = replaceUnitCodePrefix(String(updated.maVtvl), oldCode, newCode);
+  }
+  if (updated.maVtvlPhoiHop) {
+    updated.maVtvlPhoiHop = replaceUnitCodeList(String(updated.maVtvlPhoiHop), oldCode, newCode);
   }
   if (updated.maDonVi && String(updated.maDonVi).toUpperCase() === oldCode.toUpperCase()) {
     updated.maDonVi = newCode.toUpperCase();
@@ -95,7 +118,8 @@ export function syncUnitCodeAndNameInBrowser(
   oldCode: string,
   newCode: string,
   oldNameVi: string,
-  newNameVi: string
+  newNameVi: string,
+  skipRemoteSync = false
 ): void {
   if (typeof window === 'undefined') return;
   const cOld = oldCode.trim().toUpperCase();
@@ -198,6 +222,8 @@ export function syncUnitCodeAndNameInBrowser(
   } catch {
     // ignore
   }
+
+  if (skipRemoteSync) return;
 
   const syncHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
   try {

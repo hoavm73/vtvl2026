@@ -109,15 +109,16 @@ export function UnitTicketsFilterBar({
         <div className="flex items-center gap-2">{renderHeader()}</div>
         {showUnitFilter && onUnitFilterChange && (
           <div className="flex items-center gap-2 min-w-[240px] sm:min-w-[320px]">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#004776] whitespace-nowrap">
+            <label htmlFor="unit-tickets-unit-filter" className="inline-flex items-center gap-1 text-xs font-bold text-[#004776] whitespace-nowrap">
               <Building2 className="w-3.5 h-3.5 text-[#006cee]" />
               <span>Đơn vị:</span>
-            </span>
+            </label>
             <select
+              id="unit-tickets-unit-filter"
               value={unitFilter}
               onChange={(e) => onUnitFilterChange(e.target.value)}
               aria-label="Lọc phiếu theo đơn vị"
-              className="flex-1 h-8.5 px-2.5 text-xs font-semibold rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none cursor-pointer"
+              className="flex-1 min-h-[40px] sm:h-8.5 px-2.5 text-xs font-semibold rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none cursor-pointer"
             >
               <option value="ALL">Tất cả 39 đơn vị toàn trường ({totalAllUnitsCount} phiếu)</option>
               {HCMUTE_UNITS.map((u) => {
@@ -136,13 +137,14 @@ export function UnitTicketsFilterBar({
       {mode === 'pending' && (
         <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input
               type="text"
+              aria-label="Tìm phiếu chờ duyệt theo mã công việc, tên việc hoặc người kê khai"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Tìm theo mã công việc, tên việc, người kê khai..."
-              className="w-full h-8 pl-8 pr-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
+              className="w-full min-h-[40px] sm:h-8 pl-8 pr-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -162,13 +164,14 @@ export function UnitTicketsFilterBar({
       {mode === 'approved' && (
         <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input
               type="text"
+              aria-label="Tìm phiếu đã duyệt theo mã, tên việc hoặc người kê khai"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Tìm phiếu đã duyệt theo mã, tên việc, người kê khai..."
-              className="w-full h-8 pl-8 pr-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
+              className="w-full min-h-[40px] sm:h-8 pl-8 pr-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -188,16 +191,17 @@ export function UnitTicketsFilterBar({
       {mode === 'all' && (
         <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input
               type="text"
+              aria-label="Tìm theo tên việc, mã công việc hoặc người kê khai"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Tìm theo tên việc, mã, người..."
               className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
             />
           </div>
-          <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
+          <select aria-label="Lọc theo trạng thái phiếu" value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả trạng thái</option>
             <option value="submitted">Đã nộp</option>
             <option value="resubmitted">Đã nộp lại</option>
@@ -205,11 +209,11 @@ export function UnitTicketsFilterBar({
             <option value="changes_requested">Yêu cầu bổ sung</option>
             <option value="draft">Nháp</option>
           </select>
-          <select value={ownerFilter} onChange={(e) => onOwnerFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
+          <select aria-label="Lọc theo người kê khai" value={ownerFilter} onChange={(e) => onOwnerFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả người kê khai</option>
             {owners.map((o) => (<option key={o} value={o}>{o}</option>))}
           </select>
-          <select value={missionFilter} onChange={(e) => onMissionFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
+          <select aria-label="Lọc theo mã nhiệm vụ Biểu A1" value={missionFilter} onChange={(e) => onMissionFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
             <option value="ALL">Tất cả nhiệm vụ (A1)</option>
             {missions.map((m) => (<option key={m} value={m}>{m}</option>))}
           </select>

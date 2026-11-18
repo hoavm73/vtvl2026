@@ -12,6 +12,7 @@ import { getOrCreateWorkbook, normalizeEmail, syncServerWorkbooksFromSupabase } 
 import { isIsolatedLocalMode } from '@/services/storage/server-ticket-db';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
+import { invalidateCacheTags } from '@/services/storage/runtime-cache';
 import { resolveUnitCodeSafe } from '@/services/tickets/vtvl-coordination-helpers';
 
 function parsePreviewTargets(rawTargets: string, fallbackUnit: string): { targetUnitCode: string; maVtvl: string }[] {
@@ -146,6 +147,7 @@ export async function PUT(req: NextRequest) {
       items: rawItems,
       assignedBy: caller.email
     });
+    invalidateCacheTags(['coordination']);
 
     const audit = appendAuditLog({
       unitCode,

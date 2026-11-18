@@ -97,20 +97,23 @@ export function TableControlBar({
       {/* KHỐI PHẢI: Ô tìm kiếm + Menu Tùy chọn gọn (Mobile < 768px) / Nút công cụ đầy đủ (Desktop >= 768px) */}
       <div className="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto min-w-0">
         <div className="relative flex-1 md:flex-initial min-w-0">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" />
+          <label htmlFor="excel-grid-search-input" className="sr-only">Tìm trong biểu hiện tại</label>
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" aria-hidden="true" />
           <input
+            id="excel-grid-search-input"
             type="text"
+            aria-label="Tìm kiếm trong biểu hiện tại"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Tìm trong biểu…"
-            className="h-9 pl-9 pr-8 text-[13.5px] font-medium rounded-xl border border-[#cbd5e1] bg-white text-[#004776] w-full md:w-52 lg:w-60 focus:ring-2 focus:ring-[#004776]/25 focus:border-[#004776] outline-hidden"
+            className="min-h-[40px] sm:h-9 pl-9 pr-8 text-[13.5px] font-medium rounded-xl border border-[#cbd5e1] bg-white text-[#004776] w-full md:w-52 lg:w-60 focus:ring-2 focus:ring-[#004776]/25 focus:border-[#004776] outline-hidden"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => onSearchChange('')}
               aria-label="Xóa tìm kiếm"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#476885] hover:text-[#004776] cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 inline-flex items-center justify-center text-[#476885] hover:text-[#004776] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -120,10 +123,10 @@ export function TableControlBar({
         {/* Menu Tùy chọn thu gọn công cụ phụ trên điện thoại (< 768px) */}
         <div className="md:hidden shrink-0">
           <Popover>
-            <PopoverTrigger>
-              <span className={`h-9 px-2.5 inline-flex items-center gap-1 rounded-xl border text-xs font-semibold transition-colors ${isFiltered || mobileViewMode === 'table' ? 'bg-[#eef5ff] text-[#004776] border-[#006cee]' : 'border-[#d8e3ef] bg-white text-[#004776]'}`}>
+            <PopoverTrigger ariaLabel="Tùy chọn lọc và chế độ hiển thị bảng tính">
+              <span className={`min-h-[40px] px-3 inline-flex items-center gap-1 rounded-xl border text-xs font-semibold transition-colors ${isFiltered || mobileViewMode === 'table' ? 'bg-[#eef5ff] text-[#004776] border-[#006cee]' : 'border-[#d8e3ef] bg-white text-[#004776]'}`}>
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Tùy chọn</span>
+                <span>Bộ lọc</span>
               </span>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-64 p-2 space-y-1 z-40">
@@ -179,8 +182,8 @@ export function TableControlBar({
         {/* Desktop (>= 768px): giữ nguyên Filter, Mật độ, Toàn màn hình */}
         <div className="hidden md:inline-flex items-center gap-2">
           <Popover>
-            <PopoverTrigger>
-              <span aria-label="Lọc dữ liệu" title="Lọc dòng: Tất cả / Đã sửa / Chưa hoàn tất" className={`w-9 h-9 inline-flex items-center justify-center rounded-xl border transition-colors relative ${isFiltered ? 'bg-[#eef5ff] text-[#004776] border-[#004776] font-bold' : 'border-[#d8e3ef] text-[#004776] hover:bg-[#f4f7fb]'}`}>
+            <PopoverTrigger ariaLabel="Lọc dữ liệu bảng tính">
+              <span title="Lọc dòng: Tất cả / Đã sửa / Chưa hoàn tất" className={`w-9 h-9 inline-flex items-center justify-center rounded-xl border transition-colors relative ${isFiltered ? 'bg-[#eef5ff] text-[#004776] border-[#004776] font-bold' : 'border-[#d8e3ef] text-[#004776] hover:bg-[#f4f7fb]'}`}>
                 <Filter className="w-4 h-4" />
                 {isFiltered && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#004776]" />}
               </span>
@@ -199,8 +202,8 @@ export function TableControlBar({
           </Popover>
 
           <Popover>
-            <PopoverTrigger>
-              <span aria-label="Tùy chỉnh mật độ hiển thị bảng" title="Tùy chỉnh mật độ: Thoải mái hoặc Gọn" className="w-9 h-9 inline-flex items-center justify-center rounded-xl border border-[#d8e3ef] text-[#004776] hover:bg-[#f4f7fb] transition-colors">
+            <PopoverTrigger ariaLabel="Tùy chỉnh mật độ hiển thị bảng">
+              <span title="Tùy chỉnh mật độ: Thoải mái hoặc Gọn" className="w-9 h-9 inline-flex items-center justify-center rounded-xl border border-[#d8e3ef] text-[#004776] hover:bg-[#f4f7fb] transition-colors">
                 <SlidersHorizontal className="w-4 h-4" />
               </span>
             </PopoverTrigger>

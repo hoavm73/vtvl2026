@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 
 export type QueryParamValue = string | number | boolean | undefined | null;
 export type QueryParamsRecord = Record<string, QueryParamValue>;
@@ -66,15 +66,22 @@ export function useQueryFilter<TData, TParams extends QueryParamsRecord>({
   queryFn,
   syncUrl = true
 }: UseQueryFilterOptions<TData, TParams>) {
-  const [params, setParamsState] = useState<TParams>(() =>
-    syncUrl ? readUrlQueryParams(initialParams) : initialParams
-  );
+  const [params, setParamsState] = useState<TParams>(initialParams);
+  const [urlReady, setUrlReady] = useState(!syncUrl);
+  const initialParamsRef = useRef(initialParams);
+  initialParamsRef.current = initialParams;
 
   useEffect(() => {
     if (!syncUrl || typeof window === 'undefined') return;
+    setParamsState(readUrlQueryParams(initialParamsRef.current));
+    setUrlReady(true);
+  }, [syncUrl]);
+
+  useEffect(() => {
+    if (!syncUrl || !urlReady || typeof window === 'undefined') return;
     const nextUrl = buildSearchParamsString(params, initialParams);
     window.history.replaceState(null, '', nextUrl);
-  }, [params, initialParams, syncUrl]);
+  }, [params, initialParams, syncUrl, urlReady]);
 
   const setParam = useCallback(<K extends keyof TParams>(key: K, value: TParams[K]) => {
     setParamsState((prev) => ({ ...prev, [key]: value }));

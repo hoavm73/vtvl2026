@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getWorkbookById, rollbackServerWorkbookRevisionAndPersist, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+import {
+  getWorkbookById,
+  rollbackServerWorkbookRevisionAndPersist,
+  ServerRevision,
+  syncServerWorkbooksFromSupabase
+} from '@/services/storage/server-workbook-store';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { isDatabaseConfigured, prisma, toIsoString } from '@/services/storage/prisma';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -18,7 +24,37 @@ export async function GET(req: Request, context: RouteContext) {
     if (!caller.isAdmin && workbook.unitId.toUpperCase() !== caller.unitCode.toUpperCase()) {
       return NextResponse.json({ error: 'Không có quyền truy cập lịch sử đơn vị khác.', code: 'FORBIDDEN' }, { status: 403 });
     }
-    return NextResponse.json({ workbookId: id, currentRevision: workbook.currentRevision || 1, revisions: workbook.revisions || [] });
+    const revMap = new Map<number, ServerRevision>();
+    for (const r of workbook.revisions || []) {
+      revMap.set(r.revision, r);
+    }
+    if (process.env.VTVL_ISOLATED_LOCAL_STORE !== 'true' && isDatabaseConfigured()) {
+      try {
+        const dbRows = await prisma.workbook_revisions.findMany({
+          where: { workbook_id: workbook.id },
+          orderBy: { revision: 'desc' },
+          take: 15
+        });
+        for (const r of dbRows) {
+          if (!revMap.has(r.revision)) {
+            revMap.set(r.revision, {
+              id: r.id,
+              workbookId: r.workbook_id,
+              revision: r.revision,
+              data: r.data as unknown as ServerRevision['data'],
+              actorEmail: r.actor_email,
+              actorTitle: r.actor_title || undefined,
+              changeSummary: r.change_summary || undefined,
+              createdAt: toIsoString(r.created_at) || new Date().toISOString()
+            });
+          }
+        }
+      } catch {
+        // Fallback an toàn về danh sách lưu trong bộ nhớ/tệp
+      }
+    }
+    const mergedRevisions = Array.from(revMap.values()).sort((a, b) => b.revision - a.revision);
+    return NextResponse.json({ workbookId: id, currentRevision: workbook.currentRevision || 1, revisions: mergedRevisions });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Lỗi hệ thống' }, { status: 500 });
   }

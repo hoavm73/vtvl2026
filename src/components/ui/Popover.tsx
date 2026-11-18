@@ -41,7 +41,7 @@ export function usePopover() {
   return ctx;
 }
 
-export function PopoverTrigger({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function PopoverTrigger({ children, className = '', ariaLabel }: { children: React.ReactNode; className?: string; ariaLabel?: string }) {
   const ctx = usePopover();
 
   return (
@@ -52,6 +52,7 @@ export function PopoverTrigger({ children, className = '' }: { children: React.R
       role="button"
       tabIndex={0}
       aria-expanded={ctx.open}
+      aria-label={ariaLabel}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

@@ -13,7 +13,6 @@ import {
   syncServerWorkbooksFromSupabase,
   withUnitWorkbookLock
 } from './server-workbook-store';
-import { replaceUnitCodePrefix } from '@/services/units/unit-synchronizer';
 import { formatCoordinatedVtvlCodesForA2 } from '@/services/tickets/vtvl-coordination-helpers';
 import { persistTicketToSupabase } from './server-ticket-db';
 import { getTicketVersions, recordIdempotentMergeLinks } from './server-ticket-version-store';
@@ -219,25 +218,12 @@ export async function syncTicketsFromWorkbook(wbData: Record<string, GenericGrid
   if (modified) persistTickets();
 }
 
-export function migrateTicketsForUnit(oldCode: string, newCode: string): number {
-  const store = loadTickets();
-  const cOld = oldCode.trim().toUpperCase();
-  const cNew = newCode.trim().toUpperCase();
-  let count = 0;
-  for (const ticket of store.values()) {
-    if (ticket.unitCode.toUpperCase() === cOld) {
-      ticket.unitCode = cNew;
-      ticket.maNhiemVu = replaceUnitCodePrefix(ticket.maNhiemVu, cOld, cNew);
-      ticket.maCongViec = replaceUnitCodePrefix(ticket.maCongViec, cOld, cNew);
-      ticket.maVtvl = replaceUnitCodePrefix(ticket.maVtvl, cOld, cNew);
-      if (ticket.maVtvlPhoiHop) ticket.maVtvlPhoiHop = replaceUnitCodePrefix(ticket.maVtvlPhoiHop, cOld, cNew);
-      ticket.updatedAt = new Date().toISOString();
-      count++;
-    }
-  }
-  if (count > 0) persistTickets();
-  return count;
-}
+export {
+  migrateTicketsForUnit,
+  migrateTicketsForUnitDetailed,
+  type MigrateUnitOptions,
+  type UnitTicketMigrationStats
+} from './server-unit-migration';
 
 export function getTicketCounts(): { approved: number; pending: number; draft: number; total: number } {
   const store = loadTickets();

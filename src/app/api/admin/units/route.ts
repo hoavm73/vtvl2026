@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
-import { appendAuditLog } from '@/services/storage/server-audit-store';
+import {
+  appendAuditLog,
+  persistAuditLogToSupabase
+} from '@/services/storage/server-audit-store';
+import { invalidateCacheTags } from '@/services/storage/runtime-cache';
 import {
   getServerUnits,
   upsertServerUnit,
@@ -24,17 +28,26 @@ import {
   deleteWorkbookFromSupabase
 } from '@/services/storage/server-supabase-store';
 import { migrateWorkbookSheets } from '@/services/units/unit-synchronizer';
-import { migrateTicketsForUnit } from '@/services/storage/server-ticket-store';
+import { migrateTicketsForUnitDetailed } from '@/services/storage/server-ticket-store';
 
 function handleUnitsError(err: unknown, fallbackMessage: string) {
-  const errObj = err as { code?: string; status?: number };
+  const errObj = err as { code?: string; status?: number; message?: string };
   if (errObj?.code === 'DB_SERVICE_UNAVAILABLE' || errObj?.status === 503) {
     return NextResponse.json(
       { error: 'Dịch vụ cơ sở dữ liệu tạm thời chưa sẵn sàng.', code: 'DB_SERVICE_UNAVAILABLE' },
       { status: 503 }
     );
   }
-  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+  if (errObj?.status && errObj.status >= 400 && errObj.status < 500) {
+    return NextResponse.json(
+      { error: errObj.message || fallbackMessage, code: errObj.code || 'BAD_REQUEST' },
+      { status: errObj.status }
+    );
+  }
+  return NextResponse.json(
+    { error: errObj?.message || fallbackMessage, code: errObj?.code || 'INTERNAL_SERVER_ERROR' },
+    { status: errObj?.status || 500 }
+  );
 }
 
 export async function GET() {
@@ -72,17 +85,46 @@ export async function POST(req: NextRequest) {
     const normNewCode = String(unit.code).trim().toUpperCase();
     const normOldCode = originalCode ? String(originalCode).trim().toUpperCase() : normNewCode;
     const newNameVi = String(unit.nameVi).trim();
+    const currentUnits = getServerUnits();
+    const existingOldUnit = currentUnits.find((u) => u.code.toUpperCase() === normOldCode) || null;
+    const existingNewUnit = currentUnits.find((u) => u.code.toUpperCase() === normNewCode) || null;
+    const oldNameVi = existingOldUnit?.nameVi || newNameVi;
 
-    const { units, oldUnit } = await upsertServerUnit(unit, originalCode);
-    const oldNameVi = oldUnit?.nameVi || newNameVi;
+    if (
+      normOldCode !== normNewCode &&
+      existingNewUnit &&
+      existingNewUnit.immutableUnitId !== normOldCode
+    ) {
+      return NextResponse.json(
+        { error: `Mã đơn vị mới [${normNewCode}] đã tồn tại trong danh mục đang hoạt động.`, code: 'UNIT_CODE_ALREADY_EXISTS' },
+        { status: 409 }
+      );
+    }
 
-    // Nếu mã hoặc tên thay đổi: Đồng bộ dữ liệu toàn hệ thống
     let migratedAccounts = 0;
     let migratedWorkbook = false;
     let migratedTickets = 0;
 
     if (normOldCode !== normNewCode || oldNameVi !== newNameVi) {
-      // 1. Đồng bộ tài khoản
+      // 1. Thực thi transaction di chuyển phiếu, phân công VTVL & quan hệ phối hợp trước khi sửa danh mục/file cục bộ
+      const migrationStats = await migrateTicketsForUnitDetailed(normOldCode, normNewCode, {
+        newNameVi,
+        targetUnitMeta: unit,
+        actorEmail: caller.email,
+        actorRole: caller.role,
+        simulateTxFailure: Boolean(body.simulateTxFailure)
+      });
+      migratedTickets = migrationStats.migratedTickets;
+    }
+
+    const effectiveOriginal = existingOldUnit ? originalCode : (existingNewUnit ? normNewCode : originalCode);
+    const { units } = await upsertServerUnit(
+      { ...unit, immutableUnitId: unit.immutableUnitId || existingOldUnit?.immutableUnitId || normOldCode },
+      effectiveOriginal
+    );
+
+    if (normOldCode !== normNewCode || oldNameVi !== newNameVi) {
+      // 2. Đồng bộ tài khoản
       await syncAccountsFromSupabase(true);
       const accounts = getAllUserAccounts();
       for (const acc of accounts) {
@@ -96,8 +138,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Đồng bộ bảng tính 10 biểu
-      await syncServerWorkbooksFromSupabase();
+      // 3. Đồng bộ bảng tính 10 biểu
+      await syncServerWorkbooksFromSupabase(true);
       const wb = getWorkbookById(`wb_${normOldCode}_2026`);
       if (wb && !wb.isDeleted) {
         wb.unitId = normNewCode;
@@ -113,19 +155,21 @@ export async function POST(req: NextRequest) {
         }
         migratedWorkbook = true;
       }
-
-      // 3. Đồng bộ phiếu công việc
-      migratedTickets = migrateTicketsForUnit(normOldCode, normNewCode);
     }
 
-    appendAuditLog({
+    invalidateCacheTags(['units', 'accounts', 'workbooks', 'tickets', 'overview-stats', 'unit-monitor', 'coordination']);
+
+    const audit = appendAuditLog({
       unitCode: normNewCode,
       unitName: newNameVi || normNewCode,
       action: 'THAY_ĐỔI_ĐƠN_VỊ',
       details: `Cập nhật đơn vị [${normOldCode} -> ${normNewCode}]: ${newNameVi}. Đồng bộ ${migratedAccounts} tài khoản, hồ sơ biểu: ${migratedWorkbook}, ${migratedTickets} phiếu.`,
       actorEmail: caller.email,
-      actorRole: caller.role
+      actorRole: caller.role,
+      oldValues: { unitCode: normOldCode, nameVi: oldNameVi },
+      newValues: { unitCode: normNewCode, nameVi: newNameVi, migratedAccounts, migratedWorkbook, migratedTickets }
     });
+    await persistAuditLogToSupabase(audit);
 
     return NextResponse.json({
       success: true,

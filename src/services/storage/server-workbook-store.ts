@@ -238,6 +238,8 @@ export function rollbackServerWorkbookRevision(
     createdAt: now
   });
   persistStore();
+  invalidateSupabaseCache();
+  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
@@ -268,6 +270,7 @@ export async function deleteServerWorkbook(workbookId: string): Promise<boolean>
   [wb.id, wb.unitId, workbookId].forEach((k) => deleted.add(k));
   persistDeletedWbIds(); persistStore();
   await deleteWorkbookFromSupabase(wb.unitId);
+  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
   return true;
 }
 

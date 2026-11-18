@@ -135,9 +135,12 @@ export function ProposedCoordinatedSideCard({
 
       {items.length > 0 && (
         <div className="relative">
-          <Search className="w-3.5 h-3.5 text-[#476b8e] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <label htmlFor="proposed-coord-side-search" className="sr-only">Lọc nhanh nhiệm vụ đề xuất phối hợp</label>
+          <Search className="w-3.5 h-3.5 text-[#476b8e] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
+            id="proposed-coord-side-search"
             type="text"
+            aria-label="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì..."

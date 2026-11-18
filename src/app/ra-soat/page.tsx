@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UploadCloud, RefreshCw, Download, FlaskConical, AlertTriangle, CheckCircle2, FileText, Briefcase, ShieldCheck, AlertCircle, ChevronRight } from 'lucide-react';
 import { WorkflowSidebar, InfoTip } from '@/components/layout/MilestonesBar';
 import { AuditReportResult, HcmuteUnit } from '@/types/vtvl';
@@ -8,15 +8,23 @@ import { auditUnitWorkbooks, exportAuditReportToExcel } from '@/services/excel-a
 import { generateUnitFiles } from '@/services/excel-split/workbook-builder';
 import { HD07_CONSTANTS } from '@/configs/hcmute-hd07-catalog';
 import { AuditResultTabs } from '@/components/ra-soat/AuditResultTabs';
+import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getActiveUnitDefinition, getActiveUnitSession, getRealtimeDateYYYYMMDD, getSessionFilesForUnit, recordActivity, saveActiveUnitSession, setSessionRootWorkbook } from '@/services/telemetry/activity-log';
 import { syncAuditResultToSupabase } from '@/services/storage/vtvl-sync';
 
 export default function RaSoatPage() {
-  const [activeUnit, setActiveUnit] = useState<HcmuteUnit>(() => getActiveUnitDefinition());
+  const [activeUnit, setActiveUnit] = useState<HcmuteUnit>(HCMUTE_UNITS[0]);
   const [auditing, setAuditing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [report, setReport] = useState<AuditReportResult | null>(null);
   const [checkedAtTime, setCheckedAtTime] = useState<string>('23:21');
+  const isInternalSaveRef = useRef(false);
+  const lastAuditedKeyRef = useRef('');
+
+  const markInternalSave = () => {
+    isInternalSaveRef.current = true;
+    setTimeout(() => { isInternalSaveRef.current = false; }, 250);
+  };
 
   const handleAuditActiveUnit = useCallback(async (unitToAudit: HcmuteUnit, asSampleDemo = false) => {
     setAuditing(true);
@@ -34,7 +42,10 @@ export default function RaSoatPage() {
           ngachOverrides: session.ngachOverrides, customPositionNames: session.customPositionNames, customCareerLevels: session.customCareerLevels, proposedPositions: session.proposedPositions
         });
         fileToAudit = new File([split.unitBlob], split.unitFileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        if (!asSampleDemo) setSessionRootWorkbook(unitToAudit.code, split.unitBlob, split.unitFileName);
+        if (!asSampleDemo) {
+          markInternalSave();
+          setSessionRootWorkbook(unitToAudit.code, split.unitBlob, split.unitFileName);
+        }
       }
 
       const res = await auditUnitWorkbooks([fileToAudit], asSampleDemo);
@@ -51,6 +62,8 @@ export default function RaSoatPage() {
       setCheckedAtTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       setReport(res);
       if (!asSampleDemo) {
+        lastAuditedKeyRef.current = `${unitToAudit.code}::${fileToAudit.name}`;
+        markInternalSave();
         saveActiveUnitSession({ unitCode: unitToAudit.code, lastAuditFixCount: res.countsBySeverity.fix });
         void syncAuditResultToSupabase(res, unitToAudit.code);
       }
@@ -61,17 +74,23 @@ export default function RaSoatPage() {
   }, []);
 
   useEffect(() => {
-    const syncAndAudit = () => {
+    const syncAndAudit = (force = false) => {
+      if (!force && isInternalSaveRef.current) return;
       const u = getActiveUnitDefinition();
+      const cached = getSessionFilesForUnit(u.code);
+      const nextKey = `${u.code}::${cached.mergedFile?.name || cached.rootFile?.name || ''}`;
+      if (!force && lastAuditedKeyRef.current === nextKey) return;
+      lastAuditedKeyRef.current = nextKey;
       setActiveUnit(u);
       void handleAuditActiveUnit(u, false);
     };
-    syncAndAudit();
-    window.addEventListener('storage', syncAndAudit);
+    syncAndAudit(true);
+    const onExternalSync = () => syncAndAudit(false);
+    window.addEventListener('storage', onExternalSync);
     const bc = 'BroadcastChannel' in window ? new BroadcastChannel('hcmute_vtvl_realtime') : null;
-    if (bc) bc.onmessage = () => syncAndAudit();
+    if (bc) bc.onmessage = onExternalSync;
     return () => {
-      window.removeEventListener('storage', syncAndAudit);
+      window.removeEventListener('storage', onExternalSync);
       bc?.close();
     };
   }, [handleAuditActiveUnit]);
@@ -86,6 +105,7 @@ export default function RaSoatPage() {
       setCheckedAtTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       setReport(res);
       const targetCode = res.unitSummaries[0]?.unitCode || activeUnit.code;
+      markInternalSave();
       saveActiveUnitSession({ unitCode: targetCode, lastAuditFixCount: res.countsBySeverity.fix });
       void syncAuditResultToSupabase(res, targetCode);
       recordActivity(targetCode, res.unitSummaries[0]?.unitName || activeUnit.nameVi, 'RA_SOAT', `Thẩm định gộp ${res.filesCount} tệp Excel (${res.countsBySeverity.fix} mục phải sửa)`);
@@ -122,46 +142,52 @@ export default function RaSoatPage() {
         <WorkflowSidebar activeStep={8} unitCode={activeUnit.code} />
 
         <div className="flex-1 w-full space-y-4 min-w-0">
-          <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} className={`bg-white rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 shadow-2xs transition-colors ${dragOver ? 'ring-2 ring-[var(--primary)]' : ''}`}>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[var(--primary)] text-white font-semibold text-xs flex items-center justify-center shrink-0">8</span>
-                <h1 className="text-lg sm:text-xl font-semibold text-[var(--foreground)]">Bước 8/8 — Kiểm tra 10 biểu (K_KiemTra) &amp; thẩm định</h1>
-                <InfoTip title="Tự tính lại từ các cột nhập liệu & 5 thẻ kết quả">
+          <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} className={`bg-white rounded-2xl border border-[var(--border-subtle)] p-4 sm:p-6 space-y-4 shadow-2xs transition-colors ${dragOver ? 'ring-2 ring-[var(--primary)]' : ''}`}>
+            <div className="border-b border-[var(--border-subtle)] pb-4 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#eef5ff] border border-[#cfe2fc] text-xs font-bold text-[#006cee]">
+                  Bước 8/8
+                </span>
+                <InfoTip title="Tự tính lại từ các cột nhập liệu & kết quả kiểm tra chéo">
                   <p>Công cụ tự đọc các cột nhập liệu từ các tệp .xlsx để tự tính lại Giờ B1, đối chiếu Người quy đổi PP2 — Người C3 — Nhân sự D1.</p>
                 </InfoTip>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => void handleLoadRealTcnsTemplate()} disabled={auditing} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--primary)]/30 bg-[var(--surface-tint)] text-xs font-medium text-[var(--primary)] cursor-pointer">
-                  <Briefcase className="w-3.5 h-3.5" /><span>Nạp mẫu chuẩn TCNS</span>
-                </button>
-                <button type="button" onClick={() => void handleAuditActiveUnit(activeUnit, true)} disabled={auditing} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-xs font-medium text-[var(--foreground)] cursor-pointer">
-                  <FlaskConical className="w-3.5 h-3.5 text-[var(--primary)]" /><span>Xem ví dụ minh họa (X99)</span>
-                </button>
-              </div>
+              <h1 className="page-title text-[#004776]">Kiểm tra và thẩm định hồ sơ</h1>
+              <p className="text-xs sm:text-sm text-[#476885]">
+                Biểu kiểm soát <strong className="text-[#004776]">K_KiemTra</strong> — Tự động đối chiếu chéo 9 biểu mẫu theo Hướng dẫn số 07-HD/BTCTW
+              </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <section aria-label="Tệp và kiểm tra" className="rounded-xl border border-[#dbe8f5] bg-[#f8fbff] p-3.5 sm:p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#20446c]">Tệp và kiểm tra</span>
                 <div className="inline-flex items-center gap-1.5 text-xs text-[#476885]">
                   <span className="w-5 h-5 rounded bg-emerald-600 text-white font-semibold text-[10px] flex items-center justify-center shrink-0">X</span>
-                  <span className="font-medium text-[var(--foreground)] truncate max-w-[200px]">{currentFileName}</span>
-                  <span>· Lúc {checkedAtTime}</span>
+                  <span className="font-semibold text-[#004776] truncate max-w-[220px] sm:max-w-[320px]">{currentFileName}</span>
+                  <span className="tabular-nums">· Lúc {checkedAtTime}</span>
                 </div>
-                <button id="task-5-run" type="button" onClick={() => void handleAuditActiveUnit(activeUnit, false)} disabled={auditing} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white text-xs font-medium text-[var(--foreground)] cursor-pointer hover:bg-[#f8fafc]">
-                  <RefreshCw className={`w-3.5 h-3.5 text-[var(--primary)] ${auditing ? 'animate-spin' : ''}`} /><span>Kiểm tra lại</span>
-                </button>
-                <label className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-dashed border-[var(--primary)]/40 bg-[var(--surface-secondary)] text-xs font-medium text-[var(--primary)] cursor-pointer">
-                  <input type="file" multiple accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => void handleFilesSelected(e.target.files)} className="sr-only" />
-                  <UploadCloud className="w-3.5 h-3.5" /><span>Chọn tệp .xlsx khác</span>
-                </label>
               </div>
-              {report && (
-                <button id="task-5-export" type="button" onClick={() => exportAuditReportToExcel(report, report.unitSummaries[0]?.unitCode || activeUnit.code)} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#cbd5e1] bg-white text-[var(--foreground)] font-medium text-xs cursor-pointer hover:bg-[#f8fafc]">
-                  <Download className="w-3.5 h-3.5 text-[var(--primary)]" /><span>Tải báo cáo kiểm tra</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button id="task-5-run" type="button" onClick={() => void handleAuditActiveUnit(activeUnit, false)} disabled={auditing} className="inline-flex items-center gap-1.5 min-h-[40px] px-4 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold cursor-pointer shadow-2xs disabled:opacity-50">
+                  <RefreshCw className={`w-3.5 h-3.5 ${auditing ? 'animate-spin' : ''}`} /><span>Kiểm tra lại</span>
                 </button>
-              )}
-            </div>
+                <label htmlFor="audit-file-upload" className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl border border-dashed border-[#006cee]/50 bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] cursor-pointer">
+                  <input id="audit-file-upload" aria-label="Chọn tệp Excel .xlsx khác để kiểm tra" type="file" multiple accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => void handleFilesSelected(e.target.files)} className="sr-only" />
+                  <UploadCloud className="w-3.5 h-3.5 text-[#006cee]" /><span>Chọn tệp .xlsx</span>
+                </label>
+                {report && (
+                  <button id="task-5-export" type="button" onClick={() => exportAuditReportToExcel(report, report.unitSummaries[0]?.unitCode || activeUnit.code)} className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl border border-[#cbd5e1] bg-white text-[#004776] font-semibold text-xs cursor-pointer hover:bg-[#eef5ff]">
+                    <Download className="w-3.5 h-3.5 text-[#006cee]" /><span>Tải báo cáo</span>
+                  </button>
+                )}
+                <button type="button" onClick={() => void handleLoadRealTcnsTemplate()} disabled={auditing} className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] cursor-pointer">
+                  <Briefcase className="w-3.5 h-3.5 text-[#006cee]" /><span>Nạp mẫu TCNS</span>
+                </button>
+                <button type="button" onClick={() => void handleAuditActiveUnit(activeUnit, true)} disabled={auditing} className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] cursor-pointer">
+                  <FlaskConical className="w-3.5 h-3.5 text-[#006cee]" /><span>Xem ví dụ (X99)</span>
+                </button>
+              </div>
+            </section>
 
             {report && (
               <>
@@ -197,12 +223,12 @@ export default function RaSoatPage() {
                   </div>
                 )}
 
-                <div className="rounded-lg border border-[var(--border-subtle)] bg-[#f8fafc] grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)]">
-                  <div className="px-3 py-2 flex items-center justify-center gap-1.5 text-xs"><FileText className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" /><strong className="text-sm font-semibold text-[var(--foreground)] tabular-nums">{report.countsBySeverity.evidence}</strong><span className="text-[var(--ink-muted)]">cần bổ sung</span></div>
-                  <div className="px-3 py-2 flex items-center justify-center gap-1.5 text-xs"><AlertCircle className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" /><strong className="text-sm font-semibold text-[var(--foreground)] tabular-nums">{report.templateFeedbackItems.length}</strong><span className="text-[var(--ink-muted)]">lỗi biểu mẫu</span></div>
-                  <div className="px-3 py-2 flex items-center justify-center gap-1.5 text-xs"><Briefcase className="w-3.5 h-3.5 text-[var(--primary)] shrink-0" /><strong className="text-sm font-semibold text-[var(--foreground)] tabular-nums">{report.vtvlRecalcRows.length}</strong><span className="text-[var(--ink-muted)]">VTVL (C1)</span></div>
-                  <div className="px-3 py-2 flex items-center justify-center gap-1.5 text-xs"><ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${report.countsBySeverity.fix > 0 ? 'text-[var(--fix)]' : 'text-[var(--ink-subtle)]'}`} /><strong className={`text-sm font-semibold tabular-nums ${report.countsBySeverity.fix > 0 ? 'text-[var(--fix)]' : 'text-[var(--ink-subtle)]'}`}>{report.countsBySeverity.fix}</strong><span className="text-[var(--ink-muted)]">Phải sửa</span></div>
-                  <div className="col-span-2 sm:col-span-1 px-3 py-2 flex items-center justify-center gap-1.5 text-xs"><strong className={`text-sm font-semibold tabular-nums ${report.countsBySeverity.review > 0 ? 'text-[var(--primary)]' : 'text-[var(--ink-subtle)]'}`}>{report.countsBySeverity.review}</strong><span className="text-[var(--ink-muted)]">Nên xem lại</span></div>
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[#f8fafc] grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)]">
+                  <div className="px-3 py-2.5 flex items-center justify-center gap-1.5 text-xs"><ShieldCheck className={`w-4 h-4 shrink-0 ${report.countsBySeverity.fix > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`} /><strong className={`text-sm font-bold tabular-nums ${report.countsBySeverity.fix > 0 ? 'text-[#b42318]' : 'text-[#13653f]'}`}>{report.countsBySeverity.fix}</strong><span className="text-[#20446c]">Phải sửa</span></div>
+                  <div className="px-3 py-2.5 flex items-center justify-center gap-1.5 text-xs"><FileText className="w-4 h-4 text-[#c2410c] shrink-0" /><strong className="text-sm font-bold text-[#c2410c] tabular-nums">{report.countsBySeverity.evidence}</strong><span className="text-[#20446c]">Cần bổ sung</span></div>
+                  <div className="px-3 py-2.5 flex items-center justify-center gap-1.5 text-xs"><AlertCircle className="w-4 h-4 text-[#a16207] shrink-0" /><strong className="text-sm font-bold text-[#a16207] tabular-nums">{report.countsBySeverity.review}</strong><span className="text-[#20446c]">Nên xem lại</span></div>
+                  <div className="px-3 py-2.5 flex items-center justify-center gap-1.5 text-xs"><CheckCircle2 className="w-4 h-4 text-[#13653f] shrink-0" /><strong className="text-sm font-bold text-[#13653f] tabular-nums">{report.countsBySeverity.fix === 0 && report.countsBySeverity.evidence === 0 ? '100%' : report.vtvlRecalcRows.length}</strong><span className="text-[#20446c]">{report.countsBySeverity.fix === 0 && report.countsBySeverity.evidence === 0 ? 'Đạt yêu cầu' : 'VTVL (C1)'}</span></div>
+                  <div className="col-span-2 sm:col-span-1 px-3 py-2.5 flex items-center justify-center gap-1.5 text-xs"><Briefcase className="w-4 h-4 text-[#006cee] shrink-0" /><strong className="text-sm font-bold text-[#004776] tabular-nums">{report.templateFeedbackItems.length}</strong><span className="text-[#20446c]">Góp ý biểu mẫu</span></div>
                 </div>
 
                 <div id="audit-results-panel"><AuditResultTabs report={report} /></div>

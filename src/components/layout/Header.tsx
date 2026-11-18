@@ -107,7 +107,7 @@ export function Header() {
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-expanded={mobileOpen}
               aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu điều hướng'}
-              className="lg:hidden h-10 w-10 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
+              className="lg:hidden h-11 w-11 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Building2, Save, AlertCircle } from 'lucide-react';
 import { HcmuteUnit, UnitGroupKind } from '@/types/vtvl';
-import { saveAdminUnit } from '@/services/units/unit-management';
+import { getAdminUnits, saveAdminUnit } from '@/services/units/unit-management';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 
 interface AdminUnitEditModalProps {
@@ -68,6 +68,13 @@ export function AdminUnitEditModal({
     }
     if (!cleanNameVi) {
       setError('Tên tiếng Việt của đơn vị không được để trống.');
+      return;
+    }
+    const existingDup = getAdminUnits().find(
+      (u) => u.code.toUpperCase() === cleanCode && (!unit || u.code.toUpperCase() !== unit.code.toUpperCase())
+    );
+    if (existingDup) {
+      setError(`Mã đơn vị [${cleanCode}] đã tồn tại trong danh mục đang hoạt động.`);
       return;
     }
 

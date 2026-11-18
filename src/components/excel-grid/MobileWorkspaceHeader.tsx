@@ -9,7 +9,7 @@ import {
 import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { EXCEL_SHEET_METAS } from './excel-sheet-metas';
 import { HcmuteUnit } from '@/types/vtvl';
-import { getActiveHcmuteUnits } from '@/configs/hcmute-units';
+import { HCMUTE_UNITS, getActiveHcmuteUnits } from '@/configs/hcmute-units';
 import { ValidationReport } from '@/services/validation';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { SyncStatusKind, DataSourceKind, ApiSyncError } from './useOperatorSession';
@@ -50,10 +50,11 @@ interface MobileWorkspaceHeaderProps {
 export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
   const [unitSearch, setUnitSearch] = useState('');
   const [showUnitPicker, setShowUnitPicker] = useState(false);
-  const [units, setUnits] = useState<HcmuteUnit[]>(() => getActiveHcmuteUnits());
+  const [units, setUnits] = useState<HcmuteUnit[]>(HCMUTE_UNITS);
 
   useEffect(() => {
     const onUpdate = () => setUnits(getActiveHcmuteUnits());
+    onUpdate();
     window.addEventListener('vtvl-units-updated', onUpdate);
     return () => window.removeEventListener('vtvl-units-updated', onUpdate);
   }, []);
@@ -81,13 +82,14 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
 
   return (
     <div className="md:hidden w-full max-w-full min-w-0 bg-white border-b border-[#d8e3ef]">
-      <div className="flex items-center justify-between gap-1.5 px-2.5 py-2 min-h-[52px] min-w-0">
+      {/* Hàng 1 trên mobile: Tên biểu đầy đủ + Trạng thái lưu + Nút Lưu & Menu Thêm */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 min-h-[52px] min-w-0">
         {/* 1. Tên biểu */}
-        <Popover>
-          <PopoverTrigger className="min-w-0 flex-1 max-w-[45%]">
-            <span className="inline-flex items-center gap-1 h-9 px-2.5 w-full bg-[#004776] text-white rounded-xl text-xs font-bold shadow-2xs min-w-0">
-              <span className="truncate">{activeMeta.sheetName}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-white/85 shrink-0 ml-auto" />
+        <Popover className="min-w-[170px] flex-1">
+          <PopoverTrigger className="w-full min-w-0" ariaLabel={`Chọn biểu tính (đang mở ${activeMeta.sheetName})`}>
+            <span className="inline-flex items-center justify-between gap-1.5 min-h-[42px] px-3 w-full bg-[#004776] text-white rounded-xl text-xs font-bold shadow-2xs min-w-0">
+              <span className="truncate text-left">{activeMeta.sheetName}</span>
+              <ChevronDown className="w-4 h-4 text-white/85 shrink-0" />
             </span>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[min(21rem,calc(100vw-1rem))] p-2 max-h-80 overflow-y-auto z-50">
@@ -109,31 +111,32 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
           </PopoverContent>
         </Popover>
 
-        {/* 2. Trạng thái lưu */}
-        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold shrink-0 whitespace-nowrap ${statusMeta.cls}`}>
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusMeta.dot}`} />
-          <span>{statusMeta.label}</span>
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {/* 2. Trạng thái lưu */}
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold shrink-0 whitespace-nowrap ${statusMeta.cls}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusMeta.dot}`} />
+            <span>{statusMeta.label}</span>
+          </span>
 
-        {/* 3. Nút Lưu trực tiếp */}
-        {!isReadOnly ? (
-          <button
-            type="button"
-            onClick={props.onSaveNow}
-            disabled={props.syncStatus === 'saving'}
-            className="h-9 px-3 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
-          >
-            <Save className="w-3.5 h-3.5 shrink-0" />
-            <span>Lưu</span>
-          </button>
-        ) : (
-          <span className="h-8 px-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-semibold inline-flex items-center shrink-0">Chỉ xem</span>
-        )}
+          {/* 3. Nút Lưu trực tiếp */}
+          {!isReadOnly ? (
+            <button
+              type="button"
+              onClick={props.onSaveNow}
+              disabled={props.syncStatus === 'saving'}
+              className="min-h-[42px] px-3 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
+            >
+              <Save className="w-3.5 h-3.5 shrink-0" />
+              <span>Lưu</span>
+            </button>
+          ) : (
+            <span className="h-8 px-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-semibold inline-flex items-center shrink-0">Chỉ xem</span>
+          )}
 
-        {/* 4. Menu Thêm */}
-        <Popover>
-          <PopoverTrigger>
-            <span className="h-9 px-2.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f4f7fb] text-xs font-bold text-[#004776] inline-flex items-center gap-1 shrink-0">
+          {/* 4. Menu Thêm */}
+          <Popover>
+          <PopoverTrigger ariaLabel="Mở menu thao tác bảng tính">
+            <span className="min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f4f7fb] text-xs font-bold text-[#004776] inline-flex items-center gap-1 shrink-0">
               <MoreHorizontal className="w-4 h-4 shrink-0" />
               <span>Thêm</span>
             </span>
@@ -157,7 +160,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
               )}
               {canChangeUnit && showUnitPicker && (
                 <div className="pt-1 space-y-1">
-                  <input type="text" value={unitSearch} onChange={(e) => setUnitSearch(e.target.value)} placeholder="Tìm mã/tên đơn vị…" className="w-full h-8 px-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776]" />
+                  <input type="text" aria-label="Tìm mã hoặc tên đơn vị" value={unitSearch} onChange={(e) => setUnitSearch(e.target.value)} placeholder="Tìm mã/tên đơn vị…" className="w-full h-9 px-2.5 text-xs rounded-lg border border-[#cbd5e1] bg-white text-[#004776]" />
                   <div className="max-h-36 overflow-y-auto space-y-0.5">
                     {filteredUnits.map((u) => (
                       <PopoverClose key={u.code} onClick={() => { props.onUnitChange(u.code); setShowUnitPicker(false); }}>
@@ -168,6 +171,13 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
                 </div>
               )}
             </div>
+            {!isReadOnly && (
+              <PopoverClose onClick={props.onSaveNow}>
+                <div className="w-full px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-[#006cee] hover:bg-[#eef5ff]">
+                  <Save className="w-4 h-4" /><span>Lưu dữ liệu biểu ngay</span>
+                </div>
+              </PopoverClose>
+            )}
 
             <PopoverClose onClick={props.onOpenQualityModal}>
               <div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-[#004776] hover:bg-[#f4f7fb]">
@@ -220,6 +230,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
             </PopoverClose>
           </PopoverContent>
         </Popover>
+        </div>
       </div>
 
       {props.apiError && (

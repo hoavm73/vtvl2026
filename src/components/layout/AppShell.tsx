@@ -21,12 +21,8 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const { isServerVerified, serverAuthenticated } = useAuthHydration();
   const [collapsed, setCollapsed] = useState(false);
-  const [session, setSession] = useState<OperatorSession | null>(() => {
-    if (typeof window !== 'undefined') {
-      return getCurrentOperatorSession();
-    }
-    return null;
-  });
+  const [session, setSession] = useState<OperatorSession | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   // Khôi phục trạng thái thu gọn sidebar từ localStorage
   useEffect(() => {
@@ -51,6 +47,7 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     syncUnitsWithServer();
     const cur = refreshSession();
+    setSessionChecked(true);
     if (isServerVerified && !serverAuthenticated && !cur && pathname !== '/login') {
       router.replace('/login');
     }
@@ -116,7 +113,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
           <div className="flex items-center gap-2 text-sm font-semibold text-[#004776] mb-1">
             <span className="w-4 h-4 border-2 border-[#0072BC] border-t-transparent rounded-full animate-spin" />
-            <span>Đang chuyển hướng đến Cổng đăng nhập...</span>
+            <span>{sessionChecked ? 'Đang chuyển hướng đến Cổng đăng nhập...' : 'Đang khởi tạo phiên làm việc...'}</span>
           </div>
           <p className="text-xs text-[#64748b]">
             Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)

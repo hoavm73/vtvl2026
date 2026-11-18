@@ -9,9 +9,16 @@ import { generateAdminToken, setServerAdminCookie } from '@/services/storage/ser
 import {
   generateUserSessionToken,
   setUserSessionCookie,
-  USER_SESSION_COOKIE_NAME
+  USER_SESSION_COOKIE_NAME,
+  DEFAULT_SESSION_TTL_HOURS,
+  DEFAULT_SESSION_MAX_AGE_SECONDS
 } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
+import {
+  checkAuthRateLimit,
+  recordAuthFailure,
+  clearAuthFailures
+} from '@/services/auth/rate-limiter';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,10 +33,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const rateCheck = checkAuthRateLimit(req, 'user_login', email);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          code: 'RATE_LIMITED',
+          retryAfterSeconds: rateCheck.retryAfterSeconds
+        },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
+
     await syncAccountsFromSupabase();
     const existing = getUserAccountByEmail(email);
 
     if (!existing) {
+      recordAuthFailure(req, 'user_login', email);
       return NextResponse.json(
         { error: 'Tài khoản chưa được khởi tạo trong hệ thống. Vui lòng đăng nhập bằng Google (@hcmute.edu.vn) hoặc liên hệ Phòng TCNS.' },
         { status: 401 }
@@ -45,17 +65,20 @@ export async function POST(req: NextRequest) {
 
     const verified = await verifyUserPassword(email, password);
     if (!verified) {
+      recordAuthFailure(req, 'user_login', email);
       return NextResponse.json(
         { error: 'Mật khẩu không chính xác. Nếu dùng Google Workspace HCM-UTE, vui lòng chọn nút Đăng nhập bằng Google.' },
         { status: 401 }
       );
     }
 
+    clearAuthFailures(req, 'user_login', email);
+
     const sessionToken = generateUserSessionToken({
       email: verified.email,
       role: verified.role,
       unitCode: verified.unitCode,
-      ttlHours: 168
+      ttlHours: DEFAULT_SESSION_TTL_HOURS
     });
     await setUserSessionCookie(sessionToken);
 
@@ -87,7 +110,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60
+      maxAge: DEFAULT_SESSION_MAX_AGE_SECONDS
     });
 
     return res;

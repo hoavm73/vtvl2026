@@ -62,7 +62,7 @@ export function UserProfilePopover() {
     return () => window.removeEventListener('vtvl-operator-changed', handleSessionChange);
   }, []);
 
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/bang-tinh';
+  const currentPath = pathname || '/bang-tinh';
 
   const handleLogout = async () => {
     setIsProfileOpen(false);
@@ -106,7 +106,7 @@ export function UserProfilePopover() {
     return (
       <>
         <Popover>
-          <PopoverTrigger>
+          <PopoverTrigger ariaLabel="Mở menu đăng nhập tài khoản HCM-UTE">
             <span className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] text-sm font-semibold text-[#004776] shadow-2xs transition-all cursor-pointer">
               <GoogleLogoSvg className="w-4 h-4" />
               <span className="hidden sm:inline">Đăng nhập</span>
@@ -155,7 +155,7 @@ export function UserProfilePopover() {
   return (
     <>
       <Popover>
-        <PopoverTrigger>
+        <PopoverTrigger ariaLabel={`Mở hồ sơ tài khoản ${label}`}>
           <span className="inline-flex items-center gap-2 md:gap-2.5 h-10 px-1.5 md:pl-1.5 md:pr-3 rounded-full border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer">
             {session.avatarUrl ? (
               <img src={session.avatarUrl} alt={label} className="w-7 h-7 rounded-full object-cover shrink-0" />
@@ -203,11 +203,11 @@ export function UserProfilePopover() {
 
           {isAdmin && (
             <div className="space-y-1.5">
-              <label className="flex items-center justify-between text-xs font-bold text-[#004776]">
+              <label htmlFor="quick-role-select" className="flex items-center justify-between text-xs font-bold text-[#004776]">
                 <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-[#004776]" /><span>Vai trò hệ thống</span></span>
                 {roleUpdating && <span className="text-[11px] text-[#476885]">Đang lưu…</span>}
               </label>
-              <ShadcnSelect value={activeRole} onValueChange={handleQuickRoleUpdate} options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))} size="sm" disabled={roleUpdating} />
+              <ShadcnSelect id="quick-role-select" ariaLabel="Vai trò hệ thống" value={activeRole} onValueChange={handleQuickRoleUpdate} options={ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))} size="sm" disabled={roleUpdating} />
             </div>
           )}
 

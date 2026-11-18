@@ -44,6 +44,7 @@ export {
   mergeApprovedTicketToUnitWorkbook,
   syncTicketsFromWorkbook,
   migrateTicketsForUnit,
+  migrateTicketsForUnitDetailed,
   getTicketCounts
 } from './server-ticket-merge';
 
@@ -257,20 +258,13 @@ export async function upsertTicketAndSyncUnit(
 
   const status: TicketStatus = toDisplayStatus(input.status);
   const ticketId = existing?.id || `tkt-${unit.code}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+  const normOwner = normalizeEmail(input.ownerEmail);
   const ticket: StaffWorkTicket = {
-    ...existing,
-    ...input,
-    id: ticketId,
-    unitCode: unit.code,
-    unitId: unit.code,
-    ownerEmail: normalizeEmail(input.ownerEmail),
-    ownerId: normalizeEmail(input.ownerEmail),
-    status,
-    maCongViec: resolvedTaskCode,
+    ...existing, ...input, id: ticketId, unitCode: unit.code, unitId: unit.code,
+    ownerEmail: normOwner, ownerId: normOwner, status, maCongViec: resolvedTaskCode,
     sourceTicketId: input.sourceTicketId || existing?.sourceTicketId || ticketId,
     statusHistory: input.statusHistory || existing?.statusHistory || [],
-    createdAt: existing?.createdAt || nowIso,
-    updatedAt: nowIso
+    createdAt: existing?.createdAt || nowIso, updatedAt: nowIso
   };
 
   // Bắt buộc ghi DB thành công trước khi cập nhật cache bộ nhớ (không nuốt lỗi)

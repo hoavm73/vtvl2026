@@ -60,7 +60,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
   const roleBadgeLabel = role === 'admin' ? 'Quản trị viên' : getRoleLabel(role);
 
   const baseActionCls =
-    'inline-flex items-center justify-center gap-2 h-11 sm:h-[46px] px-4 sm:px-[18px] rounded-[12px] text-[13px] sm:text-sm font-semibold whitespace-nowrap cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#004776] aria-disabled:opacity-50 aria-disabled:pointer-events-none active:scale-[0.99]';
+    'inline-flex items-center justify-center gap-2 min-h-[44px] sm:h-[46px] px-3.5 sm:px-[18px] rounded-[12px] text-[13px] sm:text-sm font-semibold whitespace-nowrap cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#004776] aria-disabled:opacity-50 aria-disabled:pointer-events-none active:scale-[0.99]';
   const whiteBtnCls = 'bg-white hover:bg-[#eef6fc] text-[#004776] font-bold shadow-xs';
   const outlineBtnCls =
     'bg-transparent hover:bg-white/12 text-white border border-white/40 hover:border-white/65';
@@ -69,7 +69,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
     <section
       id="overview-welcome-banner"
       aria-label="Thông tin tổng quan Hệ thống Vị trí việc làm 360"
-      className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(100deg,#004776_0%,#005792_52%,#0068ad_100%)] text-white shadow-[0_12px_30px_-8px_rgba(0,71,118,0.22)] px-4 py-4 sm:px-5 sm:py-5 lg:p-[32px] select-none"
+      className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] bg-[linear-gradient(100deg,#004776_0%,#005792_52%,#0068ad_100%)] text-white shadow-[0_12px_30px_-8px_rgba(0,71,118,0.22)] px-3.5 py-3.5 sm:px-5 sm:py-5 lg:p-[28px] select-none"
     >
       {/* Bộ lọc SVG tạo viền trắng sắc nét quanh logo HCM-UTE trên nền xanh thẫm */}
       <svg aria-hidden="true" className="sr-only" width="0" height="0">
@@ -93,26 +93,29 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
       />
 
       {/* Phần trên: Logo + đường phân cách dọc + 3 dòng nhận diện bên trái, ảnh cổng HCM-UTE bên phải */}
-      <div className="relative z-10 flex items-center justify-between gap-4 lg:gap-6 pb-4 sm:pb-5">
-        <div className="flex items-center gap-3.5 sm:gap-5 lg:gap-6 min-w-0 flex-1">
+      <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4 lg:gap-6 pb-3 sm:pb-5">
+        <div className="flex items-center gap-3 sm:gap-5 lg:gap-6 min-w-0 flex-1">
           <img
             src="/ute_logo.png"
             alt="Logo HCM-UTE"
             width={82}
             height={82}
-            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-[82px] lg:h-[82px] object-contain shrink-0 select-none"
+            className="w-11 h-11 sm:w-16 sm:h-16 lg:w-[82px] lg:h-[82px] object-contain shrink-0 select-none"
             style={{ filter: 'url(#hcmute-banner-logo-outline)' }}
           />
-          <div className="h-13 sm:h-15 lg:h-[76px] w-px bg-white/25 shrink-0" aria-hidden="true" />
-          <div className="min-w-0 space-y-1">
-            <p className="!text-[13px] sm:!text-[14px] lg:!text-[15px] !font-medium text-[#D6EAF7] !leading-snug">
+          <div className="h-10 sm:h-15 lg:h-[76px] w-px bg-white/25 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 space-y-0.5 sm:space-y-1">
+            <p className="!text-[12px] sm:!text-[14px] lg:!text-[15px] !font-medium text-[#D6EAF7] !leading-snug">
               Đề án vị trí việc làm 2026–2030
             </p>
-            <h1 className="!text-[24px] sm:!text-[27px] lg:!text-[34px] xl:!text-[38px] ![font-weight:800] tracking-tight text-white !leading-[1.15] break-words">
+            <h1 className="!text-[22px] sm:!text-[27px] lg:!text-[34px] xl:!text-[38px] ![font-weight:800] tracking-tight text-white !leading-[1.18] break-words">
               Hệ thống Vị trí việc làm 360
             </h1>
-            <p className="!text-[13px] sm:!text-[14px] lg:!text-[15.5px] !font-normal text-[#E4F2FC] !leading-snug break-words">
+            <p className="hidden sm:block !text-[14px] lg:!text-[15.5px] !font-normal text-[#E4F2FC] !leading-snug break-words">
               Trường Đại học Công nghệ Kỹ thuật TP. Hồ Chí Minh (HCM-UTE)
+            </p>
+            <p className="sm:hidden !text-[12px] !font-normal text-[#E4F2FC] !leading-snug line-clamp-1">
+              ĐH Công nghệ Kỹ thuật TP.HCM (HCM-UTE)
             </p>
           </div>
         </div>
@@ -131,20 +134,20 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
       </div>
 
       {/* Đường phân cách ngang trắng mờ giữa phần nhận diện và phần chào */}
-      <div className="relative z-10 border-t border-white/20 mb-4 sm:mb-5" aria-hidden="true" />
+      <div className="relative z-10 border-t border-white/20 mb-3 sm:mb-4 lg:mb-5" aria-hidden="true" />
 
       {/* Phần dưới: Lời chào & nhóm nút thao tác trực tiếp trên nền banner */}
       {isGuest ? (
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-4 gap-x-6">
-          <div className="space-y-1 min-w-0 flex-1 basis-[260px]">
-            <p className="text-base sm:text-[19px] font-bold text-white leading-snug">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-3 gap-x-6">
+          <div className="space-y-0.5 min-w-0 flex-1 basis-[240px]">
+            <p className="text-[15px] sm:text-[19px] font-bold text-white leading-snug">
               Chào mừng bạn đến với Hệ thống Vị trí việc làm 360
             </p>
-            <p className="!text-[13px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug break-words">
+            <p className="!text-[12px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug break-words">
               Trường Đại học Công nghệ Kỹ thuật TP. Hồ Chí Minh · HCM-UTE
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full [--primary:#ffffff]">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto min-w-0 max-w-full [--primary:#ffffff]">
             <Link href="/login" className={`${baseActionCls} ${whiteBtnCls}`}>
               <LogIn className="w-4 h-4 stroke-[2] shrink-0" />
               <span>Đăng nhập ngay</span>
@@ -156,57 +159,72 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
           </div>
         </div>
       ) : (
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-4 gap-x-6">
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 basis-[260px]">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-3 sm:gap-y-4 gap-x-6">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 basis-[240px]">
             {session.avatarUrl ? (
               <img
                 src={session.avatarUrl}
                 alt={rawName}
-                className="w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-[14px] object-cover shrink-0 border border-white/30 shadow-xs"
+                className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-[12px] sm:rounded-[14px] object-cover shrink-0 border border-white/30 shadow-xs"
               />
             ) : (
-              <div className="w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-[14px] bg-white text-[#004776] font-extrabold text-base sm:text-lg flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-[12px] sm:rounded-[14px] bg-white text-[#004776] font-extrabold text-sm sm:text-lg flex items-center justify-center shrink-0 shadow-xs">
                 {initials}
               </div>
             )}
 
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                <span className="text-base sm:text-[19px] font-bold text-white leading-snug break-words">
+            <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-[15px] sm:text-[19px] font-bold text-white leading-snug break-words">
                   Xin chào, {greetingName}
                 </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#c2410c]/80 text-[#fff7ed] border border-[#fdba74]/55 leading-tight shrink-0">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#c2410c]/85 text-[#fff7ed] border border-[#fdba74]/55 leading-tight shrink-0">
                   {roleBadgeLabel}
                 </span>
               </div>
-              <p className="!text-[13px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug break-words">
+              <p className="!text-[12px] sm:!text-[14px] !font-medium text-[#D6EAF7] !leading-snug line-clamp-1 sm:line-clamp-none break-words">
                 {unitNameVi}
                 {unitCode ? ` · ${unitCode}` : ''}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full [--primary:#ffffff]">
-            {role === 'admin' && (
-              <Link href="/admin" className={`${baseActionCls} ${whiteBtnCls}`}>
-                <ShieldCheck className="w-4 h-4 stroke-[2] shrink-0" />
-                <span>Trang quản trị</span>
-                <ArrowRight className="w-4 h-4 stroke-[2] shrink-0" />
+          <div className="flex flex-col gap-2 w-full md:w-auto min-w-0 max-w-full [--primary:#ffffff]">
+            <div className={`grid ${role !== 'staff' ? 'grid-cols-2' : 'grid-cols-1'} sm:flex sm:flex-wrap items-center gap-2 sm:gap-3`}>
+              {role === 'admin' && (
+                <Link href="/admin" className={`${baseActionCls} ${whiteBtnCls}`}>
+                  <ShieldCheck className="w-4 h-4 stroke-[2] shrink-0" />
+                  <span>Trang quản trị</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2] shrink-0 hidden sm:inline" />
+                </Link>
+              )}
+
+              <Link
+                href="/phieu-cong-viec"
+                className={`${baseActionCls} ${role === 'admin' ? outlineBtnCls : whiteBtnCls}`}
+              >
+                <FileText className="w-4 h-4 stroke-[2] shrink-0" />
+                <span>Phiếu công việc</span>
               </Link>
-            )}
 
-            <Link
-              href="/phieu-cong-viec"
-              className={`${baseActionCls} ${role === 'admin' ? outlineBtnCls : whiteBtnCls}`}
-            >
-              <FileText className="w-4 h-4 stroke-[2] shrink-0" />
-              <span>Phiếu công việc</span>
-            </Link>
+              {role !== 'staff' && (
+                <Link
+                  href="/bang-tinh"
+                  className={`${baseActionCls} ${outlineBtnCls} ${role === 'admin' ? '!hidden md:!inline-flex' : ''}`}
+                >
+                  <LayoutGrid className="w-4 h-4 stroke-[2] shrink-0" />
+                  <span>Bảng tính 10 biểu</span>
+                </Link>
+              )}
+            </div>
 
-            {role !== 'staff' && (
-              <Link href="/bang-tinh" className={`${baseActionCls} ${outlineBtnCls}`}>
-                <LayoutGrid className="w-4 h-4 stroke-[2] shrink-0" />
-                <span>Bảng tính 10 biểu</span>
+            {role === 'admin' && (
+              <Link
+                href="/bang-tinh"
+                className="md:hidden inline-flex items-center justify-center gap-1.5 text-xs font-medium text-[#D6EAF7] hover:text-white underline underline-offset-4 py-0.5"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Mở nhanh Bảng tính 10 biểu</span>
               </Link>
             )}
           </div>

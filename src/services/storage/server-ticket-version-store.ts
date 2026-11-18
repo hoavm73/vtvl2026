@@ -74,6 +74,15 @@ export async function withSurveySubmissionLock<T>(surveyId: string, fn: () => Pr
   return withCrossProcessLock(`survey_${surveyId}`, fn);
 }
 
+export function getAllSurveyVersionsSnapshot(): Record<string, WorkSurveyVersion[]> {
+  return JSON.parse(JSON.stringify(loadLocalVersions())) as Record<string, WorkSurveyVersion[]>;
+}
+
+export function commitAllSurveyVersionsSnapshot(nextMap: Record<string, WorkSurveyVersion[]>): void {
+  memoryVersions = nextMap;
+  persistLocalVersions();
+}
+
 export function getTicketVersions(surveyId: string): WorkSurveyVersion[] {
   const store = loadLocalVersions();
   const list = store[surveyId] || [];

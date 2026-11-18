@@ -11,6 +11,7 @@ import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
+import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -89,6 +90,13 @@ export async function PUT(req: Request, context: RouteContext) {
   }
 
   try {
+    const sizeCheck = checkPayloadSizeLimit(req, MAX_WORKBOOK_PAYLOAD_BYTES);
+    if (!sizeCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Dung lượng dữ liệu bảng tính vượt quá giới hạn 5MB.', code: 'PAYLOAD_TOO_LARGE' },
+        { status: 413 }
+      );
+    }
     const { id } = await context.params;
     const body = await req.json();
     const { data, touchedCells, baseRevision, commitMessage, participant } = body;

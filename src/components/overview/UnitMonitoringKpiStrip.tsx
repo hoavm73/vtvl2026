@@ -120,14 +120,14 @@ export function UnitMonitoringKpiStrip({
                 isSelected ? 'border-[#006cee] ring-2 ring-[#006cee]/15 bg-[#f4f9ff] shadow-xs' : 'border-[#dbe8f5] bg-white hover:border-[#b7d2ef] hover:-translate-y-0.5 hover:shadow-xs'
               }`}
             >
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[#20446c] truncate">
+              <div className="flex items-start justify-between gap-1.5">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#20446c] leading-snug break-words">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${card.dotColor}`} />
-                  <span className="truncate">{card.label}</span>
+                  <span>{card.label}</span>
                 </span>
                 {isSelected && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#006cee] text-white text-[10px] font-semibold shrink-0">
-                    <Filter className="w-2.5 h-2.5" /> Đang lọc
+                    <Filter className="w-2.5 h-2.5" /> Lọc
                   </span>
                 )}
               </div>

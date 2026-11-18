@@ -21,13 +21,21 @@ import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
 
 export default function HomePage() {
   const router = useRouter();
-  const [operator, setOperator] = useState<OperatorSession | null>(() => {
-    if (typeof window !== 'undefined') {
-      return getCurrentOperatorSession();
-    }
-    return null;
+  const [operator, setOperator] = useState<OperatorSession | null>(null);
+  const [session, setSession] = useState<ActiveUnitSession>({
+    unitCode: 'CK',
+    kind: 'khoa-vien',
+    customDate: '2026-06-17',
+    actorEmail: '',
+    actorTitle: 'Lãnh đạo đơn vị',
+    activeStep: 1,
+    wizardStage: 1,
+    lastSavedAt: '',
+    ngachOverrides: {},
+    customPositionNames: {},
+    customCareerLevels: {},
+    proposedPositions: []
   });
-  const [session, setSession] = useState<ActiveUnitSession>(() => getActiveUnitSession());
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'unit-monitor'>('overview');
 

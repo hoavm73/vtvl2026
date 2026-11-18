@@ -15,6 +15,8 @@ import { getAuthSecret, safeCompareSignature } from './account-crypto';
 
 export const USER_SESSION_COOKIE_NAME = 'hcmute_vtvl_session_token';
 export const ADMIN_COOKIE_NAME = 'hcmute_vtvl_admin_token_v2';
+export const DEFAULT_SESSION_TTL_HOURS = 168;
+export const DEFAULT_SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export interface UserSessionPayload {
   email: string;
@@ -42,7 +44,7 @@ export function generateUserSessionToken(payload: {
   ttlHours?: number;
 }): string {
   const normEmail = normalizeEmail(payload.email);
-  const ttl = payload.ttlHours || 24;
+  const ttl = payload.ttlHours || DEFAULT_SESSION_TTL_HOURS;
   const data: UserSessionPayload = {
     email: normEmail,
     role: payload.role,
@@ -89,7 +91,10 @@ export function verifyUserSessionToken(token: string): UserSessionPayload | null
   }
 }
 
-export async function setUserSessionCookie(token: string): Promise<void> {
+export async function setUserSessionCookie(
+  token: string,
+  maxAge = DEFAULT_SESSION_MAX_AGE_SECONDS
+): Promise<void> {
   try {
     const cookieStore = await cookies();
     cookieStore.set(USER_SESSION_COOKIE_NAME, token, {
@@ -97,7 +102,7 @@ export async function setUserSessionCookie(token: string): Promise<void> {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60
+      maxAge
     });
   } catch { /* ignore */ }
 }
@@ -249,43 +254,29 @@ export async function getCallerSession(req?: Request | null): Promise<CallerAuth
     const adminToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
     if (adminToken && verifyAdminToken(adminToken) !== null) {
       return {
-        isAuthenticated: true,
-        isSuspended: false,
-        email: 'tcns@hcmute.edu.vn',
-        role: 'admin',
-        unitCode: 'TCNS',
-        isAdmin: true,
-        isUnitLeader: false,
-        isStaff: false
+        isAuthenticated: true, isSuspended: false, email: 'tcns@hcmute.edu.vn',
+        role: 'admin', unitCode: 'TCNS', isAdmin: true, isUnitLeader: false, isStaff: false
       };
     }
   } catch { /* ignore */ }
-
   return unauthContext;
 }
 
-/** Ma trận quyền: Kiểm tra quyền truy cập dữ liệu của một đơn vị */
 export function canAccessUnit(caller: CallerAuthContext, targetUnitCode: string): boolean {
   if (!caller.isAuthenticated || caller.isSuspended) return false;
   if (caller.isAdmin) return true;
   return targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
 }
-
-/** Ma trận quyền: Chỉ Admin và Lãnh đạo đơn vị được sửa 10 biểu của đơn vị */
 export function canEditUnitWorkbook(caller: CallerAuthContext, targetUnitCode: string): boolean {
   if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
   if (caller.isAdmin) return true;
   return caller.isUnitLeader && targetUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
 }
-
-/** Ma trận quyền: Duyệt/trả lại phiếu (Chỉ Admin và Lãnh đạo đơn vị tương ứng) */
 export function canReviewTicket(caller: CallerAuthContext, ticketUnitCode: string): boolean {
   if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
   if (caller.isAdmin) return true;
   return caller.isUnitLeader && ticketUnitCode.trim().toUpperCase() === caller.unitCode.trim().toUpperCase();
 }
-
-/** Ma trận quyền: Quản trị tài khoản (Admin toàn trường; Lãnh đạo chỉ trong đơn vị) */
 export function canManageUnitAccounts(caller: CallerAuthContext, targetUnitCode?: string): boolean {
   if (!caller.isAuthenticated || caller.isSuspended || caller.isStaff) return false;
   if (caller.isAdmin) return true;

@@ -21,7 +21,7 @@ function getInitialUnitCode(fallback: string): string {
 }
 
 export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, initialSheet?: ExcelSheetKey) {
-  const [unitCode, setUnitCode] = useState(() => getInitialUnitCode(initialUnitCode));
+  const [unitCode, setUnitCode] = useState(initialUnitCode);
   const [orderMode, setOrderMode] = useState<SheetOrderMode>('excel');
   const [activeSheet, setActiveSheet] = useState<ExcelSheetKey>(initialSheet || 'A1');
 
@@ -31,16 +31,16 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     }
   }, [initialSheet, isAdmin]);
   const { isC1Unlocked, unlockC1, lockC1 } = useC1AdminLock();
-  const [data, setData] = useState<Record<ExcelSheetKey, GenericGridRow[]>>(() => {
+  const [data, setData] = useState<Record<ExcelSheetKey, GenericGridRow[]>>(() => buildDefaultGridWorkbook(initialUnitCode));
+  useEffect(() => {
     const code = getInitialUnitCode(initialUnitCode);
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(`hcmute_vtvl_grid_${code}`);
-        if (stored) return JSON.parse(stored);
-      } catch { /* ignore */ }
-    }
-    return buildDefaultGridWorkbook(code);
-  });
+    setUnitCode(code);
+    try {
+      const stored = localStorage.getItem(`hcmute_vtvl_grid_${code}`);
+      if (stored) { setData(JSON.parse(stored)); return; }
+    } catch { /* ignore */ }
+    if (code !== initialUnitCode) setData(buildDefaultGridWorkbook(code));
+  }, [initialUnitCode]);
   const [lastSaved, setLastSaved] = useState<string>('');
   const [lastSavedSheet, setLastSavedSheet] = useState<string>('');
   const [isExporting, setIsExporting] = useState<boolean>(false);

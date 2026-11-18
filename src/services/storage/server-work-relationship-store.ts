@@ -23,7 +23,7 @@ interface ManualApprovalRecord {
   targetLeaderApproved?: boolean; targetApprovedBy?: string; targetApprovedAt?: string;
   tcnsApproved?: boolean; tcnsApprovedBy?: string; tcnsApprovedAt?: string;
 }
-interface WorkRelationshipStoreState { manualApprovals: Record<string, ManualApprovalRecord>; relationships: Record<string, WorkRelationshipItem>; }
+export interface WorkRelationshipStoreState { manualApprovals: Record<string, ManualApprovalRecord>; relationships: Record<string, WorkRelationshipItem>; }
 
 let memoryState: WorkRelationshipStoreState | null = null;
 let supabaseTableUnavailable = false;
@@ -55,6 +55,14 @@ function persistState(state: WorkRelationshipStoreState): void {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(REL_FILE, JSON.stringify(state, null, 2), 'utf8');
   } catch { /* ignore */ }
+}
+
+export function getWorkRelationshipStateSnapshot(): WorkRelationshipStoreState {
+  return JSON.parse(JSON.stringify(loadState())) as WorkRelationshipStoreState;
+}
+
+export function commitWorkRelationshipState(state: WorkRelationshipStoreState): void {
+  persistState(state);
 }
 
 function mapRelItemToDbRow(r: WorkRelationshipItem) {

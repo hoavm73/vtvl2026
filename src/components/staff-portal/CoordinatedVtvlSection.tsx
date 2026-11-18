@@ -175,8 +175,9 @@ export function CoordinatedVtvlPreviewPanel({
 
       {(maVtvlPhoiHop.trim() || coordinatedVtvls.length > 0) && (
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-[#20446c]">Nội dung phối hợp đề xuất (nếu có)</label>
+          <label htmlFor="coord-note-main" className="text-xs font-semibold text-[#20446c]">Nội dung phối hợp đề xuất (nếu có)</label>
           <input
+            id="coord-note-main"
             type="text"
             value={coordinationNote}
             onChange={(e) => onChangeCoordinationNote(e.target.value)}
@@ -190,8 +191,10 @@ export function CoordinatedVtvlPreviewPanel({
         <div className="p-3 rounded-xl border border-[#dbeafe] bg-[#f8fbff] space-y-2.5">
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
             <div className="sm:col-span-5 space-y-1">
-              <label className="text-[11px] font-bold text-[#004776]">Đơn vị phối hợp</label>
+              <label htmlFor="coord-extra-unit" className="text-[11px] font-bold text-[#004776]">Đơn vị phối hợp</label>
               <ShadcnSelect
+                id="coord-extra-unit"
+                ariaLabel="Đơn vị phối hợp"
                 value={extraUnitCode}
                 options={unitOptions}
                 searchable={true}
@@ -203,8 +206,10 @@ export function CoordinatedVtvlPreviewPanel({
               />
             </div>
             <div className="sm:col-span-7 space-y-1">
-              <label className="text-[11px] font-bold text-[#004776]">Mã VTVL phối hợp (Biểu C1)</label>
+              <label htmlFor="coord-extra-vtvl" className="text-[11px] font-bold text-[#004776]">Mã VTVL phối hợp (Biểu C1)</label>
               <ShadcnSelect
+                id="coord-extra-vtvl"
+                ariaLabel="Mã VTVL phối hợp Biểu C1"
                 value={extraVtvlCode}
                 options={extraVtvlOptions}
                 placeholder="Chọn mã VTVL..."
@@ -213,8 +218,9 @@ export function CoordinatedVtvlPreviewPanel({
               />
             </div>
             <div className="sm:col-span-9 space-y-1">
-              <label className="text-[11px] font-semibold text-[#20446c]">Ghi chú riêng cho VTVL này (nếu có)</label>
+              <label htmlFor="coord-extra-note" className="text-[11px] font-semibold text-[#20446c]">Ghi chú riêng cho VTVL này (nếu có)</label>
               <input
+                id="coord-extra-note"
                 type="text"
                 value={extraNote}
                 onChange={(e) => setExtraNote(e.target.value)}
@@ -252,7 +258,8 @@ export function CoordinatedVtvlPreviewPanel({
               <button
                 type="button"
                 onClick={() => onChangeCoordinatedVtvls(coordinatedVtvls.filter((c) => c.id !== item.id))}
-                className="text-[#20446c] hover:text-red-600 cursor-pointer"
+                aria-label={`Gỡ mã VTVL phối hợp ${item.maVtvl}`}
+                className="text-[#20446c] hover:text-red-600 cursor-pointer min-w-[24px] min-h-[24px] inline-flex items-center justify-center"
                 title="Gỡ mã VTVL phối hợp"
               >
                 <X className="w-3 h-3" />

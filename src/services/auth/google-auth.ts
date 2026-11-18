@@ -70,6 +70,8 @@ export async function performFullLogout(redirectTo = '/login'): Promise<void> {
   if (typeof window !== 'undefined') {
     try {
       sessionStorage.removeItem('hcmute_vtvl_admin_token');
+      sessionStorage.removeItem('vtvl_c1_unlocked');
+      localStorage.removeItem('hcmute_vtvl_unit_session');
     } catch { /* ignore */ }
 
     await Promise.allSettled([

@@ -7,6 +7,11 @@ import {
   clearServerAdminCookie
 } from '@/services/storage/server-admin-auth';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import {
+  checkAuthRateLimit,
+  recordAuthFailure,
+  clearAuthFailures
+} from '@/services/auth/rate-limiter';
 
 export async function GET(req: Request) {
   const caller = await getCallerSession(req);
@@ -19,6 +24,19 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const rateCheck = checkAuthRateLimit(req, 'c1_unlock', 'c1');
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Quá nhiều lần thử mở khóa C1 thất bại. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          code: 'RATE_LIMITED',
+          retryAfterSeconds: rateCheck.retryAfterSeconds,
+          unlocked: false
+        },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
+
     const body = await req.json();
     const { password } = body;
 
@@ -31,11 +49,13 @@ export async function POST(req: Request) {
 
     const isValid = verifyAdminPassword(password.trim());
     if (!isValid) {
+      recordAuthFailure(req, 'c1_unlock', 'c1');
       return NextResponse.json(
         { error: 'Mật khẩu quản trị viên không chính xác.', unlocked: false },
         { status: 401 }
       );
     }
+    clearAuthFailures(req, 'c1_unlock', 'c1');
 
     const token = generateAdminToken();
     await setServerAdminCookie(token);

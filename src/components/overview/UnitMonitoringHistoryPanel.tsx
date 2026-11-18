@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { FileText, History, Clock, CheckCircle2, AlertTriangle, RefreshCw, ExternalLink, User } from 'lucide-react';
+import { FileText, History, Clock, CheckCircle2, AlertTriangle, RefreshCw, ExternalLink, User, ChevronDown } from 'lucide-react';
 import { MonitorTicketItem, MonitorHistoryItem, formatCompactTime, matchesMonitorSearch } from './UnitMonitoringTypes';
 import { MonitorSearchInput } from './MonitorSearchInput';
 
@@ -58,6 +58,8 @@ export function UnitMonitoringHistoryPanel({
   const [ticketSearch, setTicketSearch] = useState<string>('');
   const [historyCatFilter, setHistoryCatFilter] = useState<'ALL' | 'ticket' | 'workbook' | 'audit'>('ALL');
   const [historySearch, setHistorySearch] = useState<string>('');
+  const [ticketsExpanded, setTicketsExpanded] = useState<boolean>(true);
+  const [historyExpanded, setHistoryExpanded] = useState<boolean>(true);
 
   useEffect(() => {
     if (externalStatusSync !== undefined) setTicketStatusFilter(externalStatusSync);
@@ -106,47 +108,32 @@ export function UnitMonitoringHistoryPanel({
       <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
         <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
+            <button type="button" onClick={() => setTicketsExpanded((v) => !v)} aria-expanded={ticketsExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
-              <h3 className="text-sm font-bold text-[#004776]">
-                Phiếu khảo sát hiện có ({filteredTickets.length})
-              </h3>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">
-                {selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}
-              </span>
+              <h3 className="text-sm font-bold text-[#004776]">Phiếu khảo sát hiện có ({filteredTickets.length})</h3>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#e1edf8] text-[#20446c] shrink-0">{selectedUnit !== 'ALL' ? `[${selectedUnit}]` : 'Toàn trường'}</span>
+              <ChevronDown className={`w-4 h-4 text-[#476885] transition-transform ${ticketsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            <MonitorSearchInput value={ticketSearch} onChange={setTicketSearch} placeholder="Tìm mã CV, tên việc…" ariaLabel="Tìm kiếm phiếu khảo sát" className="w-full sm:w-[236px]" />
+          </div>
+
+          {ticketsExpanded && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {TICKET_TABS.map((tab) => {
+                const cnt = ticketTabCounts[tab.id];
+                const isActive = ticketStatusFilter === tab.id;
+                return (
+                  <button key={tab.id} type="button" onClick={() => setTicketStatusFilter(tab.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1 ${isActive ? 'bg-[#006cee] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
+                    <span>{tab.label}</span>
+                    {cnt > 0 && <span className={`text-[10px] tabular-nums ${isActive ? 'text-white/90' : 'text-[#006cee] font-bold'}`}>{cnt}</span>}
+                  </button>
+                );
+              })}
             </div>
-
-            <MonitorSearchInput
-              value={ticketSearch}
-              onChange={setTicketSearch}
-              placeholder="Tìm mã CV, tên việc…"
-              ariaLabel="Tìm kiếm phiếu khảo sát"
-              className="w-full sm:w-[236px]"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            {TICKET_TABS.map((tab) => {
-              const cnt = ticketTabCounts[tab.id];
-              const isActive = ticketStatusFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setTicketStatusFilter(tab.id)}
-                  className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1 ${
-                    isActive ? 'bg-[#006cee] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {cnt > 0 && <span className={`text-[10px] tabular-nums ${isActive ? 'text-white/90' : 'text-[#006cee] font-bold'}`}>{cnt}</span>}
-                </button>
-              );
-            })}
-          </div>
+          )}
         </div>
 
-        {filteredTickets.length === 0 ? (
+        {ticketsExpanded && (filteredTickets.length === 0 ? (
           <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có phiếu khảo sát nào khớp với bộ lọc hiện tại.</div>
         ) : (
           <div className="divide-y divide-[#eef3f8] max-h-[430px] overflow-y-auto">
@@ -221,42 +208,32 @@ export function UnitMonitoringHistoryPanel({
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* Cột phải: Dòng thời gian lịch sử hoạt động (Vertical Timeline) */}
       <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
         <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
+            <button type="button" onClick={() => setHistoryExpanded((v) => !v)} aria-expanded={historyExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <History className="w-4 h-4 text-[#006cee] shrink-0" />
-              <h3 className="text-sm font-bold text-[#004776]">Nhật ký tiến trình &amp; lịch sử ({filteredHistory.length})</h3>
+              <h3 className="text-sm font-bold text-[#004776]">Nhật ký hoạt động ({filteredHistory.length})</h3>
+              <ChevronDown className={`w-4 h-4 text-[#476885] transition-transform ${historyExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            <MonitorSearchInput value={historySearch} onChange={setHistorySearch} placeholder="Tìm đơn vị, nội dung…" ariaLabel="Tìm kiếm nhật ký tiến trình và lịch sử" className="w-full sm:w-[236px]" />
+          </div>
+          {historyExpanded && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {HISTORY_TABS.map((c) => (
+                <button key={c.id} type="button" onClick={() => setHistoryCatFilter(c.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
+                  {c.label}
+                </button>
+              ))}
             </div>
-            <MonitorSearchInput
-              value={historySearch}
-              onChange={setHistorySearch}
-              placeholder="Tìm đơn vị, nội dung…"
-              ariaLabel="Tìm kiếm nhật ký tiến trình và lịch sử"
-              className="w-full sm:w-[236px]"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {HISTORY_TABS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setHistoryCatFilter(c.id)}
-                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${
-                  historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+          )}
         </div>
 
-        {filteredHistory.length === 0 ? (
+        {historyExpanded && (filteredHistory.length === 0 ? (
           <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có bản ghi lịch sử hoạt động nào.</div>
         ) : (
           <div className="p-4 max-h-[430px] overflow-y-auto">
@@ -289,7 +266,7 @@ export function UnitMonitoringHistoryPanel({
               ))}
             </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

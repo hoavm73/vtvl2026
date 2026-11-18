@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Link2 } from 'lucide-react';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { getTicketCoordinatedVtvlBadges } from '@/services/tickets/vtvl-coordination-helpers';
@@ -42,10 +42,12 @@ export function UnitTicketsReviewList({
 }: UnitTicketsReviewListProps) {
   const isLeader = currentUserRole === 'unit_leader' || currentUserRole === 'admin';
   const isAdmin = currentUserRole === 'admin';
-  const [internalUnitFilter, setInternalUnitFilter] = useState(() => {
-    if (typeof window === 'undefined') return 'ALL';
-    return (new URLSearchParams(window.location.search).get('unitCode') || 'ALL').toUpperCase();
-  });
+  const [internalUnitFilter, setInternalUnitFilter] = useState('ALL');
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const param = (new URLSearchParams(window.location.search).get('unitCode') || 'ALL').toUpperCase();
+    setInternalUnitFilter(param);
+  }, []);
   const activeUnitFilter = controlledUnitFilter !== undefined ? controlledUnitFilter : internalUnitFilter;
   const handleUnitFilterChange = (nextUnit: string) => {
     setInternalUnitFilter(nextUnit);

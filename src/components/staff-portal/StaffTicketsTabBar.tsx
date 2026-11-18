@@ -66,7 +66,8 @@ export function StaffPortalHeaderBanner({
         <button
           type="button"
           onClick={onLogout}
-          className="h-10 px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] cursor-pointer"
+          aria-label="Đăng xuất"
+          className="min-h-[44px] min-w-[44px] px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] inline-flex items-center justify-center cursor-pointer"
           title="Đăng xuất"
         >
           <LogOut className="w-4 h-4" />
@@ -104,94 +105,107 @@ export function StaffTicketsTabBar({
   const activeCls = 'border-[#006cee] text-[#006cee]';
   const inactiveCls = 'border-transparent text-[#476b8e] hover:text-[#004776] hover:border-[#cbd5e1]';
 
+  const tabOptions: {
+    key: StaffTicketsTabKey;
+    label: string;
+    countLabel: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    badge?: string | number;
+    badgeCls?: string;
+  }[] = [
+    {
+      key: 'my', label: 'Phiếu của tôi',
+      countLabel: draftCount > 0 ? `(Nháp: ${draftCount})` : '', Icon: User,
+      badge: draftCount > 0 ? `Nháp: ${draftCount}` : undefined,
+      badgeCls: 'h-5 px-2 bg-[#eef5ff] border border-[#bfdbfe] text-[#006cee]'
+    },
+    {
+      key: 'pending', label: 'Chờ duyệt', countLabel: `(${pendingCount})`, Icon: Clock,
+      badge: pendingCount,
+      badgeCls: `min-w-[20px] h-5 px-1.5 ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
+    },
+    {
+      key: 'approved', label: 'Đã duyệt', countLabel: `(${approvedCount})`, Icon: CheckCircle2,
+      badge: approvedCount,
+      badgeCls: `min-w-[20px] h-5 px-1.5 ${approvedCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
+    },
+    { key: 'unit', label: `${isLeader ? 'Toàn bộ phiếu đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} (${unitCount})`, countLabel: '', Icon: Users },
+    {
+      key: 'proposed', label: 'Nhiệm vụ được đề xuất phối hợp', countLabel: `(${proposedCount})`, Icon: Handshake,
+      badge: proposedCount,
+      badgeCls: `min-w-[22px] h-5 px-1.5 ${proposedCount > 0 ? 'bg-[#006cee] text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
+    },
+    {
+      key: 'relationships', label: 'Mối quan hệ công việc', countLabel: `(${relationshipsCount})`, Icon: Network,
+      badge: relationshipsCount,
+      badgeCls: `min-w-[22px] h-5 px-1.5 ${relationshipsCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`
+    }
+  ];
+
   return (
-    <div className="flex flex-wrap items-center gap-1 sm:gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-1.5 rounded-t-2xl overflow-x-auto print:hidden">
-      <button
-        type="button"
-        onClick={() => onSelectTab('my')}
-        className={`${baseBtn} ${activeTab === 'my' ? activeCls : inactiveCls}`}
-      >
-        <User className="w-4 h-4 shrink-0" />
-        <span>Phiếu của tôi</span>
-        {draftCount > 0 && (
-          <span className="inline-flex items-center justify-center h-5 px-2 rounded-full bg-[#eef5ff] border border-[#bfdbfe] text-[#006cee] text-[11px] font-extrabold">
-            Nháp: {draftCount}
-          </span>
-        )}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelectTab('pending')}
-        className={`${baseBtn} ${activeTab === 'pending' ? activeCls : inactiveCls}`}
-      >
-        <Clock className="w-4 h-4 shrink-0" />
-        <span>Chờ duyệt</span>
-        <span
-          className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${
-            pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'
-          }`}
+    <div className="bg-white border border-[#cbd5e1] rounded-t-2xl overflow-hidden print:hidden">
+      {/* Mobile (< 768px): Bộ chọn chế độ xem đầy đủ, không cắt chữ + các nút tab chính */}
+      <div className="md:hidden p-3 space-y-2 border-b border-[#e2e8f0]">
+        <label htmlFor="mobile-ticket-view-mode" className="block text-xs font-semibold text-[#20446c]">
+          Chế độ xem danh sách
+        </label>
+        <select
+          id="mobile-ticket-view-mode"
+          aria-label="Chế độ xem"
+          value={activeTab}
+          onChange={(e) => onSelectTab(e.target.value as StaffTicketsTabKey)}
+          className="w-full min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-sm font-bold text-[#004776] outline-hidden focus:border-[#006cee]"
         >
-          {pendingCount}
-        </span>
-      </button>
+          {tabOptions.map((opt) => (
+            <option key={opt.key} value={opt.key}>
+              {opt.label} {opt.countLabel}
+            </option>
+          ))}
+        </select>
+        <div className="grid grid-cols-3 gap-1.5">
+          {tabOptions.slice(0, 3).map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onSelectTab(opt.key)}
+              className={`min-h-[40px] px-2 rounded-lg text-xs font-semibold border cursor-pointer truncate ${
+                activeTab === opt.key ? 'bg-[#006cee] text-white border-[#006cee]' : 'bg-white text-[#004776] border-[#d8e3ef]'
+              }`}
+            >
+              {opt.key === 'my' ? opt.label : `${opt.label} ${opt.countLabel}`}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <button
-        type="button"
-        onClick={() => onSelectTab('approved')}
-        className={`${baseBtn} ${activeTab === 'approved' ? activeCls : inactiveCls}`}
+      {/* Tablet & Desktop (>= 768px): Dải tab đầy đủ có cuộn ngang rõ ràng */}
+      <div
+        role="tablist"
+        aria-label="Chế độ xem phiếu công việc"
+        className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-1.5 overflow-x-auto no-scrollbar"
       >
-        <CheckCircle2 className="w-4 h-4 shrink-0" />
-        <span>Đã duyệt</span>
-        <span
-          className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${
-            approvedCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'
-          }`}
-        >
-          {approvedCount}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelectTab('unit')}
-        className={`${baseBtn} ${activeTab === 'unit' ? activeCls : inactiveCls}`}
-      >
-        <Users className="w-4 h-4 shrink-0" />
-        <span>{isLeader ? 'Toàn bộ phiếu đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} ({unitCount})</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelectTab('proposed')}
-        className={`${baseBtn} ${activeTab === 'proposed' ? activeCls : inactiveCls}`}
-      >
-        <Handshake className="w-4 h-4 shrink-0" />
-        <span>Nhiệm vụ được đề xuất phối hợp</span>
-        <span
-          className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${
-            proposedCount > 0 ? 'bg-[#006cee] text-white' : 'bg-[#e1edf8] text-[#20446c]'
-          }`}
-        >
-          {proposedCount}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelectTab('relationships')}
-        className={`${baseBtn} ${activeTab === 'relationships' ? activeCls : inactiveCls}`}
-      >
-        <Network className="w-4 h-4 shrink-0" />
-        <span>Mối quan hệ công việc</span>
-        <span
-          className={`inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${
-            relationshipsCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'
-          }`}
-        >
-          {relationshipsCount}
-        </span>
-      </button>
+        {tabOptions.map((opt) => {
+          const Icon = opt.Icon;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === opt.key}
+              onClick={() => onSelectTab(opt.key)}
+              className={`${baseBtn} ${activeTab === opt.key ? activeCls : inactiveCls}`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{opt.label}</span>
+              {opt.badge !== undefined && (
+                <span className={`inline-flex items-center justify-center rounded-full text-[11px] font-extrabold ${opt.badgeCls}`}>
+                  {opt.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -21,6 +21,7 @@ export interface ShadcnSelectProps {
   disabled?: boolean;
   hasError?: boolean;
   ariaLabel?: string;
+  ariaLabelledBy?: string;
   ariaDescribedBy?: string;
   size?: 'sm' | 'md' | 'cell-compact' | 'cell-comfortable';
   className?: string;
@@ -42,6 +43,7 @@ export function ShadcnSelect({
   disabled = false,
   hasError = false,
   ariaLabel,
+  ariaLabelledBy,
   ariaDescribedBy,
   size = 'md',
   className = '',
@@ -216,6 +218,7 @@ export function ShadcnSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm lựa chọn..."
+              aria-label="Tìm lựa chọn trong danh sách"
               autoFocus
               className="w-full h-8 pl-7 pr-2 text-xs rounded-md border border-[#cbd5e1] bg-[#f8fafc] text-[#004776] focus:border-[#004776] outline-hidden"
             />
@@ -271,6 +274,7 @@ export function ShadcnSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
         aria-invalid={hasError || undefined}
         aria-describedby={ariaDescribedBy}
         disabled={disabled}

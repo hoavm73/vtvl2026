@@ -12,13 +12,14 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "test": "node tests/vtvl-workflow.test.mjs && node tests/security-stress-rls.test.mjs && node tests/schema-reconciliation.test.mjs && node tests/rbac-matrix.test.mjs && node tests/work-survey-lifecycle.test.mjs && node tests/work-survey-versioning.test.mjs && node tests/vtvl-coordinated-proposals.test.mjs",
+    "test": "node tests/vtvl-workflow.test.mjs && node tests/security-stress-rls.test.mjs && node tests/schema-reconciliation.test.mjs && node tests/rbac-matrix.test.mjs && node tests/work-survey-lifecycle.test.mjs && node tests/work-survey-versioning.test.mjs && node tests/vtvl-coordinated-proposals.test.mjs && node tests/unit-code-migration-p0.test.mjs",
     "test:security": "node tests/security-stress-rls.test.mjs",
     "test:schema": "node tests/schema-reconciliation.test.mjs",
     "test:rbac": "node tests/rbac-matrix.test.mjs",
     "test:lifecycle": "node tests/work-survey-lifecycle.test.mjs",
     "test:versioning": "node tests/work-survey-versioning.test.mjs",
     "test:coordinated": "node tests/vtvl-coordinated-proposals.test.mjs",
+    "test:unit-migration": "node tests/unit-code-migration-p0.test.mjs",
     "generate:templates": "node scripts/generate-templates.mjs"
   },
   "dependencies": {

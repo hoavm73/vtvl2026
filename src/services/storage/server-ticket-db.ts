@@ -173,9 +173,9 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
 
 async function syncCoordinatedTasksToTable(ticket: StaffWorkTicket): Promise<void> {
   if (!assertTicketDbConfigured('syncCoordinatedTasks')) return;
-  await prisma.coordinated_tasks.deleteMany({ where: { ticket_id: ticket.id } });
   const list = Array.isArray(ticket.coordinatedTasks) ? ticket.coordinatedTasks : [];
   if (list.length === 0) return;
+  await prisma.coordinated_tasks.deleteMany({ where: { ticket_id: ticket.id } });
   await pgUpsertRows(
     'coordinated_tasks',
     list.map((c) => ({

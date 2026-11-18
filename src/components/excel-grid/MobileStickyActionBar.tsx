@@ -30,7 +30,8 @@ export function MobileStickyActionBar({
       <button
         type="button"
         onClick={onOpenQualityModal}
-        className={`h-10 px-3 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+        aria-label={fixCount > 0 ? `Kiểm tra chất lượng (${fixCount} mục cần sửa)` : 'Kiểm tra chất lượng dữ liệu'}
+        className={`min-h-[44px] px-3 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
           fixCount > 0
             ? 'bg-[#fdeceb] border-[#f8b4af] text-[#b42318]'
             : 'bg-[#e3f5ec] border-[#a3e2c3] text-[#13653f]'
@@ -49,13 +50,13 @@ export function MobileStickyActionBar({
         )}
       </button>
 
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         {!isReadOnly && (
           <button
             type="button"
             onClick={onSaveNow}
             disabled={isSaving}
-            className="relative h-10 px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-bold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
+            className="relative min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-bold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
           >
             <Save className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
             <span>{isSaving ? 'Đang lưu…' : 'Lưu'}</span>
@@ -69,7 +70,7 @@ export function MobileStickyActionBar({
           type="button"
           onClick={onSaveAndNext}
           disabled={!canNext}
-          className="h-10 px-3.5 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
+          className="min-h-[44px] px-4 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
         >
           <span>{isReadOnly ? 'Sang tiếp' : 'Lưu & tiếp'}</span>
           <ArrowRight className="w-3.5 h-3.5 shrink-0" />

@@ -245,6 +245,7 @@ export interface StaffWorkTicket {
   id: string;
   unitCode: string;
   unitId?: string;
+  immutableUnitId?: string;
   ownerEmail: string;
   ownerId?: string;
   ownerName: string;

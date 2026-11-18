@@ -57,27 +57,42 @@ export function saveAdminUnit(unit: HcmuteUnit, originalCode?: string): void {
   const lookupCode = (originalCode || normCode).toUpperCase();
   const existingIndex = currentUnits.findIndex((u) => u.code.toUpperCase() === lookupCode);
   const oldUnit = existingIndex >= 0 ? currentUnits[existingIndex] : null;
+  if (originalCode && lookupCode !== normCode && currentUnits.some((u, idx) => idx !== existingIndex && u.code.toUpperCase() === normCode)) {
+    return;
+  }
 
   let updatedList: HcmuteUnit[];
   if (existingIndex >= 0) {
     updatedList = [...currentUnits];
-    updatedList[existingIndex] = cleanUnit;
+    updatedList[existingIndex] = {
+      ...cleanUnit,
+      immutableUnitId: cleanUnit.immutableUnitId || oldUnit?.immutableUnitId || lookupCode
+    };
   } else {
-    updatedList = [cleanUnit, ...currentUnits];
+    updatedList = [{ ...cleanUnit, immutableUnitId: cleanUnit.immutableUnitId || normCode }, ...currentUnits];
   }
 
   try {
+    const prevSnapshot = [...currentUnits];
     localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(updatedList));
     window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: updatedList }));
-    if (oldUnit && (oldUnit.code.toUpperCase() !== normCode || oldUnit.nameVi !== cleanUnit.nameVi)) {
-      syncUnitCodeAndNameInBrowser(oldUnit.code, normCode, oldUnit.nameVi, cleanUnit.nameVi);
-    }
     fetch('/api/admin/units', {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
       body: JSON.stringify({ unit: cleanUnit, originalCode })
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) {
+          localStorage.setItem(CUSTOM_UNITS_STORAGE_KEY, JSON.stringify(prevSnapshot));
+          window.dispatchEvent(new CustomEvent(UNITS_UPDATED_EVENT, { detail: prevSnapshot }));
+          return;
+        }
+        if (oldUnit && (oldUnit.code.toUpperCase() !== normCode || oldUnit.nameVi !== cleanUnit.nameVi)) {
+          syncUnitCodeAndNameInBrowser(oldUnit.code, normCode, oldUnit.nameVi, cleanUnit.nameVi, true);
+        }
+      })
+      .catch(() => {});
   } catch {
     /* ignore localStorage errors */
   }

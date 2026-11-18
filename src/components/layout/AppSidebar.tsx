@@ -153,8 +153,10 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
         <button
           type="button"
           onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Mở rộng menu điều hướng' : 'Thu gọn menu điều hướng'}
           title={collapsed ? 'Mở rộng menu điều hướng' : 'Thu gọn menu điều hướng'}
-          className="p-1.5 rounded-lg border border-[#e2ecf7] text-[#476885] hover:text-[#004776] hover:bg-[#f4f7fb] cursor-pointer shrink-0 transition-colors"
+          className="p-2 rounded-lg border border-[#e2ecf7] text-[#476885] hover:text-[#004776] hover:bg-[#f4f7fb] cursor-pointer shrink-0 transition-colors"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>

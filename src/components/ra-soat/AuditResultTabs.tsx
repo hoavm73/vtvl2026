@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, AlertOctagon, AlertCircle, Eye, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { Search, AlertOctagon, AlertCircle, Eye, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { AuditReportResult, AuditSeverity } from '@/types/vtvl';
 import { AUDIT_RULES_CATALOG } from '@/services/excel-audit/audit-engine';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
@@ -9,28 +10,10 @@ import { useQueryFilter } from '@/services/query/use-query-filter';
 
 export type AuditTabKey = 'issues' | 'vtvl' | 'evidence' | 'template' | 'rules';
 
-export const SEVERITY_META: Record<
-  AuditSeverity,
-  { label: string; badgeClass: string; chipClass: string; icon: React.ComponentType<{ className?: string }> }
-> = {
-  fix: {
-    label: 'Phải sửa',
-    badgeClass: 'bg-[var(--fix-soft)] text-[var(--fix)] border-[var(--fix)]/25',
-    chipClass: 'bg-[var(--fix-soft)] text-[var(--fix)] border-[var(--fix)]/20',
-    icon: AlertOctagon
-  },
-  evidence: {
-    label: 'Cần bổ sung căn cứ',
-    badgeClass: 'bg-[var(--warn-soft)] text-[var(--warn)] border-[var(--warn)]/25',
-    chipClass: 'bg-[var(--warn-soft)] text-[var(--warn)] border-[var(--warn)]/20',
-    icon: AlertCircle
-  },
-  review: {
-    label: 'Nên xem lại',
-    badgeClass: 'bg-[var(--surface-tint)] text-[var(--primary)] border-[var(--primary)]/20',
-    chipClass: 'bg-[var(--surface-tint)] text-[var(--primary)] border-[var(--primary)]/20',
-    icon: Eye
-  }
+export const SEVERITY_META: Record<AuditSeverity, { label: string; badgeClass: string; chipClass: string; icon: React.ComponentType<{ className?: string }> }> = {
+  fix: { label: 'Phải sửa', badgeClass: 'bg-[#fdeceb] text-[#b42318] border-[#f8b4af]', chipClass: 'bg-[#fdeceb] text-[#b42318] border-[#f8b4af]', icon: AlertOctagon },
+  evidence: { label: 'Cần bổ sung', badgeClass: 'bg-[#ffedd5] text-[#c2410c] border-[#fdba74]', chipClass: 'bg-[#ffedd5] text-[#c2410c] border-[#fdba74]', icon: AlertCircle },
+  review: { label: 'Nên xem lại', badgeClass: 'bg-[#fef9c3] text-[#a16207] border-[#fde047]', chipClass: 'bg-[#fef9c3] text-[#a16207] border-[#fde047]', icon: Eye }
 };
 
 interface Props {
@@ -92,27 +75,20 @@ export function AuditResultTabs({ report }: Props) {
 
   return (
     <div className="space-y-3.5">
-      {/* THANH 5 THẺ (TABS) CHUYÊN SÂU */}
-      <nav role="tablist" aria-label="Sổ kết quả rà soát 5 thẻ" className="flex flex-wrap lg:flex-nowrap items-center gap-1 border-b border-[var(--border-subtle)]">
+      {/* Chọn tab trên mobile + Dải 5 tab trên Desktop */}
+      <div className="md:hidden">
+        <label htmlFor="audit-mobile-tab-select" className="block text-xs font-semibold text-[#20446c] mb-1">Chế độ xem kết quả rà soát</label>
+        <select id="audit-mobile-tab-select" aria-label="Chế độ xem kết quả rà soát" value={activeTab} onChange={(e) => setActiveTab(e.target.value as AuditTabKey)} className="w-full min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-sm font-bold text-[#004776]">
+          {tabs.map((t) => (<option key={t.key} value={t.key}>{t.label}{t.count !== undefined ? ` (${t.count})` : ''}</option>))}
+        </select>
+      </div>
+      <nav role="tablist" aria-label="Sổ kết quả rà soát 5 thẻ" className="hidden md:flex items-center gap-1 border-b border-[var(--border-subtle)] overflow-x-auto no-scrollbar">
         {tabs.map((t) => {
           const isSelected = activeTab === t.key;
           return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => setActiveTab(t.key)}
-              className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-2 whitespace-nowrap cursor-pointer transition-colors ${
-                isSelected ? 'border-[#004776] text-[#004776] font-semibold bg-white' : 'border-transparent text-[#476885] font-medium hover:bg-white/60'
-              }`}
-            >
+            <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-2 whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#004776] text-[#004776] font-semibold bg-white' : 'border-transparent text-[#476885] font-medium hover:bg-white/60'}`}>
               <span>{t.label}</span>
-              {t.count !== undefined && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#004776] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>
-                  {t.count}
-                </span>
-              )}
+              {t.count !== undefined && <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#004776] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>{t.count}</span>}
             </button>
           );
         })}
@@ -152,33 +128,32 @@ export function AuditResultTabs({ report }: Props) {
 
           <div className="rounded-xl border border-[var(--border-subtle)] bg-white divide-y divide-[var(--border-subtle)] overflow-hidden">
             {filteredIssues.length === 0 ? (
-              <div className="p-6 text-center text-xs font-medium text-[var(--ok)]">Không có cảnh báo nào khớp với bộ lọc hiện tại.</div>
+              <div className="p-6 text-center text-xs font-medium text-[#13653f] inline-flex items-center justify-center gap-1.5 w-full">
+                <CheckCircle2 className="w-4 h-4 shrink-0" /><span>Đạt yêu cầu: Không có cảnh báo nào khớp với bộ lọc hiện tại.</span>
+              </div>
             ) : (
               filteredIssues.map((issue) => {
                 const meta = SEVERITY_META[issue.severity];
                 const Icon = meta.icon;
+                const sheetParam = encodeURIComponent((issue.sheet || 'A1').replace('_DATA', ''));
                 return (
                   <div key={issue.id} className="px-3.5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-[#f8fafc] transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0 flex-1">
-                      <span className={`inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border shrink-0 sm:min-w-[140px] ${meta.badgeClass}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 min-w-0 flex-1">
+                      <span className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border shrink-0 sm:min-w-[125px] ${meta.badgeClass}`}>
                         <Icon className="w-3.5 h-3.5 shrink-0" /><span>{meta.label}</span>
                       </span>
                       <div className="min-w-0 space-y-0.5">
-                        <div className="text-xs font-semibold text-[var(--foreground)]">
-                          {issue.unitCode} · Biểu {issue.sheet} · {issue.cellRef}
-                        </div>
-                        <p className="text-xs text-[var(--foreground)] font-normal">{issue.title}</p>
-                        <p className="text-xs text-[var(--ink-muted)]">Hướng dẫn: {issue.suggestion}</p>
+                        <div className="text-xs font-semibold text-[#004776]">{issue.unitCode} · Biểu {issue.sheet} · {issue.cellRef}</div>
+                        <p className="text-xs text-[#004776] font-normal">{issue.title}</p>
+                        <p className="text-xs text-[#20446c]">Hướng dẫn: {issue.suggestion}</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                      <code title={issue.currentValue} className="text-xs bg-[#f8fafc] px-2 py-0.5 rounded border border-[#e2e8f0] max-w-[180px] truncate">{issue.currentValue}</code>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab(issue.severity === 'evidence' ? 'evidence' : 'rules')}
-                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#cbd5e1] bg-white text-xs font-medium text-[var(--foreground)] cursor-pointer hover:bg-[#f8fafc]"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-[var(--primary)]" />
+                    <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 shrink-0">
+                      <code title={issue.currentValue} className="text-xs bg-[#f8fafc] px-2 py-0.5 rounded border border-[#e2e8f0] max-w-[160px] truncate">{issue.currentValue}</code>
+                      <Link href={`/bang-tinh?unit=${encodeURIComponent(issue.unitCode)}&sheet=${sheetParam}`} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-[#eef5ff] border border-[#bfdbfe] text-xs font-semibold text-[#004776] hover:bg-[#e1edf8]">
+                        <ExternalLink className="w-3.5 h-3.5 text-[#006cee]" /><span>Mở biểu {issue.sheet}</span>
+                      </Link>
+                      <button type="button" onClick={() => setActiveTab(issue.severity === 'evidence' ? 'evidence' : 'rules')} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#cbd5e1] bg-white text-xs font-medium text-[#004776] cursor-pointer hover:bg-[#f8fafc]">
                         <span>{issue.severity === 'evidence' ? 'Bổ sung' : 'Quy tắc'}</span>
                       </button>
                     </div>

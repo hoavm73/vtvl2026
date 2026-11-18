@@ -20,6 +20,7 @@ export type ProductGroupRoman = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI';
 
 export interface HcmuteUnit {
   code: string;
+  immutableUnitId?: string;
   nameVi: string;
   nameEn: string;
   group: UnitGroupKind;

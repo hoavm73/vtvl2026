@@ -10,6 +10,11 @@ import {
   clearServerAdminCookie,
   isVerifiedAdminAccount
 } from '@/services/storage/server-admin-auth';
+import {
+  checkAuthRateLimit,
+  recordAuthFailure,
+  clearAuthFailures
+} from '@/services/auth/rate-limiter';
 
 function extractBearer(req: NextRequest): string | null {
   const authHeader = req.headers.get('authorization') || '';
@@ -74,14 +79,28 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateCheck = checkAuthRateLimit(req, 'admin_auth', 'admin');
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Quá nhiều lần nhập sai mật khẩu Quản trị. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          code: 'RATE_LIMITED',
+          retryAfterSeconds: rateCheck.retryAfterSeconds
+        },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
+
     const body = await req.json();
     const { password } = body;
     if (!password || !verifyAdminPassword(password)) {
+      recordAuthFailure(req, 'admin_auth', 'admin');
       return NextResponse.json(
         { error: 'Mật khẩu quản trị viên không chính xác. Vui lòng liên hệ Phòng TCNS để được cấp quyền.' },
         { status: 401 }
       );
     }
+    clearAuthFailures(req, 'admin_auth', 'admin');
     const token = generateAdminToken();
     await setServerAdminCookie(token);
     const res = NextResponse.json({

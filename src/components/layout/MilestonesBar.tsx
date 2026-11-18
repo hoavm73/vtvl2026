@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Check, PanelLeftClose, PanelLeftOpen, FileSpreadsheet, Building2, Layers, Timer, GitMerge, ShieldCheck, RefreshCw, UserCheck, Info, AlertTriangle, X } from 'lucide-react';
 import { getActiveUnitSession } from '@/services/telemetry/activity-log';
-import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { findHcmuteUnit, HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 
 export interface InfoTipProps { title?: string; children: React.ReactNode; align?: 'left' | 'right'; }
@@ -60,18 +60,14 @@ export function WorkflowSidebar({
   alwaysExpanded = false, isCollapsed: isCollapsedProp, onToggleCollapse
 }: WorkflowSidebarProps) {
   const pathname = usePathname();
-  const [activeUnit, setActiveUnit] = useState(() => findHcmuteUnit(unitCode));
-  const [actorInfo, setActorInfo] = useState(() => {
-    const s = getActiveUnitSession();
-    const op = getCurrentOperatorSession();
-    return {
-      email: s.actorEmail || op?.email || '', title: s.actorTitle || op?.title || '',
-      lastSavedAt: s.lastSavedAt, wizardStage: s.wizardStage || 1, posCount: s.proposedPositions?.length || 0,
-      exportedFile: s.lastExportedFileName || '', timerCount: s.timeSessions?.length || 0,
-      mergedVer: s.lastMergedVersion ? `v${s.lastMergedVersion}` : '',
-      auditFixCount: typeof s.lastAuditFixCount === 'number' ? s.lastAuditFixCount : null
-    };
+  const [activeUnit, setActiveUnit] = useState(() => {
+    const target = (unitCode || 'CK').trim().toUpperCase();
+    return HCMUTE_UNITS.find((u) => u.code === target) || HCMUTE_UNITS[0];
   });
+  const [actorInfo, setActorInfo] = useState<{
+    email: string; title: string; lastSavedAt?: string; wizardStage: number;
+    posCount: number; exportedFile: string; timerCount: number; mergedVer: string; auditFixCount: number | null;
+  }>({ email: '', title: '', wizardStage: 1, posCount: 0, exportedFile: '', timerCount: 0, mergedVer: '', auditFixCount: null });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = !alwaysExpanded && (typeof isCollapsedProp === 'boolean' ? isCollapsedProp : internalCollapsed);

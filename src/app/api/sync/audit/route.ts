@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { invalidateCacheTags } from '@/services/storage/runtime-cache';
 import { AuditReportResult } from '@/types/vtvl';
 
 export async function POST(req: Request) {
@@ -71,6 +72,8 @@ export async function POST(req: Request) {
     if (evidenceRows.length > 0) {
       await postServerRestRequired('ra_soat_chua_du_can_cu', evidenceRows);
     }
+
+    invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
 
     return NextResponse.json({ success: true, message: 'Đồng bộ kết quả rà soát thành công.' });
   } catch (error: unknown) {

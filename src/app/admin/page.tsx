@@ -28,10 +28,12 @@ export default function AdminPage() {
   const [currentRole, setCurrentRole] = useState<'admin' | 'unit_leader' | 'staff'>('admin');
   const [activeTab, setActiveTab] = useState<AdminTabKey>('unit-monitor');
 
-  const [sessionCount, setSessionCount] = useState(0);
-  const [accountCount, setAccountCount] = useState(0);
+  const [sessionCount, setSessionCount] = useState<number | null>(null);
+  const [accountCount, setAccountCount] = useState<number | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [activeUnitCode, setActiveUnitCode] = useState('Chưa kích hoạt');
   const [unitCount, setUnitCount] = useState(51);
+  const [migrationSummary, setMigrationSummary] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOrgTreeModalOpen, setIsOrgTreeModalOpen] = useState(false);
 
@@ -90,26 +92,29 @@ export default function AdminPage() {
 
       setActiveUnitCode(activeSession ? `[${activeSession.unitCode}] ${activeSession.email}` : 'Chưa kích hoạt');
       setUnitCount(getAdminUnits().length);
+      setStatsError(null);
 
       if (role === 'unit_leader') {
         setActiveTab('accounts');
         const accRes = await fetch('/api/admin/accounts', { headers });
         if (accRes.ok) {
           const accJson = await accRes.json();
-          setAccountCount(accJson.total || (accJson.accounts?.length ?? 0));
+          setAccountCount(accJson.total ?? (accJson.accounts?.length ?? 0));
+        } else {
+          setStatsError('Không thể tải số liệu tài khoản.');
         }
       } else {
-        const [sessRes, accRes] = await Promise.all([
+        const [sessRes, accRes, migRes] = await Promise.all([
           fetch('/api/admin/sessions', { headers }),
-          fetch('/api/admin/accounts', { headers })
+          fetch('/api/admin/accounts', { headers }),
+          fetch('/api/admin/migrations', { headers })
         ]);
-        if (sessRes.ok) {
-          const sessJson = await sessRes.json();
-          setSessionCount(sessJson.total || 0);
-        }
-        if (accRes.ok) {
-          const accJson = await accRes.json();
-          setAccountCount(accJson.total || 0);
+        if (sessRes.ok) { const sessJson = await sessRes.json(); setSessionCount(sessJson.total ?? 0); }
+        if (accRes.ok) { const accJson = await accRes.json(); setAccountCount(accJson.total ?? 0); }
+        if (!sessRes.ok || !accRes.ok) setStatsError('Không thể tải đủ số liệu tổng hợp.');
+        if (migRes.ok) {
+          const migJson = await migRes.json();
+          if (migJson?.ok) setMigrationSummary(`Đã đồng bộ CSDL (${migJson.sqlMigrations?.length || 0} SQL / ${migJson.prismaMigrations?.length || 0} Prisma)`);
         }
       }
     } catch {
@@ -187,13 +192,15 @@ export default function AdminPage() {
     }
   };
 
+  const sessBadge = sessionCount === null ? '…' : sessionCount;
+  const accBadge = accountCount === null ? '…' : accountCount;
   const isLeader = currentRole === 'unit_leader';
   const tabs: { key: AdminTabKey; label: string; shortLabel: string; icon: React.ComponentType<{ className?: string }> }[] = isLeader
-    ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accountCount})`, shortLabel: `Tài khoản ĐV (${accountCount})`, icon: Users }]
+    ? [{ key: 'accounts', label: `Quản trị tài khoản đơn vị (${accBadge})`, shortLabel: `Tài khoản ĐV (${accBadge})`, icon: Users }]
     : [
         { key: 'unit-monitor', label: 'Dashboard theo dõi đơn vị', shortLabel: 'Theo dõi ĐV', icon: BarChart3 },
-        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessionCount})`, shortLabel: `1. Hồ sơ (${sessionCount})`, icon: FileSpreadsheet },
-        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accountCount})`, shortLabel: `2. Tài khoản (${accountCount})`, icon: Users },
+        { key: 'sessions', label: `1. Phiên & Bảng biểu (${sessBadge})`, shortLabel: `1. Hồ sơ (${sessBadge})`, icon: FileSpreadsheet },
+        { key: 'accounts', label: `2. Tài khoản & Phân quyền (${accBadge})`, shortLabel: `2. Tài khoản (${accBadge})`, icon: Users },
         { key: 'session-control', label: '3. Quản trị phiên', shortLabel: '3. Phiên', icon: UserCheck },
         { key: 'units', label: `4. Quản trị đơn vị (${unitCount})`, shortLabel: `4. Đơn vị (${unitCount})`, icon: Building2 }
       ];
@@ -211,57 +218,55 @@ export default function AdminPage() {
             {!isLeader && (
               <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
                 <FileSpreadsheet className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-                <span>{sessionCount} hồ sơ</span>
-                <button
-                  type="button"
-                  onClick={handleManualRefresh}
-                  title="Làm mới dữ liệu từ máy chủ"
-                  className="ml-1 text-[#004776]/70 hover:text-[#004776] transition-colors cursor-pointer"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>{sessionCount === null ? 'Đang tải hồ sơ…' : `${sessionCount} hồ sơ`}</span>
+                <button type="button" onClick={handleManualRefresh} aria-label="Làm mới dữ liệu từ máy chủ" title="Làm mới dữ liệu từ máy chủ" className="ml-1 text-[#004776]/70 hover:text-[#004776] cursor-pointer">
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             )}
-
             <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-[#004776] border border-sky-200/70">
               <Users className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-              <span>{accountCount} tài khoản {isLeader ? 'thuộc đơn vị' : ''}</span>
+              <span>{accountCount === null ? 'Đang tải tài khoản…' : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
             </div>
-
-            <div
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 max-w-full sm:max-w-md truncate min-w-0"
-              title={activeUnitCode}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-              <span className="truncate">Phiên: {activeUnitCode}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 max-w-full sm:max-w-md truncate min-w-0" title={activeUnitCode}>
+              <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" /><span className="truncate">Phiên: {activeUnitCode}</span>
             </div>
-
             {!isLeader && (
               <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
-                <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
-                <span>{unitCount} đơn vị</span>
+                <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" /><span>{unitCount} đơn vị</span>
               </div>
+            )}
+            {!isLeader && migrationSummary && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-[#004776] border border-slate-200"><span>{migrationSummary}</span></div>
+            )}
+            {statsError && (
+              <button type="button" onClick={handleManualRefresh} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-[#b42318] border border-red-200 cursor-pointer">
+                <AlertCircle className="w-3.5 h-3.5" /><span>{statsError} Thử lại</span>
+              </button>
             )}
           </div>
 
-          <div className="w-full max-w-full min-w-0 px-2.5 sm:px-6 border-b border-[#e2e8f0] flex items-center gap-1 sm:gap-2 bg-white overflow-x-auto no-scrollbar">
+          <div className="sm:hidden px-3 py-2 bg-white border-b border-[#e2e8f0]">
+            <label htmlFor="admin-mobile-view-select" className="sr-only">Chế độ xem quản trị</label>
+            <select
+              id="admin-mobile-view-select"
+              aria-label="Chế độ xem quản trị"
+              value={activeTab}
+              onChange={(e) => selectAdminTab(e.target.value as AdminTabKey)}
+              className="w-full min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-sm font-bold text-[#004776]"
+            >
+              {tabs.map((tab) => (<option key={tab.key} value={tab.key}>{tab.label}</option>))}
+            </select>
+          </div>
+
+          <div role="tablist" aria-label="Phân hệ quản trị" className="hidden sm:flex w-full max-w-full min-w-0 px-6 border-b border-[#e2e8f0] items-center gap-2 bg-white overflow-x-auto no-scrollbar">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
               return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => selectAdminTab(tab.key)}
-                  className={`h-[46px] sm:h-[50px] inline-flex items-center gap-1.5 sm:gap-2 text-xs sm:text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-2.5 sm:px-4 whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'text-[#004776] border-[#004776] bg-blue-50/40'
-                      : 'text-[#64748b] border-transparent hover:text-[#004776] hover:bg-slate-50'
-                  }`}
-                >
+                <button key={tab.key} type="button" role="tab" aria-selected={isActive} onClick={() => selectAdminTab(tab.key)} className={`h-[50px] inline-flex items-center gap-2 text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-4 whitespace-nowrap shrink-0 ${isActive ? 'text-[#004776] border-[#004776] bg-blue-50/40' : 'text-[#476885] border-transparent hover:text-[#004776] hover:bg-slate-50'}`}>
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span>{tab.label}</span>
                 </button>
               );
             })}

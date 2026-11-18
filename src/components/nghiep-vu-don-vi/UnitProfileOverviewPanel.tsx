@@ -3,8 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { FileSpreadsheet, ShieldCheck, ClipboardCheck, History, ArrowRight, AlertTriangle } from 'lucide-react';
-import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
+import { UnitSummaryRow, formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent } from '@/services/workbooks/workbook-history-service';
+
+const EVENT_DOT_COLOR: Record<WorkbookHistoryTimelineEvent['source'], string> = {
+  review: 'bg-[#006cee] ring-[#e6f1ff]',
+  revision: 'bg-[#00b87a] ring-[#e6f9f1]',
+  s_nhat_ky: 'bg-[#0ea5e9] ring-[#e0f2fe]',
+  ticket: 'bg-[#006cee] ring-[#e6f1ff]',
+  audit: 'bg-[#7c3aed] ring-[#f3e8ff]'
+};
 
 interface UnitProfileOverviewPanelProps {
   unitCode: string;
@@ -127,24 +135,36 @@ export function UnitProfileOverviewPanel({
         </button>
       </div>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#20446c]">Hoạt động gần đây</h3>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#20446c]">Hoạt động gần đây</h3>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
+            </span>
+          </div>
           <button type="button" onClick={() => onSelectTab('history')} className="text-xs font-semibold text-[#006cee] hover:underline cursor-pointer">Xem toàn bộ</button>
         </div>
         {recentEvents.length === 0 ? (
           <p className="text-xs text-[#476885] py-3">Chưa có sự kiện nào được ghi nhận cho đơn vị này.</p>
         ) : (
-          <div className="divide-y divide-[#e2e8f0] border-t border-[#e2e8f0]">
-            {recentEvents.slice(0, 5).map((ev) => (
-              <div key={ev.id} className="py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="min-w-0">
-                  <span className="font-semibold text-[#004776]">{ev.title}</span>
-                  <span className="text-[#476885]"> · {ev.actorEmail}</span>
+          <div className="border-t border-[#e2e8f0] pt-3.5">
+            <div className="relative pl-5 space-y-3.5">
+              <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
+              {recentEvents.slice(0, 5).map((ev, idx) => (
+                <div key={ev.id} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${EVENT_DOT_COLOR[ev.source] || 'bg-[#006cee] ring-[#e6f1ff]'} ${idx === 0 ? 'animate-pulse' : ''}`} />
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] font-semibold text-[11px]">{ev.sourceLabel}</span>
+                      <span className="font-semibold text-[#004776] truncate">{ev.title}</span>
+                    </div>
+                    <div className="text-[11px] text-[#476885] truncate">{ev.details} · {ev.actorEmail}</div>
+                  </div>
+                  <span className="text-[11px] text-[#64748b] tabular-nums shrink-0">{formatCompactTime(ev.timestamp)}</span>
                 </div>
-                <span className="text-[#64748b] tabular-nums shrink-0">{ev.timestamp}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </section>

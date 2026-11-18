@@ -218,6 +218,9 @@ export function UnitMonitoringHistoryPanel({
             <button type="button" onClick={() => setHistoryExpanded((v) => !v)} aria-expanded={historyExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <History className="w-4 h-4 text-[#006cee] shrink-0" />
               <h3 className="text-sm font-bold text-[#004776]">Nhật ký hoạt động ({filteredHistory.length})</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
+              </span>
               <ChevronDown className={`w-4 h-4 text-[#476885] transition-transform ${historyExpanded ? 'rotate-180' : ''}`} />
             </button>
             <MonitorSearchInput value={historySearch} onChange={setHistorySearch} placeholder="Tìm đơn vị, nội dung…" ariaLabel="Tìm kiếm nhật ký tiến trình và lịch sử" className="w-full sm:w-[236px]" />
@@ -239,9 +242,9 @@ export function UnitMonitoringHistoryPanel({
           <div className="p-4 max-h-[430px] overflow-y-auto">
             <div className="relative pl-5 space-y-4">
               <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
-              {filteredHistory.map((item) => (
+              {filteredHistory.map((item, idx) => (
                 <div key={item.id} className="relative space-y-1">
-                  <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${TIMELINE_DOT_COLOR[item.category]}`} />
+                  <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${TIMELINE_DOT_COLOR[item.category]} ${idx === 0 ? 'animate-pulse' : ''}`} />
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <button

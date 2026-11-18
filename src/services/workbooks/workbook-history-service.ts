@@ -185,15 +185,25 @@ export function buildAggregatedWorkbookHistory(
     });
   }
 
+  const STATUS_VI_MAP: Record<string, string> = {
+    draft: 'Lưu nháp',
+    submitted: 'Đã nộp chờ duyệt',
+    resubmitted: 'Đã nộp lại chờ duyệt',
+    changes_requested: 'Yêu cầu bổ sung',
+    approved: 'Đã duyệt',
+    cancelled: 'Đã hủy'
+  };
+
   for (const t of unitTickets) {
     for (const h of t.statusHistory || []) {
+      const toLabel = STATUS_VI_MAP[h.toStatus] || h.toStatus;
       events.push({
         id: `tkt-${t.id}-${h.id}`,
         source: 'ticket',
         sourceLabel: 'Phiếu công việc',
         action: h.action || h.toStatus,
         title: `[${t.maCongViec}] ${t.tenCongViec}`,
-        details: h.reason ? `${h.action}: ${h.reason}` : `Chuyển trạng thái sang ${h.toStatus}`,
+        details: h.reason ? `${toLabel}: ${h.reason}` : `Trạng thái: ${toLabel}`,
         actorEmail: h.actorId || t.ownerEmail,
         sheet: h.action === 'MERGE_TO_SHEETS' ? 'A2, B1' : undefined,
         timestamp: h.createdAt || t.updatedAt

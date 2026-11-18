@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { History, RefreshCw, Search } from 'lucide-react';
 import { ServerAuditLog } from '@/services/storage/server-audit-store';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
 
 function buildHeaders(): Record<string, string> {
   const cur = getCurrentOperatorSession();
@@ -59,7 +60,12 @@ export function AdminSystemLogsTab() {
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-[#006cee]" />
           <div>
-            <h2 className="text-sm font-bold text-[#004776]">Nhật ký hệ thống &amp; kiểm toán bảo mật</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-[#004776]">Nhật ký hệ thống &amp; kiểm toán bảo mật</h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
+              </span>
+            </div>
             <p className="text-xs text-[#476885]">Theo dõi thao tác quản trị, khôi phục phiên bản, thẩm định và sửa biểu trên toàn trường.</p>
           </div>
         </div>
@@ -83,20 +89,24 @@ export function AdminSystemLogsTab() {
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center text-xs text-[#476885]">Chưa có sự kiện nào phù hợp bộ lọc.</div>
       ) : (
-        <div className="divide-y divide-[#e2e8f0] border-t border-[#e2e8f0]">
-          {filtered.map((l) => (
-            <div key={l.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <div className="space-y-0.5 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#006cee] font-bold">{l.unitCode}</span>
-                  <span className="px-2 py-0.5 rounded bg-[#f1f5f9] font-semibold text-[#004776]">{l.action}</span>
-                  <span className="text-[#476885]">· {l.actorEmail || 'system'}</span>
+        <div className="border-t border-[#e2e8f0] pt-4">
+          <div className="relative pl-5 space-y-3.5">
+            <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
+            {filtered.map((l, idx) => (
+              <div key={l.id} className="relative pb-2.5 border-b border-[#f1f5f9] last:border-b-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 bg-[#7c3aed] ring-[#f3e8ff] ${idx === 0 ? 'animate-pulse' : ''}`} />
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#006cee] font-bold">{l.unitCode}</span>
+                    <span className="px-2 py-0.5 rounded bg-[#f1f5f9] font-semibold text-[#004776]">{l.action}</span>
+                    <span className="text-[#476885]">· {l.actorEmail || 'system'}</span>
+                  </div>
+                  <div className="text-[#004776]">{l.details}</div>
                 </div>
-                <div className="text-[#004776]">{l.details}</div>
+                <span className="text-[#64748b] tabular-nums shrink-0">{formatCompactTime(l.createdAt)}</span>
               </div>
-              <span className="text-[#64748b] tabular-nums shrink-0">{l.createdAt}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

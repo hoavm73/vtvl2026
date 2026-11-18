@@ -172,7 +172,7 @@ export default function HomePage() {
       )}
 
       {isTcnsOrAdmin && activeTab === 'unit-monitor' ? (
-        <UnitMonitoringDashboard compactOverviewMode={true} />
+        <UnitMonitoringDashboard />
       ) : (
         <>
           {/* 2. Dashboard gọn các con số của trường (ai cũng xem được, nằm dưới phần xin chào) */}
@@ -254,21 +254,26 @@ export default function HomePage() {
                   <div className="flex items-center gap-2">
                     <History className="w-4 h-4 text-[#004776]" />
                     <h3 className="text-xs font-bold text-[#004776]">Nhật ký thao tác gần đây</h3>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10px] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
+                    </span>
                   </div>
                   <span className="text-[11px] font-semibold text-[#476885]">{logs.length} bản ghi</span>
                 </div>
                 {logs.length === 0 ? (
                   <p className="text-xs text-[#476885] py-2">Chưa có bản ghi nhật ký nào.</p>
                 ) : (
-                  <ul className="divide-y divide-[#e2e8f0] max-h-28 overflow-y-auto pr-1">
-                    {logs.slice(0, 3).map((log) => (
-                      <li key={log.id} className="py-1.5 text-xs">
+                  <div className="relative pl-4 space-y-2.5 max-h-32 overflow-y-auto pr-1">
+                    <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
+                    {logs.slice(0, 3).map((log, idx) => (
+                      <div key={log.id} className="relative text-xs">
+                        <span className={`absolute -left-4 top-1.5 w-2.5 h-2.5 rounded-full ring-3 bg-[#006cee] ring-[#e6f1ff] ${idx === 0 ? 'animate-pulse' : ''}`} />
                         <span className="font-bold text-[#004776] mr-1">[{log.unitCode}]</span>
                         <span className="text-[#335d84]">{log.details}</span>
-                        <div className="text-[10.5px] text-[#476885] mt-0.5">{log.timestamp}</div>
-                      </li>
+                        <div className="text-[10.5px] text-[#476885] mt-0.5 tabular-nums">{log.timestamp}</div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
             </div>

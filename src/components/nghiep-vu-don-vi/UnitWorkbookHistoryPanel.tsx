@@ -4,6 +4,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { History, RotateCcw, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
+import { formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
+
+const SOURCE_DOT_COLOR: Record<WorkbookHistoryTimelineEvent['source'], string> = {
+  review: 'bg-[#006cee] ring-[#e6f1ff]',
+  revision: 'bg-[#00b87a] ring-[#e6f9f1]',
+  s_nhat_ky: 'bg-[#0ea5e9] ring-[#e0f2fe]',
+  ticket: 'bg-[#006cee] ring-[#e6f1ff]',
+  audit: 'bg-[#7c3aed] ring-[#f3e8ff]'
+};
 
 interface HistoryApiResponse {
   workbookId: string;
@@ -118,9 +127,12 @@ export function UnitWorkbookHistoryPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <History className="w-4 h-4 text-[#006cee]" />
             <h2 className="text-sm font-bold text-[#004776]">Lịch sử thay đổi, S_NhatKy & thẩm định [{unitCode}]</h2>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" /><span>Cập nhật liên tục</span>
+            </span>
           </div>
           {data && (
             <p className="text-xs text-[#476885]">
@@ -174,29 +186,33 @@ export function UnitWorkbookHistoryPanel({
       ) : filteredEvents.length === 0 ? (
         <div className="py-8 text-center text-xs text-[#476885]">Chưa có sự kiện nào khớp bộ lọc hiện tại.</div>
       ) : (
-        <div className="divide-y divide-[#e2e8f0] border-t border-[#e2e8f0]">
-          {filteredEvents.map((ev) => (
-            <div key={ev.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="space-y-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className={`px-2 py-0.5 rounded-full font-semibold ${ev.source === 'review' ? 'bg-[#eef5ff] text-[#006cee]' : ev.source === 'revision' ? 'bg-[#ecfdf5] text-[#13653f]' : 'bg-[#f1f5f9] text-[#20446c]'}`}>
-                    {ev.source === 'review' && <ShieldCheck className="w-3 h-3 inline mr-1" />}{ev.sourceLabel}
-                  </span>
-                  {ev.revision ? <span className="px-1.5 py-0.5 rounded bg-[#f8fafc] border border-[#e2e8f0] font-semibold text-[#004776] tabular-nums">v{ev.revision}</span> : null}
-                  {ev.sheet ? <span className="text-[#476885]">· Biểu {ev.sheet}</span> : null}
-                  <span className="text-[#476885]">· {ev.actorEmail}</span>
-                  <span className="text-[#64748b] tabular-nums">· {ev.timestamp}</span>
+        <div className="border-t border-[#e2e8f0] pt-4">
+          <div className="relative pl-5 space-y-4">
+            <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
+            {filteredEvents.map((ev, idx) => (
+              <div key={ev.id} className="relative pb-3 border-b border-[#f1f5f9] last:border-b-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${SOURCE_DOT_COLOR[ev.source] || 'bg-[#006cee] ring-[#e6f1ff]'} ${idx === 0 ? 'animate-pulse' : ''}`} />
+                <div className="space-y-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className={`px-2 py-0.5 rounded-full font-semibold ${ev.source === 'review' ? 'bg-[#eef5ff] text-[#006cee]' : ev.source === 'revision' ? 'bg-[#ecfdf5] text-[#13653f]' : 'bg-[#f1f5f9] text-[#20446c]'}`}>
+                      {ev.source === 'review' && <ShieldCheck className="w-3 h-3 inline mr-1" />}{ev.sourceLabel}
+                    </span>
+                    {ev.revision ? <span className="px-1.5 py-0.5 rounded bg-[#f8fafc] border border-[#e2e8f0] font-semibold text-[#004776] tabular-nums">v{ev.revision}</span> : null}
+                    {ev.sheet ? <span className="text-[#476885]">· Biểu {ev.sheet}</span> : null}
+                    <span className="text-[#476885]">· {ev.actorEmail}</span>
+                    <span className="text-[#64748b] tabular-nums">· {formatCompactTime(ev.timestamp)}</span>
+                  </div>
+                  <div className="text-xs font-semibold text-[#004776]">{ev.title}</div>
+                  {ev.details && <p className="text-xs text-[#476885] break-words">{ev.details}</p>}
                 </div>
-                <div className="text-xs font-semibold text-[#004776]">{ev.title}</div>
-                {ev.details && <p className="text-xs text-[#476885] break-words">{ev.details}</p>}
+                {canRollback && ev.source === 'revision' && ev.revision && data && ev.revision !== data.currentRevision && (
+                  <button type="button" onClick={() => setConfirmRev(ev.revision!)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] shrink-0 cursor-pointer">
+                    <RotateCcw className="w-3.5 h-3.5" /><span>Khôi phục v{ev.revision}</span>
+                  </button>
+                )}
               </div>
-              {canRollback && ev.source === 'revision' && ev.revision && data && ev.revision !== data.currentRevision && (
-                <button type="button" onClick={() => setConfirmRev(ev.revision!)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-medium text-[#004776] shrink-0 cursor-pointer">
-                  <RotateCcw className="w-3.5 h-3.5" /><span>Khôi phục v{ev.revision}</span>
-                </button>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

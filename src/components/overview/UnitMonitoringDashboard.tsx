@@ -154,9 +154,15 @@ export function UnitMonitoringDashboard({ compactOverviewMode = false }: { compa
       {/* Header điều hành phẳng + bộ chọn đơn vị */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 min-w-0">
         <div className="space-y-1 min-w-0">
-          <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
-            Dashboard theo dõi đơn vị
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
+              Dashboard theo dõi đơn vị
+            </h2>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" />
+              <span>Cập nhật liên tục</span>
+            </span>
+          </div>
           {activeUnitInfo && (
             <p className="text-xs text-[#20446c]">
               Đơn vị đang lọc: [{activeUnitInfo.code}] {activeUnitInfo.nameVi}

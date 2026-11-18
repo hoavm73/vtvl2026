@@ -87,6 +87,7 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-x: clip;
   background-color: var(--background);
   background-image: radial-gradient(1100px circle at 50% 0%, rgba(0, 108, 238, 0.06), transparent 70%);
   color: var(--foreground);

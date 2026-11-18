@@ -120,7 +120,7 @@ export function AppShell({ children }: AppShellProps) {
             session={session}
             onToggle={handleToggleSidebar}
           />
-          <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden print:block print:overflow-visible">
+          <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-clip print:block print:overflow-visible">
             {children}
           </main>
         </div>

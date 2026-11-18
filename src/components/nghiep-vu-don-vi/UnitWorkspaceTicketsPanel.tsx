@@ -118,7 +118,7 @@ export function UnitWorkspaceTicketsPanel({
             role="tab"
             aria-selected={mode === 'all'}
             onClick={() => setMode('all')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'all' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'all' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
           >
             <Users className="w-3.5 h-3.5 shrink-0" /><span>Toàn bộ phiếu đơn vị ({tickets.length})</span>
           </button>
@@ -127,7 +127,7 @@ export function UnitWorkspaceTicketsPanel({
             role="tab"
             aria-selected={mode === 'pending'}
             onClick={() => setMode('pending')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'pending' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'pending' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
           >
             <Clock className="w-3.5 h-3.5 shrink-0" /><span>Chờ duyệt &amp; Yêu cầu bổ sung</span>
             <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{pendingCount}</span>
@@ -137,7 +137,7 @@ export function UnitWorkspaceTicketsPanel({
             role="tab"
             aria-selected={mode === 'approved'}
             onClick={() => setMode('approved')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'approved' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; Gộp B1/B2</span>
             <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#13653f]">{approvedCount}</span>

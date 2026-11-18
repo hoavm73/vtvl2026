@@ -29,6 +29,7 @@ description: Hệ thống thiết kế giao diện chuẩn HCM-UTE Design System
   - Nền trang: `#f8fafc` / `#f8fbff`; nền vùng chứa chính: `#ffffff`.
   - Thanh công cụ / track segmented control: `#f8fafc`, `#e9f0f8`, `#f1f5f9`.
   - Mục đang chọn / active row: nền xanh rất nhạt `#eef6ff` (có thể kết hợp vạch trái `border-l-2` hoặc `border-l-4 border-[#006cee]`, không dùng `ring-2` + `border-2` dày).
+  - Đường gạch chân tab đang chọn (Active Tab Underline): dùng màu cam san hô **`#FD8C73`** với độ dày tăng `110%` (`border-b-[2.2px]` cho thanh tab `2px` chuẩn và `border-b-[3.3px]` cho thanh tab bảng tính Excel `3px`), giữ nguyên màu chữ/biểu tượng xanh `#006cee` hoặc `#004776`.
   - Đường kẻ phân cách (hairline divider): `1px solid #e2e8f0` (`divide-[#e2e8f0]`, `border-[#e2e8f0]`). Viền ô nhập liệu (`input`, `textarea`, `select`): `#cbd5e1`.
 - **Nền ẩn màu sắc dịu nhẹ (Subtle Pastel Gradient Wash) cho ô con số KPI nổi bật:**
   - Các ô thống kê trọng yếu giữ cấu trúc lưới phẳng `border-y border-[#e2e8f0] divide-x divide-y divide-[#e2e8f0]` và phủ nền chuyển sắc rất dịu theo ngữ nghĩa từng chỉ số: xanh dương `from-[#eef6ff] via-[#f5f9ff] to-white`, xanh lam `from-[#ecfeff]/85 via-[#f2f9ff] to-white`, xanh ngọc/đạt `from-[#e8fbf2] via-[#f3fcf8] to-white`, vàng hổ phách/chờ duyệt `from-[#fff6e5] via-[#fffaf0] to-white`, đỏ cảnh báo `from-[#fef2f2] via-[#fff7f7] to-white`, tím đã gộp `from-[#f3efff]/90 via-[#f9f7ff] to-white`.

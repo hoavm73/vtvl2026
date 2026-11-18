@@ -86,7 +86,7 @@ export function AuditResultTabs({ report }: Props) {
         {tabs.map((t) => {
           const isSelected = activeTab === t.key;
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#004776] text-[#004776] font-semibold' : 'border-transparent text-[#476885] font-medium hover:text-[#004776]'}`}>
+            <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] font-medium hover:text-[#004776]'}`}>
               <span>{t.label}</span>
               {t.count !== undefined && <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#006cee] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>{t.count}</span>}
             </button>

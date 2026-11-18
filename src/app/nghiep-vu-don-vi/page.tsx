@@ -204,7 +204,7 @@ export default function NghiepVuDonViPage() {
               role="tab"
               aria-selected={active}
               onClick={() => handleSelectTab(t.key)}
-              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-[13px] border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#004776] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-[13px] border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span>{t.label}</span>

@@ -90,14 +90,14 @@ export function UnitTicketsHeaderBar({
       </header>
 
       <nav role="tablist" aria-label="Bộ lọc xử lý phiếu đơn vị" className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">
-        <button type="button" role="tab" aria-selected={mode === 'all'} onClick={() => onSelectMode('all')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'all' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
+        <button type="button" role="tab" aria-selected={mode === 'all'} onClick={() => onSelectMode('all')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[2.2px] -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'all' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
           <Users className="w-4 h-4 shrink-0" /><span>Toàn bộ phiếu đơn vị ({scopedCount})</span>
         </button>
-        <button type="button" role="tab" aria-selected={mode === 'pending'} onClick={() => onSelectMode('pending')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'pending' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
+        <button type="button" role="tab" aria-selected={mode === 'pending'} onClick={() => onSelectMode('pending')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[2.2px] -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'pending' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
           <Clock className="w-4 h-4 shrink-0" /><span>Chờ duyệt &amp; Yêu cầu bổ sung</span>
           <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{pendingCount}</span>
         </button>
-        <button type="button" role="tab" aria-selected={mode === 'approved'} onClick={() => onSelectMode('approved')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'approved' ? 'border-[#006cee] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
+        <button type="button" role="tab" aria-selected={mode === 'approved'} onClick={() => onSelectMode('approved')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[2.2px] -mb-[1px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
           <CheckCircle2 className="w-4 h-4 shrink-0" /><span>Đã duyệt &amp; Gộp B1/B2</span>
           <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${approvedCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{approvedCount}</span>
         </button>

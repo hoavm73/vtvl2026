@@ -193,7 +193,7 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
           const Icon = t.icon;
           const active = activeTab === t.key;
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onSelectTab(t.key)} className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs border-b-2 -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#004776] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}>
+            <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onSelectTab(t.key)} className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}>
               <Icon className="w-3.5 h-3.5" /><span>{t.label}</span>
             </button>
           );

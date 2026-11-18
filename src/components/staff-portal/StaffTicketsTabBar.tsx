@@ -85,8 +85,8 @@ export function StaffTicketsTabBar({
   relationshipsCount = 0
 }: StaffTicketsTabBarProps) {
   const baseBtn =
-    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer';
-  const activeCls = 'border-[#006cee] text-[#006cee]';
+    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[2.2px] -mb-[1px] transition-colors whitespace-nowrap cursor-pointer';
+  const activeCls = 'border-[#FD8C73] text-[#006cee]';
   const inactiveCls = 'border-transparent text-[#476b8e] hover:text-[#004776] hover:border-[#cbd5e1]';
 
   const tabOptions: {

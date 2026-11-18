@@ -133,9 +133,9 @@ export function ExcelSheetTabs({
                 data-tab-key={key}
                 aria-selected={isActive}
                 onClick={() => onSelectSheet(key)}
-                className={`group relative inline-flex items-center gap-1.5 px-3.5 h-11 text-[13.5px] transition-all shrink-0 cursor-pointer border-b-[3px] ${
+                className={`group relative inline-flex items-center gap-1.5 px-3.5 h-11 text-[13.5px] transition-all shrink-0 cursor-pointer border-b-[3.3px] ${
                   isActive
-                    ? 'bg-white text-[#004776] border-[#004776] font-bold shadow-2xs'
+                    ? 'bg-white text-[#004776] border-[#FD8C73] font-bold shadow-2xs'
                     : 'bg-transparent text-[#20446c] border-transparent font-semibold hover:text-[#004776] hover:bg-white/70'
                 }`}
               >

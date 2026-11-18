@@ -179,11 +179,11 @@ export function StageStepperBar({
                 aria-selected={isCurrent}
                 onKeyDown={(e) => handleKeyNav(e, idx)}
                 onClick={() => onSelectStage(st.num)}
-                className={`group flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-t-lg border-b-2 transition-colors duration-150 cursor-pointer text-left w-full ${
+                className={`group flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-t-lg border-b-[2.2px] transition-colors duration-150 cursor-pointer text-left w-full ${
                   st.status === 'error'
                     ? 'border-[var(--fix)] bg-[var(--fix-soft)]/50'
                     : isCurrent
-                      ? 'border-[var(--primary)] bg-[var(--surface-tint)]'
+                      ? 'border-[#FD8C73] bg-[var(--surface-tint)]'
                       : 'border-transparent hover:bg-[var(--surface-secondary)]'
                 }`}
               >

@@ -61,7 +61,7 @@ export function WorkspaceHeaderRow({
         </span>
 
         <h1
-          className="text-[15px] sm:text-base font-bold text-[#0072BC] leading-snug truncate min-w-0"
+          className="!text-[16.5px] sm:!text-[21px] !leading-[1.35] font-bold !text-[#0072BC] truncate min-w-0"
           title={activeMeta.title}
         >
           {activeMeta.title}

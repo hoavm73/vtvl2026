@@ -104,18 +104,18 @@ body {
 /* Hệ thống phân cấp chữ chuẩn (Typography Hierarchy & Responsive Scaling) */
 h1,
 .page-title {
-  font-size: 1.75rem;
-  line-height: 2.25rem;
+  font-size: 1.3125rem;
+  line-height: 1.75rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--hcmute-blue);
   letter-spacing: -0.015em;
 }
 
 @media (max-width: 767px) {
   h1,
   .page-title {
-    font-size: 1.375rem;
-    line-height: 1.875rem;
+    font-size: 1.03125rem;
+    line-height: 1.4375rem;
   }
 }
 

@@ -48,7 +48,7 @@ export function CompactWorkspaceHeader({
           </span>
 
           {/* Tên biểu */}
-          <h1 className="text-sm sm:text-base font-bold text-[#004776] truncate max-w-[280px] sm:max-w-[420px] md:max-w-[560px]">
+          <h1 className="!text-[16.5px] sm:!text-[21px] !leading-[1.35] font-bold !text-[#0072BC] truncate max-w-[280px] sm:max-w-[420px] md:max-w-[560px]">
             {activeMeta.title}
           </h1>
 

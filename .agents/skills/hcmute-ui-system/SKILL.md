@@ -21,7 +21,7 @@ description: Hệ thống thiết kế giao diện chuẩn HCM-UTE Design System
 ## B. Quy trình thực hiện
 
 ### 1. Bảng màu chuẩn S-Link & HCM-UTE (Color Palette)
-- **Màu tiêu đề khu vực / phân hệ (`h2`, `.section-title`, `.page-title` và tiêu đề khối đồng cấp):** **`#0072BC`** (`--hcmute-blue`). Riêng chữ trên banner/modal nền xanh đậm giữ `#ffffff` (`text-white`), bản in hành chính A4 giữ thể thức chuẩn.
+- **Màu tiêu đề trang & tiêu đề khu vực / phân hệ (`h1`, `h2`, `.section-title`, `.page-title`, tiêu đề các biểu và tiêu đề khối đồng cấp):** **`#0072BC`** (`--hcmute-blue`). Riêng chữ trên banner/modal nền xanh đậm giữ `#ffffff` (`text-white`), bản in hành chính A4 giữ thể thức chuẩn. Cỡ tiêu đề `h1, .page-title` và tiêu đề các biểu dùng **`21px` (`1.3125rem`)** trên desktop / **`16.5px` (`1.03125rem`)** trên mobile (75% mức `1.75rem` cũ).
 - **Màu chữ nội dung & bảng biểu (`--foreground`):** **`#004776`** (`rgb(0, 71, 118)`) cho văn bản (`p`, `span`, `li`, `td`, `th`), nhãn form và số liệu đậm. **Tuyệt đối cấm** `#000000`, `text-black`, `text-slate-900`, `text-gray-900`.
 - **Màu hành động chính & pill bộ lọc đang chọn (`--primary-action`):** **`#006cee`** (hover: `#005ecc`), đồng bộ với tab active *"Bảng tính 10 biểu"* trên thanh điều hướng. Dùng thống nhất cho toàn bộ nút CTA chính (kể cả `+ Thêm nhiệm vụ`, `Lưu & tiếp`, `Lưu và nộp`, `Duyệt phiếu`) và pill lọc đang chọn.
 - **Màu chữ phụ:** `#20446c` và `#476885` cho chú thích, thời gian, thông tin thứ cấp.

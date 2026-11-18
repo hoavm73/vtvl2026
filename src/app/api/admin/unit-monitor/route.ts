@@ -5,6 +5,7 @@ import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store'
 import { syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { syncAccountsFromSupabase } from '@/services/storage/server-account-store';
 import { buildUnitMonitorPayload } from '@/services/admin/unit-monitor-builder';
+import { cacheGetOrSet } from '@/services/storage/runtime-cache';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -25,13 +26,16 @@ export async function GET(req: NextRequest) {
 
   const filterUnit = (req.nextUrl.searchParams.get('unitCode') || '').trim().toUpperCase();
   const includeTest = req.nextUrl.searchParams.get('includeTest') === 'true';
+  const cacheKey = `api:unit-monitor:${filterUnit || 'ALL'}:${includeTest}`;
 
-  await Promise.all([
-    syncTicketsFromSupabase().catch(() => {}),
-    syncServerWorkbooksFromSupabase().catch(() => {}),
-    syncAccountsFromSupabase().catch(() => {})
-  ]);
+  const payload = await cacheGetOrSet(cacheKey, ['tickets', 'workbooks', 'accounts', 'unit-monitor'], 3000, async () => {
+    await Promise.all([
+      syncTicketsFromSupabase().catch(() => {}),
+      syncServerWorkbooksFromSupabase().catch(() => {}),
+      syncAccountsFromSupabase().catch(() => {})
+    ]);
+    return buildUnitMonitorPayload(filterUnit, includeTest);
+  });
 
-  const payload = buildUnitMonitorPayload(filterUnit, includeTest);
-  return NextResponse.json(payload);
+  return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }

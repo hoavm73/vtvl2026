@@ -38,6 +38,7 @@ import {
   saveDraftCoordinationExtras
 } from './server-coordination-store';
 import { registerCacheInvalidator } from './server-file-lock';
+import { invalidateCacheTags } from './runtime-cache';
 
 export {
   mergeApprovedTicketToUnitWorkbook,
@@ -49,12 +50,15 @@ export {
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const TICKETS_FILE = path.join(DATA_DIR, 'staff_tickets.json');
 let memoryTickets: Map<string, StaffWorkTicket> | null = null;
+const lastTicketSyncByScope = new Map<string, number>();
 export function resetTicketMemoryStore(): void {
   memoryTickets = null;
+  lastTicketSyncByScope.clear();
   resetVersionMemoryStore();
   resetCoordinationMemoryStore();
+  invalidateCacheTags(['tickets', 'overview-stats', 'unit-monitor', 'coordination']);
 }
-registerCacheInvalidator(() => { memoryTickets = null; });
+registerCacheInvalidator(() => { memoryTickets = null; lastTicketSyncByScope.clear(); });
 
 function resolveActorName(email?: string): string | undefined {
   if (!email) return undefined;
@@ -111,10 +115,14 @@ export function persistTickets(): void {
   } catch { /* ignore */ }
 }
 
-export async function syncTicketsFromSupabase(unitCode?: string): Promise<void> {
+export async function syncTicketsFromSupabase(unitCode?: string, force = false): Promise<void> {
   const store = loadTickets();
+  const scopeKey = (unitCode || 'ALL').trim().toUpperCase();
+  const now = Date.now();
+  if (!force && process.env.VTVL_ISOLATED_LOCAL_STORE !== 'true' && now - (lastTicketSyncByScope.get(scopeKey) || 0) < 2500) return;
   const remote = await fetchTicketsFromSupabase(unitCode);
   if (remote === null) return;
+  lastTicketSyncByScope.set(scopeKey, now);
   await syncAccountsFromSupabase().catch(() => {});
   const remoteHistory = await fetchStatusHistoryFromSupabase(unitCode);
   if (unitCode) {
@@ -269,6 +277,8 @@ export async function upsertTicketAndSyncUnit(
   saveDraftCoordinationExtras(ticket.id, ticket.coordinatedVtvls, ticket.coordinationNote);
   store.set(ticket.id, ticket);
   persistTickets();
+  lastTicketSyncByScope.clear();
+  invalidateCacheTags(['tickets', 'overview-stats', 'unit-monitor', 'coordination']);
 
   return { ticket: enrichTicket(ticket), unitWorkbookRevision: wb.currentRevision };
 }
@@ -281,5 +291,7 @@ export async function deleteTicketAndSyncUnit(ticketId: string, actorEmail: stri
   removeCoordinationDataForSurvey(ticketId);
   store.delete(ticketId);
   persistTickets();
+  lastTicketSyncByScope.clear();
+  invalidateCacheTags(['tickets', 'overview-stats', 'unit-monitor', 'coordination']);
   return true;
 }

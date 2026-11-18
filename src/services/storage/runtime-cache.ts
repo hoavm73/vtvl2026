@@ -1,0 +1,106 @@
+import { registerCacheInvalidator } from './server-file-lock';
+
+export type CacheTag =
+  | 'tickets'
+  | 'workbooks'
+  | 'accounts'
+  | 'units'
+  | 'overview-stats'
+  | 'unit-monitor'
+  | 'coordination';
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+  tags: Set<CacheTag>;
+}
+
+const memoryCache = new Map<string, CacheEntry<unknown>>();
+const inFlightPromises = new Map<string, Promise<unknown>>();
+const MAX_CACHE_ENTRIES = 250;
+
+function isTestBypass(): boolean {
+  return process.env.VTVL_ISOLATED_LOCAL_STORE === 'true';
+}
+
+function evictExpiredOrOverflow(): void {
+  const now = Date.now();
+  for (const [k, entry] of memoryCache.entries()) {
+    if (now >= entry.expiresAt) memoryCache.delete(k);
+  }
+  if (memoryCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = memoryCache.keys().next().value;
+    if (oldestKey) memoryCache.delete(oldestKey);
+  }
+}
+
+export function getCachedValue<T>(key: string): T | undefined {
+  if (isTestBypass()) return undefined;
+  const entry = memoryCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() >= entry.expiresAt) {
+    memoryCache.delete(key);
+    return undefined;
+  }
+  return entry.value as T;
+}
+
+export function setCachedValue<T>(key: string, value: T, tags: CacheTag[], ttlMs = 5000): T {
+  if (isTestBypass() || ttlMs <= 0) return value;
+  evictExpiredOrOverflow();
+  memoryCache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+    tags: new Set(tags)
+  });
+  return value;
+}
+
+/**
+ * Truy xuất dữ liệu từ Runtime Cache kết hợp Singleflight (gộp các truy vấn đồng thời)
+ * và tự động hủy theo Tag khi có thay đổi dữ liệu.
+ */
+export async function cacheGetOrSet<T>(
+  key: string,
+  tags: CacheTag[],
+  ttlMs: number,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const hit = getCachedValue<T>(key);
+  if (hit !== undefined) return hit;
+
+  const existingPromise = inFlightPromises.get(key) as Promise<T> | undefined;
+  if (existingPromise) return existingPromise;
+
+  const promise = (async () => {
+    try {
+      const fresh = await fetcher();
+      return setCachedValue(key, fresh, tags, ttlMs);
+    } finally {
+      inFlightPromises.delete(key);
+    }
+  })();
+
+  inFlightPromises.set(key, promise);
+  return promise;
+}
+
+export function invalidateCacheTags(tags: CacheTag[]): void {
+  if (!tags.length) return;
+  const tagSet = new Set(tags);
+  for (const [key, entry] of memoryCache.entries()) {
+    for (const t of entry.tags) {
+      if (tagSet.has(t)) {
+        memoryCache.delete(key);
+        break;
+      }
+    }
+  }
+}
+
+export function clearAllRuntimeCache(): void {
+  memoryCache.clear();
+  inFlightPromises.clear();
+}
+
+registerCacheInvalidator(clearAllRuntimeCache);

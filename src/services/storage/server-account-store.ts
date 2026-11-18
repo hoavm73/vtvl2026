@@ -22,6 +22,7 @@ import {
   deleteAccountFromSupabase,
   shadowSyncAccountsToTienDo
 } from './server-account-db';
+import { invalidateCacheTags } from './runtime-cache';
 
 export type { UserRole, UserAccountRecord };
 export { getRoleTitle, getRoleFromTitle, hashAccountPassword, verifyPasswordHash, stripAccountSensitiveFields };
@@ -221,6 +222,7 @@ export async function upsertUserAccount(
   }
   store.set(norm, nextRecord);
   persistLocalStore();
+  invalidateCacheTags(['accounts', 'unit-monitor']);
   void shadowSyncAccountsToTienDo(getAllUserAccounts(), Array.from(deleted));
   return nextRecord;
 }
@@ -245,6 +247,7 @@ export async function deleteUserAccount(email: string): Promise<boolean> {
   const removed = store.delete(norm);
   removeParticipantFromAllWorkbooks(norm);
   persistLocalStore();
+  invalidateCacheTags(['accounts', 'unit-monitor']);
   void shadowSyncAccountsToTienDo(getAllUserAccounts(), Array.from(deleted));
   return removed;
 }

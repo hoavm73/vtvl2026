@@ -1,9 +1,10 @@
 import { ExcelSheetKey, GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
-import { fetchWorkbooksFromSupabase, persistWorkbookToSupabase, deleteWorkbookFromSupabase } from './server-supabase-store';
+import { fetchWorkbooksFromSupabase, persistWorkbookToSupabase, deleteWorkbookFromSupabase, invalidateSupabaseCache } from './server-supabase-store';
 import { getInitialSeedWorkbooks } from './server-seed-workbooks';
 import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lock';
+import { invalidateCacheTags } from './runtime-cache';
 import fs from 'fs';
 import path from 'path';
 
@@ -34,7 +35,12 @@ const STORE_FILE = path.join(DATA_DIR, 'server_workbooks.json');
 const DELETED_WB_FILE = path.join(DATA_DIR, 'deleted_workbooks.json');
 let memoryWorkbooks: Map<string, ServerWorkbook> | null = null;
 let deletedWbIds: Set<string> | null = null;
-export function resetWorkbookMemoryStore(): void { memoryWorkbooks = null; deletedWbIds = null; }
+export function resetWorkbookMemoryStore(): void {
+  memoryWorkbooks = null;
+  deletedWbIds = null;
+  invalidateSupabaseCache();
+  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
+}
 registerCacheInvalidator(resetWorkbookMemoryStore);
 export async function withUnitWorkbookLock<T>(unitCode: string, fn: () => Promise<T>): Promise<T> {
   return withCrossProcessLock(`unit_wb_${unitCode.trim().toUpperCase()}`, fn);
@@ -187,6 +193,8 @@ export function saveServerWorkbook(params: {
   wb.revisions.unshift({ id: `rev_${wb.id}_${nextRev}`, workbookId: wb.id, revision: nextRev, data: params.data, actorEmail: normEmail, actorTitle: params.actorTitle, changeSummary: params.changeSummary || `Cập nhật lần ${nextRev}`, createdAt: now });
   if (wb.revisions.length > 15) wb.revisions = wb.revisions.slice(0, 15);
   persistStore();
+  invalidateSupabaseCache();
+  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
   persistWorkbookToSupabase(wb).catch(() => {});
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }

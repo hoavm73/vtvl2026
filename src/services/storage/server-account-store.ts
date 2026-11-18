@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { findHcmuteUnit, BGH_ACCOUNT_EMAILS, BGH_VIRTUAL_UNIT } from '@/configs/hcmute-units';
 import {
   normalizeEmail,
   syncServerWorkbooksFromSupabase,
@@ -61,8 +61,9 @@ function persistDeletedAccountEmails(): void {
 function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): UserAccountRecord {
   const email = normalizeEmail(item.email), now = new Date().toLocaleString('vi-VN');
   const isTcns = email === 'tcns@hcmute.edu.vn';
-  const unit = findHcmuteUnit(isTcns ? 'TCNS' : (item.unitCode || 'CNTT'));
-  const role: UserRole = isTcns ? 'admin' : isValidRole(item.role) ? item.role : (item.title ? getRoleFromTitle(item.title) : undefined) || 'staff';
+  const isBgh = BGH_ACCOUNT_EMAILS.has(email) || (item.unitCode || '').trim().toUpperCase() === 'BGH' || (item.unitNameVi || '').trim().toLowerCase() === 'ban giám hiệu';
+  const unit = isBgh ? BGH_VIRTUAL_UNIT : findHcmuteUnit(isTcns ? 'TCNS' : (item.unitCode || 'CNTT'));
+  const role: UserRole = (isTcns || isBgh) ? 'admin' : isValidRole(item.role) ? item.role : (item.title ? getRoleFromTitle(item.title) : undefined) || 'staff';
   return {
     email, displayName: (item.displayName || email.split('@')[0]).trim(), unitCode: unit.code, unitNameVi: unit.nameVi,
     title: getRoleTitle(role), role, authProvider: item.authProvider === 'google' ? 'google' : 'email',

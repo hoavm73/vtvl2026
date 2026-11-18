@@ -109,7 +109,7 @@ export const DELETED_UNIT_CODES = new Set([
  * để tra cứu tên hiển thị cho dữ liệu cũ mà không đưa vào danh sách đơn vị hoạt động.
  */
 export const INACTIVE_HISTORICAL_UNITS: Record<string, string> = {
-  BGH: 'Ban Giám hiệu (Ngoài danh mục 39 đơn vị)',
+  BGH: 'Ban Giám hiệu',
   HDT: 'Hội đồng trường (Đã giải thể / Ngoài danh mục)',
   TTNN: 'Trung tâm Ngoại ngữ (Ngoài danh mục 39 đơn vị)',
   TTVD: 'Trung tâm Việt Đức',
@@ -121,6 +121,24 @@ export const INACTIVE_HISTORICAL_UNITS: Record<string, string> = {
   TTCNTT: 'Trung tâm Công nghệ thông tin',
   CDT: 'Công đoàn Trường',
   DTN: 'Đoàn Thanh niên - Hội Sinh viên'
+};
+
+export const BGH_ACCOUNT_EMAILS = new Set([
+  'hientt@hcmute.edu.vn',
+  'haiqt@hcmute.edu.vn',
+  'gianglh@hcmute.edu.vn',
+  'chdthanh@hcmute.edu.vn'
+]);
+
+export const BGH_VIRTUAL_UNIT: HcmuteUnit = {
+  code: 'BGH',
+  nameVi: 'Ban Giám hiệu',
+  nameEn: 'Presidential Board',
+  group: 'phong-ban',
+  domain: 'hcmute.edu.vn',
+  headTitleVi: 'Hiệu trưởng',
+  headTitleEn: 'President',
+  defaultStaffCount: 4
 };
 
 export const UNIT_CODE_ALIASES: Record<string, string> = {
@@ -192,6 +210,7 @@ export function findHcmuteUnit(codeOrName?: string): HcmuteUnit {
   const units = getActiveHcmuteUnits();
   if (!codeOrName) return units[0] || HCMUTE_UNITS[0];
   const query = codeOrName.trim().toUpperCase();
+  if (query === 'BGH' || query === 'BAN GIÁM HIỆU') return { ...BGH_VIRTUAL_UNIT };
   const canonicalCode = UNIT_CODE_ALIASES[query] || query;
   const direct = units.find((u) => u.code.toUpperCase() === canonicalCode) || units.find((u) => u.code.toUpperCase() === query);
   if (direct) {

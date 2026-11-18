@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { UserAccountRecord } from './account-crypto';
 import { normalizeEmail } from './server-workbook-store';
-import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { findHcmuteUnit, BGH_ACCOUNT_EMAILS } from '@/configs/hcmute-units';
 import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 
 const getDbUrl = () => (process.env.DATABASE_URL || '').trim();
@@ -56,21 +56,25 @@ export async function fetchAccountsFromSupabase(): Promise<DbAccountRow[] | null
         last_active_at: true
       }
     });
-    return rows.map((r) => ({
-      email: r.email,
-      unit_code: r.unit_code,
-      unit_name_vi: r.unit_name_vi,
-      display_name: r.display_name,
-      role: r.role,
-      title: r.title,
-      auth_provider: r.auth_provider,
-      avatar_url: r.avatar_url,
-      status: r.status,
-      has_selected_unit: Boolean(r.has_selected_unit),
-      password_hash: r.password_hash,
-      created_at: toIsoString(r.created_at),
-      last_active_at: toIsoString(r.last_active_at)
-    }));
+    return rows.map((r) => {
+      const email = normalizeEmail(r.email);
+      const isBgh = BGH_ACCOUNT_EMAILS.has(email) || (r.unit_name_vi || '').trim().toLowerCase() === 'ban giám hiệu' || (r.unit_code || '').trim().toUpperCase() === 'BGH';
+      return {
+        email: r.email,
+        unit_code: isBgh ? 'BGH' : r.unit_code,
+        unit_name_vi: isBgh ? 'Ban Giám hiệu' : r.unit_name_vi,
+        display_name: r.display_name,
+        role: r.role,
+        title: r.title,
+        auth_provider: r.auth_provider,
+        avatar_url: r.avatar_url,
+        status: r.status,
+        has_selected_unit: Boolean(r.has_selected_unit),
+        password_hash: r.password_hash,
+        created_at: toIsoString(r.created_at),
+        last_active_at: toIsoString(r.last_active_at)
+      };
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const err = new Error(`[DB_ERROR] user_accounts query failed: ${msg}`);
@@ -84,10 +88,12 @@ export async function fetchAccountsFromSupabase(): Promise<DbAccountRow[] | null
 export async function persistAccountToSupabase(a: UserAccountRecord): Promise<boolean> {
   if (!assertAccountDbConfigured('persistAccount')) return false;
 
+  const normEmail = normalizeEmail(a.email);
+  const isBgh = BGH_ACCOUNT_EMAILS.has(normEmail) || (a.unitCode || '').trim().toUpperCase() === 'BGH';
   const data = {
-    email: normalizeEmail(a.email),
-    unit_code: a.unitCode,
-    unit_name_vi: a.unitNameVi || findHcmuteUnit(a.unitCode).nameVi,
+    email: normEmail,
+    unit_code: isBgh ? 'TCNS' : a.unitCode,
+    unit_name_vi: a.unitNameVi || (isBgh ? 'Ban Giám hiệu' : findHcmuteUnit(a.unitCode).nameVi),
     display_name: a.displayName,
     role: a.role,
     title: a.title,

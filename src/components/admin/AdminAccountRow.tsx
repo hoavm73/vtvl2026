@@ -51,6 +51,9 @@ export function AdminAccountRow({
   const availableRoles = isLeader
     ? ROLE_OPTIONS.filter((r) => r.value !== 'admin')
     : ROLE_OPTIONS;
+  const rowUnitOptions = acc.unitCode === 'BGH' && !unitOptions.some((o) => o.value === 'BGH')
+    ? [{ value: 'BGH', label: '[BGH] Ban Giám hiệu' }, ...unitOptions]
+    : unitOptions;
 
   return (
     <tr className="border-b border-[#e2e8f0] hover:bg-[#f5f9ff]/60 transition-colors">
@@ -84,7 +87,7 @@ export function AdminAccountRow({
         <ShadcnSelect
           value={acc.unitCode}
           onValueChange={(val) => onUpdate(acc, { unitCode: val })}
-          options={unitOptions}
+          options={rowUnitOptions}
           searchable={true}
           size="sm"
           disabled={isUpdating || isLeader}

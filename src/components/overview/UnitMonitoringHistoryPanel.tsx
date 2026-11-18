@@ -60,6 +60,9 @@ export function UnitMonitoringHistoryPanel({
   const [historySearch, setHistorySearch] = useState<string>('');
   const [ticketsExpanded, setTicketsExpanded] = useState<boolean>(true);
   const [historyExpanded, setHistoryExpanded] = useState<boolean>(true);
+  const [ticketPage, setTicketPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const pageSize = 50;
 
   useEffect(() => {
     if (externalStatusSync !== undefined) setTicketStatusFilter(externalStatusSync);
@@ -137,7 +140,7 @@ export function UnitMonitoringHistoryPanel({
           <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có phiếu khảo sát nào khớp với bộ lọc hiện tại.</div>
         ) : (
           <div className="divide-y divide-[#e2e8f0] max-h-[430px] overflow-y-auto">
-            {filteredTickets.map((t) => {
+            {filteredTickets.slice(0, ticketPage * pageSize).map((t) => {
               const meta = STATUS_BADGE_META[t.canonicalStatus] || STATUS_BADGE_META.draft;
               const BadgeIcon = meta.Icon;
               return (
@@ -183,12 +186,12 @@ export function UnitMonitoringHistoryPanel({
                     <div className="text-[13px] font-semibold text-[#004776] leading-snug">{t.tenCongViec}</div>
 
                     {t.revisionReason && (
-                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#fff8eb] border-l-2 border-[#f99c00] text-[11px] text-[#004776]">
+                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#fff8eb] border-l-2 border-[#f99c00] text-[11px] text-[#004776] line-clamp-2">
                         <strong>Yêu cầu sửa:</strong> {t.revisionReason}
                       </div>
                     )}
                     {t.lastChangeSummary && (
-                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#f4f9ff] border-l-2 border-[#006cee] text-[11px] text-[#004776]">
+                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#f4f9ff] border-l-2 border-[#006cee] text-[11px] text-[#004776] line-clamp-2">
                         <strong>Giải trình:</strong> {t.lastChangeSummary}
                       </div>
                     )}
@@ -207,6 +210,13 @@ export function UnitMonitoringHistoryPanel({
                 </div>
               );
             })}
+            {filteredTickets.length > ticketPage * pageSize && (
+              <div className="p-2.5 text-center">
+                <button type="button" onClick={() => setTicketPage((p) => p + 1)} className="px-4 py-1.5 rounded-lg border border-[#dbe8f5] text-xs font-semibold text-[#006cee] hover:bg-[#eef5ff] cursor-pointer">
+                  Xem thêm ({filteredTickets.length - ticketPage * pageSize} phiếu)
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -242,31 +252,26 @@ export function UnitMonitoringHistoryPanel({
           <div className="p-4 max-h-[430px] overflow-y-auto">
             <div className="relative pl-5 space-y-4">
               <div className="absolute left-[7px] top-1.5 bottom-1.5 w-px bg-[#dbe8f5]" />
-              {filteredHistory.map((item, idx) => (
+              {filteredHistory.slice(0, historyPage * pageSize).map((item, idx) => (
                 <div key={item.id} className="relative space-y-1">
                   <span className={`absolute -left-5 top-1.5 w-3 h-3 rounded-full ring-4 ${TIMELINE_DOT_COLOR[item.category]} ${idx === 0 ? 'animate-pulse' : ''}`} />
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => onSelectUnit(item.unitCode)}
-                        className="text-[11px] font-bold text-[#006cee] hover:underline cursor-pointer shrink-0"
-                      >
-                        [{item.unitCode}]
-                      </button>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] truncate">
-                        {item.actionLabel}
-                      </span>
+                      <button type="button" onClick={() => onSelectUnit(item.unitCode)} className="text-[11px] font-bold text-[#006cee] hover:underline cursor-pointer shrink-0">[{item.unitCode}]</button>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#eef5ff] text-[#004776] truncate">{item.actionLabel}</span>
                     </div>
                     <span className="text-[10.5px] text-[#20446c]/75 shrink-0 tabular-nums">{formatCompactTime(item.timestampIso)}</span>
                   </div>
                   <div className="text-xs font-semibold text-[#004776] leading-snug">{item.title}</div>
-                  <div className="text-[11px] text-[#20446c] leading-relaxed">{item.details}</div>
-                  <div className="text-[10.5px] text-[#20446c]/80">
-                    Thực hiện: <strong className="text-[#004776]">{item.actorEmail}</strong> · {item.unitNameVi}
-                  </div>
+                  <div className="text-[11px] text-[#20446c] leading-relaxed line-clamp-2">{item.details}</div>
+                  <div className="text-[10.5px] text-[#20446c]/80">Thực hiện: <strong className="text-[#004776]">{item.actorEmail}</strong> · {item.unitNameVi}</div>
                 </div>
               ))}
+              {filteredHistory.length > historyPage * pageSize && (
+                <button type="button" onClick={() => setHistoryPage((p) => p + 1)} className="w-full py-1.5 rounded-lg border border-[#dbe8f5] text-xs font-semibold text-[#006cee] hover:bg-[#eef5ff] cursor-pointer">
+                  Xem thêm ({filteredHistory.length - historyPage * pageSize} mục)
+                </button>
+              )}
             </div>
           </div>
         ))}

@@ -672,6 +672,8 @@ model staff_work_tickets {
   @@index([submitted_at], map: "idx_swt_submitted_at")
   @@index([unit_id], map: "idx_swt_unit_id")
   @@index([unit_code, status], map: "idx_swt_unit_status")
+  @@index([unit_code, status, updated_at(sort: Desc), id(sort: Desc)], map: "idx_tickets_unit_status_updated")
+  @@index([owner_email, updated_at(sort: Desc), id(sort: Desc)], map: "idx_tickets_owner_updated")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -845,6 +847,7 @@ model work_survey_status_history {
   @@index([created_at(sort: Desc)], map: "idx_wssh_created_at")
   @@index([survey_id], map: "idx_wssh_survey_id")
   @@index([unit_id], map: "idx_wssh_unit_id")
+  @@index([survey_id, created_at(sort: Desc)], map: "idx_status_history_survey_created")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -924,4 +927,46 @@ model workbooks {
   @@unique([unit_id, reporting_period], map: "uq_workbooks_unit_period")
   @@index([unit_id, reporting_period], map: "idx_workbooks_unit_period")
   @@index([updated_at(sort: Desc)], map: "idx_workbooks_updated_at")
+}
+
+model unit_mission_counters {
+  unit_code    String   @db.VarChar(50)
+  mission_code String   @db.VarChar(80)
+  last_seq     Int      @default(0)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([unit_code, mission_code])
+}
+
+model idempotency_records {
+  idempotency_key String   @id @db.VarChar(180)
+  action_scope    String   @db.VarChar(80)
+  actor_email     String   @db.VarChar(255)
+  target_id       String?  @db.VarChar(120)
+  response_json   Json     @default("{}")
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  expires_at      DateTime @db.Timestamptz(6)
+
+  @@index([expires_at], map: "idx_idempotency_expires_at")
+}
+
+model background_jobs {
+  id            String    @id @db.VarChar(120)
+  job_type      String    @db.VarChar(80)
+  unit_code     String    @db.VarChar(50)
+  actor_email   String    @db.VarChar(255)
+  status        String    @default("queued") @db.VarChar(30)
+  progress      Int       @default(0)
+  attempts      Int       @default(0)
+  max_attempts  Int       @default(3)
+  payload_json  Json      @default("{}")
+  result_json   Json?
+  error_message String?
+  run_after     DateTime  @default(now()) @db.Timestamptz(6)
+  started_at    DateTime? @db.Timestamptz(6)
+  completed_at  DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([status, run_after, created_at], map: "idx_bg_jobs_status_run_after")
 }

@@ -25,21 +25,13 @@ export function toDisplayStatus(status: string | undefined): DisplayTicketStatus
 }
 
 export interface CoordinatedTaskLink {
-  id: string;
-  targetUnitCode: string;
-  targetUnitName: string;
-  targetTaskCode: string;
-  targetTaskName: string;
-  note?: string;
+  id: string; targetUnitCode: string; targetUnitName: string;
+  targetTaskCode: string; targetTaskName: string; note?: string;
 }
 
 export interface CoordinatedVtvlEntry {
-  id: string;
-  targetUnitCode: string;
-  targetUnitName?: string;
-  maVtvl: string;
-  tenVtvl?: string;
-  note?: string;
+  id: string; targetUnitCode: string; targetUnitName?: string;
+  maVtvl: string; tenVtvl?: string; note?: string;
 }
 
 export interface UserVtvlAssignment {
@@ -284,6 +276,9 @@ export interface StaffWorkTicket {
   b2RowId?: string;
   isMergedToB1B2?: boolean;
   currentVersionNo?: number;
+  revision?: number;
+  versionCount?: number;
+  historyCount?: number;
   lastChangeSummary?: string;
   isTestData?: boolean;
   isArchived?: boolean;

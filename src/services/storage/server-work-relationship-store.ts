@@ -13,6 +13,7 @@ import { resolveUnitVtvlName } from './server-vtvl-assignment-store';
 import { normalizeEmail } from './server-workbook-store';
 import { getDbTestHook, isDatabaseConfigured, prisma, toIsoString } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
+import { writeJsonFileAtomic } from './atomic-json-file';
 import { extractEffectiveCoordinatedVtvls, normalizeCode, resolveUnitCodeSafe, resolveUnitNameSafe } from '@/services/tickets/vtvl-coordination-helpers';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
@@ -51,10 +52,7 @@ function loadState(): WorkRelationshipStoreState {
 
 function persistState(state: WorkRelationshipStoreState): void {
   memoryState = state;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(REL_FILE, JSON.stringify(state, null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(REL_FILE, state, true);
 }
 
 export function getWorkRelationshipStateSnapshot(): WorkRelationshipStoreState {

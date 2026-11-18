@@ -5,6 +5,7 @@ import { fetchWorkbooksFromSupabase, persistWorkbookToSupabase, deleteWorkbookFr
 import { getInitialSeedWorkbooks } from './server-seed-workbooks';
 import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lock';
 import { invalidateCacheTags } from './runtime-cache';
+import { writeJsonFileAtomic } from './atomic-json-file';
 import fs from 'fs';
 import path from 'path';
 
@@ -63,11 +64,11 @@ function loadDeletedWbIds(): Set<string> {
 }
 function persistDeletedWbIds(): void {
   if (!deletedWbIds) return;
-  try { ensureDataDir(); fs.writeFileSync(DELETED_WB_FILE, JSON.stringify(Array.from(deletedWbIds)), 'utf8'); } catch { /* ignore */ }
+  writeJsonFileAtomic(DELETED_WB_FILE, Array.from(deletedWbIds));
 }
 function persistStore(): void {
   if (!memoryWorkbooks) return;
-  try { ensureDataDir(); fs.writeFileSync(STORE_FILE, JSON.stringify(Array.from(memoryWorkbooks.values()), null, 2), 'utf8'); } catch { /* ignore */ }
+  writeJsonFileAtomic(STORE_FILE, Array.from(memoryWorkbooks.values()), true);
 }
 function loadStore(): Map<string, ServerWorkbook> {
   if (memoryWorkbooks) return memoryWorkbooks;
@@ -96,6 +97,7 @@ function findLatestUnitWorkbook(store: Map<string, ServerWorkbook>, unitCode: st
 export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Promise<void> {
   const store = loadStore(), deleted = loadDeletedWbIds();
   try {
+    let changed = false;
     for (const sw of await fetchWorkbooksFromSupabase(forceRefresh)) {
       if (!sw.id || deleted.has(sw.id) || deleted.has(sw.unitId) || store.get(sw.id)?.isDeleted) continue;
       const sameUnit = Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === sw.unitId.toUpperCase());
@@ -103,10 +105,23 @@ export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Pro
       if (!sameUnit.length || (sw.currentRevision && sw.currentRevision >= maxRev)) {
         sameUnit.forEach((oldWb) => { if (oldWb.id !== sw.id) store.delete(oldWb.id); });
         store.set(sw.id, sw);
+        changed = true;
       }
     }
-    persistStore();
+    if (changed) persistStore();
   } catch { /* ignore */ }
+}
+
+export function getWorkbookForUnitReadOnly(unitId: string, reportingPeriod = '01/10/2025–30/9/2026'): ServerWorkbook {
+  const store = loadStore();
+  const existing = findLatestUnitWorkbook(store, unitId);
+  if (existing) return existing;
+  const unit = findHcmuteUnit(unitId), id = `wb_${unit.code}_2026`, now = new Date().toLocaleString('vi-VN');
+  const defaultData = buildDefaultGridWorkbook(unit.code);
+  return {
+    id, unitId: unit.code, unitNameVi: unit.nameVi, reportingPeriod, status: 'draft', currentRevision: 1,
+    data: defaultData, touchedCells: [], createdAt: now, updatedAt: now, participants: [], revisions: []
+  };
 }
 
 export function getOrCreateWorkbook(
@@ -131,19 +146,12 @@ export function getOrCreateWorkbook(
 }
 
 export function findWorkbooksByEmail(email: string): ServerWorkbook[] {
-  const store = loadStore();
-  const norm = normalizeEmail(email);
-  const username = norm.split('@')[0];
-  return Array.from(store.values()).filter(
-    (w) => !w.isDeleted && Array.isArray(w.participants) && w.participants.some(
-      (p) => p && (p.emailNormalized === norm || p.emailNormalized?.split('@')[0] === username)
-    )
-  );
+  const store = loadStore(), norm = normalizeEmail(email), username = norm.split('@')[0];
+  return Array.from(store.values()).filter((w) => !w.isDeleted && Array.isArray(w.participants) && w.participants.some((p) => p && (p.emailNormalized === norm || p.emailNormalized?.split('@')[0] === username)));
 }
 
 export function getWorkbookById(id: string): ServerWorkbook | null {
-  const store = loadStore();
-  const wb = store.get(id);
+  const store = loadStore(), wb = store.get(id);
   if (wb && !wb.isDeleted) return wb;
   const m = id.match(/^wb_([A-Za-z0-9]+)/);
   return m ? findLatestUnitWorkbook(store, m[1]) : null;

@@ -1,0 +1,83 @@
+{
+  "timestamp": "2026-11-18T17:37:54.360Z",
+  "environment": "Isolated Synthetic Benchmark (Production DB Mode Simulated — 0 Disk JSON Writes, 0 Production Impact)",
+  "dataset": {
+    "activeUnits": 39,
+    "totalTickets": 20000,
+    "versionsPerTicket": 5,
+    "totalVersions": 100000,
+    "totalStatusHistory": 40000,
+    "seedDurationMs": 89.95
+  },
+  "beforeListFullUnit": {
+    "requests": 30,
+    "errors": 0,
+    "errorRatePct": 0,
+    "wallTimeMs": 249.51,
+    "throughputRps": 120.2,
+    "p50": 7.78,
+    "p95": 11.32,
+    "p99": 11.55,
+    "payloadBytes": 2237684
+  },
+  "afterListCursor50": {
+    "requests": 200,
+    "errors": 0,
+    "errorRatePct": 0,
+    "wallTimeMs": 406.18,
+    "throughputRps": 492.4,
+    "p50": 97.88,
+    "p95": 107.14,
+    "p99": 108.1,
+    "payloadBytes": 173168
+  },
+  "adminOverview200Concurrent": {
+    "requests": 200,
+    "errors": 0,
+    "errorRatePct": 0,
+    "wallTimeMs": 16.66,
+    "throughputRps": 12007.6,
+    "p50": 13.39,
+    "p95": 14.72,
+    "p99": 14.91,
+    "payloadBytes": 7668
+  },
+  "concurrentCreate100Across39Units": {
+    "requests": 100,
+    "errors": 0,
+    "errorRatePct": 0,
+    "wallTimeMs": 107.16,
+    "throughputRps": 933.2,
+    "p50": 97.78,
+    "p95": 103.51,
+    "p99": 103.63,
+    "uniqueCreatedCodes": 100,
+    "duplicateCreatedCodes": 0
+  },
+  "burst39UnitsMerge20000Tickets": {
+    "requests": 39,
+    "errors": 0,
+    "errorRatePct": 0,
+    "wallTimeMs": 615.48,
+    "throughputRps": 63.4,
+    "p50": 613.64,
+    "p95": 614.28,
+    "p99": 614.6,
+    "unitsParticipated": 39,
+    "totalMergedTickets": 20000,
+    "ticketsMergedPerSecond": 32494.9,
+    "totalFormulaRuns": 39,
+    "totalWorkbookWrites": 39,
+    "postMergeIntegrityAudit": {
+      "expectedTickets": 20000,
+      "totalA2RowsAfterMerge": 20000,
+      "totalB1RowsAfterMerge": 20000,
+      "missingTicketsCount": 0,
+      "duplicateA2RowsCount": 0,
+      "duplicateB1RowsCount": 0,
+      "duplicateTaskCodesCount": 0,
+      "unflaggedTicketsCount": 0,
+      "integrityPassed": true
+    }
+  }
+}

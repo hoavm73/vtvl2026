@@ -30,13 +30,15 @@ function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function acquireFileLock(lockName: string, timeoutMs = 15000): Promise<() => void> {
+async function acquireFileLock(lockName: string, timeoutMs = 15000): Promise<{ release: () => void; crossProcessChanged: boolean }> {
   try {
     if (!fs.existsSync(LOCKS_DIR)) fs.mkdirSync(LOCKS_DIR, { recursive: true });
   } catch {
     // ignore
   }
-  const lockFile = path.join(LOCKS_DIR, `${sanitizeKey(lockName)}.lock`);
+  const safeName = sanitizeKey(lockName);
+  const lockFile = path.join(LOCKS_DIR, `${safeName}.lock`);
+  const pidFile = path.join(LOCKS_DIR, `${safeName}.pid`);
   const start = Date.now();
 
   while (true) {
@@ -44,19 +46,31 @@ async function acquireFileLock(lockName: string, timeoutMs = 15000): Promise<() 
       const fd = fs.openSync(lockFile, 'wx');
       fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, ts: Date.now() }), 'utf8');
       fs.closeSync(fd);
-      return () => {
-        try {
-          if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile);
-        } catch {
-          // ignore
+      let crossProcessChanged = false;
+      try {
+        if (fs.existsSync(pidFile)) {
+          const prevPid = fs.readFileSync(pidFile, 'utf8').trim();
+          if (prevPid && prevPid !== String(process.pid)) crossProcessChanged = true;
+        }
+        fs.writeFileSync(pidFile, String(process.pid), 'utf8');
+      } catch {
+        // ignore
+      }
+      return {
+        crossProcessChanged,
+        release: () => {
+          try {
+            if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile);
+          } catch {
+            // ignore
+          }
         }
       };
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
       if (code !== 'EEXIST') {
-        return () => {};
+        return { crossProcessChanged: false, release: () => {} };
       }
-      // Xử lý stale lock nếu tiến trình giữ khóa đã treo quá 12 giây
       try {
         const stat = fs.statSync(lockFile);
         if (Date.now() - stat.mtimeMs > 12000) {
@@ -88,9 +102,11 @@ export async function withCrossProcessLock<T>(lockKey: string, fn: () => Promise
   inProcessQueues.set(lockKey, prev.then(() => current));
 
   await prev;
-  const releaseFile = await acquireFileLock(lockKey);
+  const { release: releaseFile, crossProcessChanged } = await acquireFileLock(lockKey);
   try {
-    invalidateAllLocalCaches();
+    if (crossProcessChanged && process.env.VTVL_BENCHMARK_MEMORY_ONLY !== 'true') {
+      invalidateAllLocalCaches();
+    }
     return await fn();
   } finally {
     releaseFile();

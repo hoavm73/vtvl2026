@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Prisma } from '@prisma/client';
 import { isDatabaseConfigured, prisma } from './prisma';
+import { writeJsonFileAtomic } from './atomic-json-file';
 
 export interface ServerAuditLog {
   id: string;
@@ -73,12 +74,7 @@ function ensureLoaded() {
 }
 
 function persistLogs() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(AUDIT_FILE, JSON.stringify(memoryAuditLogs, null, 2), 'utf8');
-  } catch { /* ignore in read-only environment */ }
+  writeJsonFileAtomic(AUDIT_FILE, memoryAuditLogs, true);
 }
 
 export function appendAuditLog(entry: Omit<ServerAuditLog, 'id' | 'createdAt' | 'timestamp'>): ServerAuditLog {

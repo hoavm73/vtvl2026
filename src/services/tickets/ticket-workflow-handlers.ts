@@ -9,7 +9,6 @@ import {
 } from '@/services/storage/server-ticket-store';
 import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
 import {
-  withSurveySubmissionLock,
   createImmutableSurveyVersion,
   compensateRemoveSurveyVersion
 } from '@/services/storage/server-ticket-version-store';
@@ -23,9 +22,15 @@ import {
   compensateRemoveCoordinationProjection,
   syncSubmittedCoordinationProjection
 } from './vtvl-coordination-service';
+import {
+  checkTicketOptimisticConcurrency,
+  getRecordedIdempotencyResponse,
+  saveIdempotencyResponse
+} from '@/services/storage/server-mission-counter';
 
 export async function executePatchTicketAction(caller: CallerAuthContext, body: Record<string, unknown>) {
   const { id, ticketId, action, note, reason, revisionNotes, changeSummary } = body;
+  const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : '';
   const reqActor = body.actorEmail || body.actor_id;
   if (reqActor && normalizeEmail(String(reqActor)) !== normalizeEmail(caller.email)) {
     return NextResponse.json({ error: 'Không được phép giả mạo danh tính actor_id.', code: 'FORBIDDEN_ACTOR_SPOOFING' }, { status: 403 });
@@ -59,7 +64,15 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
     }
 
     return await withCrossProcessLock(`ticket_unit_${target.unitCode.toUpperCase()}`, async () => {
+      if (idempotencyKey) {
+        const cached = await getRecordedIdempotencyResponse(idempotencyKey, `patch_${act}`);
+        if (cached) return NextResponse.json({ ...cached, idempotent: true });
+      }
       const latest = getTicketById(target.id) || target;
+      const concurrency = checkTicketOptimisticConcurrency(latest, body);
+      if (concurrency.conflict) {
+        return NextResponse.json({ error: concurrency.message, code: 'REVISION_CONFLICT', conflict: true }, { status: 409 });
+      }
       const curCanon = toCanonicalStatus(latest.status);
       const isResubmit = act === 'resubmit';
 
@@ -101,32 +114,28 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         });
 
         await appendTicketStatusHistory(updated.ticket, {
-          surveyId: latest.id,
-          fromStatus: curCanon,
-          toStatus: isResubmit ? 'resubmitted' : 'submitted',
-          action: isResubmit ? 'RESUBMIT' : 'SUBMIT',
-          reason: typeof changeSummary === 'string' ? changeSummary.trim() : undefined,
-          actorId: caller.email,
-          actorRole: caller.role,
-          unitId: latest.unitCode
+          surveyId: latest.id, fromStatus: curCanon, toStatus: isResubmit ? 'resubmitted' : 'submitted',
+          action: isResubmit ? 'RESUBMIT' : 'SUBMIT', reason: typeof changeSummary === 'string' ? changeSummary.trim() : undefined,
+          actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
         });
         await syncSubmittedCoordinationProjection(updated.ticket, ver);
 
         const audit = appendAuditLog({
-          unitCode: latest.unitCode,
-          unitName: findHcmuteUnit(latest.unitCode).nameVi,
-          action: isResubmit ? 'NỘP_LẠI_PHIẾU' : 'NỘP_PHIẾU',
-          targetId: latest.id,
-          targetEntity: 'staff_work_tickets',
+          unitCode: latest.unitCode, unitName: findHcmuteUnit(latest.unitCode).nameVi,
+          action: isResubmit ? 'NỘP_LẠI_PHIẾU' : 'NỘP_PHIẾU', targetId: latest.id, targetEntity: 'staff_work_tickets',
           details: `${isResubmit ? 'Nộp lại' : 'Nộp'} phiếu ${latest.maCongViec} (v${ver.versionNo})`,
-          actorEmail: caller.email,
-          actorRole: caller.role,
+          actorEmail: caller.email, actorRole: caller.role,
           oldValues: { status: curCanon, versionNo: latest.currentVersionNo || 0 },
           newValues: { status: isResubmit ? 'resubmitted' : 'submitted', versionNo: ver.versionNo, changeSummary }
         });
         await persistAuditLogToSupabase(audit);
 
-        return NextResponse.json({ ok: true, ticket: getTicketById(latest.id) || updated.ticket });
+        const finalTicket = getTicketById(latest.id) || updated.ticket;
+        const payload = { ok: true, ticket: finalTicket };
+        if (idempotencyKey) {
+          await saveIdempotencyResponse({ idempotencyKey, actionScope: `patch_${act}`, actorEmail: caller.email, targetId: latest.id, response: payload });
+        }
+        return NextResponse.json(payload);
       } catch (txErr) {
         if (createdVersionNo !== null) {
           compensateRemoveSurveyVersion(latest.id, createdVersionNo);
@@ -147,8 +156,16 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
   }
 
   return await withCrossProcessLock(`ticket_unit_${target.unitCode.toUpperCase()}`, async () => {
+    if (idempotencyKey) {
+      const cached = await getRecordedIdempotencyResponse(idempotencyKey, `patch_${act}`);
+      if (cached) return NextResponse.json({ ...cached, idempotent: true });
+    }
     await syncTicketsFromSupabase(target.unitCode).catch(() => {});
     const latest = getTicketById(target.id) || target;
+    const concurrency = checkTicketOptimisticConcurrency(latest, body);
+    if (concurrency.conflict) {
+      return NextResponse.json({ error: concurrency.message, code: 'REVISION_CONFLICT', conflict: true }, { status: 409 });
+    }
     const nowIso = new Date().toISOString();
     const curCanon = toCanonicalStatus(latest.status);
 
@@ -156,7 +173,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
       return await executeRevokeOrCancelTicket(caller, latest, act, reasonText);
     }
 
-    // 2. MERGE vào biểu A2 & B1 (và B2 khi có dữ liệu B2_CT thực tế)
+    // 2. MERGE vào biểu A2 & B1
     if (act === 'merge') {
       if (curCanon !== 'approved') {
         return NextResponse.json({ error: 'Chỉ phiếu Đã duyệt mới được phép gộp vào biểu đơn vị.', code: 'FORBIDDEN_UNAPPROVED_MERGE' }, { status: 400 });
@@ -167,28 +184,23 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         Boolean(body._simulateMergeFailure || process.env.VTVL_SIMULATE_MERGE_FAILURE === 'true')
       );
       await appendTicketStatusHistory(result.ticket, {
-        surveyId: latest.id,
-        fromStatus: 'approved',
-        toStatus: 'approved',
-        action: 'MERGE_TO_SHEETS',
-        actorId: caller.email,
-        actorRole: caller.role,
-        unitId: latest.unitCode
+        surveyId: latest.id, fromStatus: 'approved', toStatus: 'approved', action: 'MERGE_TO_SHEETS',
+        actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
       });
       const audit = appendAuditLog({
-        unitCode: latest.unitCode,
-        unitName: findHcmuteUnit(latest.unitCode).nameVi,
-        action: 'GỘP_PHIẾU_A2_B1',
-        targetId: latest.id,
-        targetEntity: 'staff_work_tickets',
+        unitCode: latest.unitCode, unitName: findHcmuteUnit(latest.unitCode).nameVi, action: 'GỘP_PHIẾU_A2_B1',
+        targetId: latest.id, targetEntity: 'staff_work_tickets',
         details: `Gộp phiếu ${latest.maCongViec} (v${result.ticket.currentVersionNo || 1}) vào biểu A2 (${result.ticket.a2RowId}) và B1 (${result.ticket.b1RowId})`,
-        actorEmail: caller.email,
-        actorRole: caller.role,
+        actorEmail: caller.email, actorRole: caller.role,
         oldValues: { isMergedToB1B2: Boolean(latest.isMergedToB1B2) },
         newValues: { isMergedToB1B2: true, sourceVersion: result.ticket.currentVersionNo || 1, a2RowId: result.ticket.a2RowId, b1RowId: result.ticket.b1RowId, b2RowId: result.ticket.b2RowId || null }
       });
       await persistAuditLogToSupabase(audit);
-      return NextResponse.json({ ok: true, merged: true, ticket: getTicketById(latest.id) || result.ticket, unitWorkbookRevision: result.unitWorkbookRevision });
+      const payload = { ok: true, merged: true, ticket: getTicketById(latest.id) || result.ticket, unitWorkbookRevision: result.unitWorkbookRevision };
+      if (idempotencyKey) {
+        await saveIdempotencyResponse({ idempotencyKey, actionScope: `patch_${act}`, actorEmail: caller.email, targetId: latest.id, response: payload });
+      }
+      return NextResponse.json(payload);
     }
 
     // 3. APPROVE
@@ -199,24 +211,18 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
           code: 'FORBIDDEN_SELF_REVIEW'
         }, { status: 403 });
       }
+      if (curCanon === 'approved' && idempotencyKey) {
+        return NextResponse.json({ ok: true, idempotent: true, ticket: latest });
+      }
       if (curCanon !== 'submitted' && curCanon !== 'resubmitted') {
         return NextResponse.json({ error: 'Chỉ phiếu Đã nộp hoặc Đã nộp lại mới có thể phê duyệt.', code: 'INVALID_STATUS_FOR_APPROVAL' }, { status: 400 });
       }
       const result = await upsertTicketAndSyncUnit({
-        ...latest,
-        status: 'Đã duyệt',
-        approvedBy: caller.email,
-        approvedAt: nowIso
+        ...latest, status: 'Đã duyệt', approvedBy: caller.email, approvedAt: nowIso
       });
       await appendTicketStatusHistory(result.ticket, {
-        surveyId: latest.id,
-        fromStatus: curCanon,
-        toStatus: 'approved',
-        action: 'APPROVE',
-        reason: reasonText || undefined,
-        actorId: caller.email,
-        actorRole: caller.role,
-        unitId: latest.unitCode
+        surveyId: latest.id, fromStatus: curCanon, toStatus: 'approved', action: 'APPROVE',
+        reason: reasonText || undefined, actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
       });
       if (body.autoMerge !== false && !result.ticket.isTestData && !result.ticket.isArchived) {
         const mergeRes = await mergeApprovedTicketToUnitWorkbook(latest.id, caller.email, Boolean(body._simulateMergeFailure || process.env.VTVL_SIMULATE_MERGE_FAILURE === 'true'));
@@ -226,19 +232,18 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         });
       }
       const audit = appendAuditLog({
-        unitCode: latest.unitCode,
-        unitName: findHcmuteUnit(latest.unitCode).nameVi,
-        action: 'DUYỆT_PHIẾU',
-        targetId: latest.id,
-        targetEntity: 'staff_work_tickets',
+        unitCode: latest.unitCode, unitName: findHcmuteUnit(latest.unitCode).nameVi, action: 'DUYỆT_PHIẾU',
+        targetId: latest.id, targetEntity: 'staff_work_tickets',
         details: `Duyệt phiếu ${latest.maCongViec} (${latest.tenCongViec}) của ${latest.ownerEmail}`,
-        actorEmail: caller.email,
-        actorRole: caller.role,
-        oldValues: { status: curCanon },
-        newValues: { status: 'approved', approvedBy: caller.email, approvedAt: nowIso }
+        actorEmail: caller.email, actorRole: caller.role,
+        oldValues: { status: curCanon }, newValues: { status: 'approved', approvedBy: caller.email, approvedAt: nowIso }
       });
       await persistAuditLogToSupabase(audit);
-      return NextResponse.json({ ok: true, ticket: getTicketById(latest.id) || result.ticket });
+      const payload = { ok: true, ticket: getTicketById(latest.id) || result.ticket };
+      if (idempotencyKey) {
+        await saveIdempotencyResponse({ idempotencyKey, actionScope: `patch_${act}`, actorEmail: caller.email, targetId: latest.id, response: payload });
+      }
+      return NextResponse.json(payload);
     }
 
     // 4. REQUEST_CHANGES / RETURN
@@ -253,38 +258,24 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
         return NextResponse.json({ error: 'Chỉ phiếu Đã nộp hoặc Đã nộp lại mới có thể yêu cầu bổ sung.', code: 'INVALID_STATUS_FOR_RETURN' }, { status: 400 });
       }
       const result = await upsertTicketAndSyncUnit({
-        ...latest,
-        status: 'Yêu cầu bổ sung',
-        revisionReason: reasonText,
-        revisionRequestedBy: caller.email,
-        revisionRequestedAt: nowIso
+        ...latest, status: 'Yêu cầu bổ sung', revisionReason: reasonText,
+        revisionRequestedBy: caller.email, revisionRequestedAt: nowIso
       });
       await appendTicketStatusHistory(result.ticket, {
-        surveyId: latest.id,
-        fromStatus: curCanon,
-        toStatus: 'changes_requested',
-        action: 'REQUEST_CHANGES',
-        reason: reasonText,
-        actorId: caller.email,
-        actorRole: caller.role,
-        unitId: latest.unitCode
+        surveyId: latest.id, fromStatus: curCanon, toStatus: 'changes_requested', action: 'REQUEST_CHANGES',
+        reason: reasonText, actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
       });
       const audit = appendAuditLog({
-        unitCode: latest.unitCode,
-        unitName: findHcmuteUnit(latest.unitCode).nameVi,
-        action: 'YÊU_CẦU_BỔ_SUNG_PHIẾU',
-        targetId: latest.id,
-        targetEntity: 'staff_work_tickets',
+        unitCode: latest.unitCode, unitName: findHcmuteUnit(latest.unitCode).nameVi, action: 'YÊU_CẦU_BỔ_SUNG_PHIẾU',
+        targetId: latest.id, targetEntity: 'staff_work_tickets',
         details: `Yêu cầu bổ sung phiếu ${latest.maCongViec}: ${reasonText}`,
-        actorEmail: caller.email,
-        actorRole: caller.role,
-        oldValues: { status: curCanon },
-        newValues: { status: 'changes_requested', revisionReason: reasonText }
+        actorEmail: caller.email, actorRole: caller.role,
+        oldValues: { status: curCanon }, newValues: { status: 'changes_requested', revisionReason: reasonText }
       });
       await persistAuditLogToSupabase(audit);
       return NextResponse.json({ ok: true, ticket: getTicketById(latest.id) || result.ticket });
     }
 
-    return NextResponse.json({ error: 'Hành động không hợp lệ.', code: 'INVALID_ACTION' }, { status: 400 });
+    return NextResponse.json({ error: 'Thao tác không hợp lệ.' }, { status: 400 });
   });
 }

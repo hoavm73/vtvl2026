@@ -23,6 +23,7 @@ import {
   shadowSyncAccountsToTienDo
 } from './server-account-db';
 import { invalidateCacheTags } from './runtime-cache';
+import { writeJsonFileAtomic } from './atomic-json-file';
 
 export type { UserRole, UserAccountRecord };
 export { getRoleTitle, getRoleFromTitle, hashAccountPassword, verifyPasswordHash, stripAccountSensitiveFields };
@@ -53,10 +54,7 @@ function loadDeletedAccountEmails(): Set<string> {
 
 function persistDeletedAccountEmails(): void {
   if (!deletedAccountEmails) return;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(DELETED_ACCOUNTS_FILE, JSON.stringify(Array.from(deletedAccountEmails)), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(DELETED_ACCOUNTS_FILE, Array.from(deletedAccountEmails));
 }
 
 function normalizeRecord(item: Partial<UserAccountRecord> & { email: string }): UserAccountRecord {
@@ -126,10 +124,7 @@ function loadStore(): Map<string, UserAccountRecord> {
 
 function persistLocalStore(): void {
   if (!memoryAccounts) return;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(Array.from(memoryAccounts.values()), null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(ACCOUNTS_FILE, Array.from(memoryAccounts.values()), true);
 }
 
 export async function syncAccountsFromSupabase(force = false): Promise<void> {

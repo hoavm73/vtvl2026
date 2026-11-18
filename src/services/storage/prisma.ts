@@ -35,15 +35,35 @@ export const prisma: PrismaClient =
 
 globalStore.__uteVtvlPrisma = prisma;
 
+/**
+ * Ngân sách kết nối PostgreSQL khuyến nghị cho PgBouncer (Transaction Mode):
+ * - DATABASE_URL: `?pgbouncer=true&connection_limit=10` (mỗi instance giữ tối đa 10 kết nối Prisma)
+ * - DIRECT_URL: kết nối trực tiếp để chạy Prisma Migrate / CREATE INDEX CONCURRENTLY
+ * - pg.Pool (Raw SQL phụ trợ): giới hạn `max: 5` để không vượt ngưỡng `max_connections` của Postgres
+ *   (ví dụ 4 worker instances × (10 Prisma + 5 pg.Pool) = 60 connections, an toàn dưới ngưỡng 100–200).
+ */
+export function getDatabaseConnectionBudget() {
+  const pgPoolMax = Math.max(1, Math.min(10, Number(process.env.PG_POOL_MAX || 5)));
+  const connUrl = (process.env.DATABASE_URL || '').trim();
+  const isPgBouncer = connUrl.includes('pgbouncer=true');
+  return {
+    pgPoolMax,
+    isPgBouncer,
+    hasDirectUrl: Boolean((process.env.DIRECT_URL || '').trim()),
+    recommendedPrismaLimitPerInstance: 10
+  };
+}
+
 export function getPgPool(): Pool | null {
   const conn = (process.env.DATABASE_URL || '').trim();
   if (!conn || process.env.VTVL_ISOLATED_LOCAL_STORE === 'true') return null;
 
   if (!globalStore.__uteVtvlPgPool) {
+    const { pgPoolMax } = getDatabaseConnectionBudget();
     globalStore.__uteVtvlPgPool = new Pool({
       connectionString: conn,
-      max: 15,
-      idleTimeoutMillis: 30000,
+      max: pgPoolMax,
+      idleTimeoutMillis: 20000,
       connectionTimeoutMillis: 5000,
       statement_timeout: 20000,
       application_name: 'hcmute-vtvl-360'

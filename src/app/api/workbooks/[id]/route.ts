@@ -2,15 +2,18 @@ import { NextResponse } from 'next/server';
 import {
   getWorkbookById,
   getOrCreateWorkbook,
+  getWorkbookForUnitReadOnly,
   saveServerWorkbookAndPersist,
   deleteServerWorkbook,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
-import { persistWorkbookToSupabase } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
-import { reconcileApprovedUnitTicketsToWorkbook } from '@/services/storage/server-ticket-merge';
+import {
+  reconcileApprovedUnitTicketsToWorkbook,
+  projectUnmergedApprovedTicketsReadOnly
+} from '@/services/storage/server-ticket-merge';
 import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
 import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 
@@ -35,14 +38,13 @@ export async function GET(req: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    await syncServerWorkbooksFromSupabase(true);
+    await syncServerWorkbooksFromSupabase(false);
     let workbook = getWorkbookById(id);
 
     if (!workbook) {
       const unitMatch = id.match(/^wb_([A-Za-z0-9]+)/);
       if (unitMatch) {
-        workbook = getOrCreateWorkbook(unitMatch[1]);
-        await persistWorkbookToSupabase(workbook);
+        workbook = getWorkbookForUnitReadOnly(unitMatch[1]);
       }
     }
 
@@ -58,11 +60,10 @@ export async function GET(req: Request, context: RouteContext) {
       );
     }
 
-    await syncTicketsFromSupabase(workbook.unitId).catch(() => {});
-    const syncedCount = await reconcileApprovedUnitTicketsToWorkbook(workbook.unitId, caller.email).catch(() => 0);
-    if (syncedCount > 0) workbook = getWorkbookById(id) || getOrCreateWorkbook(workbook.unitId);
+    await syncTicketsFromSupabase(workbook.unitId, false).catch(() => {});
+    const projectedWorkbook = projectUnmergedApprovedTicketsReadOnly(workbook);
 
-    return NextResponse.json({ success: true, workbook }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ success: true, workbook: projectedWorkbook }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
     return NextResponse.json({ error: msg, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });

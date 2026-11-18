@@ -60,6 +60,8 @@ export function UnitTicketsReviewList({
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [ownerFilter, setOwnerFilter] = useState('ALL');
   const [missionFilter, setMissionFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const unitCounts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -124,6 +126,13 @@ export function UnitTicketsReviewList({
     return list;
   }, [unitScopedTickets, mode, pendingSubFilter, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
 
+  const totalPages = Math.max(1, Math.ceil(displayedTickets.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedTickets = useMemo(
+    () => displayedTickets.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [displayedTickets, safePage, pageSize]
+  );
+
   const emptyText = mode === 'pending'
     ? 'Hiện tại không có phiếu nào đang chờ duyệt hoặc yêu cầu bổ sung.'
     : mode === 'approved' ? 'Chưa có phiếu nào được phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.';
@@ -152,7 +161,7 @@ export function UnitTicketsReviewList({
         ) : displayedTickets.length === 0 ? (
           <div className="p-6 text-center text-xs text-[#20446c]">{emptyText}</div>
         ) : (
-          displayedTickets.map((t) => {
+          pagedTickets.map((t) => {
             const hours = Math.round((((t.soSpNam * t.phutThucTe) / 60) + t.gioBoSung) * 10) / 10;
             const meta = getTicketStatusMeta(t);
             const StatusIcon = meta.Icon;
@@ -251,27 +260,15 @@ export function UnitTicketsReviewList({
 
                   <div className="xl:w-auto xl:min-w-[440px] shrink-0 flex flex-col xl:items-end justify-between gap-2.5 pt-3 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[#e8eff7] xl:pl-4">
                     <div className="flex flex-wrap items-center xl:justify-end gap-1.5">
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {meta.label}
-                      </span>
-                      {t.isMergedToB1B2 && (
-                        <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">
-                          Đã gộp B1/B2
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}><StatusIcon className="w-3 h-3" />{meta.label}</span>
+                      {t.isMergedToB1B2 && <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">Đã gộp B1/B2</span>}
                     </div>
-
                     <TicketApprovalProgress ticket={t} />
-
                     <UnitTicketActionButtons
-                      ticket={t} canonical={canonical} isLeader={isLeader}
-                      isOwnTicket={isOwnTicket} isOwnLeaderTicket={isOwnLeaderTicket}
-                      onViewTicket={onViewTicket} onPrintTicket={onPrintTicket}
-                      onEditTicket={onEditTicket} onCoordTicket={onCoordTicket}
-                      onSubmitTicket={onSubmitTicket} onApproveTicket={onApproveTicket}
-                      onRequestChanges={onRequestChanges} onMergeTicket={onMergeTicket}
-                      onRevokeApproval={onRevokeApproval} onCancelTicket={onCancelTicket}
+                      ticket={t} canonical={canonical} isLeader={isLeader} isOwnTicket={isOwnTicket} isOwnLeaderTicket={isOwnLeaderTicket}
+                      onViewTicket={onViewTicket} onPrintTicket={onPrintTicket} onEditTicket={onEditTicket} onCoordTicket={onCoordTicket}
+                      onSubmitTicket={onSubmitTicket} onApproveTicket={onApproveTicket} onRequestChanges={onRequestChanges}
+                      onMergeTicket={onMergeTicket} onRevokeApproval={onRevokeApproval} onCancelTicket={onCancelTicket}
                     />
                   </div>
                 </div>
@@ -280,6 +277,20 @@ export function UnitTicketsReviewList({
           })
         )}
       </div>
+      {displayedTickets.length > pageSize && (
+        <div className="px-4 py-2.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex flex-wrap items-center justify-between gap-2 text-xs text-[#004776] tabular-nums">
+          <span>Hiển thị <strong>{pagedTickets.length}</strong> / <strong>{displayedTickets.length}</strong> phiếu</span>
+          <div className="flex items-center gap-2">
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} aria-label="Số phiếu mỗi trang" className="h-7 px-2 rounded border border-[#cbd5e1] bg-white text-[#004776]">
+              <option value={25}>25 / trang</option>
+              <option value={50}>50 / trang</option>
+            </select>
+            <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-7 px-2.5 rounded border border-[#cbd5e1] bg-white disabled:opacity-40 cursor-pointer">Trước</button>
+            <span className="font-semibold">Trang {safePage}/{totalPages}</span>
+            <button type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-7 px-2.5 rounded border border-[#cbd5e1] bg-white disabled:opacity-40 cursor-pointer">Sau</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

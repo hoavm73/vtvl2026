@@ -57,8 +57,13 @@ function evictExpiredOrOverflow(): void {
   }
 }
 
-export function getCachedValue<T>(key: string): T | undefined {
-  if (isTestBypass()) return undefined;
+export interface CacheOptions {
+  /** Bật singleflight + cache ngắn hạn ngay cả khi VTVL_ISOLATED_LOCAL_STORE=true (phục vụ kiểm thử chống cache stampede). */
+  forceSingleFlight?: boolean;
+}
+
+export function getCachedValue<T>(key: string, force = false): T | undefined {
+  if (!force && isTestBypass()) return undefined;
   const entry = memoryCache.get(key);
   if (!entry) return undefined;
   if (Date.now() >= entry.expiresAt) {
@@ -68,8 +73,8 @@ export function getCachedValue<T>(key: string): T | undefined {
   return entry.value as T;
 }
 
-export function setCachedValue<T>(key: string, value: T, tags: CacheTag[], ttlMs = 5000): T {
-  if (isTestBypass() || ttlMs <= 0) return value;
+export function setCachedValue<T>(key: string, value: T, tags: CacheTag[], ttlMs = 5000, force = false): T {
+  if ((!force && isTestBypass()) || ttlMs <= 0) return value;
   evictExpiredOrOverflow();
   memoryCache.set(key, {
     value,
@@ -87,9 +92,11 @@ export async function cacheGetOrSet<T>(
   key: string,
   tags: CacheTag[],
   ttlMs: number,
-  fetcher: () => Promise<T>
+  fetcher: () => Promise<T>,
+  options?: CacheOptions
 ): Promise<T> {
-  const hit = getCachedValue<T>(key);
+  const force = Boolean(options?.forceSingleFlight);
+  const hit = getCachedValue<T>(key, force);
   if (hit !== undefined) return hit;
 
   const existingPromise = inFlightPromises.get(key) as Promise<T> | undefined;
@@ -98,7 +105,7 @@ export async function cacheGetOrSet<T>(
   const promise = (async () => {
     try {
       const fresh = await fetcher();
-      return setCachedValue(key, fresh, tags, ttlMs);
+      return setCachedValue(key, fresh, tags, ttlMs, force);
     } finally {
       inFlightPromises.delete(key);
     }

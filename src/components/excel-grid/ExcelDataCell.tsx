@@ -18,7 +18,7 @@ interface ExcelDataCellProps {
   onCellChange: (rowId: string, field: string, val: string | number) => void;
 }
 
-export function ExcelDataCell({
+function ExcelDataCellComponent({
   col,
   val,
   rowId,
@@ -193,3 +193,16 @@ export function ExcelDataCell({
     </td>
   );
 }
+
+export const ExcelDataCell = React.memo(
+  ExcelDataCellComponent,
+  (prev, next) =>
+    prev.val === next.val &&
+    prev.rowId === next.rowId &&
+    prev.cellKey === next.cellKey &&
+    prev.isComputed === next.isComputed &&
+    prev.isTouched === next.isTouched &&
+    prev.density === next.density &&
+    prev.col.field === next.col.field &&
+    prev.dynamicOptions === next.dynamicOptions
+);

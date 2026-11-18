@@ -25,6 +25,15 @@ export function assertTicketDbConfigured(operation: string): boolean {
 }
 
 export function createSchemaOrDbError(table: string, status: number, detailText: string): Error & { table?: string; status?: number; code?: string } {
+  const isUniqueViolation = detailText.includes('23505') || detailText.includes('P2002') || detailText.includes('uq_staff_ticket_unit_task');
+  if (isUniqueViolation) {
+    const err = new Error(`[DUPLICATE_BUSINESS_CODE] Mã công việc đã tồn tại trong đơn vị (${detailText}).`);
+    (err as unknown as { table: string; status: number; code: string }).table = table;
+    (err as unknown as { table: string; status: number; code: string }).status = 409;
+    (err as unknown as { table: string; status: number; code: string }).code = 'DUPLICATE_BUSINESS_CODE';
+    return err;
+  }
+
   const isSchemaOutdated =
     status === 400 ||
     detailText.includes('PGRST204') ||
@@ -240,4 +249,29 @@ export async function callAtomicSurveyRpc(
     throw createSchemaOrDbError(rpcName, res.status, detail);
   }
   return { executed: true, ticket: res.row && res.row.id ? mapDbRowToTicket(res.row) : undefined };
+}
+
+export async function batchMarkTicketsMergedInDb(tickets: StaffWorkTicket[]): Promise<void> {
+  if (!assertTicketDbConfigured('batchMergeTickets') || tickets.length === 0) return;
+  try {
+    await prisma.$transaction(
+      tickets.map((t) =>
+        prisma.staff_work_tickets.updateMany({
+          where: { id: t.id },
+          data: {
+            is_merged_to_b1_b2: true,
+            merged_by: t.mergedBy ? normalizeEmail(t.mergedBy) : null,
+            merged_at: t.mergedAt ? new Date(t.mergedAt) : new Date(),
+            a2_row_id: t.a2RowId ?? null,
+            b1_row_id: t.b1RowId ?? null,
+            b2_row_id: t.b2RowId ?? null,
+            current_version_no: Number(t.currentVersionNo) || 1,
+            updated_at: t.updatedAt ? new Date(t.updatedAt) : new Date()
+          }
+        })
+      )
+    );
+  } catch (e) {
+    throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
+  }
 }

@@ -10,6 +10,7 @@ import { isIsolatedLocalMode } from './server-ticket-db';
 import { registerCacheInvalidator } from './server-file-lock';
 import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
+import { writeJsonFileAtomic } from './atomic-json-file';
 import {
   makeCompositeVtvlKey,
   normalizeCode,
@@ -47,12 +48,7 @@ function loadLocalAssignments(): UserVtvlAssignment[] {
 
 function persistLocalAssignments(list: UserVtvlAssignment[]): void {
   memoryAssignments = list;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(ASSIGNMENTS_FILE, JSON.stringify(list, null, 2), 'utf8');
-  } catch {
-    // ignore
-  }
+  writeJsonFileAtomic(ASSIGNMENTS_FILE, list, true);
 }
 
 export function getRawAssignmentsSnapshot(): UserVtvlAssignment[] {

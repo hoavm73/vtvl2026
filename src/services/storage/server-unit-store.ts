@@ -6,6 +6,7 @@ import { HCMUTE_UNITS } from '@/configs/hcmute-units';
 import { getDbTestHook, isDatabaseConfigured, prisma } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
 import { invalidateCacheTags } from './runtime-cache';
+import { writeJsonFileAtomic } from './atomic-json-file';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const UNITS_FILE = path.join(DATA_DIR, 'custom_units.json');
@@ -118,10 +119,7 @@ async function deactivateUnitInDmDonVi(code: string): Promise<boolean> {
 
 function persistLocalUnits(): void {
   if (!memoryUnits) return;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(UNITS_FILE, JSON.stringify(memoryUnits, null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(UNITS_FILE, memoryUnits, true);
 }
 
 async function persistUnitsToSupabase(units: HcmuteUnit[]): Promise<boolean> {

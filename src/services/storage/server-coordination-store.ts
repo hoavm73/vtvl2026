@@ -6,6 +6,7 @@ import { isIsolatedLocalMode } from './server-ticket-db';
 import { resetVersionMemoryStore } from './server-ticket-version-store';
 import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
 import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { writeJsonFileAtomic } from './atomic-json-file';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const PROJECTION_FILE = path.join(DATA_DIR, 'work_survey_coordinated_vtvls.json');
@@ -62,12 +63,7 @@ export function loadCoordinationState(): CoordinationDiskState {
 
 export function persistCoordinationState(state: CoordinationDiskState): void {
   memoryState = state;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(PROJECTION_FILE, JSON.stringify(state, null, 2), 'utf8');
-  } catch {
-    // ignore
-  }
+  writeJsonFileAtomic(PROJECTION_FILE, state, true);
 }
 
 export function recordReplacedWorkCode(entry: Omit<ReplacedWorkCodeRecord, 'id'>): ReplacedWorkCodeRecord {
@@ -182,8 +178,7 @@ export async function syncVersionsCacheFromSupabase(force = false): Promise<void
       merged[surveyId] = list.sort((a, b) => a.versionNo - b.versionNo);
     }
 
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(VERSIONS_FILE, JSON.stringify(merged, null, 2), 'utf8');
+    writeJsonFileAtomic(VERSIONS_FILE, merged, true);
     resetVersionMemoryStore();
   } catch {
     // ignore transient DB fallback

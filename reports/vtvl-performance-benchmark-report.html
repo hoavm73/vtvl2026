@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Báo cáo Benchmark 20.000 Phiếu & 100.000 Phiên bản — HCM-UTE VTVL 360</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f8fc; color: #004776; margin: 0; padding: 32px 16px; line-height: 1.55; }
+    .container { max-width: 1120px; margin: 0 auto; background: #ffffff; border: 1px solid #dbe8f5; border-radius: 16px; padding: 28px 32px; box-shadow: 0 4px 20px rgba(0,71,118,0.06); }
+    h1 { color: #0072BC; font-size: 22px; margin-top: 0; border-bottom: 2px solid #FD8C73; padding-bottom: 10px; display: inline-block; }
+    h2 { color: #0072BC; font-size: 17px; margin-top: 28px; }
+    .meta { font-size: 13px; color: #20446c; background: #eef5ff; padding: 12px 16px; border-radius: 10px; border-left: 4px solid #006cee; margin: 16px 0 24px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { border: 1px solid #dbe8f5; border-radius: 12px; padding: 14px 16px; background: #f8fbff; }
+    .kpi-label { font-size: 12px; color: #476885; font-weight: 600; }
+    .kpi-val { font-size: 21px; font-weight: 800; color: #006cee; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    th, td { border: 1px solid #dbe8f5; padding: 10px 12px; text-align: left; color: #004776; }
+    th { background: #eef5ff; font-weight: 700; color: #0072BC; }
+    tr:nth-child(even) { background: #fafcff; }
+    .badge-ok { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e6f9f1; color: #008f5d; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Báo cáo Benchmark 20.000 Phiếu · 100.000 Phiên bản · 39 Đơn vị Cùng Gộp — HCM-UTE VTVL 360</h1>
+    <div class="meta">
+      <strong>Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE)</strong><br/>
+      Thời điểm đo: <strong>00:37:56 19/11/2026</strong> · Quy mô dữ liệu giả lập cô lập: <strong>20.000 phiếu công việc</strong> · <strong>100.000 phiên bản (5 v/phiếu)</strong> · <strong>39 đơn vị cùng gộp đồng thời</strong> (0 tác động Production)
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Giảm dung lượng Payload List</div><div class="kpi-val">-92.3%</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tải thực đạt (Cursor List)</div><div class="kpi-val">492.4 req/s (p95: 107.14 ms)</div></div>
+      <div class="kpi-card"><div class="kpi-label">39 Đơn vị gộp 20.000 phiếu</div><div class="kpi-val">32494.9 phiếu/s</div></div>
+      <div class="kpi-card"><div class="kpi-label">Mất / Trùng sau gộp 20.000 phiếu</div><div class="kpi-val">0 mất · 0 trùng (0% lỗi)</div></div>
+    </div>
+    <h2>1. Tải Thực Đạt, p50 / p95 / p99 và Tỷ lệ Lỗi</h2>
+    <table>
+      <thead>
+        <tr><th>Kịch bản</th><th>Quy mô</th><th>Tải thực đạt</th><th>p50</th><th>p95</th><th>p99</th><th>Tỷ lệ lỗi</th><th>Payload / Ghi chú</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Trước nâng cấp (Full Unit + 5 Versions)</td><td>30 lượt (~513 phiếu)</td><td>120.2 req/s</td><td>7.78 ms</td><td>11.32 ms</td><td>11.55 ms</td><td>0%</td><td>2185.2 KB</td></tr>
+        <tr><td>Sau nâng cấp: GET /api/tickets (limit=50, view=list)</td><td>200 req (50 đồng thời)</td><td><strong>492.4 req/s</strong></td><td><strong>97.88 ms</strong></td><td><strong>107.14 ms</strong></td><td><strong>108.1 ms</strong></td><td><span class="badge-ok">0%</span></td><td><strong>169.1 KB (-92.3%)</strong></td></tr>
+        <tr><td>GET /api/admin/overview (Single-flight Aggregate)</td><td>200 req đồng thời</td><td><strong>12007.6 req/s</strong></td><td><strong>13.39 ms</strong></td><td><strong>14.72 ms</strong></td><td><strong>14.91 ms</strong></td><td><span class="badge-ok">0%</span></td><td>7.5 KB</td></tr>
+        <tr><td>POST /api/tickets (Cấp mã nguyên tử & Tạo phiếu)</td><td>100 req đồng thời / 39 ĐV</td><td><strong>933.2 req/s</strong></td><td><strong>97.78 ms</strong></td><td><strong>103.51 ms</strong></td><td><strong>103.63 ms</strong></td><td><span class="badge-ok">0%</span></td><td>100/100 mã duy nhất</td></tr>
+        <tr><td>POST /api/tickets/reconcile (39 ĐV cùng gộp 20.000 phiếu)</td><td>39 ĐV × ~513 phiếu</td><td><strong>32494.9 phiếu/s</strong></td><td><strong>613.64 ms</strong></td><td><strong>614.28 ms</strong></td><td><strong>614.6 ms</strong></td><td><span class="badge-ok">0%</span></td><td>39× tính công thức, 39× ghi (615.48 ms)</td></tr>
+      </tbody>
+    </table>
+    <h2>2. Đối soát Toàn vẹn Dữ liệu Sau Khi 39 Đơn vị Cùng Gộp 20.000 Phiếu</h2>
+    <p>Tổng phiếu kỳ vọng: <strong>20.000</strong> · Tổng dòng Biểu A2: <strong>20000</strong> · Tổng dòng Biểu B1: <strong>20000</strong> · Phiếu bị mất: <span class="badge-ok">0</span> · Dòng A2 trùng: <span class="badge-ok">0</span> · Dòng B1 trùng: <span class="badge-ok">0</span> · Mã CV trùng: <span class="badge-ok">0</span>.</p>
+  </div>
+</body>
+</html>

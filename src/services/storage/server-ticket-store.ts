@@ -7,7 +7,6 @@ import {
   WorkSurveyStatusHistory
 } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
-import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import {
   getOrCreateWorkbook,
   normalizeEmail,
@@ -30,7 +29,6 @@ import {
   resetVersionMemoryStore
 } from './server-ticket-version-store';
 import {
-  getAllReplacedWorkCodes,
   getDraftCoordinationExtras,
   getReplacedWorkCodesForSurvey,
   removeCoordinationDataForSurvey,
@@ -39,9 +37,20 @@ import {
 } from './server-coordination-store';
 import { registerCacheInvalidator } from './server-file-lock';
 import { invalidateCacheTags } from './runtime-cache';
+import { writeJsonFileAtomic } from './atomic-json-file';
+import { bumpMissionCounterWatermark } from './server-mission-counter';
+import { allocateNextTaskCodeAsync } from './server-mission-code-scanner';
+
+export {
+  computeMaxMissionSeq,
+  allocateNextTaskCode,
+  allocateNextTaskCodeAsync
+} from './server-mission-code-scanner';
 
 export {
   mergeApprovedTicketToUnitWorkbook,
+  batchReconcileUnitTickets,
+  projectUnmergedApprovedTicketsReadOnly,
   syncTicketsFromWorkbook,
   migrateTicketsForUnit,
   migrateTicketsForUnitDetailed,
@@ -110,10 +119,7 @@ export function loadTickets(): Map<string, StaffWorkTicket> {
 
 export function persistTickets(): void {
   const store = loadTickets();
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(TICKETS_FILE, JSON.stringify(Array.from(store.values()), null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(TICKETS_FILE, Array.from(store.values()), true);
 }
 
 export async function syncTicketsFromSupabase(unitCode?: string, force = false): Promise<void> {
@@ -142,43 +148,6 @@ export async function syncTicketsFromSupabase(unitCode?: string, force = false):
     });
   }
   persistTickets();
-}
-
-export function allocateNextTaskCode(
-  unitCode: string,
-  missionCode: string,
-  a2Rows: GenericGridRow[],
-  existingTickets: StaffWorkTicket[],
-  excludeTicketId?: string
-): string {
-  const cleanMission = missionCode.trim();
-  if (!cleanMission) return '';
-  const pattern = new RegExp(`^${cleanMission.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.CV(\\d+)$`, 'i');
-  let maxNum = 0;
-  const checkCode = (raw?: string) => {
-    const match = String(raw || '').trim().match(pattern);
-    if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
-  };
-  for (const row of a2Rows) checkCode(String(row.maCongViec || ''));
-  for (const r of getAllReplacedWorkCodes(unitCode)) {
-    checkCode(r.oldWorkCode);
-    checkCode(r.newWorkCode);
-  }
-  for (const t of existingTickets) {
-    // Bảo toàn mọi mã công việc đã tồn tại (kể cả lịch sử phiên bản & mã đã thay thế) để không bao giờ cấp lại mã cũ
-    if (t.unitCode.toUpperCase() !== unitCode.toUpperCase()) continue;
-    for (const v of getTicketVersions(t.id)) checkCode(v.snapshot?.maCongViec);
-    for (const r of t.replacedWorkCodes || []) { checkCode(r.oldWorkCode); checkCode(r.newWorkCode); }
-    for (const h of t.statusHistory || []) {
-      checkCode(h.oldWorkCode);
-      checkCode(h.newWorkCode);
-      const m = String(h.reason || '').match(/Mã công việc được thay đổi từ\s+([^\s;]+)\s+sang\s+([^\s.;]+)/i);
-      if (m) { checkCode(m[1]); checkCode(m[2]); }
-    }
-    if (t.id === excludeTicketId) continue;
-    checkCode(t.maCongViec);
-  }
-  return `${cleanMission}.CV${String(maxNum + 1).padStart(2, '0')}`;
 }
 
 export function getTicketsByOwner(email: string, unitCode?: string): StaffWorkTicket[] {
@@ -253,7 +222,9 @@ export async function upsertTicketAndSyncUnit(
   );
   let resolvedTaskCode = !missionChanged ? (existing?.maCongViec || (input.maCongViec || '').trim()) : '';
   if (!resolvedTaskCode) {
-    resolvedTaskCode = allocateNextTaskCode(unit.code, input.maNhiemVu, currentA2, allTickets, existing?.id);
+    resolvedTaskCode = await allocateNextTaskCodeAsync(unit.code, input.maNhiemVu, currentA2, allTickets, existing?.id);
+  } else {
+    bumpMissionCounterWatermark(unit.code, input.maNhiemVu, resolvedTaskCode);
   }
 
   const status: TicketStatus = toDisplayStatus(input.status);

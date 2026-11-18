@@ -12,6 +12,7 @@ import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lo
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
+import { writeJsonFileAtomic } from './atomic-json-file';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const VERSIONS_FILE = path.join(DATA_DIR, 'work_survey_versions.json');
@@ -41,10 +42,7 @@ function loadLocalVersions(): Record<string, WorkSurveyVersion[]> {
 
 function persistLocalVersions(): void {
   if (!memoryVersions) return;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(VERSIONS_FILE, JSON.stringify(memoryVersions, null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(VERSIONS_FILE, memoryVersions, true);
 }
 
 function loadLocalMergeLinks(): Record<string, WorkSurveyMergeLink[]> {
@@ -64,10 +62,7 @@ function loadLocalMergeLinks(): Record<string, WorkSurveyMergeLink[]> {
 
 function persistLocalMergeLinks(): void {
   if (!memoryMergeLinks) return;
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(MERGE_LINKS_FILE, JSON.stringify(memoryMergeLinks, null, 2), 'utf8');
-  } catch { /* ignore */ }
+  writeJsonFileAtomic(MERGE_LINKS_FILE, memoryMergeLinks, true);
 }
 
 export async function withSurveySubmissionLock<T>(surveyId: string, fn: () => Promise<T>): Promise<T> {
@@ -236,39 +231,39 @@ export async function recordIdempotentMergeLinks(
   surveyId: string,
   links: { targetSheet: 'A2' | 'B1' | 'B2'; targetRecordId: string; sourceVersion: number; mergedBy: string }[]
 ): Promise<WorkSurveyMergeLink[]> {
+  await batchRecordMergeLinksInDb(links.map((item) => ({ ...item, surveyId })));
   const store = loadLocalMergeLinks();
-  const current = store[surveyId] ? [...store[surveyId]] : [];
-  const now = new Date().toISOString();
+  return store[surveyId] ? [...store[surveyId]] : [];
+}
 
+export async function batchRecordMergeLinksInDb(
+  links: Array<{ surveyId: string; targetSheet: 'A2' | 'B1' | 'B2'; targetRecordId: string; sourceVersion: number; mergedBy: string }>
+): Promise<void> {
+  if (links.length === 0) return;
+  const store = loadLocalMergeLinks();
+  const now = new Date().toISOString();
   for (const item of links) {
-    const idx = current.findIndex((l) => l.surveyId === surveyId && l.targetSheet === item.targetSheet && l.targetRecordId === item.targetRecordId);
+    const current = store[item.surveyId] ? [...store[item.surveyId]] : [];
+    const idx = current.findIndex((l) => l.surveyId === item.surveyId && l.targetSheet === item.targetSheet && l.targetRecordId === item.targetRecordId);
     if (idx >= 0) current[idx] = { ...current[idx], sourceVersion: item.sourceVersion, mergedBy: item.mergedBy, updatedAt: now };
     else {
       current.push({
-        id: `ml-${surveyId}-${item.targetSheet}-${item.targetRecordId}`,
-        surveyId, targetSheet: item.targetSheet, targetRecordId: item.targetRecordId,
+        id: `ml-${item.surveyId}-${item.targetSheet}-${item.targetRecordId}`,
+        surveyId: item.surveyId, targetSheet: item.targetSheet, targetRecordId: item.targetRecordId,
         sourceVersion: item.sourceVersion, mergedBy: item.mergedBy, mergedAt: now, updatedAt: now
       });
     }
+    store[item.surveyId] = current;
   }
-
-  if (!isIsolatedLocalMode() && isDatabaseConfigured() && links.length > 0) {
+  if (!isIsolatedLocalMode() && isDatabaseConfigured()) {
     await pgUpsertRows(
       'work_survey_merge_links',
       links.map((item) => ({
-        survey_id: surveyId,
-        target_sheet: item.targetSheet,
-        target_record_id: item.targetRecordId,
-        source_version: item.sourceVersion,
-        merged_by: item.mergedBy,
-        merged_at: now,
-        updated_at: now
+        survey_id: item.surveyId, target_sheet: item.targetSheet, target_record_id: item.targetRecordId,
+        source_version: item.sourceVersion, merged_by: item.mergedBy, merged_at: now, updated_at: now
       })),
       'survey_id,target_sheet,target_record_id'
     ).catch(() => {});
   }
-
-  store[surveyId] = current;
   persistLocalMergeLinks();
-  return current;
 }

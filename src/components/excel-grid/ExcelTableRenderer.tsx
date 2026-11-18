@@ -49,6 +49,8 @@ export function ExcelTableRenderer({
   const [lastDeletedCount, setLastDeletedCount] = useState<number>(0);
   const [deletedRowBackup, setDeletedRowBackup] = useState<{ row: GenericGridRow; index: number } | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'table' | 'cards'>('cards');
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
 
   const isLocked = isReadOnly || (meta.key === 'C1' && !isC1Unlocked);
 
@@ -92,6 +94,14 @@ export function ExcelTableRenderer({
       setParams({ sort: field, order: 'asc' });
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(processedRows.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const startRowOffset = (safePage - 1) * pageSize;
+  const pagedRows = useMemo(
+    () => (processedRows.length > pageSize ? processedRows.slice(startRowOffset, startRowOffset + pageSize) : processedRows),
+    [processedRows, startRowOffset]
+  );
 
   const allSelected = processedRows.length > 0 && processedRows.every((r) => selectedRowIds.has(r.id));
   const toggleSelectAll = () => setSelectedRowIds(allSelected ? new Set() : new Set(processedRows.map((r) => r.id)));
@@ -150,15 +160,9 @@ export function ExcelTableRenderer({
       {mobileViewMode === 'cards' && (
         <div className="block md:hidden p-2.5 bg-[#f8fafc]/60">
           <ExcelRowCardEditor
-            meta={meta}
-            rows={processedRows}
-            dynamicOptionsMap={dynamicOptionsMap}
-            isC1Locked={isLocked}
-            touchedCells={touchedCells}
-            onCellTouch={onCellTouch}
-            onCellChange={onCellChange}
-            onAddRow={onAddRow}
-            onSplitRow={onSplitRow}
+            meta={meta} rows={processedRows} dynamicOptionsMap={dynamicOptionsMap}
+            isC1Locked={isLocked} touchedCells={touchedCells} onCellTouch={onCellTouch}
+            onCellChange={onCellChange} onAddRow={onAddRow} onSplitRow={onSplitRow}
             onDeleteRow={(id) => handleDeleteRow(id)}
           />
         </div>
@@ -170,62 +174,34 @@ export function ExcelTableRenderer({
           <thead className="sticky top-0 z-10">
             <tr className="bg-[#f8fafc] text-[#004776] border-b border-[#cbd5e1]">
               <th className="w-10 min-w-[40px] py-2.5 px-2 text-center border-r border-[#e2e8f0] sticky left-0 z-11 bg-[#f8fafc]">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  aria-label="Chọn tất cả dòng"
-                  className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer"
-                />
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} aria-label="Chọn tất cả dòng" className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer" />
               </th>
-              <th
-                onClick={() => handleSort('id')}
-                className="w-12 min-w-[48px] py-2.5 px-1 text-center font-semibold border-r border-[#e2e8f0] cursor-pointer hover:bg-[#f1f5f9] select-none"
-              >
-                <div className="inline-flex items-center gap-1 justify-center">
-                  <span>STT</span>
-                  <ArrowUpDown className="w-3 h-3 text-[#94a3b8]" />
-                </div>
+              <th onClick={() => handleSort('id')} className="w-12 min-w-[48px] py-2.5 px-1 text-center font-semibold border-r border-[#e2e8f0] cursor-pointer hover:bg-[#f1f5f9] select-none">
+                <div className="inline-flex items-center gap-1 justify-center"><span>STT</span><ArrowUpDown className="w-3 h-3 text-[#94a3b8]" /></div>
               </th>
               {meta.columns.map((c) => (
-                <th
-                  key={c.field}
-                  style={{ width: c.width || '150px', minWidth: c.width || '140px' }}
-                  onClick={() => handleSort(c.field)}
-                  className="py-2.5 px-2.5 text-left font-semibold border-r border-[#e2e8f0] align-middle cursor-pointer hover:bg-[#f1f5f9] select-none"
-                >
+                <th key={c.field} style={{ width: c.width || '150px', minWidth: c.width || '140px' }} onClick={() => handleSort(c.field)} className="py-2.5 px-2.5 text-left font-semibold border-r border-[#e2e8f0] align-middle cursor-pointer hover:bg-[#f1f5f9] select-none">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="leading-snug">
-                      {c.headerName}
-                      {c.required && <span className="text-[var(--fix)] ml-0.5">*</span>}
-                    </span>
+                    <span className="leading-snug">{c.headerName}{c.required && <span className="text-[var(--fix)] ml-0.5">*</span>}</span>
                     <ArrowUpDown className="w-3 h-3 text-[#94a3b8] shrink-0" />
                   </div>
                 </th>
               ))}
-              <th className="w-16 min-w-[64px] py-2.5 px-2 text-center font-semibold sticky right-0 z-11 bg-[#f8fafc] border-l border-[#e2e8f0] select-none text-[#476885]">
-                Thao tác
-              </th>
+              <th className="w-16 min-w-[64px] py-2.5 px-2 text-center font-semibold sticky right-0 z-11 bg-[#f8fafc] border-l border-[#e2e8f0] select-none text-[#476885]">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#f1f5f9]">
             {processedRows.length === 0 ? (
               <tr><td colSpan={meta.columns.length + 3} className="py-12 text-center text-[#476885] bg-[#fafafa]">Không có dữ liệu phù hợp.</td></tr>
             ) : (
-              processedRows.map((row, rIdx) => (
+              pagedRows.map((row, idxInPage) => {
+                const rIdx = startRowOffset + idxInPage;
+                return (
                 <tr key={row.id} className="odd:bg-white even:bg-[#fafcff] hover:bg-[#f0f7ff] transition-colors group">
                   <td className="w-10 py-1.5 px-2 text-center border-r border-[#f1f5f9] sticky left-0 z-2 bg-inherit">
-                    <input
-                      type="checkbox"
-                      checked={selectedRowIds.has(row.id)}
-                      onChange={() => toggleSelectRow(row.id)}
-                      aria-label={`Chọn dòng ${rIdx + 1}`}
-                      className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer"
-                    />
+                    <input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleSelectRow(row.id)} aria-label={`Chọn dòng ${rIdx + 1}`} className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer" />
                   </td>
-                  <td className="w-12 py-1.5 text-center font-normal tabular-nums text-[#476885] border-r border-[#f1f5f9] select-none">
-                    {rIdx + 1}
-                  </td>
+                  <td className="w-12 py-1.5 text-center font-normal tabular-nums text-[#476885] border-r border-[#f1f5f9] select-none">{rIdx + 1}</td>
                   {meta.columns.map((col) => (
                     <ExcelDataCell
                       key={col.field} col={col} val={row[col.field]} rowId={row.id}
@@ -242,24 +218,12 @@ export function ExcelTableRenderer({
                     ) : (
                       <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
                         {meta.key === 'A1' && (
-                          <button
-                            type="button"
-                            onClick={() => onSplitRow?.(row.id)}
-                            aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`}
-                            title="Tách nhiệm vụ"
-                            className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer"
-                          >
+                          <button type="button" onClick={() => onSplitRow?.(row.id)} aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`} title="Tách nhiệm vụ" className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer">
                             <Copy className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {!isLocked && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRow(row.id)}
-                            aria-label={`Xóa dòng ${rIdx + 1}`}
-                            title="Xóa dòng"
-                            className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer"
-                          >
+                          <button type="button" onClick={() => handleDeleteRow(row.id)} aria-label={`Xóa dòng ${rIdx + 1}`} title="Xóa dòng" className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -267,14 +231,15 @@ export function ExcelTableRenderer({
                     )}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
       {/* FOOTER BẢNG */}
-      <div className="px-4 py-2 bg-[#f8fafc] border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[#476885]">
+      <div className="px-4 py-2 bg-[#f8fafc] border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs text-[#476885]">
         {!isLocked ? (
           <button
             type="button"
@@ -286,8 +251,15 @@ export function ExcelTableRenderer({
           </button>
         ) : <div />}
 
-        <div className="tabular-nums">
-          <span>Hiển thị <strong className="font-semibold text-[#004776]">{processedRows.length}</strong> / {rows.length} dòng</span>
+        <div className="flex items-center gap-3 tabular-nums">
+          {totalPages > 1 && (
+            <div className="inline-flex items-center gap-1.5">
+              <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="h-7 px-2 rounded border border-[#cbd5e1] bg-white text-[#004776] disabled:opacity-40 cursor-pointer">Trước</button>
+              <span className="font-semibold text-[#004776]">Trang {safePage}/{totalPages}</span>
+              <button type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="h-7 px-2 rounded border border-[#cbd5e1] bg-white text-[#004776] disabled:opacity-40 cursor-pointer">Sau</button>
+            </div>
+          )}
+          <span>Hiển thị <strong className="font-semibold text-[#004776]">{pagedRows.length}</strong> / {processedRows.length} dòng</span>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Building2, LayoutDashboard, FileSpreadsheet, ClipboardList, History, ShieldCheck, ExternalLink } from 'lucide-react';
 import { HCMUTE_UNITS, findHcmuteUnit, UNIT_GROUPS } from '@/configs/hcmute-units';
@@ -9,9 +9,12 @@ import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer
 import { ExcelSheetKey } from '@/components/excel-grid/excel-grid-types';
 import { UnitWorkbookHistoryPanel } from '@/components/nghiep-vu-don-vi/UnitWorkbookHistoryPanel';
 import { UnitProfileOverviewPanel } from '@/components/nghiep-vu-don-vi/UnitProfileOverviewPanel';
+import { UnitWorkspaceTicketsPanel } from '@/components/nghiep-vu-don-vi/UnitWorkspaceTicketsPanel';
 import { UnitWorkbookCheckPanel } from '@/components/ra-soat/UnitWorkbookCheckPanel';
 import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent } from '@/services/workbooks/workbook-history-service';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
 import {
   getCanonicalWorkbookId,
   persistUnitContextSelection,
@@ -19,7 +22,6 @@ import {
   syncContextQueryParams
 } from '@/services/context/workbook-context';
 import { StaffWorkTicket } from '@/types/staff-ticket';
-import { getTicketStatusMeta } from '@/components/staff-portal/TicketApprovalProgress';
 
 type UnitWorkspaceTabKey = 'overview' | 'workbook' | 'tickets' | 'history' | 'check';
 
@@ -49,6 +51,7 @@ export default function NghiepVuDonViPage() {
   const [unitTickets, setUnitTickets] = useState<StaffWorkTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isSyncingTokenRef = useRef(false);
 
   useEffect(() => {
     const applyFromUrl = () => {
@@ -72,9 +75,25 @@ export default function NghiepVuDonViPage() {
     setLoading(true);
     setError(null);
     try {
+      const curOp = session || getCurrentOperatorSession();
+      let activeToken = curOp?.accessToken || '';
+      if (curOp && !activeToken && !isSyncingTokenRef.current) {
+        isSyncingTokenRef.current = true;
+        try {
+          await syncOperatorAccountWithServer(curOp);
+          const refreshed = getCurrentOperatorSession();
+          if (refreshed?.accessToken) activeToken = refreshed.accessToken;
+        } finally {
+          isSyncingTokenRef.current = false;
+        }
+      }
+      const headers: Record<string, string> = {};
+      if (curOp?.email) headers['x-actor-email'] = curOp.email;
+      if (activeToken) headers.Authorization = `Bearer ${activeToken}`;
+
       const [histRes, ticketRes] = await Promise.all([
-        fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, { cache: 'no-store' }),
-        fetch(`/api/tickets?unitCode=${encodeURIComponent(selectedUnitCode)}`, { cache: 'no-store' })
+        fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, { headers, cache: 'no-store' }),
+        fetch(`/api/tickets?unitCode=${encodeURIComponent(selectedUnitCode)}`, { headers, cache: 'no-store' })
       ]);
       const histJson = await histRes.json();
       if (!histRes.ok) {
@@ -85,14 +104,19 @@ export default function NghiepVuDonViPage() {
       }
       if (ticketRes.ok) {
         const tJson = await ticketRes.json();
-        setUnitTickets(Array.isArray(tJson.tickets) ? tJson.tickets.slice(0, 10) : []);
+        const list = Array.isArray(tJson.unitTickets)
+          ? tJson.unitTickets
+          : Array.isArray(tJson.tickets)
+            ? tJson.tickets
+            : [];
+        setUnitTickets(list);
       }
     } catch {
       setError('Lỗi kết nối khi đồng bộ dữ liệu hồ sơ đơn vị.');
     } finally {
       setLoading(false);
     }
-  }, [canonicalWbId, selectedUnitCode]);
+  }, [canonicalWbId, selectedUnitCode, session]);
 
   useEffect(() => {
     void loadUnitWorkspaceData();
@@ -114,8 +138,8 @@ export default function NghiepVuDonViPage() {
   };
 
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5">
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#e2e8f0] pb-4">
+    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5 print:p-0 print:m-0 print:max-w-none print:space-y-0">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#e2e8f0] pb-4 print:hidden">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006cee]">
             <Building2 className="w-4 h-4" />
@@ -148,7 +172,7 @@ export default function NghiepVuDonViPage() {
         </div>
       </header>
 
-      <div className="md:hidden">
+      <div className="md:hidden print:hidden">
         <label htmlFor="unit-workspace-mobile-tab" className="block text-xs font-semibold text-[#20446c] mb-1">Phân hệ hồ sơ đơn vị</label>
         <select
           id="unit-workspace-mobile-tab"
@@ -161,7 +185,7 @@ export default function NghiepVuDonViPage() {
         </select>
       </div>
 
-      <nav role="tablist" aria-label="Phân hệ hồ sơ đơn vị" className="hidden md:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">
+      <nav role="tablist" aria-label="Phân hệ hồ sơ đơn vị" className="hidden md:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar print:hidden">
         {UNIT_TABS.map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.key;
@@ -205,48 +229,14 @@ export default function NghiepVuDonViPage() {
       )}
 
       {activeTab === 'tickets' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
-            <div>
-              <h2 className="text-sm font-bold text-[#004776]">Tổng hợp phiếu công việc của đơn vị [{activeUnit.code}]</h2>
-              <p className="text-xs text-[#476885]">Thực hiện duyệt phiếu, yêu cầu bổ sung hoặc gộp phiếu đã duyệt vào B1/B2 tại trang Quản lý phiếu đơn vị.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href={`/phieu-don-vi?unitCode=${encodeURIComponent(selectedUnitCode)}&tab=pending`} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[8px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold">
-                <span>Duyệt phiếu chờ duyệt</span>
-              </Link>
-              <Link href={`/phieu-don-vi?unitCode=${encodeURIComponent(selectedUnitCode)}&tab=approved`} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776]">
-                <span>Gộp phiếu vào B1/B2</span>
-              </Link>
-            </div>
-          </div>
-
-          {unitTickets.length === 0 ? (
-            <div className="py-8 text-center text-xs text-[#476885]">Đơn vị chưa có phiếu công việc nào được nộp.</div>
-          ) : (
-            <div className="divide-y divide-[#e2e8f0] border-t border-[#e2e8f0]">
-              {unitTickets.map((t) => {
-                const stMeta = getTicketStatusMeta(t);
-                return (
-                  <div key={t.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div className="space-y-0.5 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-[#006cee]">{t.maCongViec || t.maNhiemVu}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${stMeta.pillCls}`}>{stMeta.label}</span>
-                        {t.isMergedToB1B2 && <span className="px-2 py-0.5 rounded-full bg-[#ecfdf5] text-[#13653f] font-semibold text-[11px]">Đã gộp B1/B2</span>}
-                      </div>
-                      <div className="font-semibold text-[#004776] truncate">{t.tenCongViec}</div>
-                      <div className="text-[#476885]">{t.ownerName || t.ownerEmail} · {t.soSpNam} SP × {t.phutThucTe} phút</div>
-                    </div>
-                    <Link href={`/phieu-don-vi?unitCode=${encodeURIComponent(selectedUnitCode)}`} className="inline-flex items-center gap-1 h-8 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] shrink-0">
-                      <span>Mở trong Quản lý phiếu</span>
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <UnitWorkspaceTicketsPanel
+          unitCode={selectedUnitCode}
+          unitNameVi={activeUnit.nameVi}
+          tickets={unitTickets}
+          loading={loading}
+          session={session || getCurrentOperatorSession()}
+          onRefresh={() => void loadUnitWorkspaceData()}
+        />
       )}
 
       {activeTab === 'history' && (

@@ -5,6 +5,21 @@ import { History, RotateCcw, RefreshCw, Search, ShieldCheck } from 'lucide-react
 import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
 import { formatCompactTime } from '@/components/overview/UnitMonitoringTypes';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+
+function buildHistoryAuthHeaders(includeJson = false): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (includeJson) headers['Content-Type'] = 'application/json';
+  const op = getCurrentOperatorSession();
+  let adminTok = '';
+  if (typeof window !== 'undefined') {
+    try { adminTok = sessionStorage.getItem('hcmute_vtvl_admin_token') || ''; } catch { /* ignore */ }
+  }
+  const token = op?.accessToken || adminTok;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (op?.email) headers['x-actor-email'] = op.email;
+  return headers;
+}
 
 const SOURCE_DOT_COLOR: Record<WorkbookHistoryTimelineEvent['source'], string> = {
   review: 'bg-[#006cee] ring-[#e6f1ff]',
@@ -61,7 +76,10 @@ export function UnitWorkbookHistoryPanel({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, { cache: 'no-store' });
+      const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, {
+        headers: buildHistoryAuthHeaders(),
+        cache: 'no-store'
+      });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error || 'Không thể tải lịch sử hồ sơ.');
@@ -101,7 +119,7 @@ export function UnitWorkbookHistoryPanel({
     try {
       const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/revisions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHistoryAuthHeaders(true),
         body: JSON.stringify({ targetRevision, reason: `Khôi phục phiên bản v${targetRevision} từ trang lịch sử đơn vị` })
       });
       const json = await res.json();

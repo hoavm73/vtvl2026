@@ -13,6 +13,21 @@ import { UnitWorkbookHistoryPanel } from '@/components/nghiep-vu-don-vi/UnitWork
 import { ExcelWorkbookViewer } from '@/components/excel-grid/ExcelWorkbookViewer';
 import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
+
+function buildTcnsAuthHeaders(includeJson = false): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (includeJson) headers['Content-Type'] = 'application/json';
+  const op = getCurrentOperatorSession();
+  let adminTok = '';
+  if (typeof window !== 'undefined') {
+    try { adminTok = sessionStorage.getItem('hcmute_vtvl_admin_token') || ''; } catch { /* ignore */ }
+  }
+  const token = adminTok || op?.accessToken || '';
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (op?.email) headers['x-actor-email'] = op.email;
+  return headers;
+}
 
 export type TcnsDetailTabKey = 'overview' | 'check' | 'sheets' | 'comments' | 'history';
 
@@ -50,7 +65,10 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, { cache: 'no-store' });
+      const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, {
+        headers: buildTcnsAuthHeaders(),
+        cache: 'no-store'
+      });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error || 'Không thể tải thông tin chi tiết hồ sơ.');
@@ -84,7 +102,7 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
     try {
       const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildTcnsAuthHeaders(true),
         body: JSON.stringify({
           action,
           unitCode: unit.code,

@@ -13,11 +13,14 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   BarChart3,
   Network,
   Settings
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
+
+const GROUP_STATE_STORAGE_KEY = 'vtvl_sidebar_open_groups_v1';
 
 interface NavItemDef {
   href: string;
@@ -82,6 +85,22 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
   const currentRole = session?.role || 'staff';
   const [activeQueryTab, setActiveQueryTab] = useState<string>('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(GROUP_STATE_STORAGE_KEY);
+      if (saved) setCollapsedGroups(JSON.parse(saved) as Record<string, boolean>);
+    } catch { /* bỏ qua lỗi truy cập storage */ }
+  }, []);
+
+  const toggleGroup = (groupTitle: string) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [groupTitle]: !prev[groupTitle] };
+      try { localStorage.setItem(GROUP_STATE_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const syncTab = (ev?: Event) => {
@@ -156,16 +175,27 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
             (item) => !item.roles || item.roles.includes(currentRole)
           );
           if (visibleItems.length === 0) return null;
+          const isGroupOpen = !collapsedGroups[group.groupTitle];
 
           return (
             <div key={group.groupTitle} className="space-y-1">
               {!collapsed && (
-                <div className="px-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-[#20446c]/80">
-                  {group.groupTitle}
-                </div>
+                <button
+                  type="button"
+                  aria-expanded={isGroupOpen}
+                  onClick={() => toggleGroup(group.groupTitle)}
+                  className="w-full px-2.5 py-1.5 rounded-lg hover:bg-[#f4f7fb] flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wider text-[#20446c]/85 cursor-pointer transition-colors"
+                >
+                  <span className="truncate text-left">{group.groupTitle}</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-[#476885] shrink-0 transition-transform duration-150 ${
+                      isGroupOpen ? 'rotate-0' : '-rotate-90'
+                    }`}
+                  />
+                </button>
               )}
 
-              {visibleItems.map((item) => {
+              {(collapsed || isGroupOpen) && visibleItems.map((item) => {
                 const Icon = item.icon;
                 const active = isItemActive(item.href);
                 const targetHref = item.href === '/admin' && currentRole !== 'admin' && currentRole !== 'unit_leader'

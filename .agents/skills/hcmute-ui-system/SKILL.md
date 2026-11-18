@@ -61,6 +61,7 @@ description: Hệ thống thiết kế giao diện chuẩn HCM-UTE Design System
 
 ### 4. Chuẩn bố cục 5 nhóm điều hướng, phân hệ trọng tâm & TechDoc 3 vai trò
 - **Kiến trúc 5 nhóm điều hướng (`AppSidebar` & `Header`):**
+  - Từng nhóm đề mục trong `Menu nghiệp vụ` (`Tổng quan`, `Nghiệp vụ cá nhân`, `Nghiệp vụ đơn vị`, `Kiểm tra & thẩm định TCNS`, `Quản trị & tra cứu`) hỗ trợ bấm vào tiêu đề nhóm để thu gọn/xổ ra kèm mũi tên xoay và lưu trạng thái vào `localStorage`.
   1. **Tổng quan (`/` & `/?tab=unit-monitor`):** Hero banner không bóng đổ; thanh segmented control phẳng; 4 KPI nền pastel + phân bổ khối đơn vị `divide-x`; tab *"Theo dõi đơn vị"* dùng chế độ `compactOverviewMode` 39 đơn vị (bao gồm khối `UnitMonitoringHistoryPanel` kèm 2 `<MonitorSearchInput>`).
   2. **Nghiệp vụ cá nhân (`/phieu-cong-viec` & `/bam-gio`):** Gồm 4 tab cá nhân (`Phiếu của tôi`, `Tạo phiếu công việc`, `Công việc phối hợp với tôi`, `Mối quan hệ công việc`), tách hoàn toàn khỏi duyệt/gộp đơn vị.
   3. **Nghiệp vụ đơn vị (`/nghiep-vu-don-vi`, `/bang-tinh`, `/phieu-don-vi`):**

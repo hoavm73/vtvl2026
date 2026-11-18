@@ -111,7 +111,7 @@ export function TechDocHeaderBar({
         <button
           type="button"
           onClick={onOpenMobileSidebar}
-          className="md:hidden min-h-[38px] px-3 rounded-[9px] border border-[#0072BC]/35 bg-[#f0f9ff] text-xs font-semibold text-[#0072BC] inline-flex items-center gap-1.5 cursor-pointer ml-auto"
+          className="lg:hidden min-h-[38px] px-3 rounded-[9px] border border-[#0072BC]/35 bg-[#f0f9ff] text-xs font-semibold text-[#0072BC] inline-flex items-center gap-1.5 cursor-pointer ml-auto"
         >
           <PanelLeft className="w-3.5 h-3.5" />
           <span>Tổng quan mục lục</span>

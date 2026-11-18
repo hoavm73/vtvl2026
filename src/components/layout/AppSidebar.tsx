@@ -4,21 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Building2,
-  ClipboardCheck,
-  FileSpreadsheet,
-  FileText,
-  ShieldCheck,
-  BookOpen,
-  Home,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  BarChart3,
-  Network,
-  Settings
+  Building2, ClipboardCheck, FileSpreadsheet, FileText, ShieldCheck,
+  BookOpen, Home, ChevronLeft, ChevronRight, ChevronDown, BarChart3, Network, Settings
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
+import { SidebarTechDocTree } from './SidebarTechDocTree';
 
 const GROUP_STATE_STORAGE_KEY = 'vtvl_sidebar_open_groups_v1';
 
@@ -86,6 +76,11 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   const currentRole = session?.role || 'staff';
   const [activeQueryTab, setActiveQueryTab] = useState<string>('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [techDocExpanded, setTechDocExpanded] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (pathname.startsWith('/huong-dan')) setTechDocExpanded(true);
+  }, [pathname]);
 
   useEffect(() => {
     try {
@@ -202,57 +197,55 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
                   ? '/login?redirect=/admin&admin=true'
                   : item.href;
 
+                const isTechDocItem = item.href === '/huong-dan';
                 return (
-                  <Link
-                    key={item.href}
-                    href={targetHref}
-                    title={item.label}
-                    onClick={() => {
-                      if (item.href === '/' || item.href === '/?tab=unit-monitor') {
-                        const nextTab = item.href === '/?tab=unit-monitor' ? 'unit-monitor' : 'overview';
-                        setActiveQueryTab(nextTab === 'unit-monitor' ? 'unit-monitor' : '');
-                        window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
-                      } else if (item.href.startsWith('/nghiep-vu-don-vi')) {
-                        const nextTab = item.href.includes('tab=org-tree')
-                          ? 'org-tree'
-                          : item.href.includes('tab=workforce-chart')
-                            ? 'workforce-chart'
-                            : 'overview';
-                        setActiveQueryTab(nextTab === 'overview' ? '' : nextTab);
-                        window.dispatchEvent(new CustomEvent('vtvl-unit-tab-changed', { detail: { tab: nextTab } }));
-                      }
-                    }}
-                    className={`flex items-center gap-2.5 min-h-[40px] rounded-xl transition-all group ${
-                      collapsed ? 'justify-center p-2.5' : 'px-3 py-2'
-                    } ${
-                      active
-                        ? 'bg-[#006cee] text-white font-bold shadow-xs'
-                        : 'text-[#004776] hover:bg-[#e1edf8] hover:text-[#004776]'
-                    }`}
-                  >
-                    <Icon
-                      className={`w-4 h-4 shrink-0 transition-transform ${
-                        active ? 'text-white' : 'text-[#006cee] group-hover:scale-105'
-                      }`}
-                    />
-
-                    {!collapsed && (
-                      <div className="min-w-0 flex-1 flex items-center justify-between gap-1.5">
-                        <span className={`text-[13px] truncate ${active ? 'font-bold text-white' : 'font-semibold text-[#004776]'}`}>
-                          {item.label}
-                        </span>
-                        {item.badge && (
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
-                              active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#006cee] border-blue-200'
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
+                  <div key={item.href}>
+                    <div className={`flex items-center gap-1 rounded-xl transition-all ${
+                      active ? 'bg-[#006cee] text-white font-bold shadow-xs' : 'text-[#004776] hover:bg-[#e1edf8]'
+                    }`}>
+                      <Link
+                        href={targetHref}
+                        title={item.label}
+                        onClick={() => {
+                          if (isTechDocItem) setTechDocExpanded(true);
+                          else if (item.href === '/' || item.href === '/?tab=unit-monitor') {
+                            const nextTab = item.href === '/?tab=unit-monitor' ? 'unit-monitor' : 'overview';
+                            setActiveQueryTab(nextTab === 'unit-monitor' ? 'unit-monitor' : '');
+                            window.dispatchEvent(new CustomEvent('vtvl-home-tab-changed', { detail: { tab: nextTab } }));
+                          } else if (item.href.startsWith('/nghiep-vu-don-vi')) {
+                            const nextTab = item.href.includes('tab=org-tree') ? 'org-tree' : item.href.includes('tab=workforce-chart') ? 'workforce-chart' : 'overview';
+                            setActiveQueryTab(nextTab === 'overview' ? '' : nextTab);
+                            window.dispatchEvent(new CustomEvent('vtvl-unit-tab-changed', { detail: { tab: nextTab } }));
+                          }
+                        }}
+                        className={`flex-1 min-w-0 flex items-center gap-2.5 min-h-[40px] group ${collapsed ? 'justify-center p-2.5' : 'pl-3 pr-2 py-2'}`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 transition-transform ${active ? 'text-white' : 'text-[#006cee] group-hover:scale-105'}`} />
+                        {!collapsed && (
+                          <div className="min-w-0 flex-1 flex items-center justify-between gap-1.5">
+                            <span className={`text-[13px] truncate ${active ? 'font-bold text-white' : 'font-semibold text-[#004776]'}`}>{item.label}</span>
+                            {item.badge && (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${active ? 'bg-white/20 text-white border-white/30' : item.badgeColor || 'bg-blue-50 text-[#006cee] border-blue-200'}`}>
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
                         )}
-                      </div>
-                    )}
-                  </Link>
+                      </Link>
+                      {!collapsed && isTechDocItem && (
+                        <button
+                          type="button"
+                          aria-expanded={techDocExpanded}
+                          aria-label={techDocExpanded ? 'Thu gọn danh mục hướng dẫn nghiệp vụ' : 'Xổ ra danh mục hướng dẫn nghiệp vụ'}
+                          onClick={() => setTechDocExpanded((v) => !v)}
+                          className={`mr-1.5 p-1.5 rounded-lg cursor-pointer transition-colors shrink-0 ${active ? 'hover:bg-white/20 text-white' : 'hover:bg-[#d3e4f7] text-[#476885]'}`}
+                        >
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${techDocExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                        </button>
+                      )}
+                    </div>
+                    {!collapsed && isTechDocItem && techDocExpanded && <SidebarTechDocTree userRole={currentRole} />}
+                  </div>
                 );
               })}
             </div>

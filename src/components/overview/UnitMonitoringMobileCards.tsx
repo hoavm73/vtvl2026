@@ -33,7 +33,7 @@ export function UnitMonitoringMobileCards({
   }
 
   return (
-    <div className="md:hidden divide-y divide-[#eef3f8]">
+    <div className="md:hidden divide-y divide-[#e2e8f0]">
       {rows.map((u) => {
         const isSelected = selectedUnit === u.unitCode;
         const isHighlighted = highlightedId === u.unitCode;
@@ -42,12 +42,10 @@ export function UnitMonitoringMobileCards({
             key={u.unitCode}
             data-row-anchor={u.unitCode}
             style={{ contentVisibility: 'auto' }}
-            className={`p-3.5 space-y-2.5 transition-all ${
-              isHighlighted
-                ? 'bg-[#e6f1ff] ring-2 ring-inset ring-[#006cee]'
-                : isSelected
-                  ? 'bg-[#eef6ff]/90 shadow-[inset_3px_0_0_0_#006cee]'
-                  : 'bg-white'
+            className={`px-3.5 py-3 space-y-2.5 transition-colors ${
+              isHighlighted || isSelected
+                ? 'bg-[#eef6ff] border-l-4 border-[#006cee]'
+                : 'bg-white'
             }`}
           >
             <div className="flex items-start justify-between gap-2 min-w-0">
@@ -57,7 +55,7 @@ export function UnitMonitoringMobileCards({
                 onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)}
                 className="text-left min-w-0 flex-1 flex items-start gap-2 cursor-pointer"
               >
-                <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#e1edf8] text-[#004776] shrink-0 mt-0.5">
+                <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-[6px] bg-[#e1edf8] text-[#004776] shrink-0 mt-0.5">
                   {u.unitCode}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -99,7 +97,7 @@ export function UnitMonitoringMobileCards({
                   onAnchorClick(u.unitCode);
                   if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode);
                 }}
-                className="flex-1 min-h-[42px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-xs font-semibold text-white"
+                className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-xs font-semibold text-white transition-colors"
               >
                 <span>Phiếu đơn vị</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -111,7 +109,7 @@ export function UnitMonitoringMobileCards({
                   onAnchorClick(u.unitCode);
                   if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode);
                 }}
-                className="flex-1 min-h-[42px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776]"
+                className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[#f1f5f9] hover:bg-[#e2e8f0] text-xs font-semibold text-[#004776] transition-colors"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-[#006cee]" />
                 <span>Bảng 10 biểu</span>

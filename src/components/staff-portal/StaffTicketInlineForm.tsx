@@ -233,14 +233,14 @@ export function StaffTicketInlineForm({
   };
 
   return (
-    <div id="staff-ticket-form-card" className="space-y-3">
-      <div className="bg-white p-3 rounded-2xl border border-[#dbe8f5] shadow-[0_2px_12px_-4px_rgba(0,71,118,0.06)] space-y-2.5 print:hidden">
-        <div className="grid grid-cols-2 gap-1 p-1 bg-[#f1f6fc] rounded-xl border border-[#dbe8f5]">
-          <button type="button" onClick={() => setViewMode('form')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'form' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
+    <div id="staff-ticket-form-card" className="bg-white rounded-[16px] border border-[#e2e8f0] print:border-0">
+      <div className="rounded-t-[16px] px-4 py-3 bg-[#f8fafc] border-b border-[#e2e8f0] space-y-2.5 print:hidden">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#e9f0f8] rounded-[10px]">
+          <button type="button" onClick={() => setViewMode('form')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-[8px] text-xs font-bold transition-colors cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'form' ? 'bg-white text-[#004776]' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
             <LayoutList className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Kê khai nhập liệu</span>
           </button>
-          <button type="button" onClick={() => setViewMode('preview')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'preview' ? 'bg-white text-[#004776] shadow-xs' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
+          <button type="button" onClick={() => setViewMode('preview')} className={`inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-[8px] text-xs font-bold transition-colors cursor-pointer whitespace-nowrap min-w-0 ${viewMode === 'preview' ? 'bg-white text-[#004776]' : 'text-[#20446c]/80 hover:text-[#004776]'}`}>
             <Printer className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Xem trước bản in A4</span>
           </button>
@@ -252,31 +252,33 @@ export function StaffTicketInlineForm({
         />
       </div>
 
-      {isEditingPendingMode && (
-        <div className="p-3 rounded-xl bg-[#eef5ff] border border-[#bfdbfe] text-xs text-[#004776] font-medium print:hidden">
-          Phiếu đã được gửi duyệt. Bạn vẫn có thể chỉnh sửa trong thời gian phiếu chưa được duyệt. Nội dung mới nhất sẽ được gửi đến người duyệt.
+      <div className="p-4 sm:p-5 space-y-4 print:p-0">
+        {isEditingPendingMode && (
+          <div className="p-3 rounded-[10px] bg-[#eef5ff] border border-[#bfdbfe] text-xs text-[#004776] font-medium print:hidden">
+            Phiếu đã được gửi duyệt. Bạn vẫn có thể chỉnh sửa trong thời gian phiếu chưa được duyệt. Nội dung mới nhất sẽ được gửi đến người duyệt.
+          </div>
+        )}
+
+        {err && <div className="p-3 rounded-[10px] bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
+        {successMsg && <div className="p-3 rounded-[10px] bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
+
+        {isResubmittingMode && editingTicket && (
+          <StaffTicketResubmitBox
+            editingTicket={editingTicket} draftTicketCandidate={draftTicketCandidate}
+            changeSummary={changeSummary} onChangeSummary={setChangeSummary}
+          />
+        )}
+
+        <div className={viewMode === 'form' ? 'block print:hidden' : 'hidden print:hidden'}>
+          <StaffTicketModernForm {...formProps} />
         </div>
-      )}
 
-      {err && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium print:hidden">{err}</div>}
-      {successMsg && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium print:hidden">{successMsg}</div>}
-
-      {isResubmittingMode && editingTicket && (
-        <StaffTicketResubmitBox
-          editingTicket={editingTicket} draftTicketCandidate={draftTicketCandidate}
-          changeSummary={changeSummary} onChangeSummary={setChangeSummary}
-        />
-      )}
-
-      <div className={viewMode === 'form' ? 'block print:hidden' : 'hidden print:hidden'}>
-        <StaffTicketModernForm {...formProps} />
-      </div>
-
-      <div className={viewMode === 'preview' ? 'block' : 'hidden print:block'}>
-        <StaffTicketA4Preview
-          {...formProps} unitNameVi={unit.nameVi} unitCode={unit.code}
-          ownerName={ownerName} ownerEmail={ownerEmail} ownerTitle={ownerTitle} editingTicket={editingTicket}
-        />
+        <div className={viewMode === 'preview' ? 'block' : 'hidden print:block'}>
+          <StaffTicketA4Preview
+            {...formProps} unitNameVi={unit.nameVi} unitCode={unit.code}
+            ownerName={ownerName} ownerEmail={ownerEmail} ownerTitle={ownerTitle} editingTicket={editingTicket}
+          />
+        </div>
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ export function OverviewWelcomeBanner({ session }: OverviewWelcomeBannerProps) {
     <section
       id="overview-welcome-banner"
       aria-label="Thông tin tổng quan Hệ thống Vị trí việc làm 360"
-      className="relative overflow-hidden rounded-[20px] sm:rounded-[24px] bg-[linear-gradient(100deg,#004776_0%,#005792_52%,#0068ad_100%)] text-white shadow-[0_12px_30px_-8px_rgba(0,71,118,0.22)] px-3.5 py-3.5 sm:px-5 sm:py-5 lg:p-[28px] select-none"
+      className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(100deg,#004776_0%,#005792_52%,#0068ad_100%)] text-white px-3.5 py-3.5 sm:px-5 sm:py-5 lg:p-[28px] select-none"
     >
       {/* Bộ lọc SVG tạo viền trắng sắc nét quanh logo HCM-UTE trên nền xanh thẫm */}
       <svg aria-hidden="true" className="sr-only" width="0" height="0">

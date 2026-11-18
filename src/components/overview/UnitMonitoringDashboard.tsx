@@ -149,97 +149,95 @@ export function UnitMonitoringDashboard() {
   const isInitialSkeleton = loading && unitSummaries.length === 0;
 
   return (
-    <section className="space-y-4 text-[#004776] w-full max-w-full min-w-0">
-      {/* Khối Header điều hành & Dải KPI chuẩn S-Link */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#dbe8f5] p-3.5 sm:p-5 shadow-[0_2px_16px_-4px_rgba(0,71,118,0.06)] space-y-4 min-w-0">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#e8eff7] pb-4 min-w-0">
-          <div className="space-y-1 min-w-0">
-            <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
-              Dashboard theo dõi đơn vị
-            </h2>
-            {activeUnitInfo && (
-              <p className="text-xs text-[#20446c]">
-                Đơn vị đang lọc: [{activeUnitInfo.code}] {activeUnitInfo.nameVi}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto min-w-0">
-            <button
-              type="button"
-              onClick={() => setSelectedUnit('ALL')}
-              className={`h-9.5 px-3.5 sm:px-4 rounded-full text-xs font-semibold cursor-pointer transition-all shrink-0 ${
-                selectedUnit === 'ALL'
-                  ? 'bg-[#006cee] hover:bg-[#005ecc] text-white shadow-xs'
-                  : 'bg-[#e1edf8] hover:bg-[#d5e5f6] text-[#004776]'
-              }`}
-            >
-              Toàn trường (39)
-            </button>
-
-            <select
-              aria-label="Chọn đơn vị cần theo dõi"
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="min-h-[42px] sm:h-9.5 px-3 rounded-full border border-[#cbd5e1] bg-[#f8fbff] text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 w-full sm:w-auto sm:min-w-[210px] sm:max-w-[270px] order-last sm:order-none"
-            >
-              <option value="ALL">Lọc theo từng đơn vị…</option>
-              {HCMUTE_UNITS.map((u) => (
-                <option key={u.code} value={u.code}>
-                  [{u.code}] {u.nameVi}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={fetchMonitorData}
-              className="h-9.5 px-3.5 rounded-full border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#006cee] ${loading ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
-              {lastSyncedTime && (
-                <span className="text-[11px] font-medium text-[#20446c]/75 tabular-nums">
-                  {lastSyncedTime}
-                </span>
-              )}
-            </button>
-          </div>
+    <section className="space-y-5 text-[#004776] w-full max-w-full min-w-0">
+      {/* Header điều hành phẳng + bộ chọn đơn vị */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 min-w-0">
+        <div className="space-y-1 min-w-0">
+          <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#004776]">
+            Dashboard theo dõi đơn vị
+          </h2>
+          {activeUnitInfo && (
+            <p className="text-xs text-[#20446c]">
+              Đơn vị đang lọc: [{activeUnitInfo.code}] {activeUnitInfo.nameVi}
+            </p>
+          )}
         </div>
 
-        {error && (
-          <div role="alert" className="p-3 rounded-xl bg-red-50 border border-red-200 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#b42318]">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={fetchMonitorData}
-              className="px-3 h-8 rounded-lg bg-[#b42318] hover:bg-[#991b1b] text-white text-xs font-semibold cursor-pointer shrink-0"
-            >
-              Thử lại
-            </button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto min-w-0">
+          <button
+            type="button"
+            onClick={() => setSelectedUnit('ALL')}
+            className={`h-9.5 px-3.5 sm:px-4 rounded-[10px] text-xs font-semibold cursor-pointer transition-colors shrink-0 ${
+              selectedUnit === 'ALL'
+                ? 'bg-[#006cee] hover:bg-[#005ecc] text-white'
+                : 'bg-[#e9f0f8] hover:bg-[#dce8f5] text-[#004776]'
+            }`}
+          >
+            Toàn trường (39)
+          </button>
 
-        {isInitialSkeleton ? (
-          <div className="space-y-3 animate-pulse">
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="h-[88px] rounded-2xl bg-[#f1f6fc] border border-[#e2ecf7]" />
-              ))}
-            </div>
-            <div className="h-10 rounded-xl bg-[#f4f8fc]" />
-          </div>
-        ) : (
-          <UnitMonitoringKpiStrip
-            selectedUnit={selectedUnit}
-            activeUnitRow={activeUnitRow}
-            stageFilter={stageFilter}
-            totals={totals}
-            onSelectStageFilter={setStageFilter}
-            onClearUnit={() => setSelectedUnit('ALL')}
-          />
-        )}
+          <select
+            aria-label="Chọn đơn vị cần theo dõi"
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
+            className="min-h-[40px] sm:h-9.5 px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] leading-normal outline-none focus:border-[#006cee] focus:ring-2 focus:ring-[#006cee]/15 w-full sm:w-auto sm:min-w-[210px] sm:max-w-[270px] order-last sm:order-none"
+          >
+            <option value="ALL">Lọc theo từng đơn vị…</option>
+            {HCMUTE_UNITS.map((u) => (
+              <option key={u.code} value={u.code}>
+                [{u.code}] {u.nameVi}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={fetchMonitorData}
+            className="h-9.5 px-3.5 rounded-[10px] bg-white hover:bg-[#eef5ff] border border-[#cbd5e1] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#006cee] ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+            {lastSyncedTime && (
+              <span className="text-[11px] font-medium text-[#20446c]/75 tabular-nums">
+                {lastSyncedTime}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div role="alert" className="p-3 rounded-[12px] bg-red-50 border border-red-200 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#b42318]">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={fetchMonitorData}
+            className="px-3 h-8 rounded-[8px] bg-[#b42318] hover:bg-[#991b1b] text-white text-xs font-semibold cursor-pointer shrink-0"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {isInitialSkeleton ? (
+        <div className="rounded-[14px] border border-[#e2e8f0] bg-white overflow-hidden animate-pulse">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 divide-x divide-[#e2e8f0]">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="h-[84px] bg-[#f8fafc]" />
+            ))}
+          </div>
+          <div className="h-10 border-t border-[#e2e8f0] bg-[#f1f5f9]" />
+        </div>
+      ) : (
+        <UnitMonitoringKpiStrip
+          selectedUnit={selectedUnit}
+          activeUnitRow={activeUnitRow}
+          stageFilter={stageFilter}
+          totals={totals}
+          onSelectStageFilter={setStageFilter}
+          onClearUnit={() => setSelectedUnit('ALL')}
+        />
+      )}
 
       {isInitialSkeleton ? (
         <div className="h-72 rounded-2xl bg-white border border-[#dbe8f5] p-5 animate-pulse space-y-3">

@@ -141,15 +141,14 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
   const activeData = ROLE_ACTIONS[selectedRole] || ROLE_ACTIONS.staff;
 
   return (
-    <section className="bg-white rounded-3xl border border-[#d8e3ef] p-4 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,71,118,0.06)] space-y-4">
-      {/* Title & Role Tabs */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#e2ecf7] pb-3.5">
+    <section className="bg-white rounded-[16px] border border-[#e2e8f0] p-4 sm:p-6 space-y-3">
+      {/* Tiêu đề & Segmented Tabs vai trò phẳng */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3.5">
         <h2 className="text-base sm:text-lg font-bold text-[#004776]">
           Tác vụ nhanh theo vai trò
         </h2>
 
-        {/* Tab buttons */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#f0f5fa] rounded-2xl border border-[#d8e3ef] self-start lg:self-center">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-[#f1f5f9] rounded-[10px] self-start lg:self-center">
           {(Object.keys(ROLE_ACTIONS) as UserRole[]).map((r) => {
             const isSelected = selectedRole === r;
             const isUserOwnRole = currentRole === r;
@@ -158,15 +157,15 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
                 key={r}
                 type="button"
                 onClick={() => setSelectedRole(r)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-[#006cee] text-white shadow-xs'
-                    : 'text-[#20446c] hover:text-[#004776] hover:bg-white/80'
+                    ? 'bg-white text-[#004776]'
+                    : 'text-[#476885] hover:text-[#004776]'
                 }`}
               >
                 <span>{ROLE_ACTIONS[r].label.split('(')[0].trim()}</span>
                 {isUserOwnRole && (
-                  <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-300' : 'bg-[#006cee]'}`} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#006cee]" />
                 )}
               </button>
             );
@@ -174,37 +173,29 @@ export function OverviewRoleActionCards({ currentRole = 'staff' }: OverviewRoleA
         </div>
       </div>
 
-      {/* Action Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Danh sách tác vụ phẳng ngăn bằng divider: icon + tiêu đề + mô tả + mũi tên */}
+      <div className="divide-y divide-[#e2e8f0]">
         {activeData.actions.map((act) => {
           const Icon = act.icon;
           return (
-            <div
+            <Link
               key={act.id}
-              className="p-4 rounded-2xl border border-[#d8e3ef] bg-white hover:border-[#006cee]/40 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              href={act.href}
+              className="py-3 px-2 -mx-2 rounded-[10px] hover:bg-[#f8fbff] transition-colors flex items-center justify-between gap-3 group"
             >
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[#e1edf8] text-[#006cee] flex items-center justify-center shrink-0 border border-[#cbd5e1]/60">
-                  <Icon className="w-4.5 h-4.5 text-[#006cee]" />
-                </div>
-                <div className="min-w-0 space-y-1">
-                  <span className="inline-block text-[10.5px] font-semibold text-[#20446c] bg-[#e1edf8] px-2 py-0.5 rounded-md">
-                    {act.tag}
-                  </span>
-                  <h3 className="text-sm font-bold text-[#004776] leading-snug">
+              <div className="flex items-center gap-3 min-w-0">
+                <Icon className="w-5 h-5 text-[#006cee] shrink-0" />
+                <div className="min-w-0 space-y-0.5">
+                  <div className="text-sm font-semibold text-[#004776] group-hover:text-[#006cee] transition-colors leading-snug">
                     {act.title}
-                  </h3>
+                  </div>
+                  <div className="text-xs text-[#476885]">
+                    {act.tag} · {act.btnLabel}
+                  </div>
                 </div>
               </div>
-
-              <Link
-                href={act.href}
-                className="inline-flex items-center justify-center gap-1.5 h-8.5 px-3.5 rounded-full bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98] shrink-0 self-end sm:self-center whitespace-nowrap"
-              >
-                <span>{act.btnLabel}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+              <ArrowRight className="w-4 h-4 text-[#476885] group-hover:text-[#006cee] group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
           );
         })}
       </div>

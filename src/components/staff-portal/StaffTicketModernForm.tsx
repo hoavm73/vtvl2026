@@ -40,27 +40,27 @@ interface StaffTicketModernFormProps {
 }
 
 export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
-  const textareaClass = (value: string) => `w-full min-h-[72px] px-3 py-2.5 text-xs sm:text-sm leading-relaxed rounded-xl border text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden resize-y transition-all duration-200 ${
+  const textareaClass = (value: string) => `w-full min-h-[72px] px-3 py-2.5 text-xs sm:text-sm leading-relaxed rounded-[10px] border text-[#004776] placeholder:text-[#94a3b8] focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden resize-y transition-colors duration-200 ${
     value.trim()
-      ? 'border-[#7cc4f5] bg-[#eff8ff] shadow-[0_4px_14px_rgba(0,114,188,0.10)]'
+      ? 'border-[#7cc4f5] bg-[#eff8ff]'
       : 'border-[#cbd5e1] bg-white'
   }`;
 
-  const numberInputClass = (value: string) => `w-full h-10 px-3 text-xs sm:text-sm rounded-xl border text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-all duration-200 ${
+  const numberInputClass = (value: string) => `w-full h-10 px-3 text-xs sm:text-sm rounded-[10px] border text-[#004776] font-semibold focus:border-[#0072BC] focus:ring-2 focus:ring-[#0072BC]/20 outline-hidden transition-colors duration-200 ${
     Number(value) > 0
-      ? 'border-[#7cc4f5] bg-[#eff8ff] shadow-[0_4px_14px_rgba(0,114,188,0.10)]'
+      ? 'border-[#7cc4f5] bg-[#eff8ff]'
       : 'border-[#cbd5e1] bg-white'
   }`;
 
   return (
-    <div className="space-y-5">
+    <div className="divide-y divide-[#e2e8f0]">
       {/* Nhóm 1: Nhiệm vụ & Vị trí việc làm */}
-      <div className="bg-[#fcfdff] rounded-2xl border border-[#dbeafe] p-4 sm:p-5 space-y-4 shadow-2xs">
-        <div className="border-b border-[#e2ecf7] pb-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="pb-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
             1. Nhiệm vụ &amp; vị trí việc làm
           </h3>
-          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2 py-0.5 rounded-full">
+          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">
             Bắt buộc *
           </span>
         </div>
@@ -90,7 +90,7 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
               readOnly
               value={props.maCongViec || 'Tự động cấp mã...'}
               aria-label="Mã công việc tự sinh"
-              className="w-full h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f1f5f9] text-xs sm:text-sm font-mono font-bold text-[#0072BC] cursor-default outline-hidden"
+              className="w-full h-10 px-3 rounded-[10px] border border-[#cbd5e1] bg-[#f1f5f9] text-xs sm:text-sm font-mono font-bold text-[#0072BC] cursor-default outline-hidden"
             />
           </div>
 
@@ -152,12 +152,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
       </div>
 
       {/* Nhóm 2: Sản phẩm đầu ra & Căn cứ */}
-      <div className="bg-[#fcfdff] rounded-2xl border border-[#dbeafe] p-4 sm:p-5 space-y-4 shadow-2xs">
-        <div className="border-b border-[#e2ecf7] pb-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="py-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
             2. Sản phẩm đầu ra &amp; tiêu chuẩn
           </h3>
-          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2 py-0.5 rounded-full">
+          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">
             Bắt buộc *
           </span>
         </div>
@@ -211,12 +211,12 @@ export function StaffTicketModernForm(props: StaffTicketModernFormProps) {
       </div>
 
       {/* Nhóm 3: Định mức thời gian & Sản lượng */}
-      <div className="bg-[#fcfdff] rounded-2xl border border-[#dbeafe] p-4 sm:p-5 space-y-4 shadow-2xs">
-        <div className="border-b border-[#e2ecf7] pb-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="pt-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm sm:text-[15px] font-bold text-[#004776] leading-normal">
             3. Định mức thời gian &amp; sản lượng hằng năm
           </h3>
-          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2 py-0.5 rounded-full">
+          <span className="shrink-0 text-[11px] text-[#0072BC] font-semibold bg-[#eef5ff] px-2.5 py-0.5 rounded-full">
             Bắt buộc *
           </span>
         </div>

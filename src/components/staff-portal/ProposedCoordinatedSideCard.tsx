@@ -90,83 +90,85 @@ export function ProposedCoordinatedSideCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#cbd5e1] p-4 sm:p-5 shadow-xs space-y-3.5">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="p-1.5 rounded-lg bg-[#e1edf8] text-[#006cee] shrink-0">
-            <Handshake className="w-4 h-4" />
-          </span>
-          <h3 className="text-sm font-bold text-[#004776] truncate">
-            Các nhiệm vụ được đề xuất phối hợp
-          </h3>
+    <div className="bg-white rounded-[16px] border border-[#e2e8f0] overflow-hidden">
+      <div className="p-4 sm:p-5 border-b border-[#e2e8f0] space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="p-1.5 rounded-[8px] bg-[#eef5ff] text-[#006cee] shrink-0">
+              <Handshake className="w-4 h-4" />
+            </span>
+            <h3 className="text-sm font-bold text-[#004776] truncate">
+              Các nhiệm vụ được đề xuất phối hợp
+            </h3>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#eef5fc] text-[#0072BC]">
+              {items.length} đề xuất
+            </span>
+            <button
+              type="button"
+              onClick={onOpenFullTab}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-[8px] hover:bg-[#eef5ff] text-[11px] font-bold text-[#006cee] transition-colors cursor-pointer"
+            >
+              <span>Mở tab đầy đủ</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#eef5fc] text-[#0072BC] border border-[#d8e3ef]">
-            {items.length} đề xuất
-          </span>
-          <button
-            type="button"
-            onClick={onOpenFullTab}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#bfdbfe] bg-[#f8fbff] hover:bg-[#eef5ff] text-[11px] font-bold text-[#006cee] transition-colors cursor-pointer"
-          >
-            <span>Mở tab đầy đủ</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-        {unitCode && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f1f6fc] border border-[#dbe8f5] text-[#004776] font-semibold">
-            Đề xuất gửi về đơn vị [{unitCode}]
-          </span>
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          {unitCode && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f1f6fc] text-[#004776] font-semibold">
+              Đề xuất gửi về đơn vị [{unitCode}]
+            </span>
+          )}
+          {selectedVtvl && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#006cee] text-white font-bold">
+              Đang chọn VTVL: {selectedVtvl}
+            </span>
+          )}
+          {myAssignments.length > 0 && myAssignments.map((a) => (
+            <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e1edf8] font-bold text-[#004776]">
+              <Lock className="w-2.5 h-2.5 text-[#006cee]" /> [{a.unitCode}] {a.maVtvl}
+            </span>
+          ))}
+        </div>
+
+        {items.length > 0 && (
+          <div className="relative">
+            <label htmlFor="proposed-coord-side-search" className="sr-only">Lọc nhanh nhiệm vụ đề xuất phối hợp</label>
+            <Search className="w-3.5 h-3.5 text-[#476b8e] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+            <input
+              id="proposed-coord-side-search"
+              type="text"
+              aria-label="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì..."
+              className="w-full h-9 pl-8 pr-3 text-xs rounded-[10px] border border-[#cbd5e1] bg-[#f8fbff] text-[#004776] focus:border-[#006cee] focus:bg-white outline-none"
+            />
+          </div>
         )}
-        {selectedVtvl && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#006cee] text-white font-bold">
-            Đang chọn VTVL: {selectedVtvl}
-          </span>
+
+        {detailError && (
+          <div className="p-2.5 rounded-[10px] bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span>{detailError}</span>
+          </div>
         )}
-        {myAssignments.length > 0 && myAssignments.map((a) => (
-          <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e1edf8] border border-[#bfdbfe] font-bold text-[#004776]">
-            <Lock className="w-2.5 h-2.5 text-[#006cee]" /> [{a.unitCode}] {a.maVtvl}
-          </span>
-        ))}
       </div>
-
-      {items.length > 0 && (
-        <div className="relative">
-          <label htmlFor="proposed-coord-side-search" className="sr-only">Lọc nhanh nhiệm vụ đề xuất phối hợp</label>
-          <Search className="w-3.5 h-3.5 text-[#476b8e] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-          <input
-            id="proposed-coord-side-search"
-            type="text"
-            aria-label="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Lọc nhanh theo mã nhiệm vụ, công việc, mã VTVL, đơn vị chủ trì..."
-            className="w-full h-9 pl-8 pr-3 text-xs rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-[#004776] focus:border-[#006cee] focus:bg-white outline-none"
-          />
-        </div>
-      )}
-
-      {detailError && (
-        <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 shrink-0" />
-          <span>{detailError}</span>
-        </div>
-      )}
 
       {loading ? (
         <div className="py-8 text-center text-xs font-semibold text-[#476b8e]">
           Đang tải nhiệm vụ đề xuất phối hợp...
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="py-6 px-3 text-center rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fbff] space-y-1.5">
+        <div className="py-8 px-4 text-center space-y-1.5">
           <Handshake className="w-6 h-6 text-[#006cee] mx-auto opacity-75" />
           <p className="text-xs font-bold text-[#004776]">{PROPOSED_TAB_EMPTY_MESSAGE}</p>
         </div>
       ) : (
-        <div className="max-h-[400px] overflow-y-auto space-y-2.5 pr-0.5">
+        <div className="max-h-[400px] overflow-y-auto divide-y divide-[#e2e8f0]">
           {filteredItems.map((task) => {
             const submittedVi = task.submittedAt
               ? new Date(task.submittedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -177,15 +179,15 @@ export function ProposedCoordinatedSideCard({
             return (
               <div
                 key={task.proposalKey}
-                className={`p-3 rounded-xl transition-all space-y-1.5 ${
+                className={`px-4 sm:px-5 py-3 transition-colors space-y-1.5 ${
                   isHighlighted
-                    ? 'border-2 border-[#006cee] bg-[#eef6ff] ring-2 ring-[#006cee]/20 shadow-xs'
-                    : 'border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd]'
+                    ? 'bg-[#eef6ff] border-l-2 border-[#006cee]'
+                    : 'bg-white hover:bg-[#f8fbff]'
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-md bg-white border border-[#bfdbfe] text-[#006cee] text-[11px] font-bold font-mono">
+                    <span className="px-2 py-0.5 rounded-[6px] bg-[#eef5ff] text-[#006cee] text-[11px] font-bold font-mono">
                       [{task.hostUnitCode}] {task.maCongViec}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#20446c] text-[11px] font-bold">
@@ -202,7 +204,7 @@ export function ProposedCoordinatedSideCard({
                       </span>
                     )}
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${getBadgeCls(task.canonicalStatus)}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${getBadgeCls(task.canonicalStatus)}`}>
                     {task.sourceStatus}
                   </span>
                 </div>
@@ -213,22 +215,22 @@ export function ProposedCoordinatedSideCard({
 
                 <div className="flex flex-wrap items-center gap-1.5 text-[10.5px]">
                   {task.hostApprovalLabel && (
-                    <span className={`px-2 py-0.5 rounded-md border font-semibold ${
-                      task.hostUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+                    <span className={`px-2 py-0.5 rounded-full font-semibold ${
+                      task.hostUnitApproved ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'
                     }`}>
                       {task.hostApprovalLabel}
                     </span>
                   )}
                   {task.targetApprovalLabel && (
-                    <span className={`px-2 py-0.5 rounded-md border font-semibold ${
-                      task.targetUnitApproved ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-800'
+                    <span className={`px-2 py-0.5 rounded-full font-semibold ${
+                      task.targetUnitApproved ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'
                     }`}>
                       {task.targetApprovalLabel}
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#20446c]">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-[11px] text-[#20446c]">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
                     <span className="inline-flex items-center gap-1">
                       <UserCheck className="w-3 h-3 text-[#006cee]" />
@@ -245,7 +247,7 @@ export function ProposedCoordinatedSideCard({
                     type="button"
                     onClick={() => handleOpenDetail(task)}
                     disabled={isBusy}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#bfdbfe] bg-white hover:bg-[#eff8ff] text-[#004776] font-bold cursor-pointer disabled:opacity-50 shrink-0"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[8px] bg-[#f1f5f9] hover:bg-[#eef5ff] text-[#004776] font-bold cursor-pointer disabled:opacity-50 shrink-0 transition-colors"
                   >
                     <Eye className="w-3 h-3 text-[#006cee]" />
                     <span>{isBusy ? 'Đang mở...' : 'Xem chi tiết'}</span>

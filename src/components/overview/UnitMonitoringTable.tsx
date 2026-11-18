@@ -86,9 +86,9 @@ export function UnitMonitoringTable({
   const visibleRows = useMemo(() => displayRows.slice(0, state.limit), [displayRows, state.limit]);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden min-w-0">
+    <div className="bg-white rounded-[16px] border border-[#e2e8f0] overflow-hidden min-w-0">
       {/* Header khu vực Danh sách đơn vị + Nút Đóng/Mở & Bộ lọc Mobile */}
-      <div className="px-3.5 sm:px-4 py-3 border-b border-[#e8eff7] bg-[#fafcff] flex flex-wrap items-center justify-between gap-2">
+      <div className="px-4 py-3.5 border-b border-[#e2e8f0] bg-white flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setListExpanded((v) => !v)}
@@ -103,10 +103,10 @@ export function UnitMonitoringTable({
             type="button"
             onClick={() => setShowMobileFilters((v) => !v)}
             aria-expanded={showMobileFilters}
-            className={`min-h-[40px] px-3 rounded-xl border text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer ${
+            className={`min-h-[38px] px-3 rounded-[10px] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer ${
               showMobileFilters || selectedGroup !== 'ALL' || activityMode !== 'all' || includeTest
-                ? 'bg-[#eef5ff] border-[#006cee] text-[#004776]'
-                : 'bg-white border-[#d8e3ef] text-[#004776]'
+                ? 'bg-[#eef5ff] text-[#006cee]'
+                : 'bg-[#f1f5f9] text-[#004776]'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -118,22 +118,22 @@ export function UnitMonitoringTable({
       {listExpanded && (
         <>
       {/* Thanh công cụ lọc nhóm & tìm kiếm */}
-      <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex px-3 sm:px-4 py-3 border-b border-[#e8eff7] bg-[#fafcff] flex-col xl:flex-row xl:items-center justify-between gap-2.5 min-w-0`}>
+      <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex px-4 py-3 border-b border-[#e2e8f0] bg-[#f8fafc] flex-col xl:flex-row xl:items-center justify-between gap-2.5 min-w-0`}>
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {[{ id: 'ALL', label: `Tất cả (${HCMUTE_UNITS.length})` }, ...UNIT_GROUPS.map((g) => ({ id: g.id, label: `${SHORT_UNIT_GROUP_LABELS[g.id] || g.label} (${GROUP_COUNTS[g.id] || 0})` }))].map((g) => (
             <button
               key={g.id}
               type="button"
               onClick={() => { onSelectGroup(g.id); setField('limit', 10); }}
-              className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${selectedGroup === g.id ? 'bg-[#004776] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'}`}
+              className={`h-8 px-3 rounded-full text-xs font-semibold cursor-pointer transition-colors ${selectedGroup === g.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}
             >{g.label}</button>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto min-w-0">
-          <div className="inline-flex items-center p-0.5 rounded-full bg-[#eef4fb] border border-[#dbe8f5] max-w-full overflow-x-auto no-scrollbar">
+          <div className="inline-flex items-center p-0.5 rounded-[10px] bg-[#e9f0f8] max-w-full overflow-x-auto no-scrollbar">
             {([{ id: 'all', label: 'Tất cả' }, { id: 'active', label: 'Có dữ liệu' }, { id: 'empty', label: 'Chưa kê khai' }] as const).map((m) => (
-              <button key={m.id} type="button" onClick={() => patchFields({ mode: m.id, limit: 10 })} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all whitespace-nowrap ${activityMode === m.id ? 'bg-white text-[#004776] shadow-2xs' : 'text-[#20446c] hover:text-[#004776]'}`}>
+              <button key={m.id} type="button" onClick={() => patchFields({ mode: m.id, limit: 10 })} className={`h-7 px-2.5 rounded-[8px] text-[11px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${activityMode === m.id ? 'bg-white text-[#004776]' : 'text-[#20446c] hover:text-[#004776]'}`}>
                 {m.label}
               </button>
             ))}
@@ -147,14 +147,14 @@ export function UnitMonitoringTable({
             className="w-full sm:w-60 min-w-0"
           />
 
-          <button type="button" onClick={() => onToggleIncludeTest(!includeTest)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold border cursor-pointer transition-colors ${includeTest ? 'bg-[#fff4e5] text-[#c26d00] border-[#fcd34d]' : 'bg-white text-[#20446c] border-[#d8e3ef] hover:bg-[#eef5ff]'}`}>
+          <button type="button" onClick={() => onToggleIncludeTest(!includeTest)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-xs font-semibold cursor-pointer transition-colors ${includeTest ? 'bg-[#fff4e5] text-[#c26d00]' : 'bg-white text-[#20446c] hover:bg-[#eef5ff]'}`}>
             <FlaskConical className="w-3.5 h-3.5" /><span>Phiếu thử (CK)</span>
           </button>
         </div>
       </div>
 
       {stageFilter !== 'ALL' && (
-        <div className="px-4 py-2 bg-[#f4f9ff] border-b border-[#dbe8f5] flex items-center justify-between gap-2 text-xs text-[#004776]">
+        <div className="px-4 py-2 bg-[#f4f9ff] border-b border-[#e2e8f0] flex items-center justify-between gap-2 text-xs text-[#004776]">
           <span>Đang lọc theo thẻ KPI — hiển thị <strong>{displayRows.length}</strong> đơn vị phù hợp.</span>
           <button type="button" onClick={onResetStageFilter} className="font-semibold text-[#006cee] hover:underline cursor-pointer shrink-0">
             Hiển thị tất cả đơn vị
@@ -162,7 +162,7 @@ export function UnitMonitoringTable({
         </div>
       )}
 
-      {/* Mobile: Thẻ đơn vị vừa khít 390px */}
+      {/* Mobile: Danh sách phân cách bằng đường kẻ */}
       <UnitMonitoringMobileCards
         rows={visibleRows}
         selectedUnit={selectedUnit}
@@ -174,7 +174,7 @@ export function UnitMonitoringTable({
       {/* Desktop / Tablet: Bảng tổng hợp đầy đủ cột */}
       <div className="hidden md:block overflow-x-auto max-h-[480px]">
         <table className="w-full text-left border-collapse text-xs">
-          <thead className="bg-[#f4f8fc] text-[#004776] sticky top-0 z-10 border-b border-[#dbe8f5] text-[11.5px] font-semibold">
+          <thead className="bg-[#f8fafc] text-[#004776] sticky top-0 z-10 border-b border-[#e2e8f0] text-[11.5px] font-semibold">
             <tr>
               <th className="py-2.5 px-4">
                 <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function UnitMonitoringTable({
                   <button
                     type="button"
                     onClick={() => setField('sortAct', !sortByActivity)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#d8e3ef] text-[10.5px] font-semibold text-[#20446c] hover:text-[#006cee] cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] bg-[#eef4fb] text-[10.5px] font-semibold text-[#20446c] hover:text-[#006cee] cursor-pointer"
                     title="Đổi cách sắp xếp danh sách đơn vị"
                   >
                     <ArrowUpDown className="w-3 h-3" />
@@ -201,7 +201,7 @@ export function UnitMonitoringTable({
               <th className="py-2.5 px-4 text-right">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#eef3f8]">
+          <tbody className="divide-y divide-[#e2e8f0]">
             {visibleRows.length === 0 ? (
               <tr>
                 <td colSpan={10} className="py-10 text-center text-xs text-[#20446c]">Không có đơn vị nào phù hợp với điều kiện lọc hiện tại.</td>
@@ -214,11 +214,11 @@ export function UnitMonitoringTable({
                   <tr
                     key={u.unitCode}
                     data-row-anchor={u.unitCode}
-                    className={`transition-colors ${isHighlighted ? 'bg-[#e6f1ff] shadow-[inset_3px_0_0_0_#006cee]' : isSelected ? 'bg-[#eef6ff]/90 shadow-[inset_3px_0_0_0_#006cee]' : 'bg-white hover:bg-[#f7fbff]'}`}
+                    className={`transition-colors ${isHighlighted || isSelected ? 'bg-[#eef6ff]' : 'bg-white hover:bg-[#f8fafc]'}`}
                   >
                     <td className="py-2.5 px-4">
                       <button type="button" onClick={() => onSelectUnit(isSelected ? 'ALL' : u.unitCode)} className="text-left group cursor-pointer flex items-start gap-2">
-                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#e1edf8] text-[#004776] group-hover:bg-[#006cee] group-hover:text-white transition-colors shrink-0 mt-0.5">{u.unitCode}</span>
+                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-[6px] bg-[#e1edf8] text-[#004776] group-hover:bg-[#006cee] group-hover:text-white transition-colors shrink-0 mt-0.5">{u.unitCode}</span>
                         <div className="min-w-0">
                           <div className="font-semibold text-[#004776] group-hover:text-[#006cee] leading-snug">{u.unitNameVi}</div>
                           <div className="text-[11px] text-[#20446c]/80">{SHORT_UNIT_GROUP_LABELS[u.group] || u.groupLabel}</div>
@@ -247,10 +247,10 @@ export function UnitMonitoringTable({
                     </td>
                     <td className="py-2.5 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
-                        <Link href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors">
+                        <Link href={`/phieu-cong-viec?unitCode=${encodeURIComponent(u.unitCode)}&tab=unit`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#f1f5f9] hover:bg-[#e1edf8] text-[11px] font-semibold text-[#004776] transition-colors">
                           <span>Phiếu</span><ExternalLink className="w-3 h-3 text-[#006cee]" />
                         </Link>
-                        <Link href={`/bang-tinh?unit=${encodeURIComponent(u.unitCode)}`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-[#d8e3ef] bg-white hover:bg-[#eef5ff] hover:border-[#006cee]/40 text-[11px] font-semibold text-[#004776] transition-colors">
+                        <Link href={`/bang-tinh?unit=${encodeURIComponent(u.unitCode)}`} onClick={() => { saveScrollAnchor(u.unitCode); if (typeof window !== 'undefined') localStorage.setItem('vtvl_active_unit_code', u.unitCode); }} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-[#f1f5f9] hover:bg-[#e1edf8] text-[11px] font-semibold text-[#004776] transition-colors">
                           <FileSpreadsheet className="w-3 h-3 text-[#006cee]" /><span>10 biểu</span>
                         </Link>
                       </div>

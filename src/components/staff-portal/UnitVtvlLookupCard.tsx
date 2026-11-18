@@ -88,106 +88,108 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
   }, [vtvlList, searchTerm, selectedGroup]);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#cbd5e1] p-4 sm:p-5 shadow-xs space-y-4">
-      {/* Tiêu đề */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
-        <div className="flex items-center gap-2">
-          <span className="p-1 rounded-lg bg-[#e1edf8] text-[#0072BC]">
-            <Briefcase className="w-4 h-4" />
+    <div className="bg-white rounded-[16px] border border-[#e2e8f0] overflow-hidden">
+      <div className="p-4 sm:p-5 border-b border-[#e2e8f0] space-y-3">
+        {/* Tiêu đề */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-[8px] bg-[#eef5ff] text-[#0072BC]">
+              <Briefcase className="w-4 h-4" />
+            </span>
+            <h3 className="text-sm font-bold text-[#004776]">
+              Danh mục vị trí việc làm của đơn vị [{unit.code}]
+            </h3>
+          </div>
+          <span className="inline-flex items-center self-start sm:self-auto px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#eef5ff] text-[#0072BC]">
+            {filteredList.length} / {vtvlList.length} VTVL
           </span>
-          <h3 className="text-sm font-bold text-[#004776]">
-            Danh mục vị trí việc làm của đơn vị [{unit.code}]
-          </h3>
-        </div>
-        <span className="inline-flex items-center self-start sm:self-auto px-2.5 py-1 rounded-full text-xs font-bold bg-[#eef5fc] text-[#0072BC] border border-[#d8e3ef]">
-          {filteredList.length} / {vtvlList.length} VTVL
-        </span>
-      </div>
-
-      {/* Thanh tìm kiếm & lọc nhanh */}
-      <div className="space-y-2.5">
-        <div className="relative">
-          <label htmlFor="unit-vtvl-lookup-search" className="sr-only">Tìm kiếm VTVL theo tên, mã hiệu hoặc ngạch chức danh</label>
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" aria-hidden="true" />
-          <input
-            id="unit-vtvl-lookup-search"
-            type="text"
-            aria-label="Tìm theo tên VTVL, mã hiệu, ngạch chức danh"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm theo tên VTVL, mã hiệu, ngạch chức danh..."
-            className="w-full h-9 pl-9 pr-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-xs text-[#004776] placeholder-[#94a3b8] focus:outline-none focus:border-[#0072BC] focus:bg-white transition-all"
-          />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <button
-            type="button"
-            onClick={() => setSelectedGroup('all')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              selectedGroup === 'all'
-                ? 'bg-[#004776] text-white'
-                : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
-            }`}
-          >
-            Tất cả ({vtvlList.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedGroup('quan-ly')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              selectedGroup === 'quan-ly'
-                ? 'bg-[#004776] text-white'
-                : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
-            }`}
-          >
-            Quản lý
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedGroup('chuyen-mon')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              selectedGroup === 'chuyen-mon'
-                ? 'bg-[#004776] text-white'
-                : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
-            }`}
-          >
-            Chuyên môn
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedGroup('ho-tro')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              selectedGroup === 'ho-tro'
-                ? 'bg-[#004776] text-white'
-                : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
-            }`}
-          >
-            Hỗ trợ & phục vụ
-          </button>
+        {/* Thanh tìm kiếm & lọc nhanh */}
+        <div className="space-y-2.5">
+          <div className="relative">
+            <label htmlFor="unit-vtvl-lookup-search" className="sr-only">Tìm kiếm VTVL theo tên, mã hiệu hoặc ngạch chức danh</label>
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#476885]" aria-hidden="true" />
+            <input
+              id="unit-vtvl-lookup-search"
+              type="text"
+              aria-label="Tìm theo tên VTVL, mã hiệu, ngạch chức danh"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm theo tên VTVL, mã hiệu, ngạch chức danh..."
+              className="w-full h-9 pl-9 pr-3 rounded-[10px] border border-[#cbd5e1] bg-[#f8fbff] text-xs text-[#004776] placeholder-[#94a3b8] focus:outline-none focus:border-[#0072BC] focus:bg-white transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('all')}
+              className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
+                selectedGroup === 'all'
+                  ? 'bg-[#004776] text-white'
+                  : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
+              }`}
+            >
+              Tất cả ({vtvlList.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('quan-ly')}
+              className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
+                selectedGroup === 'quan-ly'
+                  ? 'bg-[#004776] text-white'
+                  : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
+              }`}
+            >
+              Quản lý
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('chuyen-mon')}
+              className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
+                selectedGroup === 'chuyen-mon'
+                  ? 'bg-[#004776] text-white'
+                  : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
+              }`}
+            >
+              Chuyên môn
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('ho-tro')}
+              className={`px-2.5 py-1 rounded-[8px] font-semibold transition-colors cursor-pointer ${
+                selectedGroup === 'ho-tro'
+                  ? 'bg-[#004776] text-white'
+                  : 'bg-[#f1f5f9] text-[#476885] hover:bg-[#e2e8f0]'
+              }`}
+            >
+              Hỗ trợ & phục vụ
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Danh sách cuộn */}
-      <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+      {/* Danh sách cuộn phẳng */}
+      <div className="max-h-[380px] overflow-y-auto divide-y divide-[#e2e8f0]">
         {filteredList.length === 0 ? (
-          <div className="p-6 text-center text-xs text-[#476885] bg-[#f8fafc] rounded-xl border border-dashed border-[#cbd5e1]">
+          <div className="p-6 text-center text-xs text-[#476885]">
             Không tìm thấy vị trí việc làm phù hợp với từ khóa tra cứu.
           </div>
         ) : (
           filteredList.map((item, idx) => (
             <div
               key={`${item.maVtvl}-${idx}`}
-              className="p-3 rounded-xl border border-[#e2e8f0] bg-[#f8fbff] hover:bg-white hover:border-[#0072BC] transition-all space-y-2 group"
+              className="px-4 sm:px-5 py-3 hover:bg-[#f8fbff] transition-colors space-y-1.5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#e1edf8] text-[#004776]">
+                    <span className="px-2 py-0.5 rounded-[6px] text-[11px] font-bold bg-[#e1edf8] text-[#004776]">
                       {item.maVtvl}
                     </span>
                     {item.ngachCode && (
-                      <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium bg-[#f1f5f9] text-[#476885]">
+                      <span className="px-1.5 py-0.5 rounded-full text-[10.5px] font-medium bg-[#f1f5f9] text-[#476885]">
                         Ngạch: {item.ngachCode}
                       </span>
                     )}
@@ -202,11 +204,10 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
                     type="button"
                     onClick={() => {
                       onSelectVtvl(item.maVtvl);
-                      // Cuộn nhẹ lên form kê khai nếu cần
                       const formEl = document.getElementById('staff-ticket-form-card');
                       if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="shrink-0 px-2.5 py-1 rounded-lg bg-[#0072BC] hover:bg-[#004776] text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    className="shrink-0 px-2.5 py-1 rounded-[8px] bg-[#eef5ff] hover:bg-[#0072BC] text-[#0072BC] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                     title="Chọn vị trí này để kê khai phiếu"
                   >
                     <span>Kê khai</span>
@@ -215,7 +216,7 @@ export function UnitVtvlLookupCard({ unitCode, c1Vtvls, onSelectVtvl }: UnitVtvl
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-[#476885] pt-1 border-t border-[#eef3f8]">
+              <div className="flex items-center justify-between text-[11px] text-[#476885]">
                 <span className="truncate max-w-[200px]">{item.nhomVtvl}</span>
                 <span className="inline-flex items-center gap-1 text-[#0072BC] font-medium shrink-0">
                   <Clock className="w-3 h-3" />

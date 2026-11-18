@@ -37,7 +37,7 @@ export function StaffPortalHeaderBanner({
   const unitInfo = findHcmuteUnit(unitCode);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#dbeafe] shadow-xs p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 print:hidden">
+    <div className="pb-4 border-b border-[#e2e8f0] flex flex-col xl:flex-row xl:items-center justify-between gap-4 print:hidden">
       <div className="space-y-1">
         <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
           <Building2 className="w-3.5 h-3.5" />
@@ -50,7 +50,7 @@ export function StaffPortalHeaderBanner({
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/bang-tinh?sheet=A2"
-          className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] flex items-center gap-1.5 shadow-2xs"
+          className="h-10 px-3.5 rounded-[10px] bg-white hover:bg-[#eef5ff] border border-[#cbd5e1] text-xs font-semibold text-[#004776] flex items-center gap-1.5 transition-colors"
         >
           <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
           <span>Bảng tính toàn đơn vị</span>
@@ -58,7 +58,7 @@ export function StaffPortalHeaderBanner({
         <button
           type="button"
           onClick={onCreateNew}
-          className="h-10 px-4 rounded-xl bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+          className="h-10 px-4 rounded-[10px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>Tạo phiếu mới</span>
@@ -67,7 +67,7 @@ export function StaffPortalHeaderBanner({
           type="button"
           onClick={onLogout}
           aria-label="Đăng xuất"
-          className="min-h-[44px] min-w-[44px] px-3 rounded-xl border border-[#e2e8f0] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] inline-flex items-center justify-center cursor-pointer"
+          className="min-h-[40px] min-w-[40px] px-3 rounded-[10px] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] hover:bg-red-50 inline-flex items-center justify-center cursor-pointer transition-colors"
           title="Đăng xuất"
         >
           <LogOut className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function StaffTicketsTabBar({
   isLeader
 }: StaffTicketsTabBarProps) {
   const baseBtn =
-    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer';
+    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-2 -mb-[1px] transition-colors whitespace-nowrap cursor-pointer';
   const activeCls = 'border-[#006cee] text-[#006cee]';
   const inactiveCls = 'border-transparent text-[#476b8e] hover:text-[#004776] hover:border-[#cbd5e1]';
 
@@ -117,7 +117,7 @@ export function StaffTicketsTabBar({
       key: 'my', label: 'Phiếu của tôi',
       countLabel: draftCount > 0 ? `(Nháp: ${draftCount})` : '', Icon: User,
       badge: draftCount > 0 ? `Nháp: ${draftCount}` : undefined,
-      badgeCls: 'h-5 px-2 bg-[#eef5ff] border border-[#bfdbfe] text-[#006cee]'
+      badgeCls: 'h-5 px-2 bg-[#eef5ff] text-[#006cee]'
     },
     {
       key: 'pending', label: 'Chờ duyệt', countLabel: `(${pendingCount})`, Icon: Clock,
@@ -143,9 +143,9 @@ export function StaffTicketsTabBar({
   ];
 
   return (
-    <div className="bg-white border border-[#cbd5e1] rounded-t-2xl overflow-hidden print:hidden">
+    <div className="print:hidden">
       {/* Mobile (< 768px): Bộ chọn chế độ xem đầy đủ, không cắt chữ + các nút tab chính */}
-      <div className="md:hidden p-3 space-y-2 border-b border-[#e2e8f0]">
+      <div className="md:hidden pb-2 space-y-2">
         <label htmlFor="mobile-ticket-view-mode" className="block text-xs font-semibold text-[#20446c]">
           Chế độ xem danh sách
         </label>
@@ -154,7 +154,7 @@ export function StaffTicketsTabBar({
           aria-label="Chế độ xem"
           value={activeTab}
           onChange={(e) => onSelectTab(e.target.value as StaffTicketsTabKey)}
-          className="w-full min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-sm font-bold text-[#004776] outline-hidden focus:border-[#006cee]"
+          className="w-full min-h-[44px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-sm font-bold text-[#004776] outline-hidden focus:border-[#006cee]"
         >
           {tabOptions.map((opt) => (
             <option key={opt.key} value={opt.key}>
@@ -168,8 +168,8 @@ export function StaffTicketsTabBar({
               key={opt.key}
               type="button"
               onClick={() => onSelectTab(opt.key)}
-              className={`min-h-[40px] px-2 rounded-lg text-xs font-semibold border cursor-pointer truncate ${
-                activeTab === opt.key ? 'bg-[#006cee] text-white border-[#006cee]' : 'bg-white text-[#004776] border-[#d8e3ef]'
+              className={`min-h-[40px] px-2 rounded-[10px] text-xs font-semibold cursor-pointer truncate transition-colors ${
+                activeTab === opt.key ? 'bg-[#006cee] text-white' : 'bg-[#eef5ff] text-[#004776] hover:bg-[#dce8f5]'
               }`}
             >
               {opt.key === 'my' ? opt.label : `${opt.label} ${opt.countLabel}`}
@@ -178,11 +178,11 @@ export function StaffTicketsTabBar({
         </div>
       </div>
 
-      {/* Tablet & Desktop (>= 768px): Dải tab đầy đủ có cuộn ngang rõ ràng */}
+      {/* Tablet & Desktop (>= 768px): Dải tab nằm trực tiếp dưới tiêu đề */}
       <div
         role="tablist"
         aria-label="Chế độ xem phiếu công việc"
-        className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#cbd5e1] bg-white px-4 pt-1.5 overflow-x-auto no-scrollbar"
+        className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar"
       >
         {tabOptions.map((opt) => {
           const Icon = opt.Icon;

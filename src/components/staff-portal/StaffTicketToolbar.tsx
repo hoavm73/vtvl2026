@@ -48,7 +48,7 @@ export function StaffTicketToolbar({
         <button
           type="button"
           onClick={onPrint}
-          className="h-9 px-3.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fbff] text-[#004776] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap transition-colors"
+          className="h-9 px-3 rounded-[10px] hover:bg-[#eef5ff] text-[#004776] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors"
         >
           <Printer className="w-4 h-4 text-[#004776] shrink-0" />
           <span>In phiếu</span>
@@ -60,7 +60,7 @@ export function StaffTicketToolbar({
               type="button"
               disabled={saving}
               onClick={() => onSave('Nháp')}
-              className="h-9 px-3.5 rounded-xl border border-[#006cee] bg-white hover:bg-[#eef5ff] text-[#006cee] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs whitespace-nowrap transition-colors"
+              className="h-9 px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-[#006cee] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap transition-colors"
             >
               <Save className="w-4 h-4 shrink-0" />
               <span>Lưu nháp</span>
@@ -70,7 +70,7 @@ export function StaffTicketToolbar({
             type="button"
             disabled={saving}
             onClick={() => onSave('Đã nộp')}
-            className="h-9 px-4 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs whitespace-nowrap transition-colors"
+            className="h-9 px-4 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap transition-colors"
           >
             <Send className="w-4 h-4 shrink-0" />
             <span>{saving ? (isEditingPending ? 'Đang cập nhật...' : 'Đang lưu...') : (isEditingPending ? 'Cập nhật phiếu' : 'Lưu & nộp')}</span>

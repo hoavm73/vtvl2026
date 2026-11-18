@@ -206,79 +206,81 @@ export default function AdminPage() {
       ];
 
   return (
-    <div className="w-full max-w-full min-w-0 bg-[#f8fafc] py-2.5 sm:py-5 px-2.5 sm:px-5 lg:px-6 overflow-x-hidden">
-      <div className="max-w-[1680px] mx-auto w-full min-w-0">
-        <div className="bg-white rounded-[14px] border border-[#e2e8f0] shadow-2xs w-full max-w-full min-w-0 overflow-x-clip">
+    <div className="w-full max-w-full min-w-0 bg-[#f8fafc] py-4 sm:py-6 px-3 sm:px-6 overflow-x-hidden">
+      <div className="max-w-[1680px] mx-auto w-full min-w-0 space-y-4">
+        <header className="space-y-3 min-w-0">
           <AdminHeader
             onLogout={handleLogout}
             onOpenOrgTree={isLeader ? undefined : () => setIsOrgTreeModalOpen(true)}
           />
 
-          <div className="px-3 sm:px-5 py-2.5 bg-slate-50/50 border-b border-[#f1f5f9] flex flex-wrap items-center gap-2 w-full min-w-0">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1 text-xs font-semibold text-[#20446c] min-w-0">
             {!isLeader && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-[#004776] border border-blue-200/70">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-                <span>{sessionCount === null ? 'Đang tải hồ sơ…' : `${sessionCount} hồ sơ`}</span>
-                <button type="button" onClick={handleManualRefresh} aria-label="Làm mới dữ liệu từ máy chủ" title="Làm mới dữ liệu từ máy chủ" className="ml-1 text-[#004776]/70 hover:text-[#004776] cursor-pointer">
+              <div className="inline-flex items-center gap-1.5">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
+                <span className="text-[#004776]">{sessionCount === null ? 'Đang tải hồ sơ…' : `${sessionCount} hồ sơ`}</span>
+                <button type="button" onClick={handleManualRefresh} aria-label="Làm mới dữ liệu từ máy chủ" title="Làm mới dữ liệu từ máy chủ" className="ml-0.5 text-[#004776]/70 hover:text-[#004776] cursor-pointer">
                   <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             )}
-            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-[#004776] border border-sky-200/70">
-              <Users className="w-3.5 h-3.5 text-[#004776] shrink-0" />
-              <span>{accountCount === null ? 'Đang tải tài khoản…' : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
+            <div className="inline-flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
+              <span className="text-[#004776]">{accountCount === null ? 'Đang tải tài khoản…' : `${accountCount} tài khoản ${isLeader ? 'thuộc đơn vị' : ''}`}</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/70 max-w-full sm:max-w-md truncate min-w-0" title={activeUnitCode}>
-              <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" /><span className="truncate">Phiên: {activeUnitCode}</span>
+            <div className="inline-flex items-center gap-1.5 max-w-full sm:max-w-md truncate min-w-0" title={activeUnitCode}>
+              <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              <span className="truncate text-emerald-800">Phiên: {activeUnitCode}</span>
             </div>
             {!isLeader && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200/70">
-                <Building2 className="w-3.5 h-3.5 text-purple-700 shrink-0" /><span>{unitCount} đơn vị</span>
+              <div className="inline-flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#0072BC] shrink-0" />
+                <span className="text-[#004776]">{unitCount} đơn vị</span>
               </div>
             )}
             {!isLeader && migrationSummary && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-[#004776] border border-slate-200"><span>{migrationSummary}</span></div>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#e9f0f8] text-[#004776]">{migrationSummary}</span>
             )}
             {statsError && (
-              <button type="button" onClick={handleManualRefresh} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-[#b42318] border border-red-200 cursor-pointer">
+              <button type="button" onClick={handleManualRefresh} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-50 text-[#b42318] cursor-pointer">
                 <AlertCircle className="w-3.5 h-3.5" /><span>{statsError} Thử lại</span>
               </button>
             )}
           </div>
 
-          <div className="sm:hidden px-3 py-2 bg-white border-b border-[#e2e8f0]">
+          <div className="sm:hidden">
             <label htmlFor="admin-mobile-view-select" className="sr-only">Chế độ xem quản trị</label>
             <select
               id="admin-mobile-view-select"
               aria-label="Chế độ xem quản trị"
               value={activeTab}
               onChange={(e) => selectAdminTab(e.target.value as AdminTabKey)}
-              className="w-full min-h-[44px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-sm font-bold text-[#004776]"
+              className="w-full min-h-[44px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-sm font-bold text-[#004776]"
             >
               {tabs.map((tab) => (<option key={tab.key} value={tab.key}>{tab.label}</option>))}
             </select>
           </div>
 
-          <div role="tablist" aria-label="Phân hệ quản trị" className="hidden sm:flex w-full max-w-full min-w-0 px-6 border-b border-[#e2e8f0] items-center gap-2 bg-white overflow-x-auto no-scrollbar">
+          <div role="tablist" aria-label="Phân hệ quản trị" className="hidden sm:flex w-full max-w-full min-w-0 border-b border-[#e2e8f0] items-center gap-1 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
               return (
-                <button key={tab.key} type="button" role="tab" aria-selected={isActive} onClick={() => selectAdminTab(tab.key)} className={`h-[50px] inline-flex items-center gap-2 text-[13px] font-bold transition-all cursor-pointer border-b-[3px] -mb-[1px] px-4 whitespace-nowrap shrink-0 ${isActive ? 'text-[#004776] border-[#004776] bg-blue-50/40' : 'text-[#476885] border-transparent hover:text-[#004776] hover:bg-slate-50'}`}>
+                <button key={tab.key} type="button" role="tab" aria-selected={isActive} onClick={() => selectAdminTab(tab.key)} className={`h-11 inline-flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer border-b-2 -mb-[1px] px-4 whitespace-nowrap shrink-0 ${isActive ? 'text-[#004776] border-[#004776]' : 'text-[#476885] border-transparent hover:text-[#004776]'}`}>
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
           </div>
+        </header>
 
-          <div className="p-3 sm:p-5 w-full max-w-full min-w-0">
-            {activeTab === 'unit-monitor' && !isLeader && <UnitMonitoringDashboard />}
-            {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
-            {activeTab === 'accounts' && <AdminAccountsTab />}
-            {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}
-            {activeTab === 'units' && !isLeader && <AdminUnitsTab />}
-          </div>
+        <div className="w-full max-w-full min-w-0">
+          {activeTab === 'unit-monitor' && !isLeader && <UnitMonitoringDashboard />}
+          {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
+          {activeTab === 'accounts' && <AdminAccountsTab />}
+          {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}
+          {activeTab === 'units' && !isLeader && <AdminUnitsTab />}
         </div>
 
         {!isLeader && (

@@ -103,10 +103,10 @@ export function UnitMonitoringHistoryPanel({
   );
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 min-w-0">
+    <div className="bg-white rounded-[16px] border border-[#e2e8f0] overflow-hidden grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-[#e2e8f0] min-w-0">
       {/* Cột trái: Danh sách phiếu khảo sát phẳng, vạch màu trạng thái */}
-      <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
-        <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
+      <div className="flex flex-col min-w-0">
+        <div className="px-4 py-3.5 border-b border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setTicketsExpanded((v) => !v)} aria-expanded={ticketsExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <FileText className="w-4 h-4 text-[#006cee] shrink-0" />
@@ -123,7 +123,7 @@ export function UnitMonitoringHistoryPanel({
                 const cnt = ticketTabCounts[tab.id];
                 const isActive = ticketStatusFilter === tab.id;
                 return (
-                  <button key={tab.id} type="button" onClick={() => setTicketStatusFilter(tab.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1 ${isActive ? 'bg-[#006cee] text-white shadow-2xs' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
+                  <button key={tab.id} type="button" onClick={() => setTicketStatusFilter(tab.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors inline-flex items-center gap-1 ${isActive ? 'bg-[#006cee] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
                     <span>{tab.label}</span>
                     {cnt > 0 && <span className={`text-[10px] tabular-nums ${isActive ? 'text-white/90' : 'text-[#006cee] font-bold'}`}>{cnt}</span>}
                   </button>
@@ -136,7 +136,7 @@ export function UnitMonitoringHistoryPanel({
         {ticketsExpanded && (filteredTickets.length === 0 ? (
           <div className="py-12 px-4 text-center text-xs text-[#20446c]">Chưa có phiếu khảo sát nào khớp với bộ lọc hiện tại.</div>
         ) : (
-          <div className="divide-y divide-[#eef3f8] max-h-[430px] overflow-y-auto">
+          <div className="divide-y divide-[#e2e8f0] max-h-[430px] overflow-y-auto">
             {filteredTickets.map((t) => {
               const meta = STATUS_BADGE_META[t.canonicalStatus] || STATUS_BADGE_META.draft;
               const BadgeIcon = meta.Icon;
@@ -149,13 +149,13 @@ export function UnitMonitoringHistoryPanel({
                         <button
                           type="button"
                           onClick={() => onSelectUnit(t.unitCode)}
-                          className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#e1edf8] text-[#004776] hover:bg-[#006cee] hover:text-white cursor-pointer transition-colors"
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-[6px] bg-[#e1edf8] text-[#004776] hover:bg-[#006cee] hover:text-white cursor-pointer transition-colors"
                         >
                           {t.unitCode}
                         </button>
                         <span className="text-[11.5px] font-mono font-bold text-[#006cee] tabular-nums">{t.maCongViec}</span>
                         {t.currentVersionNo > 0 && (
-                          <span className="text-[10.5px] font-semibold text-[#20446c] bg-[#f4f8fc] px-1.5 py-0.5 rounded border border-[#dbe8f5] tabular-nums">
+                          <span className="text-[10.5px] font-semibold text-[#20446c] bg-[#f1f5f9] px-1.5 py-0.5 rounded-full tabular-nums">
                             v{t.currentVersionNo}
                           </span>
                         )}
@@ -183,12 +183,12 @@ export function UnitMonitoringHistoryPanel({
                     <div className="text-[13px] font-semibold text-[#004776] leading-snug">{t.tenCongViec}</div>
 
                     {t.revisionReason && (
-                      <div className="px-2.5 py-1.5 rounded-lg bg-[#fff8eb] border-l-2 border-[#f99c00] text-[11px] text-[#004776]">
+                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#fff8eb] border-l-2 border-[#f99c00] text-[11px] text-[#004776]">
                         <strong>Yêu cầu sửa:</strong> {t.revisionReason}
                       </div>
                     )}
                     {t.lastChangeSummary && (
-                      <div className="px-2.5 py-1.5 rounded-lg bg-[#f4f9ff] border-l-2 border-[#006cee] text-[11px] text-[#004776]">
+                      <div className="px-2.5 py-1.5 rounded-[8px] bg-[#f4f9ff] border-l-2 border-[#006cee] text-[11px] text-[#004776]">
                         <strong>Giải trình:</strong> {t.lastChangeSummary}
                       </div>
                     )}
@@ -212,8 +212,8 @@ export function UnitMonitoringHistoryPanel({
       </div>
 
       {/* Cột phải: Dòng thời gian lịch sử hoạt động (Vertical Timeline) */}
-      <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.05)] overflow-hidden flex flex-col min-w-0">
-        <div className="px-4 py-3.5 border-b border-[#e8eff7] bg-[#fafcff] space-y-2.5">
+      <div className="flex flex-col min-w-0">
+        <div className="px-4 py-3.5 border-b border-[#e2e8f0] bg-[#f8fafc] space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setHistoryExpanded((v) => !v)} aria-expanded={historyExpanded} className="flex items-center gap-2 shrink-0 cursor-pointer text-left">
               <History className="w-4 h-4 text-[#006cee] shrink-0" />
@@ -225,7 +225,7 @@ export function UnitMonitoringHistoryPanel({
           {historyExpanded && (
             <div className="flex flex-wrap items-center gap-1.5">
               {HISTORY_TABS.map((c) => (
-                <button key={c.id} type="button" onClick={() => setHistoryCatFilter(c.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] border border-[#d8e3ef] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
+                <button key={c.id} type="button" onClick={() => setHistoryCatFilter(c.id)} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors ${historyCatFilter === c.id ? 'bg-[#004776] text-white' : 'bg-white text-[#20446c] hover:bg-[#eef5ff] hover:text-[#004776]'}`}>
                   {c.label}
                 </button>
               ))}

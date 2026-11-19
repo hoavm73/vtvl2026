@@ -47,7 +47,6 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [reviewerFilter, setReviewerFilter] = useState('ALL');
   const [onlyErrors, setOnlyErrors] = useState(false);
-  const [onlyPending, setOnlyPending] = useState(false);
 
   const loadUnits = useCallback(async () => {
     setLoading(true);
@@ -87,18 +86,14 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
       if (statusFilter !== 'ALL' && st !== statusFilter) return false;
       if (reviewerFilter !== 'ALL' && (u.reviewerEmail || '') !== reviewerFilter) return false;
       if (onlyErrors && (u.errorCount ?? 0) === 0) return false;
-      if (onlyPending && st !== 'cho_tham_dinh' && st !== 'da_gui_lai' && st !== 'dang_tham_dinh') return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (!`${u.unitCode} ${u.unitNameVi} ${u.reviewerEmail || ''}`.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [units, groupFilter, statusFilter, reviewerFilter, onlyErrors, onlyPending, search]);
+  }, [units, groupFilter, statusFilter, reviewerFilter, onlyErrors, search]);
 
-  const countPending = loading || error ? '—' : String(units.filter((u) => ['cho_tham_dinh', 'da_gui_lai', 'dang_tham_dinh'].includes(u.reviewStatus || '')).length);
-  const countNeedFix = loading || error ? '—' : String(units.filter((u) => u.reviewStatus === 'can_bo_sung').length);
-  const countApproved = loading || error ? '—' : String(units.filter((u) => u.reviewStatus === 'dat_yeu_cau' || u.reviewStatus === 'da_khoa').length);
   const countWithErr = loading || error ? '—' : String(units.filter((u) => (u.errorCount ?? 0) > 0).length);
 
   const schoolProgress = useMemo<SchoolReviewProgressStats>(() => {
@@ -128,14 +123,10 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
       <SchoolReviewProgressBar
         progress={schoolProgress}
         loading={loading || Boolean(error)}
+        hideHeader={true}
+        activeFilter={statusFilter}
         onSelectFilter={(st) => setStatusFilter((prev) => (prev === st ? 'ALL' : st))}
       />
-      <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
-        <div className="px-4 py-3"><div className="text-xs text-[#476885]">Chờ / đang thẩm định</div><div className="text-xl font-bold text-[#006cee] tabular-nums">{countPending}</div></div>
-        <div className="px-4 py-3"><div className="text-xs text-[#476885]">Yêu cầu bổ sung</div><div className="text-xl font-bold text-[#b42318] tabular-nums">{countNeedFix}</div></div>
-        <div className="px-4 py-3"><div className="text-xs text-[#476885]">Đạt yêu cầu / khóa</div><div className="text-xl font-bold text-[#13653f] tabular-nums">{countApproved}</div></div>
-        <div className="px-4 py-3"><div className="text-xs text-[#476885]">Có cảnh báo lỗi</div><div className="text-xl font-bold text-[#a16207] tabular-nums">{countWithErr}</div></div>
-      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
@@ -160,11 +151,7 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
         )}
         <label className="inline-flex items-center gap-1.5 text-xs font-medium text-[#004776] cursor-pointer px-2">
           <input type="checkbox" checked={onlyErrors} onChange={(e) => setOnlyErrors(e.target.checked)} className="accent-[#006cee]" />
-          <span>Chỉ đơn vị có lỗi</span>
-        </label>
-        <label className="inline-flex items-center gap-1.5 text-xs font-medium text-[#004776] cursor-pointer px-2">
-          <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} className="accent-[#006cee]" />
-          <span>Chờ thẩm định</span>
+          <span>Chỉ đơn vị có lỗi ({countWithErr})</span>
         </label>
         <button type="button" onClick={() => void loadUnits()} disabled={loading} className="inline-flex items-center gap-1 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] cursor-pointer">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /><span>Làm mới</span>

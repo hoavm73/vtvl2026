@@ -16,10 +16,18 @@ export interface SchoolReviewProgressStats {
 interface SchoolReviewProgressBarProps {
   progress: SchoolReviewProgressStats;
   loading?: boolean;
+  hideHeader?: boolean;
+  activeFilter?: string;
   onSelectFilter?: (filter: 'ALL' | 'chua_gui' | 'cho_tham_dinh' | 'dang_tham_dinh' | 'can_bo_sung' | 'dat_yeu_cau') => void;
 }
 
-export function SchoolReviewProgressBar({ progress, loading, onSelectFilter }: SchoolReviewProgressBarProps) {
+export function SchoolReviewProgressBar({
+  progress,
+  loading,
+  hideHeader = false,
+  activeFilter,
+  onSelectFilter
+}: SchoolReviewProgressBarProps) {
   const total = Math.max(1, progress.totalUnits || 39);
   const pctLocked = Math.round((progress.datVaKhoa / total) * 100);
   const pctReviewing = Math.round((progress.dangThamDinh / total) * 100);
@@ -103,24 +111,25 @@ export function SchoolReviewProgressBar({ progress, loading, onSelectFilter }: S
 
   return (
     <div aria-label="Tiến độ thẩm định chung toàn trường" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#006cee] shrink-0" />
-          <h3 className="text-xs sm:text-sm font-bold text-[#0072BC]">
-            Tiến độ thẩm định chung toàn trường ({progress.totalUnits} đơn vị)
-          </h3>
+      {!hideHeader && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#006cee] shrink-0" />
+            <h3 className="text-xs sm:text-sm font-bold text-[#0072BC]">
+              Tiến độ thẩm định hồ sơ
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold tabular-nums">
+            <span className="text-[#476885]">
+              Đã gửi: <strong className="text-[#004776]">{loading ? '—' : submittedOrBeyond}/{progress.totalUnits}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e8fbf2] border border-[#a7f3d0] text-[#13653f]">
+              <Lock className="w-3 h-3" />
+              <span>{loading ? '—' : `${progress.approvedPercent}% đạt & khóa`}</span>
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold tabular-nums">
-          <span className="text-[#476885]">
-            Đã gửi: <strong className="text-[#004776]">{loading ? '—' : submittedOrBeyond}/{progress.totalUnits}</strong>
-          </span>
-          <span className="text-[#cbd5e1]">·</span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e8fbf2] border border-[#a7f3d0] text-[#13653f]">
-            <Lock className="w-3 h-3" />
-            <span>Đạt &amp; khóa: {loading ? '—' : `${progress.datVaKhoa}/${progress.totalUnits} (${progress.approvedPercent}%)`}</span>
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* Thanh tiến độ phân đoạn ngang */}
       <div
@@ -142,13 +151,15 @@ export function SchoolReviewProgressBar({ progress, loading, onSelectFilter }: S
         {tiles.map((t) => {
           const Icon = t.icon;
           const clickable = Boolean(onSelectFilter);
+          const isSelected = Boolean(clickable && activeFilter === t.key);
           return (
             <button
               key={t.key}
               type="button"
               disabled={!clickable}
+              aria-pressed={clickable ? isSelected : undefined}
               onClick={() => onSelectFilter?.(t.key)}
-              className={`text-left p-3.5 sm:p-4 space-y-1.5 transition-colors ${t.bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98]' : 'cursor-default'}`}
+              className={`text-left p-3.5 sm:p-4 space-y-1.5 transition-colors ${t.bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98]' : 'cursor-default'} ${isSelected ? 'ring-1 ring-inset ring-[#006cee] bg-[#eef5ff]/75' : ''}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className={`text-xs font-medium truncate ${t.labelCls}`}>{t.label}</span>

@@ -86,24 +86,22 @@ export function WorkRelationshipsTab({
   };
 
   const filterButtons: { key: ApprovalFilterKey; label: string }[] = [
-    { key: 'all', label: `Tất cả (${relationships.length})` },
+    { key: 'all', label: 'Tất cả' },
     { key: 'both_units', label: `Đã được lãnh đạo 2 đơn vị duyệt (${relationships.filter((r) => r.hostLeaderApproved && r.targetLeaderApproved).length})` },
     { key: 'tcns', label: `Phòng Tổ chức – Nhân sự duyệt (${relationships.filter((r) => r.tcnsApproved).length})` },
     { key: 'one_side', label: `Mới 1 bên lãnh đạo duyệt (${relationships.filter((r) => r.approvalLevel === 'one_unit_approved').length})` }
   ];
 
   return (
-    <div className="bg-white border border-t-0 border-[#cbd5e1] rounded-b-2xl p-4 sm:p-5 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#0072BC]">
-            <Network className="w-4 h-4 text-[#006cee]" />
-            <span>Mối quan hệ công việc phối hợp giữa các đơn vị</span>
-          </div>
-          <p className="text-xs text-[#20446c]">
-            Hiển thị các công việc phối hợp khi có ít nhất 1 trong 2 Lãnh đạo đơn vị hoặc Phòng Tổ chức – Nhân sự đã phê duyệt.
-          </p>
-        </div>
+    <div
+      role="tabpanel"
+      aria-label="Mối quan hệ công việc phối hợp giữa các đơn vị"
+      className="bg-white border border-t-0 border-[#cbd5e1] rounded-b-2xl p-4 sm:p-5 space-y-3.5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
+        <p className="text-xs text-[#20446c]">
+          Hiển thị các công việc phối hợp khi có ít nhất 1 trong 2 Lãnh đạo đơn vị hoặc Phòng Tổ chức – Nhân sự đã phê duyệt.
+        </p>
         {selectedVtvl && (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#006cee] text-white text-xs font-bold">
             VTVL: {selectedVtvl}
@@ -170,7 +168,7 @@ export function WorkRelationshipsTab({
                 key={rel.id}
                 className={`p-4 rounded-2xl space-y-3 transition-all ${
                   isHighlighted
-                    ? 'border-2 border-[#006cee] bg-[#eef6ff] ring-2 ring-[#006cee]/20 shadow-xs'
+                    ? 'border-[1.3px] border-[#006cee] bg-[#eef6ff] ring-[1.3px] ring-[#006cee]/15 shadow-xs'
                     : 'border border-[#dbeafe] bg-[#fcfdff]'
                 }`}
               >

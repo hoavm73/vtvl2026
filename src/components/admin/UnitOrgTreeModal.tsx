@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Network, Maximize2, Minimize2, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Maximize2, Minimize2, ArrowLeft, ZoomIn, ZoomOut } from 'lucide-react';
 import { getFlatHcmuteUnitOptions } from '@/configs/hcmute-units';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { ModalPortal } from '@/components/ui/ModalPortal';
@@ -88,163 +88,126 @@ export function UnitOrgTreeModal({
         isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none' : 'relative w-full max-w-7xl h-[100dvh] sm:h-[92dvh] rounded-none sm:rounded-2xl shadow-2xl border border-[#cbd5e1]'
       }`;
   const closeOrShrink = () => (inline && isFullscreen ? setIsFullscreen(false) : onClose());
-  const showUnitPicker = !(hideUnitSelector ?? inline) || isFullscreen;
+  const showUnitPicker = !(hideUnitSelector ?? inline);
 
   const treeCard = (
     <div className={cardCls} onClick={(e) => e.stopPropagation()}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 bg-[#f8fafc] border-b border-[#cbd5e1] shrink-0">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+      {/* Thanh công cụ & điều khiển sơ đồ */}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-[#f8fafc] border-b border-[#cbd5e1] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
           {(!inline || isFullscreen) && (
             <button type="button" onClick={closeOrShrink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0072BC] hover:bg-[#005c96] text-white text-xs font-bold transition-colors cursor-pointer shrink-0" title="Trở lại giao diện trước">
               <ArrowLeft className="w-4 h-4" /><span>Trở lại</span>
             </button>
           )}
-          <div className="w-9 h-9 rounded-xl bg-[#0072BC]/10 text-[#0072BC] flex items-center justify-center shrink-0">
-            <Network className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm sm:text-base font-bold text-[#0072BC] tracking-tight truncate">
-                Sơ đồ Vị trí việc làm &amp; Công việc dự kiến
-              </h3>
-              <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-[#0072BC]/10 text-[#0072BC] border border-[#0072BC]/20">
-                {treeData.unitCode}
-              </span>
-            </div>
-            <p className="text-xs font-medium text-[#476885] truncate">
-              {treeData.unitNameVi} · Chuẩn hóa theo Hướng dẫn số 07-HD/BTCTW &amp; QĐ 2266/QĐ-ĐHCNKT
-            </p>
+          {showUnitPicker && (
+            <>
+              <span className="text-xs font-bold text-[#0072BC] shrink-0">Chọn đơn vị:</span>
+              <div className="w-56 sm:w-72">
+                <ShadcnSelect
+                  value={selectedUnitCode}
+                  onValueChange={setSelectedUnitCode}
+                  options={getFlatHcmuteUnitOptions()}
+                  searchable={true}
+                  size="sm"
+                />
+              </div>
+            </>
+          )}
+          {!showUnitPicker && (!inline || isFullscreen) && (
+            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0072BC]/10 text-[#0072BC] border border-[#0072BC]/20 truncate">
+              [{treeData.unitCode}] {treeData.unitNameVi}
+            </span>
+          )}
+
+          <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-[#64748b]">
+            <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
+              {treeData.totalPositions} VTVL
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
+              {treeData.totalExpectedStaff} người
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
+              {treeData.totalTasks} đầu việc
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button type="button" onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 rounded-xl text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer" title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsCompact(!isCompact)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer ${
+              isCompact
+                ? 'bg-[#0072BC] text-white border-[#0072BC] shadow-2xs'
+                : 'bg-white text-[#0072BC] border-[#cbd5e1] hover:bg-slate-100'
+            }`}
+            title={isCompact ? 'Chuyển sang chế độ chi tiết' : 'Thu nhỏ để xem tổng quan hơn'}
+          >
+            {isCompact ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
+            <span>{isCompact ? 'Thu nhỏ tổng quan' : 'Chế độ chuẩn'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExpandAll}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[#0072BC] bg-white hover:bg-slate-100 border border-[#cbd5e1] rounded-lg transition-colors cursor-pointer"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>Mở tất cả</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleCollapseAll}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#64748b] bg-white hover:bg-slate-100 border border-[#cbd5e1] rounded-lg transition-colors cursor-pointer"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Thu gọn</span>
+          </button>
+          <button type="button" onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'} className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer" title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}>
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           {(!inline || isFullscreen) && (
-            <button type="button" onClick={closeOrShrink} className="p-2 rounded-xl text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer shrink-0" aria-label="Đóng cửa sổ sơ đồ">
-              <X className="w-5 h-5" />
+            <button type="button" onClick={closeOrShrink} className="p-1.5 rounded-lg text-[#476885] hover:text-[#0072BC] hover:bg-[#e2e8f0]/60 transition-colors cursor-pointer shrink-0" aria-label="Đóng cửa sổ sơ đồ">
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
-          {/* Action bar */}
-          <div className="px-3.5 sm:px-6 py-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-            <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-              {showUnitPicker && (
-                <>
-                  <span className="text-xs font-bold text-[#0072BC] shrink-0">Chọn đơn vị:</span>
-                  <div className="w-56 sm:w-72">
-                    <ShadcnSelect
-                      value={selectedUnitCode}
-                      onValueChange={setSelectedUnitCode}
-                      options={getFlatHcmuteUnitOptions()}
-                      searchable={true}
-                      size="sm"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-[#64748b]">
-                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
-                  {treeData.totalPositions} VTVL
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
-                  {treeData.totalExpectedStaff} người
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">
-                  {treeData.totalTasks} đầu việc
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsCompact(!isCompact)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer ${
-                  isCompact
-                    ? 'bg-[#0072BC] text-white border-[#0072BC] shadow-2xs'
-                    : 'bg-white text-[#0072BC] border-[#cbd5e1] hover:bg-slate-100'
-                }`}
-                title={isCompact ? 'Chuyển sang chế độ chi tiết' : 'Thu nhỏ để xem tổng quan hơn'}
-              >
-                {isCompact ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
-                <span>{isCompact ? 'Thu nhỏ tổng quan' : 'Chế độ chuẩn'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExpandAll}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[#0072BC] bg-white hover:bg-slate-100 border border-[#cbd5e1] rounded-lg transition-colors cursor-pointer"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>Mở tất cả</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleCollapseAll}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#64748b] bg-white hover:bg-slate-100 border border-[#cbd5e1] rounded-lg transition-colors cursor-pointer"
-              >
-                <Minimize2 className="w-3.5 h-3.5" />
-                <span>Thu gọn</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Nội dung chính */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden min-h-0 divide-y md:divide-y-0 md:divide-x divide-[#cbd5e1]">
-            <div className="md:col-span-6 p-3 sm:p-4 overflow-y-auto space-y-2 bg-[#f8fafc]/50">
-              <div className="flex items-center justify-between pb-1 border-b border-[#e2e8f0]">
-                <h4 className="text-xs font-bold text-[#0072BC] uppercase tracking-wide">
-                  Sơ đồ phân cấp thứ bậc VTVL
-                </h4>
-                <span className="text-[11px] text-[#64748b] italic">
-                  Bấm vào thẻ để xem công việc bên phải
-                </span>
-              </div>
-
-              <UnitOrgTreeView
-                node={treeData.rootNode}
-                selectedNodeId={currentViewingNode.id}
-                expandedIds={expandedIds}
-                onToggleExpand={handleToggleExpand}
-                onSelectNode={setSelectedNode}
-                isCompact={isCompact}
-              />
-            </div>
-
-            <div className="md:col-span-6 flex flex-col overflow-hidden bg-white">
-              <UnitOrgNodeDetailPane node={currentViewingNode} />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="px-3.5 sm:px-6 py-2 sm:py-2.5 bg-[#f8fafc] border-t border-[#cbd5e1] flex items-center justify-between gap-2 shrink-0">
-            <span className="text-xs text-[#64748b]">
-              Dữ liệu sơ đồ được liên kết tự động từ 10 biểu nghiệp vụ của {treeData.unitNameVi}.
+      {/* Nội dung chính */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden min-h-0 divide-y md:divide-y-0 md:divide-x divide-[#cbd5e1]">
+        <div className="md:col-span-6 p-3 sm:p-4 overflow-y-auto space-y-2 bg-[#f8fafc]/50">
+          <div className="flex items-center justify-between pb-1 border-b border-[#e2e8f0]">
+            <h4 className="text-xs font-bold text-[#0072BC] uppercase tracking-wide">
+              Sơ đồ phân cấp thứ bậc VTVL
+            </h4>
+            <span className="text-[11px] text-[#64748b] italic">
+              Bấm vào thẻ để xem công việc bên phải
             </span>
-            {(!inline || isFullscreen) && (
-              <div className="flex items-center gap-2 shrink-0">
-                <button type="button" onClick={closeOrShrink} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#0072BC] text-white hover:bg-[#005c96] transition-colors cursor-pointer shadow-2xs">
-                  <ArrowLeft className="w-3.5 h-3.5" /><span>Trở lại</span>
-                </button>
-                <button type="button" onClick={closeOrShrink} className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-[#0072BC] border border-[#cbd5e1] hover:bg-slate-100 transition-colors cursor-pointer">
-                  Đóng sơ đồ
-                </button>
-              </div>
-            )}
           </div>
+
+          <UnitOrgTreeView
+            node={treeData.rootNode}
+            selectedNodeId={currentViewingNode.id}
+            expandedIds={expandedIds}
+            onToggleExpand={handleToggleExpand}
+            onSelectNode={setSelectedNode}
+            isCompact={isCompact}
+          />
         </div>
+
+        <div className="md:col-span-6 flex flex-col overflow-hidden bg-white">
+          <UnitOrgNodeDetailPane node={currentViewingNode} />
+        </div>
+      </div>
+    </div>
   );
 
   if (inline && !isFullscreen) return treeCard;
   return (
     <ModalPortal>
-      <div role="dialog" aria-modal="true" className={`fixed inset-0 z-[100] flex items-center justify-center bg-[#004776]/35 backdrop-blur-xs select-none ${isFullscreen ? 'p-0' : 'p-0 sm:p-3'}`} onClick={closeOrShrink}>
+      <div role="dialog" aria-modal="true" aria-label="Sơ đồ vị trí việc làm và công việc dự kiến" className={`fixed inset-0 z-[100] flex items-center justify-center bg-[#004776]/35 backdrop-blur-xs select-none ${isFullscreen ? 'p-0' : 'p-0 sm:p-3'}`} onClick={closeOrShrink}>
         {treeCard}
       </div>
     </ModalPortal>

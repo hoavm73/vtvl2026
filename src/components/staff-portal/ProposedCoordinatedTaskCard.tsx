@@ -40,7 +40,7 @@ export function ProposedCoordinatedTaskCard({
     <div
       className={`p-3.5 rounded-xl transition-all flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 ${
         isHighlighted
-          ? 'border-2 border-[#006cee] bg-[#eef6ff] ring-2 ring-[#006cee]/20 shadow-xs'
+          ? 'border-[1.3px] border-[#006cee] bg-[#eef6ff] ring-[1.3px] ring-[#006cee]/15 shadow-xs'
           : 'border border-[#dbeafe] bg-[#fcfdff] hover:border-[#93c5fd]'
       }`}
     >

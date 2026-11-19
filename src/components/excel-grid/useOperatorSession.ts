@@ -21,7 +21,7 @@ export interface ApiSyncError {
   timestamp: number;
 }
 
-export function useOperatorSession() {
+export function useOperatorSession(preferredUnitCode?: string) {
   const [session, setSession] = useState<OperatorSession | null>(null);
   const [workbookId, setWorkbookId] = useState<string | null>(null);
   const [currentRevision, setCurrentRevision] = useState<number>(1);
@@ -38,6 +38,8 @@ export function useOperatorSession() {
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastDataRef = useRef<Record<ExcelSheetKey, GenericGridRow[]> | null>(null);
+  const viewingUnitRef = useRef<string | null>(preferredUnitCode ? preferredUnitCode.toUpperCase() : null);
+  if (preferredUnitCode) viewingUnitRef.current = preferredUnitCode.toUpperCase();
 
   const loadUnitWorkbookFromServer = useCallback(async (targetUnitCode: string, op: OperatorSession | null, isStillMounted: () => boolean = () => true) => {
     try {
@@ -62,9 +64,10 @@ export function useOperatorSession() {
 
   useEffect(() => {
     let isMounted = true;
+    const resolveTargetUnit = (cur: OperatorSession) =>
+      cur.role === 'admin' && viewingUnitRef.current ? viewingUnitRef.current : (cur.unitCode || 'CNTT');
     const sync = async () => {
-      const oauth = consumeGoogleOAuthCallback();
-      const cur = oauth || getCurrentOperatorSession();
+      const cur = consumeGoogleOAuthCallback() || getCurrentOperatorSession();
       if (!cur) {
         if (!isMounted) return;
         setSession(null); setWorkbookId(null); setRemoteWorkbook(null);
@@ -76,10 +79,13 @@ export function useOperatorSession() {
       const saved = getSessionByEmail(cur.email);
       if (saved?.touchedCells) setTouchedCells(new Set(saved.touchedCells));
       if (!cur.hasSelectedUnit && cur.role !== 'admin') return;
-      await loadUnitWorkbookFromServer(cur.unitCode || 'CNTT', cur, () => isMounted);
+      await loadUnitWorkbookFromServer(resolveTargetUnit(cur), cur, () => isMounted);
     };
     const openModalHandler = () => setIsModalOpen(true);
-    const onFocusSync = () => { const cur = getCurrentOperatorSession(); if (cur && (cur.hasSelectedUnit || cur.role === 'admin')) loadUnitWorkbookFromServer(cur.unitCode || 'CNTT', cur, () => isMounted); };
+    const onFocusSync = () => {
+      const cur = getCurrentOperatorSession();
+      if (cur && (cur.hasSelectedUnit || cur.role === 'admin')) loadUnitWorkbookFromServer(resolveTargetUnit(cur), cur, () => isMounted);
+    };
     sync();
     window.addEventListener('vtvl-operator-changed', sync);
     window.addEventListener('vtvl-open-session-modal', openModalHandler);
@@ -107,15 +113,16 @@ export function useOperatorSession() {
     const cur = getCurrentOperatorSession();
     if (cur?.hasSelectedUnit && cur.role !== 'admin' && cur.unitCode !== newUnitCode) return;
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    const isTcns = cur?.email === 'tcns@hcmute.edu.vn';
-    const updated = isTcns ? cur : updateOperatorSessionUnit(newUnitCode);
+    viewingUnitRef.current = newUnitCode.toUpperCase();
+    const isPreserveSessionUnit = cur?.role === 'admin' || cur?.email === 'tcns@hcmute.edu.vn';
+    const updated = isPreserveSessionUnit ? cur : updateOperatorSessionUnit(newUnitCode);
     if (updated) {
       setSession(updated);
       setWorkbookId(`wb_${newUnitCode}_2026`);
       setCurrentRevision(1);
       setRemoteWorkbook(null);
       setDataSource('sample');
-      if (!isTcns) saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
+      if (!isPreserveSessionUnit) saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
       loadUnitWorkbookFromServer(newUnitCode, updated);
     }
   }, [loadUnitWorkbookFromServer]);
@@ -262,21 +269,11 @@ export function useOperatorSession() {
     else { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); debounceTimerRef.current = setTimeout(runServerSave, 1500); }
   }, [session, workbookId, currentRevision, touchedCells]);
 
-  const retrySync = useCallback(() => {
-    if (lastDataRef.current) persistDataForSession(lastDataRef.current, true);
-  }, [persistDataForSession]);
-
-  const switchSession = useCallback(() => {
-    const cur = getCurrentOperatorSession();
-    if (!cur || cur.role === 'admin') setIsModalOpen(true);
-  }, []);
+  const retrySync = useCallback(() => { if (lastDataRef.current) persistDataForSession(lastDataRef.current, true); }, [persistDataForSession]);
+  const switchSession = useCallback(() => { const cur = getCurrentOperatorSession(); if (!cur || cur.role === 'admin') setIsModalOpen(true); }, []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
   const logoutSession = useCallback(() => {
-    setSession(null);
-    setWorkbookId(null);
-    setDataSource('sample');
-    setTouchedCells(new Set());
-    setIsModalOpen(false);
+    setSession(null); setWorkbookId(null); setDataSource('sample'); setTouchedCells(new Set()); setIsModalOpen(false);
     void performFullLogout('/login');
   }, []);
 

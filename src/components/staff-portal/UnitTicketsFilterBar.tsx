@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Building2, CheckCircle2, Clock, Search, Users } from 'lucide-react';
-import { HCMUTE_UNITS } from '@/configs/hcmute-units';
+import { Search } from 'lucide-react';
 
 export type UnitReviewMode = 'pending' | 'approved' | 'all';
 export type PendingSubFilter = 'ALL' | 'WAITING' | 'CHANGES';
@@ -10,13 +9,6 @@ export type ApprovedSubFilter = 'ALL' | 'UNMERGED' | 'MERGED';
 
 interface UnitTicketsFilterBarProps {
   mode: UnitReviewMode;
-  isLeader: boolean;
-  showUnitFilter?: boolean;
-  unitFilter?: string;
-  onUnitFilterChange?: (value: string) => void;
-  unitCounts?: Record<string, number>;
-  totalAllUnitsCount?: number;
-  displayedCount: number;
   search: string;
   onSearchChange: (value: string) => void;
   pendingSubFilter: PendingSubFilter;
@@ -39,13 +31,6 @@ interface UnitTicketsFilterBarProps {
 
 export function UnitTicketsFilterBar({
   mode,
-  isLeader,
-  showUnitFilter = false,
-  unitFilter = 'ALL',
-  onUnitFilterChange,
-  unitCounts = {},
-  totalAllUnitsCount = 0,
-  displayedCount,
   search,
   onSearchChange,
   pendingSubFilter,
@@ -72,70 +57,10 @@ export function UnitTicketsFilterBar({
         : 'bg-white text-[#004776] border-[#cbd5e1] hover:bg-[#eef5ff]'
     }`;
 
-  const renderHeader = () => {
-    if (mode === 'pending') {
-      return (
-        <>
-          <Clock className="w-4 h-4 text-[#f99c00]" />
-          <h2 className="text-base font-bold text-[#0072BC]">
-            {isLeader ? 'Phiếu chờ duyệt & yêu cầu bổ sung' : 'Phiếu chờ duyệt & yêu cầu bổ sung của tôi'} ({displayedCount})
-          </h2>
-        </>
-      );
-    }
-    if (mode === 'approved') {
-      return (
-        <>
-          <CheckCircle2 className="w-4 h-4 text-[#00a86b]" />
-          <h2 className="text-base font-bold text-[#0072BC]">
-            {isLeader ? 'Phiếu đã duyệt' : 'Phiếu đã duyệt của tôi'} ({displayedCount})
-          </h2>
-        </>
-      );
-    }
-    return (
-      <>
-        <Users className="w-4 h-4 text-[#006cee]" />
-        <h2 className="text-base font-bold text-[#0072BC]">
-          {isLeader ? 'Toàn bộ phiếu của đơn vị' : 'Phiếu toàn đơn vị (Chỉ đọc)'} ({displayedCount})
-        </h2>
-      </>
-    );
-  };
-
   return (
     <>
-      <div className="px-5 py-3.5 bg-[#fafcff] border-b border-[#e8eff7] flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">{renderHeader()}</div>
-        {showUnitFilter && onUnitFilterChange && (
-          <div className="flex items-center gap-2 min-w-[240px] sm:min-w-[320px]">
-            <label htmlFor="unit-tickets-unit-filter" className="inline-flex items-center gap-1 text-xs font-bold text-[#004776] whitespace-nowrap">
-              <Building2 className="w-3.5 h-3.5 text-[#006cee]" />
-              <span>Đơn vị:</span>
-            </label>
-            <select
-              id="unit-tickets-unit-filter"
-              value={unitFilter}
-              onChange={(e) => onUnitFilterChange(e.target.value)}
-              aria-label="Lọc phiếu theo đơn vị"
-              className="flex-1 min-h-[40px] sm:h-8.5 px-2.5 text-xs font-semibold rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả 39 đơn vị toàn trường ({totalAllUnitsCount} phiếu)</option>
-              {HCMUTE_UNITS.map((u) => {
-                const cnt = unitCounts[u.code.toUpperCase()] || 0;
-                return (
-                  <option key={u.code} value={u.code}>
-                    [{u.code}] {u.nameVi} ({cnt} phiếu)
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        )}
-      </div>
-
       {mode === 'pending' && (
-        <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="p-3 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input
@@ -162,7 +87,7 @@ export function UnitTicketsFilterBar({
       )}
 
       {mode === 'approved' && (
-        <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="p-3 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input
@@ -189,7 +114,7 @@ export function UnitTicketsFilterBar({
       )}
 
       {mode === 'all' && (
-        <div className="p-3 bg-[#f8fbff] border-b border-[#e8eff7] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+        <div className="p-3 bg-[#f8fafc] border-b border-[#e2e8f0] grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
             <input

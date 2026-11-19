@@ -17,6 +17,7 @@ interface WorkspaceHeaderRowProps {
   activeSheetIndex: number;
   totalSheets: number;
   session?: OperatorSession | null;
+  hideUnitSelector?: boolean;
   onUnitChange: (code: string) => void;
 }
 
@@ -28,6 +29,7 @@ export function WorkspaceHeaderRow({
   activeSheetIndex,
   totalSheets,
   session,
+  hideUnitSelector = false,
   onUnitChange
 }: WorkspaceHeaderRowProps) {
   const [unitSearch, setUnitSearch] = useState('');
@@ -60,15 +62,18 @@ export function WorkspaceHeaderRow({
           <span className="whitespace-nowrap">B{activeStep}/8 · {activeSheetIndex + 1}/{totalSheets}</span>
         </span>
 
-        <h1
-          className="!text-[16.5px] sm:!text-[21px] !leading-[1.35] font-bold !text-[#0072BC] truncate min-w-0"
-          title={activeMeta.title}
-        >
-          {activeMeta.title}
-        </h1>
+        {hideUnitSelector ? (
+          <h2 className="!text-[16.5px] sm:!text-[21px] !leading-[1.35] font-bold !text-[#0072BC] truncate min-w-0" title={activeMeta.title}>
+            {activeMeta.title}
+          </h2>
+        ) : (
+          <h1 className="!text-[16.5px] sm:!text-[21px] !leading-[1.35] font-bold !text-[#0072BC] truncate min-w-0" title={activeMeta.title}>
+            {activeMeta.title}
+          </h1>
+        )}
       </div>
 
-      {canChangeUnit ? (
+      {!hideUnitSelector && (canChangeUnit ? (
         <Popover>
           <PopoverTrigger>
             <span
@@ -116,7 +121,7 @@ export function WorkspaceHeaderRow({
           <Building2 className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
           <span className="truncate font-bold">[{unitCode}] {currentUnit.nameVi}</span>
         </span>
-      )}
+      ))}
     </div>
   );
 }

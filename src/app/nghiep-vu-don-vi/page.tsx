@@ -155,11 +155,10 @@ export default function NghiepVuDonViPage() {
             <span>Hồ sơ Vị trí việc làm theo đơn vị</span>
           </div>
           <h1 className="page-title text-[#0072BC]">Hồ sơ &amp; nghiệp vụ đơn vị [{activeUnit.code}]</h1>
-          <p className="text-xs sm:text-sm text-[#476885]">{activeUnit.nameVi}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && (
+          {isAdmin ? (
             <div className="flex items-center gap-2">
               <label htmlFor="unit-workspace-select" className="text-xs font-semibold text-[#20446c] whitespace-nowrap">Đơn vị:</label>
               <select
@@ -174,6 +173,11 @@ export default function NghiepVuDonViPage() {
                 ))}
               </select>
             </div>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-[#f8fafc] text-xs font-semibold text-[#004776] max-w-[280px] truncate" title={`[${activeUnit.code}] ${activeUnit.nameVi}`}>
+              <Building2 className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
+              <span className="truncate">[{activeUnit.code}] {activeUnit.nameVi}</span>
+            </span>
           )}
           <Link href={`/bang-tinh?unit=${encodeURIComponent(selectedUnitCode)}`} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776]">
             <ExternalLink className="w-3.5 h-3.5 text-[#006cee]" /><span>Mở bảng tính toàn trang</span>
@@ -230,63 +234,22 @@ export default function NghiepVuDonViPage() {
       )}
 
       {activeTab === 'workbook' && (
-        <div className="space-y-3">
-          <ExcelWorkbookViewer
-            initialUnitCode={selectedUnitCode}
-            requestedUnitCode={isAdmin ? selectedUnitCode : undefined}
-            initialSheet={sheetParam}
-          />
-        </div>
+        <ExcelWorkbookViewer initialUnitCode={selectedUnitCode} requestedUnitCode={selectedUnitCode} initialSheet={sheetParam} hideUnitSelector={true} />
       )}
-
       {activeTab === 'tickets' && (
-        <UnitWorkspaceTicketsPanel
-          unitCode={selectedUnitCode}
-          unitNameVi={activeUnit.nameVi}
-          tickets={unitTickets}
-          loading={loading}
-          session={session || getCurrentOperatorSession()}
-          onRefresh={() => void loadUnitWorkspaceData()}
-        />
+        <UnitWorkspaceTicketsPanel unitCode={selectedUnitCode} unitNameVi={activeUnit.nameVi} tickets={unitTickets} loading={loading} session={session || getCurrentOperatorSession()} onRefresh={() => void loadUnitWorkspaceData()} />
       )}
-
       {activeTab === 'org-tree' && (
-        <UnitOrgTreeModal isOpen={true} inline={true} onClose={() => handleSelectTab('overview')} defaultUnitCode={selectedUnitCode} workbookData={workbookData} />
+        <UnitOrgTreeModal isOpen={true} inline={true} hideUnitSelector={true} onClose={() => handleSelectTab('overview')} defaultUnitCode={selectedUnitCode} workbookData={workbookData} />
       )}
-
       {activeTab === 'workforce-chart' && (
-        <WorkforceStructureChartModal
-          isOpen={true}
-          inline={true}
-          onClose={() => handleSelectTab('overview')}
-          unitCode={selectedUnitCode}
-          unitNameVi={activeUnit.nameVi}
-          c1Rows={workbookData?.C1 || []}
-          d2Rows={workbookData?.D2 || []}
-          onSelectSheet={(sh) => { setSheetParam(sh); handleSelectTab('workbook'); }}
-        />
+        <WorkforceStructureChartModal isOpen={true} inline={true} onClose={() => handleSelectTab('overview')} unitCode={selectedUnitCode} unitNameVi={activeUnit.nameVi} c1Rows={workbookData?.C1 || []} d2Rows={workbookData?.D2 || []} onSelectSheet={(sh) => { setSheetParam(sh); handleSelectTab('workbook'); }} />
       )}
-
       {activeTab === 'history' && (
-        <UnitWorkbookHistoryPanel
-          unitCode={selectedUnitCode}
-          workbookId={canonicalWbId}
-          userRole={userRole}
-          allowRollback={userRole !== 'staff'}
-          onRestored={() => void loadUnitWorkspaceData()}
-        />
+        <UnitWorkbookHistoryPanel unitCode={selectedUnitCode} workbookId={canonicalWbId} userRole={userRole} allowRollback={userRole !== 'staff'} onRestored={() => void loadUnitWorkspaceData()} />
       )}
-
       {activeTab === 'check' && (
-        <UnitWorkbookCheckPanel
-          unitCode={selectedUnitCode}
-          workbookId={canonicalWbId}
-          revision={summary?.workbookRevision || 1}
-          mode="unit"
-          userRole={userRole}
-          reviewStatusLabel={summary?.reviewStatusLabel}
-          onSubmittedToTcns={() => void loadUnitWorkspaceData()}
-        />
+        <UnitWorkbookCheckPanel unitCode={selectedUnitCode} workbookId={canonicalWbId} revision={summary?.workbookRevision || 1} mode="unit" userRole={userRole} reviewStatusLabel={summary?.reviewStatusLabel} onSubmittedToTcns={() => void loadUnitWorkspaceData()} />
       )}
     </div>
   );

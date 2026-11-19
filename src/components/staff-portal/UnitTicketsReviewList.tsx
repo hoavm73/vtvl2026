@@ -37,7 +37,7 @@ interface UnitTicketsReviewListProps {
 
 export function UnitTicketsReviewList({
   tickets, loading, currentUserRole, currentUserEmail, mode = 'all',
-  unitFilter: controlledUnitFilter, onUnitFilterChange,
+  unitFilter: controlledUnitFilter,
   onViewTicket, onPrintTicket, onEditTicket, onCoordTicket, onSubmitTicket,
   onApproveTicket, onRequestChanges, onMergeTicket, onRevokeApproval, onCancelTicket
 }: UnitTicketsReviewListProps) {
@@ -50,10 +50,6 @@ export function UnitTicketsReviewList({
     setInternalUnitFilter(param);
   }, []);
   const activeUnitFilter = controlledUnitFilter !== undefined ? controlledUnitFilter : internalUnitFilter;
-  const handleUnitFilterChange = (nextUnit: string) => {
-    setInternalUnitFilter(nextUnit);
-    onUnitFilterChange?.(nextUnit);
-  };
   const [search, setSearch] = useState('');
   const [pendingSubFilter, setPendingSubFilter] = useState<PendingSubFilter>('ALL');
   const [approvedSubFilter, setApprovedSubFilter] = useState<ApprovedSubFilter>('ALL');
@@ -62,15 +58,6 @@ export function UnitTicketsReviewList({
   const [missionFilter, setMissionFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-
-  const unitCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const t of tickets) {
-      const uc = (t.unitCode || '').toUpperCase();
-      if (uc) map[uc] = (map[uc] || 0) + 1;
-    }
-    return map;
-  }, [tickets]);
 
   const unitScopedTickets = useMemo(() => {
     if (!isAdmin || !activeUnitFilter || activeUnitFilter === 'ALL') return tickets;
@@ -138,12 +125,9 @@ export function UnitTicketsReviewList({
     : mode === 'approved' ? 'Chưa có phiếu nào được phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.';
 
   return (
-    <div className="bg-white rounded-2xl border border-[#dbe8f5] shadow-[0_2px_14px_-4px_rgba(0,71,118,0.06)] overflow-hidden">
+    <div className="bg-white rounded-[14px] border border-[#e2e8f0] overflow-hidden">
       <UnitTicketsFilterBar
-        mode={mode} isLeader={isLeader} showUnitFilter={isAdmin}
-        unitFilter={activeUnitFilter} onUnitFilterChange={handleUnitFilterChange}
-        unitCounts={unitCounts} totalAllUnitsCount={tickets.length}
-        displayedCount={displayedTickets.length}
+        mode={mode}
         search={search} onSearchChange={setSearch}
         pendingSubFilter={pendingSubFilter} onPendingSubFilterChange={setPendingSubFilter}
         waitingCount={waitingCount} changesCount={changesCount}

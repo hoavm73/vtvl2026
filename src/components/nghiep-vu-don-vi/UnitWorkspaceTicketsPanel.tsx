@@ -88,61 +88,55 @@ export function UnitWorkspaceTicketsPanel({
   return (
     <div className="space-y-4">
       <div className={`space-y-4 ${(printTicket || detailTicket) ? 'print:hidden' : ''}`}>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
-          <div>
-            <h2 className="text-sm font-bold text-[#0072BC]">Phiếu công việc đơn vị [{unitCode}]</h2>
-            <p className="text-xs text-[#476885]">
-              Quản lý, xem chi tiết, in PDF (A4), phê duyệt và gộp phiếu đã duyệt vào Biểu A2/B1 của {unitNameVi}.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0]">
+          <nav role="tablist" aria-label="Bộ lọc trạng thái phiếu đơn vị" className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'all'}
+              onClick={() => setMode('all')}
+              className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'all' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            >
+              <Users className="w-3.5 h-3.5 shrink-0" /><span>Toàn bộ phiếu đơn vị ({tickets.length})</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'pending'}
+              onClick={() => setMode('pending')}
+              className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'pending' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            >
+              <Clock className="w-3.5 h-3.5 shrink-0" /><span>Chờ duyệt &amp; Yêu cầu bổ sung</span>
+              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{pendingCount}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'approved'}
+              onClick={() => setMode('approved')}
+              className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; Gộp B1/B2</span>
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#13653f]">{approvedCount}</span>
+            </button>
+          </nav>
+
+          <div className="flex flex-wrap items-center gap-2 pb-1.5">
             <button
               type="button"
               onClick={onRefresh}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /><span>Làm mới</span>
             </button>
             <Link
               href={`/phieu-don-vi?unitCode=${encodeURIComponent(unitCode)}`}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[8px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold"
             >
               <ExternalLink className="w-3.5 h-3.5" /><span>Mở trang quản lý phiếu</span>
             </Link>
           </div>
         </div>
-
-        <nav role="tablist" aria-label="Bộ lọc trạng thái phiếu đơn vị" className="flex flex-wrap items-center gap-1.5 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === 'all'}
-            onClick={() => setMode('all')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'all' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
-          >
-            <Users className="w-3.5 h-3.5 shrink-0" /><span>Toàn bộ phiếu đơn vị ({tickets.length})</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === 'pending'}
-            onClick={() => setMode('pending')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'pending' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
-          >
-            <Clock className="w-3.5 h-3.5 shrink-0" /><span>Chờ duyệt &amp; Yêu cầu bổ sung</span>
-            <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${pendingCount > 0 ? 'bg-amber-500 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{pendingCount}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === 'approved'}
-            onClick={() => setMode('approved')}
-            className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; Gộp B1/B2</span>
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#13653f]">{approvedCount}</span>
-          </button>
-        </nav>
 
         <UnitTicketsReviewList
           tickets={tickets}

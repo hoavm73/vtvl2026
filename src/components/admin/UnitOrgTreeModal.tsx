@@ -17,6 +17,7 @@ interface UnitOrgTreeModalProps {
   defaultUnitCode?: string;
   workbookData?: Record<string, GenericGridRow[]>;
   inline?: boolean;
+  hideUnitSelector?: boolean;
 }
 
 export function UnitOrgTreeModal({
@@ -24,7 +25,8 @@ export function UnitOrgTreeModal({
   onClose,
   defaultUnitCode = 'TCNS',
   workbookData,
-  inline = false
+  inline = false,
+  hideUnitSelector
 }: UnitOrgTreeModalProps) {
   const [selectedUnitCode, setSelectedUnitCode] = useState(defaultUnitCode);
   const [selectedNode, setSelectedNode] = useState<UnitOrgNode | null>(null);
@@ -86,6 +88,7 @@ export function UnitOrgTreeModal({
         isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none' : 'relative w-full max-w-7xl h-[100dvh] sm:h-[92dvh] rounded-none sm:rounded-2xl shadow-2xl border border-[#cbd5e1]'
       }`;
   const closeOrShrink = () => (inline && isFullscreen ? setIsFullscreen(false) : onClose());
+  const showUnitPicker = !(hideUnitSelector ?? inline) || isFullscreen;
 
   const treeCard = (
     <div className={cardCls} onClick={(e) => e.stopPropagation()}>
@@ -130,16 +133,20 @@ export function UnitOrgTreeModal({
           {/* Action bar */}
           <div className="px-3.5 sm:px-6 py-2 bg-[#f8fafc] border-b border-[#cbd5e1] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
             <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs font-bold text-[#0072BC] shrink-0">Chọn đơn vị:</span>
-              <div className="w-56 sm:w-72">
-                <ShadcnSelect
-                  value={selectedUnitCode}
-                  onValueChange={setSelectedUnitCode}
-                  options={getFlatHcmuteUnitOptions()}
-                  searchable={true}
-                  size="sm"
-                />
-              </div>
+              {showUnitPicker && (
+                <>
+                  <span className="text-xs font-bold text-[#0072BC] shrink-0">Chọn đơn vị:</span>
+                  <div className="w-56 sm:w-72">
+                    <ShadcnSelect
+                      value={selectedUnitCode}
+                      onValueChange={setSelectedUnitCode}
+                      options={getFlatHcmuteUnitOptions()}
+                      searchable={true}
+                      size="sm"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-[#64748b]">
                 <span className="px-2 py-0.5 rounded-md bg-white border border-[#cbd5e1] text-[#0072BC] font-bold">

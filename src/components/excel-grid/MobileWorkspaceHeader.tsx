@@ -31,6 +31,7 @@ interface MobileWorkspaceHeaderProps {
   canNext: boolean;
   isExporting: boolean;
   isC1Unlocked: boolean;
+  hideUnitSelector?: boolean;
   onSelectSheet: (key: ExcelSheetKey) => void;
   onUnitChange: (code: string) => void;
   onSwitchSession: () => void;
@@ -62,7 +63,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
 
   const isAdmin = props.session?.role === 'admin';
   const isReadOnly = props.session?.role === 'staff';
-  const canChangeUnit = !props.session || isAdmin;
+  const canChangeUnit = !props.hideUnitSelector && (!props.session || isAdmin);
   const activeMeta = EXCEL_SHEET_METAS[props.activeSheet];
   const fixCount = props.qualityReport.summary.fixCount;
   const rawOrder = props.orderMode === 'technical' ? WORKFLOW_SHEET_ORDER : EXCEL_NATURAL_SHEET_ORDER;

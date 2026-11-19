@@ -24,9 +24,10 @@ interface ExcelWorkbookViewerProps {
   initialUnitCode?: string;
   requestedUnitCode?: string;
   initialSheet?: ExcelSheetKey;
+  hideUnitSelector?: boolean;
 }
 
-export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCode, initialSheet }: ExcelWorkbookViewerProps) {
+export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCode, initialSheet, hideUnitSelector = false }: ExcelWorkbookViewerProps) {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showQualityModal, setShowQualityModal] = useState(false);
   const [showGuidanceModal, setShowGuidanceModal] = useState(false);
@@ -38,41 +39,42 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   const clearSheetDirty = (sheetKey: ExcelSheetKey) => setDirtySheets((p) => { if (!p.has(sheetKey)) return p; const n = new Set(p); n.delete(sheetKey); return n; });
 
   const {
-    session, isModalOpen, touchedCells,
-    currentRevision, syncStatus, dataSource, remoteWorkbook, apiError, lastSyncedAt,
-    markCellTouched, submitSession, updateSessionUnit, switchSession,
-    closeModal, persistDataForSession, retrySync
-  } = useOperatorSession();
+    session, isModalOpen, touchedCells, currentRevision, syncStatus, dataSource, remoteWorkbook, apiError, lastSyncedAt,
+    markCellTouched, submitSession, updateSessionUnit, switchSession, closeModal, persistDataForSession, retrySync
+  } = useOperatorSession(requestedUnitCode);
 
   const lastRemoteHandledRef = useRef<string>('');
   const lastAutoSyncedSnapshotRef = useRef<string>('');
-  const adminManualUnitRef = useRef<string | null>(null);
+  const lastRequestedUnitRef = useRef<string | null>(null);
   const didApplyRoleSheetRef = useRef<boolean>(false);
-
   const isAdmin = session?.role === 'admin';
 
   const {
-    unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder,
-    activeSheet, activeSheetIndex, data, lastSaved, lastSavedSheet,
-    isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1,
-    handleUnitChange: gridHandleUnitChange, handleLoadTcnsData, restoreWorkbookData,
-    loadRecommendedVtvls, setActiveSheet,
-    updateCell, addRow, splitRow, deleteRow, saveSheetData,
-    exportFullWorkbook, goToNextSheet, goToPrevSheet
-  } = useExcelGridState(session?.unitCode || requestedUnitCode || initialUnitCode, isAdmin, initialSheet);
+    unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder, activeSheet, activeSheetIndex, data, lastSaved, lastSavedSheet,
+    isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1, handleUnitChange: gridHandleUnitChange, handleLoadTcnsData, restoreWorkbookData,
+    loadRecommendedVtvls, setActiveSheet, updateCell, addRow, splitRow, deleteRow, saveSheetData, exportFullWorkbook, goToNextSheet, goToPrevSheet
+  } = useExcelGridState(requestedUnitCode || session?.unitCode || initialUnitCode, isAdmin, initialSheet, Boolean(requestedUnitCode));
 
   useEffect(() => {
     if (!session) return;
-    if (session.role === 'admin' && requestedUnitCode && !adminManualUnitRef.current) {
-      const reqCode = findHcmuteUnit(requestedUnitCode).code;
-      const reqUpper = reqCode.toUpperCase();
-      adminManualUnitRef.current = reqUpper;
-      if (unitCode.toUpperCase() !== reqUpper) gridHandleUnitChange(reqCode);
-      updateSessionUnit(reqCode);
+    if (session.role !== 'admin') {
+      if (session.unitCode && session.unitCode.toUpperCase() !== unitCode.toUpperCase()) gridHandleUnitChange(session.unitCode);
       return;
     }
-    if (!adminManualUnitRef.current && session.unitCode && session.unitCode !== unitCode) {
-      gridHandleUnitChange(session.unitCode);
+    if (requestedUnitCode) {
+      const reqCode = findHcmuteUnit(requestedUnitCode).code;
+      const reqUpper = reqCode.toUpperCase();
+      if (lastRequestedUnitRef.current !== reqUpper) {
+        lastRequestedUnitRef.current = reqUpper;
+        lastRemoteHandledRef.current = '';
+        setDirtySheets(new Set());
+        if (unitCode.toUpperCase() !== reqUpper) gridHandleUnitChange(reqCode);
+        updateSessionUnit(reqCode);
+      }
+    } else if (!lastRequestedUnitRef.current && session.unitCode) {
+      const sesUpper = session.unitCode.toUpperCase();
+      lastRequestedUnitRef.current = sesUpper;
+      if (unitCode.toUpperCase() !== sesUpper) gridHandleUnitChange(session.unitCode);
     }
   }, [session, requestedUnitCode, unitCode, gridHandleUnitChange, updateSessionUnit]);
 
@@ -166,56 +168,23 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
 
   return (
     <div className="w-full max-w-full min-w-0 bg-white border border-[var(--border)] rounded-xl flex flex-col">
-      {/* 1. HEADER (Page Header & Command Bar thống nhất theo Mockup) */}
       <ScientificWorkspaceCard
-        activeSheet={activeSheet}
-        currentUnit={currentUnit}
-        unitCode={unitCode}
-        activeStep={getStepFromSheet(activeSheet)}
-        activeSheetIndex={activeSheetIndex}
-        totalSheets={currentSheetOrder.length}
-        rowsCount={activeRows.length}
-        isDirty={dirtySheets.has(activeSheet)}
-        qualityReport={qualityReport}
-        session={session}
-        revision={currentRevision}
-        syncStatus={syncStatus}
-        dataSource={dataSource}
-        apiError={apiError}
-        lastSyncedAt={lastSyncedAt}
-        orderMode={orderMode}
-        canNext={activeSheetIndex < currentSheetOrder.length - 1}
-        isExporting={isExporting}
-        isC1Unlocked={effectiveC1Unlocked}
-        onSelectSheet={handleSelectSheetSafe}
-        onUnitChange={(u) => { adminManualUnitRef.current = u.toUpperCase(); gridHandleUnitChange(u); updateSessionUnit(u); setDirtySheets(new Set()); if (typeof window !== 'undefined' && window.location.pathname === '/bang-tinh') syncContextQueryParams({ unit: u.toUpperCase(), sheet: activeSheet }, 'replace'); }}
-        onSwitchSession={switchSession}
-        onSaveNow={handleSave}
-        onToggleOrderMode={setOrderMode}
-        onOpenGuidance={() => setShowGuidanceModal(true)}
-        onOpenQualityModal={() => setShowQualityModal(true)}
-        onOpenChartModal={() => setShowChartModal(true)}
-        onOpenOrgTreeModal={() => setShowOrgTreeModal(true)}
-        onSaveSheet={handleSave}
-        onSaveAndNext={handleSaveAndNext}
-        onExportWorkbook={exportFullWorkbook}
+        activeSheet={activeSheet} currentUnit={currentUnit} unitCode={unitCode} activeStep={getStepFromSheet(activeSheet)}
+        activeSheetIndex={activeSheetIndex} totalSheets={currentSheetOrder.length} rowsCount={activeRows.length}
+        isDirty={dirtySheets.has(activeSheet)} qualityReport={qualityReport} session={session} revision={currentRevision}
+        syncStatus={syncStatus} dataSource={dataSource} apiError={apiError} lastSyncedAt={lastSyncedAt}
+        orderMode={orderMode} canNext={activeSheetIndex < currentSheetOrder.length - 1} isExporting={isExporting}
+        isC1Unlocked={effectiveC1Unlocked} hideUnitSelector={hideUnitSelector} onSelectSheet={handleSelectSheetSafe}
+        onUnitChange={(u) => { lastRequestedUnitRef.current = u.toUpperCase(); gridHandleUnitChange(u); updateSessionUnit(u); setDirtySheets(new Set()); if (typeof window !== 'undefined' && window.location.pathname === '/bang-tinh') syncContextQueryParams({ unit: u.toUpperCase(), sheet: activeSheet }, 'replace'); }}
+        onSwitchSession={switchSession} onSaveNow={handleSave} onToggleOrderMode={setOrderMode}
+        onOpenGuidance={() => setShowGuidanceModal(true)} onOpenQualityModal={() => setShowQualityModal(true)}
+        onOpenChartModal={() => setShowChartModal(true)} onOpenOrgTreeModal={() => setShowOrgTreeModal(true)}
+        onSaveSheet={handleSave} onSaveAndNext={handleSaveAndNext} onExportWorkbook={exportFullWorkbook}
         onLoadTcnsData={() => { if (!isReadOnlyViewer) { markSheetDirty('C1'); handleLoadTcnsData(); } }}
         onLoadRecommendedVtvls={() => { if (!isReadOnlyViewer) { markSheetDirty('C1'); loadRecommendedVtvls(); } }}
         onOpenUnlockModal={() => setShowUnlockModal(true)}
       />
-
-      {/* 2. DẢI TAB 10 BIỂU CUỘN NGANG (UNDERLINE TABS) */}
-      <ExcelSheetTabs
-        activeSheet={activeSheet}
-        sheetOrder={currentSheetOrder}
-        orderMode={orderMode}
-        dirtySheets={dirtySheets}
-        onSelectSheet={handleSelectSheetSafe}
-        onPrev={goToPrevSheet}
-        onNext={goToNextSheet}
-        canPrev={activeSheetIndex > 0}
-        canNext={activeSheetIndex < currentSheetOrder.length - 1}
-      />
+      <ExcelSheetTabs activeSheet={activeSheet} sheetOrder={currentSheetOrder} orderMode={orderMode} dirtySheets={dirtySheets} onSelectSheet={handleSelectSheetSafe} onPrev={goToPrevSheet} onNext={goToNextSheet} canPrev={activeSheetIndex > 0} canNext={activeSheetIndex < currentSheetOrder.length - 1} />
 
       {/* 4. BANNER CHẾ ĐỘ CHỈ XEM / BANNER C1 / LƯỚI BẢNG DỮ LIỆU CHÍNH */}
       {isReadOnlyViewer && (
@@ -270,7 +239,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         unitCode={unitCode} unitNameVi={currentUnit.nameVi}
         c1Rows={data.C1 || []} d2Rows={data.D2 || []} onSelectSheet={handleSelectSheetSafe}
       />
-      <UnitOrgTreeModal isOpen={showOrgTreeModal} onClose={() => setShowOrgTreeModal(false)} defaultUnitCode={unitCode} workbookData={data} />
+      <UnitOrgTreeModal isOpen={showOrgTreeModal} onClose={() => setShowOrgTreeModal(false)} defaultUnitCode={unitCode} workbookData={data} hideUnitSelector={hideUnitSelector} />
 
       <OperatorSessionModal
         isOpen={isModalOpen}

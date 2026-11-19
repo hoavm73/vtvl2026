@@ -30,6 +30,7 @@ interface ScientificWorkspaceCardProps {
   canNext: boolean;
   isExporting: boolean;
   isC1Unlocked: boolean;
+  hideUnitSelector?: boolean;
   onSelectSheet: (key: ExcelSheetKey) => void;
   onUnitChange: (code: string) => void;
   onSwitchSession: () => void;
@@ -65,6 +66,7 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
         canNext={props.canNext}
         isExporting={props.isExporting}
         isC1Unlocked={props.isC1Unlocked}
+        hideUnitSelector={props.hideUnitSelector}
         onSelectSheet={props.onSelectSheet}
         onUnitChange={props.onUnitChange}
         onSwitchSession={props.onSwitchSession}
@@ -91,6 +93,7 @@ export function ScientificWorkspaceCard(props: ScientificWorkspaceCardProps) {
           activeSheetIndex={props.activeSheetIndex}
           totalSheets={props.totalSheets}
           session={props.session}
+          hideUnitSelector={props.hideUnitSelector}
           onUnitChange={props.onUnitChange}
         />
 

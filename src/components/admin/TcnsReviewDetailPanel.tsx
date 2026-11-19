@@ -235,7 +235,7 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
       )}
 
       {activeTab === 'sheets' && (
-        <ExcelWorkbookViewer initialUnitCode={unit.code} requestedUnitCode={unit.code} />
+        <ExcelWorkbookViewer initialUnitCode={unit.code} requestedUnitCode={unit.code} hideUnitSelector={true} />
       )}
 
       {activeTab === 'comments' && (

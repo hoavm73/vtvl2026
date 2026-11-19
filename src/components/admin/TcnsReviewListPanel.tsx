@@ -8,6 +8,7 @@ import { REVIEW_STATUS_LABELS, WorkbookReviewStatus } from '@/services/workbooks
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
 import { TableRowsSkeleton } from '@/components/ui/Skeleton';
+import { SchoolReviewProgressBar, SchoolReviewProgressStats } from '@/components/workbooks/SchoolReviewProgressBar';
 
 interface TcnsReviewListPanelProps {
   onSelectUnit: (unitCode: string, workbookId: string) => void;
@@ -100,8 +101,35 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
   const countApproved = loading || error ? '—' : String(units.filter((u) => u.reviewStatus === 'dat_yeu_cau' || u.reviewStatus === 'da_khoa').length);
   const countWithErr = loading || error ? '—' : String(units.filter((u) => (u.errorCount ?? 0) > 0).length);
 
+  const schoolProgress = useMemo<SchoolReviewProgressStats>(() => {
+    const total = units.length || 39;
+    let chuaGui = 0, daGuiTcns = 0, dangThamDinh = 0, canBoSung = 0, datVaKhoa = 0;
+    for (const u of units) {
+      const st = u.reviewStatus || 'chua_gui';
+      if (st === 'dat_yeu_cau' || st === 'da_khoa') datVaKhoa++;
+      else if (st === 'can_bo_sung') canBoSung++;
+      else if (st === 'dang_tham_dinh') dangThamDinh++;
+      else if (st === 'cho_tham_dinh' || st === 'da_gui_lai') daGuiTcns++;
+      else chuaGui++;
+    }
+    return {
+      totalUnits: total,
+      chuaGui,
+      daGuiTcns,
+      dangThamDinh,
+      canBoSung,
+      datVaKhoa,
+      approvedPercent: total > 0 ? Math.round((datVaKhoa / total) * 100) : 0
+    };
+  }, [units]);
+
   return (
     <div className="space-y-4">
+      <SchoolReviewProgressBar
+        progress={schoolProgress}
+        loading={loading || Boolean(error)}
+        onSelectFilter={(st) => setStatusFilter((prev) => (prev === st ? 'ALL' : st))}
+      />
       <div className="border-y border-[#e2e8f0] grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#e2e8f0]">
         <div className="px-4 py-3"><div className="text-xs text-[#476885]">Chờ / đang thẩm định</div><div className="text-xl font-bold text-[#006cee] tabular-nums">{countPending}</div></div>
         <div className="px-4 py-3"><div className="text-xs text-[#476885]">Yêu cầu bổ sung</div><div className="text-xl font-bold text-[#b42318] tabular-nums">{countNeedFix}</div></div>

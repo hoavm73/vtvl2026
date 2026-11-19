@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
+import { SchoolReviewProgressBar, SchoolReviewProgressStats } from '@/components/workbooks/SchoolReviewProgressBar';
 
 interface OverviewStats {
   totalUnits: number;
@@ -17,6 +18,7 @@ interface OverviewStats {
   pendingPositions: number;
   draftPositions: number;
   totalTickets: number;
+  reviewProgress: SchoolReviewProgressStats;
 }
 
 const DEFAULT_C1_TOTAL = HCMUTE_UNITS.reduce(
@@ -32,7 +34,16 @@ export function SchoolOverviewDashboard() {
     approvedPositions: 0,
     pendingPositions: 0,
     draftPositions: 0,
-    totalTickets: 0
+    totalTickets: 0,
+    reviewProgress: {
+      totalUnits: HCMUTE_UNITS.length,
+      chuaGui: HCMUTE_UNITS.length,
+      daGuiTcns: 0,
+      dangThamDinh: 0,
+      canBoSung: 0,
+      datVaKhoa: 0,
+      approvedPercent: 0
+    }
   });
 
   const fetchRealtimeStats = useCallback(async () => {
@@ -48,7 +59,16 @@ export function SchoolOverviewDashboard() {
           approvedPositions: data.approvedPositions ?? 0,
           pendingPositions: data.pendingPositions ?? 0,
           draftPositions: data.draftPositions ?? 0,
-          totalTickets: data.totalTickets ?? ((data.approvedPositions ?? 0) + (data.pendingPositions ?? 0) + (data.draftPositions ?? 0))
+          totalTickets: data.totalTickets ?? ((data.approvedPositions ?? 0) + (data.pendingPositions ?? 0) + (data.draftPositions ?? 0)),
+          reviewProgress: data.reviewProgress || {
+            totalUnits: data.totalUnits || HCMUTE_UNITS.length,
+            chuaGui: data.totalUnits || HCMUTE_UNITS.length,
+            daGuiTcns: 0,
+            dangThamDinh: 0,
+            canBoSung: 0,
+            datVaKhoa: 0,
+            approvedPercent: 0
+          }
         });
       }
     } catch {
@@ -185,6 +205,9 @@ export function SchoolOverviewDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Thanh tiến độ thẩm định chung toàn trường (39 đơn vị) */}
+      <SchoolReviewProgressBar progress={stats.reviewProgress} />
 
       {/* Phân bổ theo khối đơn vị: danh sách phẳng ngăn bằng divider */}
       <div className="space-y-3">

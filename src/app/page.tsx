@@ -10,6 +10,7 @@ import { OverviewWelcomeBanner } from '@/components/overview/OverviewWelcomeBann
 import { SchoolOverviewDashboard } from '@/components/overview/SchoolOverviewDashboard';
 import { OverviewRoleActionCards } from '@/components/overview/OverviewRoleActionCards';
 import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
+import { UnitReviewStatusWidget } from '@/components/workbooks/UnitReviewStatusWidget';
 import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 import { SIDEBAR_FIVE_STEPS } from '@/components/layout/MilestonesBar';
 import { validateStep1Data } from '@/components/tao-tep/Step1ReviewConfirm';
@@ -216,6 +217,9 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
+
+            {/* Thanh tiến độ thẩm định 4 bước của đơn vị */}
+            <UnitReviewStatusWidget unitCode={activeUnit.code} />
 
             {/* Tiến độ chi tiết & Nhật ký chia cột bằng divider, không bọc card con */}
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#e2e8f0]">

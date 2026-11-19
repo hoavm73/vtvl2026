@@ -22,6 +22,7 @@ import {
 import {
   executeGetTicketsRoute, handleTicketRouteError, isSameEditablePayload, validateMutableTicket
 } from '@/services/tickets/ticket-route-helpers';
+import { checkUnitWorkbookApprovedLock } from '@/services/workbooks/workbook-lock-guard';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
     if (!body.maNhiemVu || !body.tenCongViec || !body.maVtvl) return NextResponse.json({ error: 'Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm và nhập Tên công việc.', code: 'MISSING_CORE_FIELDS' }, { status: 400 });
 
     const effectiveUnit = caller.isAdmin && reqUnit ? String(reqUnit).toUpperCase() : caller.unitCode;
+    const unitLockErr = await checkUnitWorkbookApprovedLock(effectiveUnit);
+    if (unitLockErr) return unitLockErr;
     if (body.id) await syncTicketsFromSupabase(effectiveUnit).catch(() => {});
     const existing = body.id ? getTicketById(String(body.id)) : null;
     const preGuardErr = validateMutableTicket(existing, caller.email);
@@ -208,6 +211,8 @@ export async function DELETE(req: NextRequest) {
   let target = getTicketById(id);
   if (!target) { await syncTicketsFromSupabase().catch(() => {}); target = getTicketById(id); }
   if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
+  const deleteLockErr = await checkUnitWorkbookApprovedLock(target.unitCode);
+  if (deleteLockErr) return deleteLockErr;
 
   const isUnitReviewer = caller.isAdmin || (caller.isUnitLeader && target.unitCode.toUpperCase() === caller.unitCode.toUpperCase());
   const isDraft = toCanonicalStatus(target.status) === 'draft';

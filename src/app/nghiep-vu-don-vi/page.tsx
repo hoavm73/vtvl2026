@@ -20,6 +20,7 @@ import { getCurrentOperatorSession } from '@/services/telemetry/operator-session
 import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
 import { getCanonicalWorkbookId, persistUnitContextSelection, resolveSafeUnitCode, syncContextQueryParams } from '@/services/context/workbook-context';
 import { StaffWorkTicket } from '@/types/staff-ticket';
+import { WorkbookReviewProgressStepper } from '@/components/workbooks/WorkbookReviewProgressStepper';
 
 type UnitWorkspaceTabKey = 'overview' | 'workbook' | 'tickets' | 'org-tree' | 'workforce-chart' | 'history' | 'check';
 
@@ -179,6 +180,8 @@ export default function NghiepVuDonViPage() {
           </Link>
         </div>
       </header>
+
+      <WorkbookReviewProgressStepper status={summary?.reviewStatus} statusLabel={summary?.reviewStatusLabel} submittedBy={summary?.submittedBy} submittedAt={summary?.submittedAt} reviewerEmail={summary?.reviewerEmail} reviewedAt={summary?.reviewedAt} reviewNote={summary?.reviewNote} loading={loading} />
 
       <div className="md:hidden print:hidden">
         <label htmlFor="unit-workspace-mobile-tab" className="block text-xs font-semibold text-[#20446c] mb-1">Phân hệ hồ sơ đơn vị</label>

@@ -16,6 +16,7 @@ import {
 } from '@/services/storage/server-ticket-merge';
 import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
 import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
+import { buildUnitWorkbookLockedResponse, isWorkbookStatusLocked } from '@/services/workbooks/workbook-lock-guard';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -118,6 +119,11 @@ export async function PUT(req: Request, context: RouteContext) {
         { error: 'Bạn không có quyền sửa đổi hồ sơ của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' },
         { status: 403 }
       );
+    }
+
+    const currentWbForLock = existingWb || getWorkbookForUnitReadOnly(targetUnit);
+    if (isWorkbookStatusLocked(currentWbForLock?.status)) {
+      return buildUnitWorkbookLockedResponse(targetUnit);
     }
 
     // Bảo mật danh mục VTVL Biểu C1

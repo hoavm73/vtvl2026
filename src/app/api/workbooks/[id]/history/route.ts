@@ -20,6 +20,7 @@ import {
 } from '@/services/workbooks/workbook-history-service';
 import { toCanonicalStatus } from '@/types/staff-ticket';
 import { findHcmuteUnit, UNIT_GROUPS } from '@/configs/hcmute-units';
+import { buildUnitWorkbookLockedResponse, isWorkbookStatusLocked } from '@/services/workbooks/workbook-lock-guard';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -154,6 +155,9 @@ export async function POST(req: Request, context: RouteContext) {
     }
     if (typeof expectedRevision === 'number' && expectedRevision > 0 && expectedRevision !== wb.currentRevision) {
       return NextResponse.json({ error: `Phiên bản hồ sơ đã thay đổi (v${expectedRevision} ≠ v${wb.currentRevision}). Vui lòng tải lại.`, code: 'REVISION_STALE' }, { status: 409 });
+    }
+    if (action === 'submit_to_tcns' && isWorkbookStatusLocked(wb.status)) {
+      return buildUnitWorkbookLockedResponse(wb.unitId);
     }
 
     const cleanNote = (note || '').trim();

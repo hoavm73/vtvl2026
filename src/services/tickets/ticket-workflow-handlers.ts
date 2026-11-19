@@ -27,6 +27,7 @@ import {
   getRecordedIdempotencyResponse,
   saveIdempotencyResponse
 } from '@/services/storage/server-mission-counter';
+import { checkUnitWorkbookApprovedLock } from '@/services/workbooks/workbook-lock-guard';
 
 export async function executePatchTicketAction(caller: CallerAuthContext, body: Record<string, unknown>) {
   const { id, ticketId, action, note, reason, revisionNotes, changeSummary } = body;
@@ -53,6 +54,8 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
     target = getTicketById(targetId);
   }
   if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
+  const unitLockErr = await checkUnitWorkbookApprovedLock(target.unitCode);
+  if (unitLockErr) return unitLockErr;
 
   // 1. SUBMIT / RESUBMIT bởi chủ sở hữu phiếu
   if (act === 'submit' || act === 'resubmit') {

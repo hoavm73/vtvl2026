@@ -15,6 +15,7 @@ import { UnitSummaryRow } from '@/components/overview/UnitMonitoringTypes';
 import { WorkbookHistoryTimelineEvent, WorkbookReviewMeta } from '@/services/workbooks/workbook-history-service';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { InlineSkeleton } from '@/components/ui/Skeleton';
+import { WorkbookReviewProgressStepper } from '@/components/workbooks/WorkbookReviewProgressStepper';
 
 function buildTcnsAuthHeaders(includeJson = false): Record<string, string> {
   const headers: Record<string, string> = {};
@@ -164,6 +165,17 @@ export function TcnsReviewDetailPanel({ unitCode, workbookId, activeTab, onSelec
           </Link>
         </div>
       </div>
+
+      <WorkbookReviewProgressStepper
+        status={reviewMeta?.status}
+        statusLabel={reviewMeta?.statusLabel}
+        submittedBy={reviewMeta?.submittedBy}
+        submittedAt={reviewMeta?.submittedAt}
+        reviewerEmail={reviewMeta?.reviewerEmail}
+        reviewedAt={reviewMeta?.reviewedAt}
+        reviewNote={reviewMeta?.reviewNote}
+        loading={loading}
+      />
 
       <div className="space-y-2">
         <label htmlFor="tcns-review-note" className="block text-xs font-semibold text-[#20446c]">Ghi chú / Nhận xét thẩm định của Phòng TCNS</label>

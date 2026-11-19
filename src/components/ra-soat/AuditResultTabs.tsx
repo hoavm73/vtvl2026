@@ -76,17 +76,17 @@ export function AuditResultTabs({ report }: Props) {
   return (
     <div className="space-y-4">
       {/* Chọn tab trên mobile + Dải 5 tab trên Desktop */}
-      <div className="md:hidden">
+      <div className="sm:hidden">
         <label htmlFor="audit-mobile-tab-select" className="block text-xs font-semibold text-[#20446c] mb-1">Chế độ xem kết quả rà soát</label>
         <select id="audit-mobile-tab-select" aria-label="Chế độ xem kết quả rà soát" value={activeTab} onChange={(e) => setActiveTab(e.target.value as AuditTabKey)} className="w-full min-h-[44px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-sm font-bold text-[#004776]">
           {tabs.map((t) => (<option key={t.key} value={t.key}>{t.label}{t.count !== undefined ? ` (${t.count})` : ''}</option>))}
         </select>
       </div>
-      <nav role="tablist" aria-label="Sổ kết quả rà soát 5 thẻ" className="hidden md:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">
+      <nav role="tablist" aria-label="Sổ kết quả rà soát 5 thẻ" className="hidden sm:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">
         {tabs.map((t) => {
           const isSelected = activeTab === t.key;
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] font-medium hover:text-[#004776]'}`}>
+            <button key={t.key} type="button" role="tab" aria-selected={isSelected} onClick={() => setActiveTab(t.key)} className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 text-xs xl:text-[13px] border-b-[1.8px] whitespace-nowrap cursor-pointer shrink-0 transition-colors ${isSelected ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] font-medium hover:text-[#004776]'}`}>
               <span>{t.label}</span>
               {t.count !== undefined && <span className={`px-1.5 py-0.5 rounded-full text-[11px] tabular-nums ${isSelected ? 'bg-[#006cee] text-white' : 'bg-[#e2e8f0] text-[#476885]'}`}>{t.count}</span>}
             </button>

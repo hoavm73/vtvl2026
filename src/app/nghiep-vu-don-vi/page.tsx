@@ -187,7 +187,7 @@ export default function NghiepVuDonViPage() {
 
       <WorkbookReviewProgressStepper status={summary?.reviewStatus} statusLabel={summary?.reviewStatusLabel} submittedBy={summary?.submittedBy} submittedAt={summary?.submittedAt} reviewerEmail={summary?.reviewerEmail} reviewedAt={summary?.reviewedAt} reviewNote={summary?.reviewNote} loading={loading} />
 
-      <div className="md:hidden print:hidden">
+      <div className="sm:hidden print:hidden">
         <label htmlFor="unit-workspace-mobile-tab" className="block text-xs font-semibold text-[#20446c] mb-1">Phân hệ hồ sơ đơn vị</label>
         <select
           id="unit-workspace-mobile-tab"
@@ -200,7 +200,7 @@ export default function NghiepVuDonViPage() {
         </select>
       </div>
 
-      <nav role="tablist" aria-label="Phân hệ hồ sơ đơn vị" className="hidden md:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar print:hidden">
+      <nav role="tablist" aria-label="Phân hệ hồ sơ đơn vị" className="hidden sm:flex items-center gap-1 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar print:hidden">
         {UNIT_TABS.map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.key;
@@ -211,7 +211,7 @@ export default function NghiepVuDonViPage() {
               role="tab"
               aria-selected={active}
               onClick={() => handleSelectTab(t.key)}
-              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-[13px] border-b-[2.2px] -mb-[1px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-xs sm:text-[13px] border-b-[1.8px] whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-[#FD8C73] text-[#004776] font-semibold' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span>{t.label}</span>

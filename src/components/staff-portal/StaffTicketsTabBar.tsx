@@ -85,7 +85,7 @@ export function StaffTicketsTabBar({
   relationshipsCount = 0
 }: StaffTicketsTabBarProps) {
   const baseBtn =
-    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[2.2px] -mb-[1px] transition-colors whitespace-nowrap cursor-pointer';
+    'inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[1.8px] transition-colors whitespace-nowrap cursor-pointer';
   const activeCls = 'border-[#FD8C73] text-[#006cee]';
   const inactiveCls = 'border-transparent text-[#476b8e] hover:text-[#004776] hover:border-[#cbd5e1]';
 
@@ -123,7 +123,7 @@ export function StaffTicketsTabBar({
 
   return (
     <div className="print:hidden">
-      <div className="md:hidden pb-2 space-y-2">
+      <div className="sm:hidden pb-2 space-y-2">
         <label htmlFor="mobile-ticket-view-mode" className="block text-xs font-semibold text-[#20446c]">
           Chế độ xem phiếu cá nhân
         </label>
@@ -145,7 +145,7 @@ export function StaffTicketsTabBar({
       <div
         role="tablist"
         aria-label="Phân hệ phiếu công việc cá nhân"
-        className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar"
+        className="hidden sm:flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar"
       >
         {tabOptions.map((opt) => {
           const Icon = opt.Icon;

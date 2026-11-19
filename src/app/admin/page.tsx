@@ -252,7 +252,7 @@ export default function AdminPage() {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
               return (
-                <button key={tab.key} type="button" role="tab" aria-selected={isActive} onClick={() => selectAdminTab(tab.key)} className={`h-11 inline-flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer border-b-[2.2px] -mb-[1px] px-4 whitespace-nowrap shrink-0 ${isActive ? 'text-[#004776] border-[#FD8C73]' : 'text-[#476885] border-transparent hover:text-[#004776]'}`}>
+                <button key={tab.key} type="button" role="tab" aria-selected={isActive} onClick={() => selectAdminTab(tab.key)} className={`h-11 inline-flex items-center gap-2 text-[13px] font-bold transition-colors cursor-pointer border-b-[1.8px] px-4 whitespace-nowrap shrink-0 ${isActive ? 'text-[#004776] border-[#FD8C73]' : 'text-[#476885] border-transparent hover:text-[#004776]'}`}>
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
                 </button>

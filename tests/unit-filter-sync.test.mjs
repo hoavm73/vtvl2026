@@ -123,6 +123,25 @@ test('TC9: UnitTicketsFilterBar và UnitWorkspaceTicketsPanel bỏ tiêu đề l
   assert.ok(headerRow.includes('hideUnitSelector ? ('), 'WorkspaceHeaderRow dùng h2 khi nhúng để giữ đúng 1 thẻ h1 trên trang');
 });
 
+test('TC10: Thanh gạch chân cam #FD8C73 dùng border-b-[1.8px] đồng nhất và không -mb-[1px] ở cả 8 thanh tab', () => {
+  const tabFiles = [
+    'src/app/nghiep-vu-don-vi/page.tsx',
+    'src/components/nghiep-vu-don-vi/UnitWorkspaceTicketsPanel.tsx',
+    'src/components/staff-portal/UnitTicketsHeaderBar.tsx',
+    'src/components/staff-portal/StaffTicketsTabBar.tsx',
+    'src/components/admin/TcnsReviewDetailPanel.tsx',
+    'src/app/admin/page.tsx',
+    'src/components/ra-soat/AuditResultTabs.tsx',
+    'src/components/excel-grid/ExcelSheetTabs.tsx'
+  ];
+  for (const rel of tabFiles) {
+    const code = readSrc(rel);
+    assert.ok(code.includes('border-[#FD8C73]'), `${rel} phải giữ màu cam san hô #FD8C73`);
+    assert.ok(code.includes('border-b-[1.8px]'), `${rel} phải dùng border-b-[1.8px] đồng nhất`);
+    assert.ok(!code.includes('-mb-[1px]'), `${rel} không được dùng -mb-[1px] gây cắt subpixel trong overflow-x-auto`);
+  }
+});
+
 console.log(`\n----------------------------------------------------------------`);
-console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/9 KỊCH BẢN PASS`);
+console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/10 KỊCH BẢN PASS`);
 console.log(`----------------------------------------------------------------\n`);

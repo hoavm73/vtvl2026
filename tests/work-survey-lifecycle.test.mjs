@@ -255,6 +255,7 @@ runTest('Ca 11: Tách rõ 4 tab cá nhân tại /phieu-cong-viec và 3 tab duy�
   const tabBarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/StaffTicketsTabBar.tsx'), 'utf8');
   const unitHeaderCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/UnitTicketsHeaderBar.tsx'), 'utf8');
   const filterBarCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/UnitTicketsFilterBar.tsx'), 'utf8');
+  const cascadeHelperCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/unit-tickets-cascade-helpers.ts'), 'utf8');
   const sideCardCode = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedSideCard.tsx'), 'utf8');
 
   assert.ok(
@@ -270,7 +271,8 @@ runTest('Ca 11: Tách rõ 4 tab cá nhân tại /phieu-cong-viec và 3 tab duy�
     'UnitTicketsHeaderBar trên /phieu-don-vi phải hiển thị đủ 3 tab quản lý phiếu đơn vị'
   );
   assert.ok(
-    reviewListCode.includes("c === 'submitted' || c === 'resubmitted' || c === 'changes_requested'"),
+    reviewListCode.includes('buildPendingCascadeState(') &&
+    cascadeHelperCode.includes("c === 'submitted' || c === 'resubmitted' || c === 'changes_requested'"),
     'Tab Chờ duyệt trong UnitTicketsReviewList phải bao gồm cả submitted, resubmitted và changes_requested'
   );
   assert.ok(

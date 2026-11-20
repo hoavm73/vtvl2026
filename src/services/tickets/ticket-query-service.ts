@@ -120,57 +120,45 @@ export async function queryTicketsFromPostgresPaginated(params: {
 }): Promise<PaginatedTicketResult | null> {
   if (isIsolatedLocalMode() || !isDatabaseConfigured()) return null;
   const safeLimit = Math.max(1, Math.min(200, Number(params.limit) || 50));
-  const parsedCursor = decodeTicketCursor(params.cursor);
+  const unitSeg = params.unitCode && params.unitCode !== 'ALL' ? `u:${params.unitCode.trim().toUpperCase()}` : 'scope:ALL';
+  const cacheKey = `tickets:list:|${unitSeg}|e:${(params.callerEmail || '').toLowerCase().trim()}|inc:${params.includeDraftsOfOthers ? '1' : '0'}|own:${(params.ownerEmail || '').toLowerCase().trim()}|st:${params.status || ''}|cur:${params.cursor || ''}|lim:${safeLimit}|v:${params.view || 'list'}`;
 
-  const whereAnd: Prisma.staff_work_ticketsWhereInput[] = [{ is_archived: false, is_test_data: false }];
-  if (params.unitCode && params.unitCode !== 'ALL') whereAnd.push({ unit_code: params.unitCode.toUpperCase() });
-  if (params.ownerEmail) whereAnd.push({ owner_email: params.ownerEmail.toLowerCase().trim() });
-  if (params.status) whereAnd.push({ status: params.status });
-  if (!params.includeDraftsOfOthers && params.callerEmail) {
-    whereAnd.push({
-      OR: [{ status: { not: 'draft' } }, { owner_email: params.callerEmail.toLowerCase().trim() }]
-    });
-  }
+  return cacheGetOrSet(cacheKey, ['tickets'], 3000, async () => {
+    const parsedCursor = decodeTicketCursor(params.cursor);
+    const whereAnd: Prisma.staff_work_ticketsWhereInput[] = [{ is_archived: false, is_test_data: false }];
+    if (params.unitCode && params.unitCode !== 'ALL') whereAnd.push({ unit_code: params.unitCode.toUpperCase() });
+    if (params.ownerEmail) whereAnd.push({ owner_email: params.ownerEmail.toLowerCase().trim() });
+    if (params.status) whereAnd.push({ status: params.status });
+    if (!params.includeDraftsOfOthers && params.callerEmail) {
+      whereAnd.push({ OR: [{ status: { not: 'draft' } }, { owner_email: params.callerEmail.toLowerCase().trim() }] });
+    }
 
-  const baseWhere: Prisma.staff_work_ticketsWhereInput = { AND: whereAnd };
-  const pageWhere: Prisma.staff_work_ticketsWhereInput = parsedCursor
-    ? {
-        AND: [
-          ...whereAnd,
-          {
-            OR: [
-              { updated_at: { lt: new Date(parsedCursor.updatedAt) } },
-              { updated_at: new Date(parsedCursor.updatedAt), id: { lt: parsedCursor.id } }
-            ]
-          }
-        ]
-      }
-    : baseWhere;
+    const baseWhere: Prisma.staff_work_ticketsWhereInput = { AND: whereAnd };
+    const pageWhere: Prisma.staff_work_ticketsWhereInput = parsedCursor
+      ? { AND: [...whereAnd, { OR: [{ updated_at: { lt: new Date(parsedCursor.updatedAt) } }, { updated_at: new Date(parsedCursor.updatedAt), id: { lt: parsedCursor.id } }] }] }
+      : baseWhere;
 
-  const [rows, totalCount] = await Promise.all([
-    prisma.staff_work_tickets.findMany({
+    const rows = await prisma.staff_work_tickets.findMany({
       where: pageWhere,
       orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
       take: safeLimit + 1
-    }),
-    prisma.staff_work_tickets.count({ where: baseWhere })
-  ]);
-
-  const hasMore = rows.length > safeLimit;
-  const sliced = hasMore ? rows.slice(0, safeLimit) : rows;
-  const mapped = sliced.map((r) => {
-    const ticket = mapDbRowToTicket(r as unknown as DbTicketRow);
-    return params.view === 'full' ? ticket : toTicketListDto(ticket);
+    });
+    const hasMore = rows.length > safeLimit;
+    const totalCount = (parsedCursor || hasMore) ? await prisma.staff_work_tickets.count({ where: baseWhere }) : rows.length;
+    const sliced = hasMore ? rows.slice(0, safeLimit) : rows;
+    const mapped = sliced.map((r) => {
+      const ticket = mapDbRowToTicket(r as unknown as DbTicketRow);
+      return params.view === 'full' ? ticket : toTicketListDto(ticket);
+    });
+    const last = mapped[mapped.length - 1];
+    return {
+      items: mapped,
+      nextCursor: hasMore && last ? encodeTicketCursor(last) : null,
+      hasMore,
+      totalCount,
+      limit: safeLimit
+    };
   });
-  const last = mapped[mapped.length - 1];
-
-  return {
-    items: mapped,
-    nextCursor: hasMore && last ? encodeTicketCursor(last) : null,
-    hasMore,
-    totalCount,
-    limit: safeLimit
-  };
 }
 
 export interface UnitOverviewAggregate {

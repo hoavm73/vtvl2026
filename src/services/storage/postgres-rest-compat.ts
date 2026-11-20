@@ -37,30 +37,46 @@ export async function pgUpsertRows(
     .map((s) => s.trim())
     .filter((c) => SAFE_IDENT_RE.test(c));
 
+  let dedupedRows = rows;
+  if (conflictCols.length > 0 && rows.length > 1) {
+    const keyed = new Map<string, Record<string, unknown>>();
+    for (const r of rows) {
+      const k = JSON.stringify(conflictCols.map((c) => r[c] ?? null));
+      if (keyed.has(k)) keyed.delete(k);
+      keyed.set(k, r);
+    }
+    dedupedRows = Array.from(keyed.values());
+  }
+
+  const colList = cols.map((c) => `"${c}"`).join(', ');
+  let conflictSuffix = '';
+  if (conflictCols.length > 0) {
+    const target = conflictCols.map((c) => `"${c}"`).join(', ');
+    const updates = cols.filter((c) => !conflictCols.includes(c));
+    conflictSuffix =
+      updates.length > 0
+        ? ` ON CONFLICT (${target}) DO UPDATE SET ${updates.map((c) => `"${c}" = EXCLUDED."${c}"`).join(', ')}`
+        : ` ON CONFLICT (${target}) DO NOTHING`;
+  }
+
+  const BATCH_SIZE = 250;
   try {
     await withPgTransaction(async (client) => {
-      for (const row of rows) {
-        const values = cols.map((c) => {
-          const v = row[c];
-          if (v === undefined) return null;
-          if (v !== null && typeof v === 'object' && !(v instanceof Date)) {
-            return JSON.stringify(v);
+      for (let offset = 0; offset < dedupedRows.length; offset += BATCH_SIZE) {
+        const chunk = dedupedRows.slice(offset, offset + BATCH_SIZE);
+        const valueGroups: string[] = [];
+        const values: unknown[] = [];
+        let paramIdx = 1;
+        for (const row of chunk) {
+          const placeholders: string[] = [];
+          for (const c of cols) {
+            const v = row[c];
+            values.push(v === undefined ? null : (v !== null && typeof v === 'object' && !(v instanceof Date) ? JSON.stringify(v) : v));
+            placeholders.push(`$${paramIdx++}`);
           }
-          return v;
-        });
-        const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-        const colList = cols.map((c) => `"${c}"`).join(', ');
-        let sql = `INSERT INTO public."${safeTable}" (${colList}) VALUES (${placeholders})`;
-
-        if (conflictCols.length > 0) {
-          const target = conflictCols.map((c) => `"${c}"`).join(', ');
-          const updates = cols.filter((c) => !conflictCols.includes(c));
-          if (updates.length > 0) {
-            sql += ` ON CONFLICT (${target}) DO UPDATE SET ${updates.map((c) => `"${c}" = EXCLUDED."${c}"`).join(', ')}`;
-          } else {
-            sql += ` ON CONFLICT (${target}) DO NOTHING`;
-          }
+          valueGroups.push(`(${placeholders.join(', ')})`);
         }
+        const sql = `INSERT INTO public."${safeTable}" (${colList}) VALUES ${valueGroups.join(', ')}${conflictSuffix}`;
         await client.query(sql, values);
       }
     });
@@ -87,7 +103,13 @@ export async function pgCallSurveyRpc<T = Record<string, unknown>>(
   }
 
   const keys = Object.keys(params).filter((k) => SAFE_IDENT_RE.test(k));
-  const namedArgs = keys.map((k, idx) => `${k} := $${idx + 1}`).join(', ');
+  const namedArgs = keys
+    .map((k, idx) => {
+      const v = params[k];
+      const isJson = v !== null && typeof v === 'object' && !(v instanceof Date);
+      return `${k} := $${idx + 1}${isJson ? '::jsonb' : ''}`;
+    })
+    .join(', ');
   const values = keys.map((k) => {
     const v = params[k];
     if (v === undefined) return null;

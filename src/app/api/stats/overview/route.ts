@@ -4,8 +4,8 @@ import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { getTicketCounts, loadTickets, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { getAllActiveServerWorkbooks, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
-import { getAuditLogs } from '@/services/storage/server-audit-store';
-import { deriveReviewMetaFromWorkbook } from '@/services/workbooks/workbook-history-service';
+import { getAuditLogs, syncAuditLogsFromSupabase } from '@/services/storage/server-audit-store';
+import { deriveReviewMetaFromWorkbook, REVIEW_ACTION_SET } from '@/services/workbooks/workbook-history-service';
 import { cacheGetOrSet } from '@/services/storage/runtime-cache';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,8 @@ export async function GET() {
     try {
       await Promise.all([
         syncTicketsFromSupabase().catch(() => {}),
-        syncServerWorkbooksFromSupabase(false).catch(() => {})
+        syncServerWorkbooksFromSupabase(false).catch(() => {}),
+        syncAuditLogsFromSupabase(500).catch(() => {})
       ]);
     } catch {
       // ignore
@@ -40,7 +41,7 @@ export async function GET() {
     let dangThamDinh = 0;
     let canBoSung = 0;
     let datVaKhoa = 0;
-    const allLogs = getAuditLogs({ limit: 500 });
+    const allLogs = getAuditLogs({ actions: REVIEW_ACTION_SET, limit: 2000 });
     for (const u of HCMUTE_UNITS) {
       const codeUpper = u.code.toUpperCase();
       const wb = wbByUnit.get(codeUpper);

@@ -19,6 +19,7 @@ import {
   setSessionRootWorkbook
 } from '@/services/telemetry/activity-log';
 import { syncAuditResultToSupabase } from '@/services/storage/vtvl-sync';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { getCanonicalWorkbookId, verifyWorkbookContextMatch } from '@/services/context/workbook-context';
 
 interface UnitWorkbookCheckPanelProps {
@@ -58,6 +59,9 @@ export function UnitWorkbookCheckPanel({
     setContextError(null);
     try {
       const session = getActiveUnitSession();
+      const op = getCurrentOperatorSession();
+      const sessionUnit = (op?.unitCode || session.unitCode || '').toUpperCase();
+      const isOwnSessionUnit = !asSampleDemo && sessionUnit === unitToAudit.code.toUpperCase();
       const cached = getSessionFilesForUnit(unitToAudit.code);
       let fileToAudit = !asSampleDemo ? cached.mergedFile || cached.rootFile : null;
 
@@ -68,23 +72,19 @@ export function UnitWorkbookCheckPanel({
           unitNameVi: asSampleDemo ? 'Đơn vị giả định minh họa (X99)' : unitToAudit.nameVi,
           unitNameEn: unitToAudit.nameEn,
           period: HD07_CONSTANTS.STATISTICAL_PERIOD,
-          exportDate: session.customDate || getRealtimeDateYYYYMMDD(),
+          exportDate: (isOwnSessionUnit ? session.customDate : '') || getRealtimeDateYYYYMMDD(),
           includeZipPerPosition: false,
-          actorEmail: session.actorEmail,
-          actorTitle: session.actorTitle,
-          scaleMetrics: session.scaleMetrics,
-          ngachAllocations: session.ngachAllocations,
-          ngachOverrides: session.ngachOverrides,
-          customPositionNames: session.customPositionNames,
-          customCareerLevels: session.customCareerLevels,
-          proposedPositions: session.proposedPositions
+          actorEmail: op?.email || session.actorEmail,
+          actorTitle: op?.title || session.actorTitle,
+          scaleMetrics: isOwnSessionUnit ? session.scaleMetrics : undefined,
+          ngachAllocations: isOwnSessionUnit ? session.ngachAllocations : undefined,
+          ngachOverrides: isOwnSessionUnit ? session.ngachOverrides : {},
+          customPositionNames: isOwnSessionUnit ? session.customPositionNames : undefined,
+          customCareerLevels: isOwnSessionUnit ? session.customCareerLevels : undefined,
+          proposedPositions: isOwnSessionUnit ? session.proposedPositions : undefined
         });
-        fileToAudit = new File([split.unitBlob], split.unitFileName, {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-        if (!asSampleDemo) {
-          setSessionRootWorkbook(unitToAudit.code, split.unitBlob, split.unitFileName);
-        }
+        fileToAudit = new File([split.unitBlob], split.unitFileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        if (!asSampleDemo) setSessionRootWorkbook(unitToAudit.code, split.unitBlob, split.unitFileName);
       }
 
       const res = await auditUnitWorkbooks([fileToAudit], asSampleDemo);
@@ -111,15 +111,17 @@ export function UnitWorkbookCheckPanel({
       setReport(res);
       onAuditCompleted?.(res);
 
-      if (!asSampleDemo) {
-        saveActiveUnitSession({ unitCode: unitToAudit.code, lastAuditFixCount: res.countsBySeverity.fix });
+      if (!asSampleDemo && mode !== 'tcns') {
+        if (isOwnSessionUnit) saveActiveUnitSession({ unitCode: unitToAudit.code, lastAuditFixCount: res.countsBySeverity.fix });
         void syncAuditResultToSupabase(res, unitToAudit.code);
+        recordActivity(unitToAudit.code, unitToAudit.nameVi, 'RA_SOAT', `Kiểm tra chéo bộ biểu [${unitToAudit.code}] (${res.countsBySeverity.fix} mục phải sửa)`);
+      } else if (asSampleDemo) {
+        recordActivity(unitToAudit.code, unitToAudit.nameVi, 'RA_SOAT', `Xem ví dụ kiểm tra [X99] (${res.countsBySeverity.fix} mục phải sửa)`);
       }
-      recordActivity(unitToAudit.code, unitToAudit.nameVi, 'RA_SOAT', `Kiểm tra chéo bộ biểu [${asSampleDemo ? 'X99' : unitToAudit.code}] (${res.countsBySeverity.fix} mục phải sửa)`);
     } finally {
       setAuditing(false);
     }
-  }, [onAuditCompleted]);
+  }, [mode, onAuditCompleted]);
 
   useEffect(() => {
     const key = `${activeUnit.code}::${canonicalWbId}`;
@@ -151,7 +153,10 @@ export function UnitWorkbookCheckPanel({
       setReport(res);
       onAuditCompleted?.(res);
       if (!allowDemoTcns || activeUnit.code === 'TCNS') {
-        saveActiveUnitSession({ unitCode: activeUnit.code, lastAuditFixCount: res.countsBySeverity.fix });
+        const curOp = getCurrentOperatorSession();
+        if (!curOp || curOp.unitCode?.toUpperCase() === activeUnit.code.toUpperCase()) {
+          saveActiveUnitSession({ unitCode: activeUnit.code, lastAuditFixCount: res.countsBySeverity.fix });
+        }
         void syncAuditResultToSupabase(res, activeUnit.code);
         recordActivity(activeUnit.code, activeUnit.nameVi, 'RA_SOAT', `Kiểm tra ${res.filesCount} tệp Excel cho [${activeUnit.code}] (${res.countsBySeverity.fix} mục phải sửa)`);
       }
@@ -176,9 +181,13 @@ export function UnitWorkbookCheckPanel({
     if (!report || report.countsBySeverity.fix > 0) return;
     setSubmitState({ status: 'submitting' });
     try {
+      const op = getCurrentOperatorSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+      if (op?.email) headers['x-actor-email'] = op.email;
       const res = await fetch(`/api/workbooks/${encodeURIComponent(canonicalWbId)}/history`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'submit_to_tcns',
           unitCode: activeUnit.code,

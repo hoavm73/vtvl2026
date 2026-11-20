@@ -11,10 +11,19 @@ import {
   isVerifiedAdminAccount
 } from '@/services/storage/server-admin-auth';
 import {
-  checkAuthRateLimit,
-  recordAuthFailure,
-  clearAuthFailures
+  MAX_AUTH_PAYLOAD_BYTES,
+  checkDirectRateKey,
+  checkPayloadSizeLimit,
+  clearDirectRateKey,
+  extractClientIp,
+  readBoundedJsonBody,
+  recordDirectFailure
 } from '@/services/auth/rate-limiter';
+
+const ADMIN_GLOBAL_KEY = 'admin_auth_global_shared';
+const ADMIN_GLOBAL_MAX = 40;
+const ADMIN_ANON_WINDOW_MS = 10 * 60 * 1000;
+const ADMIN_ACTOR_WINDOW_MS = 15 * 60 * 1000;
 
 function extractBearer(req: NextRequest): string | null {
   const authHeader = req.headers.get('authorization') || '';
@@ -79,28 +88,46 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const rateCheck = checkAuthRateLimit(req, 'admin_auth', 'admin');
-    if (!rateCheck.allowed) {
+    const quickSize = checkPayloadSizeLimit(req, MAX_AUTH_PAYLOAD_BYTES);
+    if (!quickSize.allowed) {
+      return NextResponse.json({ error: 'Dữ liệu yêu cầu vượt quá giới hạn cho phép.', code: 'PAYLOAD_TOO_LARGE' }, { status: 413 });
+    }
+
+    const caller = await getCallerSession(req);
+    const hasVerifiedActor = Boolean(caller.isAuthenticated && caller.email);
+    const primaryKey = hasVerifiedActor
+      ? `admin_auth_actor:${caller.email.toLowerCase()}`
+      : `admin_auth_anon:${extractClientIp(req)}`;
+    const primaryWindowMs = hasVerifiedActor ? ADMIN_ACTOR_WINDOW_MS : ADMIN_ANON_WINDOW_MS;
+
+    const primaryCheck = checkDirectRateKey(primaryKey, 10, primaryWindowMs);
+    const globalCheck = checkDirectRateKey(ADMIN_GLOBAL_KEY, ADMIN_GLOBAL_MAX, ADMIN_ANON_WINDOW_MS);
+    if (!primaryCheck.allowed || !globalCheck.allowed) {
+      const retryAfterSeconds = Math.max(primaryCheck.retryAfterSeconds, globalCheck.retryAfterSeconds);
       return NextResponse.json(
         {
-          error: `Quá nhiều lần nhập sai mật khẩu Quản trị. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          error: `Quá nhiều lần nhập sai mật khẩu Quản trị. Vui lòng thử lại sau ${retryAfterSeconds} giây.`,
           code: 'RATE_LIMITED',
-          retryAfterSeconds: rateCheck.retryAfterSeconds
+          retryAfterSeconds
         },
-        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
       );
     }
 
-    const body = await req.json();
-    const { password } = body;
+    const parsed = await readBoundedJsonBody<{ password?: unknown }>(req, MAX_AUTH_PAYLOAD_BYTES);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
+    }
+    const password = typeof parsed.data.password === 'string' ? parsed.data.password : '';
     if (!password || !verifyAdminPassword(password)) {
-      recordAuthFailure(req, 'admin_auth', 'admin');
+      recordDirectFailure(primaryKey, 10, primaryWindowMs);
+      recordDirectFailure(ADMIN_GLOBAL_KEY, ADMIN_GLOBAL_MAX, ADMIN_ANON_WINDOW_MS);
       return NextResponse.json(
         { error: 'Mật khẩu quản trị viên không chính xác. Vui lòng liên hệ Phòng TCNS để được cấp quyền.' },
         { status: 401 }
       );
     }
-    clearAuthFailures(req, 'admin_auth', 'admin');
+    clearDirectRateKey(primaryKey);
     const token = generateAdminToken();
     await setServerAdminCookie(token);
     const res = NextResponse.json({

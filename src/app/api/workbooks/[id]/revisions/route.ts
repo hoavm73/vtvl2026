@@ -9,6 +9,9 @@ import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/se
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { isDatabaseConfigured, prisma, toIsoString } from '@/services/storage/prisma';
 import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
+import { MAX_WORKBOOK_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -68,29 +71,43 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Chỉ Lãnh đạo đơn vị hoặc Quản trị viên mới có quyền khôi phục phiên bản.', code: 'FORBIDDEN' }, { status: 403 });
   }
   try {
-    const { id } = await context.params;
-    await syncServerWorkbooksFromSupabase(true);
-    const workbook = getWorkbookById(id);
-    if (workbook && !caller.isAdmin && workbook.unitId.toUpperCase() !== caller.unitCode.toUpperCase()) {
-      return NextResponse.json({ error: 'Không thể khôi phục phiên bản đơn vị khác.', code: 'FORBIDDEN' }, { status: 403 });
+    const parsed = await readBoundedJsonBody<{ targetRevision?: unknown; reason?: unknown }>(req, MAX_WORKBOOK_PAYLOAD_BYTES);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
     }
-    const { targetRevision, reason } = await req.json();
+    const { id } = await context.params;
+    const unitMatch = id.match(/^wb_([A-Za-z0-9]+)/);
+    const prelimUnit = (unitMatch ? unitMatch[1] : caller.unitCode).toUpperCase();
+    const rateErr = enforceApiRateLimit('workbook_write', prelimUnit);
+    if (rateErr) return rateErr;
+
+    const { targetRevision, reason } = parsed.data;
     if (typeof targetRevision !== 'number') {
       return NextResponse.json({ error: 'Thiếu số phiên bản cần khôi phục (targetRevision).' }, { status: 400 });
     }
-    const updated = await rollbackServerWorkbookRevisionAndPersist(id, targetRevision, caller.email, typeof reason === 'string' ? reason : undefined);
-    if (!updated.success || !updated.serverWorkbook) {
-      return NextResponse.json({ error: 'Không thể khôi phục phiên bản đã chọn.' }, { status: 400 });
-    }
-    const audit = appendAuditLog({
-      workbookId: id, unitCode: updated.serverWorkbook.unitId, unitName: updated.serverWorkbook.unitNameVi,
-      action: 'KHÔI_PHỤC_PHIÊN_BẢN', details: `Khôi phục phiên bản #${targetRevision}${reason ? `: ${reason}` : ''}`,
-      actorEmail: caller.email, actorRole: caller.role
+
+    return await withHeavyMutationBudget({ kind: 'workbook_save', unitCode: prelimUnit, actorEmail: caller.email }, async () => {
+      await syncServerWorkbooksFromSupabase(true);
+      const workbook = getWorkbookById(id);
+      if (workbook && !caller.isAdmin && workbook.unitId.toUpperCase() !== caller.unitCode.toUpperCase()) {
+        return NextResponse.json({ error: 'Không thể khôi phục phiên bản đơn vị khác.', code: 'FORBIDDEN' }, { status: 403 });
+      }
+      const updated = await rollbackServerWorkbookRevisionAndPersist(id, targetRevision, caller.email, typeof reason === 'string' ? reason : undefined);
+      if (!updated.success || !updated.serverWorkbook) {
+        return NextResponse.json({ error: 'Không thể khôi phục phiên bản đã chọn.' }, { status: 400 });
+      }
+      const audit = appendAuditLog({
+        workbookId: id, unitCode: updated.serverWorkbook.unitId, unitName: updated.serverWorkbook.unitNameVi,
+        action: 'KHÔI_PHỤC_PHIÊN_BẢN', details: `Khôi phục phiên bản #${targetRevision}${reason ? `: ${reason}` : ''}`,
+        actorEmail: caller.email, actorRole: caller.role
+      });
+      await persistAuditLogToSupabase(audit);
+      invalidateUnitMutationCache(updated.serverWorkbook.unitId);
+      return NextResponse.json({ success: true, currentRevision: updated.currentRevision, workbook: updated.serverWorkbook });
     });
-    await persistAuditLogToSupabase(audit);
-    invalidateUnitMutationCache(updated.serverWorkbook.unitId);
-    return NextResponse.json({ success: true, currentRevision: updated.currentRevision, workbook: updated.serverWorkbook });
   } catch (error) {
+    const busy = toHeavyBusyResponse(error);
+    if (busy) return busy;
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Lỗi hệ thống' }, { status: 500 });
   }
 }

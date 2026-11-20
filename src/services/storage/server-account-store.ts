@@ -35,6 +35,14 @@ const DELETED_ACCOUNTS_FILE = path.join(DATA_DIR, 'deleted_accounts.json');
 let memoryAccounts: Map<string, UserAccountRecord> | null = null;
 let deletedAccountEmails: Set<string> | null = null;
 let lastSupabaseSyncAt = 0;
+let inFlightAccountSync: Promise<void> | null = null;
+
+export function resetAccountMemoryStore(): void {
+  memoryAccounts = null;
+  deletedAccountEmails = null;
+  lastSupabaseSyncAt = 0;
+  inFlightAccountSync = null;
+}
 
 function isValidRole(role: unknown): role is UserRole {
   return typeof role === 'string' && VALID_ROLES.includes(role as UserRole);
@@ -127,42 +135,53 @@ function persistLocalStore(): void {
   writeJsonFileAtomic(ACCOUNTS_FILE, Array.from(memoryAccounts.values()), true);
 }
 
-export async function syncAccountsFromSupabase(force = false): Promise<void> {
+export function syncAccountsFromSupabase(force = false): Promise<void> {
   const store = loadStore();
-  const now = Date.now();
-  if (!force && now - lastSupabaseSyncAt < 2000) return;
-  lastSupabaseSyncAt = now;
-  try {
-    await syncServerWorkbooksFromSupabase();
-    if (seedFromWorkbooks(store)) persistLocalStore();
-  } catch { /* ignore */ }
+  if (!force && lastSupabaseSyncAt > 0 && Date.now() - lastSupabaseSyncAt < 2000) return Promise.resolve();
+  if (inFlightAccountSync && !force) return inFlightAccountSync;
 
-  const rows = await fetchAccountsFromSupabase();
-  if (rows === null) return; // Dev chưa config Supabase: bảo lưu local
+  const run = (async () => {
+    try {
+      if (!process.env.DATABASE_URL) await syncServerWorkbooksFromSupabase();
+      if (seedFromWorkbooks(store)) persistLocalStore();
+    } catch { /* ignore */ }
 
-  const deleted = loadDeletedAccountEmails();
-  const remoteEmails = new Set<string>();
-
-  for (const r of rows) {
-    const email = normalizeEmail(r.email);
-    if (!email || deleted.has(email)) continue;
-    remoteEmails.add(email);
-    store.set(email, normalizeRecord({
-      email, displayName: r.display_name, unitCode: r.unit_code, role: r.role as UserRole,
-      title: r.title, authProvider: r.auth_provider as 'google' | 'email', avatarUrl: r.avatar_url || undefined,
-      status: r.status as 'active' | 'suspended', hasSelectedUnit: r.has_selected_unit,
-      passwordHash: r.password_hash || undefined, createdAt: r.created_at, lastActiveAt: r.last_active_at
-    }));
-  }
-
-  // Authoritative snapshot: loại bỏ account local không còn trên remote
-  for (const email of Array.from(store.keys())) {
-    if (!remoteEmails.has(email) && email !== 'tcns@hcmute.edu.vn') {
-      store.delete(email);
+    const rows = await fetchAccountsFromSupabase();
+    if (rows === null) {
+      lastSupabaseSyncAt = Date.now();
+      return; // Dev chưa config Supabase: bảo lưu local
     }
-  }
-  seedFromWorkbooks(store);
-  persistLocalStore();
+
+    const deleted = loadDeletedAccountEmails();
+    const remoteEmails = new Set<string>();
+
+    for (const r of rows) {
+      const email = normalizeEmail(r.email);
+      if (!email || deleted.has(email)) continue;
+      remoteEmails.add(email);
+      store.set(email, normalizeRecord({
+        email, displayName: r.display_name, unitCode: r.unit_code, role: r.role as UserRole,
+        title: r.title, authProvider: r.auth_provider as 'google' | 'email', avatarUrl: r.avatar_url || undefined,
+        status: r.status as 'active' | 'suspended', hasSelectedUnit: r.has_selected_unit,
+        passwordHash: r.password_hash || undefined, createdAt: r.created_at, lastActiveAt: r.last_active_at
+      }));
+    }
+
+    // Authoritative snapshot: loại bỏ account local không còn trên remote
+    for (const email of Array.from(store.keys())) {
+      if (!remoteEmails.has(email) && email !== 'tcns@hcmute.edu.vn') {
+        store.delete(email);
+      }
+    }
+    seedFromWorkbooks(store);
+    persistLocalStore();
+    lastSupabaseSyncAt = Date.now();
+  })().finally(() => {
+    if (inFlightAccountSync === run) inFlightAccountSync = null;
+  });
+
+  inFlightAccountSync = run;
+  return run;
 }
 
 export function getAllUserAccounts(): UserAccountRecord[] {

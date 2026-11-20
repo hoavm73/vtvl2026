@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus, toDisplayStatus, WorkSurveyStatusHistory } from '@/types/staff-ticket';
 import { normalizeEmail } from './server-workbook-store';
-import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { getDbTestHook, getPgPool, isDatabaseConfigured, prisma, toIsoString, withPgTransaction } from './prisma';
 import { pgCallSurveyRpc, pgUpsertRows } from './postgres-rest-compat';
 
 const getDbUrl = () => (process.env.DATABASE_URL || '').trim();
@@ -103,6 +103,7 @@ export function mapDbRowToTicket(row: DbTicketRow): StaffWorkTicket {
 
 export async function fetchTicketsFromSupabase(unitCode?: string): Promise<StaffWorkTicket[] | null> {
   if (!assertTicketDbConfigured('fetchTickets')) return null;
+  if (getDbTestHook() && !getDbUrl()) return null;
   try {
     const rows = await prisma.staff_work_tickets.findMany({
       where: unitCode ? { unit_code: unitCode } : undefined,
@@ -114,7 +115,7 @@ export async function fetchTicketsFromSupabase(unitCode?: string): Promise<Staff
   }
 }
 
-export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<boolean> {
+export async function persistTicketToSupabase(ticket: StaffWorkTicket, isNewInsert = false): Promise<boolean> {
   if (!assertTicketDbConfigured('persistTicket')) return false;
   const normEmail = normalizeEmail(ticket.ownerEmail);
   if (!normEmail || !normEmail.includes('@')) {
@@ -168,11 +169,17 @@ export async function persistTicketToSupabase(ticket: StaffWorkTicket): Promise<
   };
 
   try {
-    await prisma.staff_work_tickets.upsert({
-      where: { id: ticket.id },
-      update: data,
-      create: data
-    });
+    if (isNewInsert) {
+      try {
+        await prisma.staff_work_tickets.create({ data });
+      } catch (createErr) {
+        if ((createErr as { code?: string })?.code === 'P2002') {
+          await prisma.staff_work_tickets.upsert({ where: { id: ticket.id }, update: data, create: data });
+        } else throw createErr;
+      }
+    } else {
+      await prisma.staff_work_tickets.upsert({ where: { id: ticket.id }, update: data, create: data });
+    }
   } catch (e) {
     throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
   }
@@ -253,24 +260,38 @@ export async function callAtomicSurveyRpc(
 
 export async function batchMarkTicketsMergedInDb(tickets: StaffWorkTicket[]): Promise<void> {
   if (!assertTicketDbConfigured('batchMergeTickets') || tickets.length === 0) return;
+  if (getDbTestHook() && !(process.env.DATABASE_URL || '').trim()) return;
+  if (!getPgPool()) return;
+
+  const ids = tickets.map((t) => t.id);
+  const mergedBys = tickets.map((t) => (t.mergedBy ? normalizeEmail(t.mergedBy) : null));
+  const mergedAts = tickets.map((t) => (t.mergedAt ? new Date(t.mergedAt) : new Date()));
+  const a2RowIds = tickets.map((t) => t.a2RowId ?? null);
+  const b1RowIds = tickets.map((t) => t.b1RowId ?? null);
+  const b2RowIds = tickets.map((t) => t.b2RowId ?? null);
+  const vers = tickets.map((t) => Number(t.currentVersionNo) || 1);
+  const updatedAts = tickets.map((t) => (t.updatedAt ? new Date(t.updatedAt) : new Date()));
+
   try {
-    await prisma.$transaction(
-      tickets.map((t) =>
-        prisma.staff_work_tickets.updateMany({
-          where: { id: t.id },
-          data: {
-            is_merged_to_b1_b2: true,
-            merged_by: t.mergedBy ? normalizeEmail(t.mergedBy) : null,
-            merged_at: t.mergedAt ? new Date(t.mergedAt) : new Date(),
-            a2_row_id: t.a2RowId ?? null,
-            b1_row_id: t.b1RowId ?? null,
-            b2_row_id: t.b2RowId ?? null,
-            current_version_no: Number(t.currentVersionNo) || 1,
-            updated_at: t.updatedAt ? new Date(t.updatedAt) : new Date()
-          }
-        })
-      )
-    );
+    await withPgTransaction(async (client) => {
+      await client.query(
+        `UPDATE public.staff_work_tickets AS s
+         SET is_merged_to_b1_b2 = true,
+             merged_by = u.merged_by,
+             merged_at = u.merged_at,
+             a2_row_id = u.a2_row_id,
+             b1_row_id = u.b1_row_id,
+             b2_row_id = u.b2_row_id,
+             current_version_no = u.current_version_no,
+             updated_at = u.updated_at
+         FROM unnest(
+           $1::varchar[], $2::varchar[], $3::timestamptz[], $4::varchar[],
+           $5::varchar[], $6::varchar[], $7::int4[], $8::timestamptz[]
+         ) AS u(id, merged_by, merged_at, a2_row_id, b1_row_id, b2_row_id, current_version_no, updated_at)
+         WHERE s.id = u.id`,
+        [ids, mergedBys, mergedAts, a2RowIds, b1RowIds, b2RowIds, vers, updatedAts]
+      );
+    });
   } catch (e) {
     throw createSchemaOrDbError('staff_work_tickets', 500, e instanceof Error ? e.message : String(e));
   }

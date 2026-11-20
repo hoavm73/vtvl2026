@@ -1,16 +1,16 @@
 import fs from 'fs';
 import path from 'path';
-import { CoordinatedVtvlEntry, ReplacedWorkCodeRecord, WorkSurveySnapshot, WorkSurveyVersion } from '@/types/staff-ticket';
+import { CoordinatedVtvlEntry, ReplacedWorkCodeRecord, StaffWorkTicket, toCanonicalStatus, WorkSurveySnapshot, WorkSurveyVersion } from '@/types/staff-ticket';
 import { registerCacheInvalidator } from './server-file-lock';
-import { isIsolatedLocalMode } from './server-ticket-db';
-import { resetVersionMemoryStore } from './server-ticket-version-store';
+import { DbTicketRow, isIsolatedLocalMode, mapDbRowToTicket } from './server-ticket-db';
+import { getGlobalTicketMutationSeq, loadTickets, syncTicketsFromSupabase } from './server-ticket-store';
+import { getTicketVersions, hasStoredTicketVersions, mergeSurveyVersionsIntoMemory } from './server-ticket-version-store';
 import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
-import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
+import { getDbTestHook, isDatabaseConfigured, pgQuery, prisma, toIsoString } from './prisma';
 import { writeJsonFileAtomic } from './atomic-json-file';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const PROJECTION_FILE = path.join(DATA_DIR, 'work_survey_coordinated_vtvls.json');
-const VERSIONS_FILE = path.join(DATA_DIR, 'work_survey_versions.json');
 
 export interface SubmittedCoordinatedVtvlRow {
   id: string;
@@ -34,11 +34,17 @@ export interface CoordinationDiskState {
 
 let memoryState: CoordinationDiskState | null = null;
 let lastVersionSyncAt = 0;
+let inFlightVersionSync: Promise<void> | null = null;
+let lastCoordTicketSyncAt = 0;
+let inFlightCoordTicketSync: Promise<void> | null = null;
+let coordCandidatesCache: { seq: number; verSyncAt: number; coordSyncAt: number; tickets: StaffWorkTicket[] } | null = null;
 export function resetCoordinationMemoryStore(): void {
-  memoryState = null;
-  lastVersionSyncAt = 0;
+  memoryState = null; lastVersionSyncAt = 0; inFlightVersionSync = null;
+  lastCoordTicketSyncAt = 0; inFlightCoordTicketSync = null; coordCandidatesCache = null;
 }
-registerCacheInvalidator(resetCoordinationMemoryStore);
+registerCacheInvalidator((lockKey?: string) => {
+  if (!lockKey || !isDatabaseConfigured()) resetCoordinationMemoryStore();
+});
 
 export function loadCoordinationState(): CoordinationDiskState {
   if (memoryState) return memoryState;
@@ -63,7 +69,32 @@ export function loadCoordinationState(): CoordinationDiskState {
 
 export function persistCoordinationState(state: CoordinationDiskState): void {
   memoryState = state;
+  coordCandidatesCache = null;
   writeJsonFileAtomic(PROJECTION_FILE, state, true);
+}
+
+export function getCoordinatedCandidateTickets(): StaffWorkTicket[] {
+  const seq = getGlobalTicketMutationSeq();
+  if (!isIsolatedLocalMode() && coordCandidatesCache && coordCandidatesCache.seq === seq && coordCandidatesCache.verSyncAt === lastVersionSyncAt && coordCandidatesCache.coordSyncAt === lastCoordTicketSyncAt) {
+    return coordCandidatesCache.tickets;
+  }
+  const candidates: StaffWorkTicket[] = [];
+  for (const ticket of loadTickets().values()) {
+    if (ticket.isTestData || ticket.isArchived || toCanonicalStatus(ticket.status) === 'draft') continue;
+    const vers = hasStoredTicketVersions(ticket.id) ? getTicketVersions(ticket.id) : null;
+    const latestSnap = vers && vers.length > 0 ? vers[vers.length - 1].snapshot : null;
+    const hasCoord = Boolean(
+      ticket.maVtvlPhoiHop?.trim() ||
+      ticket.coordinatedVtvls?.length ||
+      latestSnap?.maVtvlPhoiHop?.trim() ||
+      latestSnap?.coordinatedVtvls?.length
+    );
+    if (hasCoord) candidates.push(ticket);
+  }
+  if (!isIsolatedLocalMode()) {
+    coordCandidatesCache = { seq, verSyncAt: lastVersionSyncAt, coordSyncAt: lastCoordTicketSyncAt, tickets: candidates };
+  }
+  return candidates;
 }
 
 export function recordReplacedWorkCode(entry: Omit<ReplacedWorkCodeRecord, 'id'>): ReplacedWorkCodeRecord {
@@ -134,53 +165,101 @@ export function removeCoordinationDataForSurvey(surveyId: string): void {
   persistCoordinationState(state);
 }
 
-/** Đồng bộ toàn bộ snapshot phiên bản phiếu từ PostgreSQL qua Prisma. */
+/** Đồng bộ snapshot phiên bản phiếu từ PostgreSQL (ưu tiên phạm vi phiếu có phối hợp để tránh full-scan). */
 export async function syncVersionsCacheFromSupabase(force = false): Promise<void> {
   if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
-  const now = Date.now();
-  if (!force && now - lastVersionSyncAt < 3000) return;
-  lastVersionSyncAt = now;
-  try {
-    const rows = await prisma.work_survey_versions.findMany({
-      orderBy: { version_no: 'asc' }
-    });
-    if (!rows.length) return;
+  if (!force && lastVersionSyncAt > 0 && Date.now() - lastVersionSyncAt < 3000) return;
+  if (inFlightVersionSync && !force) return inFlightVersionSync;
 
-    let currentMap: Record<string, WorkSurveyVersion[]> = {};
+  const run = (async () => {
     try {
-      if (fs.existsSync(VERSIONS_FILE)) {
-        const parsed = JSON.parse(fs.readFileSync(VERSIONS_FILE, 'utf8'));
-        if (parsed && typeof parsed === 'object') currentMap = parsed;
+      const rows = !force && !getDbTestHook()
+        ? (
+            await pgQuery<{
+              id: string; survey_id: string; version_no: number; snapshot: unknown;
+              submitted_by: string; submitted_at: Date | string | null; change_summary: string | null; is_migration_baseline: boolean;
+            }>(
+              `SELECT id, survey_id, version_no, snapshot, submitted_by, submitted_at, change_summary, is_migration_baseline
+               FROM public.work_survey_versions
+               WHERE survey_id IN (
+                 SELECT survey_id FROM public.work_survey_coordinated_vtvls
+                 UNION
+                 SELECT id FROM public.staff_work_tickets
+                 WHERE COALESCE(ma_vtvl_phoi_hop, '') <> '' OR jsonb_array_length(COALESCE(coordinated_vtvls, '[]'::jsonb)) > 0
+               )
+               ORDER BY version_no ASC`
+            )
+          ).rows
+        : await prisma.work_survey_versions.findMany({ orderBy: { version_no: 'asc' } });
+
+      if (!rows.length) {
+        lastVersionSyncAt = Date.now();
+        return;
       }
+
+      const remoteGrouped: Record<string, WorkSurveyVersion[]> = {};
+      for (const r of rows) {
+        const surveyId = String(r.survey_id || '').trim();
+        if (!surveyId) continue;
+        if (!remoteGrouped[surveyId]) remoteGrouped[surveyId] = [];
+        remoteGrouped[surveyId].push({
+          id: String(r.id || `ver-${surveyId}-${r.version_no}`),
+          surveyId,
+          versionNo: Number(r.version_no) || 1,
+          snapshot: (r.snapshot as unknown as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
+          submittedBy: String(r.submitted_by || ''),
+          submittedAt: toIsoString(r.submitted_at) || null,
+          changeSummary: r.change_summary ? String(r.change_summary) : undefined,
+          isMigrationBaseline: Boolean(r.is_migration_baseline)
+        });
+      }
+      for (const list of Object.values(remoteGrouped)) {
+        list.sort((a, b) => a.versionNo - b.versionNo);
+      }
+
+      mergeSurveyVersionsIntoMemory(remoteGrouped);
+      lastVersionSyncAt = Date.now();
     } catch {
-      // ignore corrupted local cache
+      // ignore transient DB fallback
     }
+  })();
 
-    const remoteGrouped: Record<string, WorkSurveyVersion[]> = {};
-    for (const r of rows) {
-      const surveyId = String(r.survey_id || '').trim();
-      if (!surveyId) continue;
-      if (!remoteGrouped[surveyId]) remoteGrouped[surveyId] = [];
-      remoteGrouped[surveyId].push({
-        id: String(r.id || `ver-${surveyId}-${r.version_no}`),
-        surveyId,
-        versionNo: Number(r.version_no) || 1,
-        snapshot: (r.snapshot as unknown as WorkSurveySnapshot) || ({} as WorkSurveySnapshot),
-        submittedBy: String(r.submitted_by || ''),
-        submittedAt: toIsoString(r.submitted_at) || null,
-        changeSummary: r.change_summary ? String(r.change_summary) : undefined,
-        isMigrationBaseline: Boolean(r.is_migration_baseline)
-      });
-    }
-
-    const merged: Record<string, WorkSurveyVersion[]> = { ...currentMap };
-    for (const [surveyId, list] of Object.entries(remoteGrouped)) {
-      merged[surveyId] = list.sort((a, b) => a.versionNo - b.versionNo);
-    }
-
-    writeJsonFileAtomic(VERSIONS_FILE, merged, true);
-    resetVersionMemoryStore();
-  } catch {
-    // ignore transient DB fallback
+  inFlightVersionSync = run;
+  try {
+    await run;
+  } finally {
+    if (inFlightVersionSync === run) inFlightVersionSync = null;
   }
+}
+
+/** Đồng bộ có mục tiêu các phiếu có phối hợp (nguồn + đích) tránh tải toàn bộ 20.000+ phiếu. */
+export async function syncCoordinationTicketsFromSupabase(force = false): Promise<void> {
+  if (isIsolatedLocalMode() || !isDatabaseConfigured()) return;
+  if (getDbTestHook()) { await syncTicketsFromSupabase(undefined, force); return; }
+  if (!force && lastCoordTicketSyncAt > 0 && Date.now() - lastCoordTicketSyncAt < 3000) return;
+  if (inFlightCoordTicketSync && !force) return inFlightCoordTicketSync;
+
+  const run = (async () => {
+    try {
+      const res = await pgQuery<DbTicketRow>(
+        `SELECT * FROM public.staff_work_tickets
+         WHERE is_archived = false AND is_test_data = false AND (
+           COALESCE(ma_vtvl_phoi_hop, '') <> ''
+           OR jsonb_array_length(COALESCE(coordinated_vtvls, '[]'::jsonb)) > 0
+           OR (unit_code, ma_vtvl) IN (SELECT target_unit_code, target_vtvl_code FROM public.work_survey_coordinated_vtvls)
+         )
+         ORDER BY updated_at DESC`
+      );
+      const store = loadTickets();
+      for (const r of res.rows) {
+        const mapped = mapDbRowToTicket(r);
+        const existing = store.get(mapped.id);
+        store.set(mapped.id, { ...existing, ...mapped, statusHistory: existing?.statusHistory || mapped.statusHistory });
+      }
+      lastCoordTicketSyncAt = Date.now();
+    } catch { /* fallback safely */ }
+  })().finally(() => { if (inFlightCoordTicketSync === run) inFlightCoordTicketSync = null; });
+
+  inFlightCoordTicketSync = run;
+  await run;
 }

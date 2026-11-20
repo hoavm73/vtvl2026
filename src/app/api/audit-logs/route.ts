@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { appendAuditLog, getAuditLogs, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
+import { appendAuditLog, getAuditLogs, persistAuditLogToSupabase, syncAuditLogsFromSupabase } from '@/services/storage/server-audit-store';
 import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
@@ -79,8 +79,9 @@ export async function GET(req: Request) {
     const workbookId = url.searchParams.get('workbookId') || undefined;
     const limit = Number(url.searchParams.get('limit')) || 100;
 
+    await syncAuditLogsFromSupabase(Math.max(limit, 200)).catch(() => {});
     const logs = getAuditLogs({ unitCode, workbookId, limit });
-    return NextResponse.json({ success: true, logs, total: logs.length });
+    return NextResponse.json({ success: true, logs, total: logs.length }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi khi đọc nhật ký.';
     return NextResponse.json({ error: msg }, { status: 500 });

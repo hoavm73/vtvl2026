@@ -12,7 +12,7 @@ import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lo
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 import { pgUpsertRows } from './postgres-rest-compat';
-import { writeJsonFileAtomic } from './atomic-json-file';
+import { writeJsonFileAtomic, shouldPersistLocalJson } from './atomic-json-file';
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/vtvl_data' : path.join(process.cwd(), '.data');
 const VERSIONS_FILE = path.join(DATA_DIR, 'work_survey_versions.json');
@@ -21,7 +21,10 @@ const MERGE_LINKS_FILE = path.join(DATA_DIR, 'work_survey_merge_links.json');
 let memoryVersions: Record<string, WorkSurveyVersion[]> | null = null;
 let memoryMergeLinks: Record<string, WorkSurveyMergeLink[]> | null = null;
 export function resetVersionMemoryStore(): void { memoryVersions = null; memoryMergeLinks = null; }
-registerCacheInvalidator(resetVersionMemoryStore);
+registerCacheInvalidator((lockKey?: string) => {
+  if (!lockKey || !isDatabaseConfigured()) return resetVersionMemoryStore();
+  if (lockKey.startsWith('survey_') && memoryVersions) delete memoryVersions[lockKey.slice(7)];
+});
 
 const recentSubmissionDigest = new Map<string, { version: WorkSurveyVersion; timestamp: number }>();
 
@@ -41,7 +44,7 @@ function loadLocalVersions(): Record<string, WorkSurveyVersion[]> {
 }
 
 function persistLocalVersions(): void {
-  if (!memoryVersions) return;
+  if (!memoryVersions || !shouldPersistLocalJson()) return;
   writeJsonFileAtomic(VERSIONS_FILE, memoryVersions, true);
 }
 
@@ -61,7 +64,7 @@ function loadLocalMergeLinks(): Record<string, WorkSurveyMergeLink[]> {
 }
 
 function persistLocalMergeLinks(): void {
-  if (!memoryMergeLinks) return;
+  if (!memoryMergeLinks || !shouldPersistLocalJson()) return;
   writeJsonFileAtomic(MERGE_LINKS_FILE, memoryMergeLinks, true);
 }
 
@@ -76,6 +79,19 @@ export function getAllSurveyVersionsSnapshot(): Record<string, WorkSurveyVersion
 export function commitAllSurveyVersionsSnapshot(nextMap: Record<string, WorkSurveyVersion[]>): void {
   memoryVersions = nextMap;
   persistLocalVersions();
+}
+
+export function mergeSurveyVersionsIntoMemory(grouped: Record<string, WorkSurveyVersion[]>): void {
+  const store = loadLocalVersions();
+  for (const [surveyId, versions] of Object.entries(grouped)) {
+    store[surveyId] = versions;
+  }
+  persistLocalVersions();
+}
+
+export function hasStoredTicketVersions(surveyId: string): boolean {
+  const list = loadLocalVersions()[surveyId];
+  return Boolean(list && list.length > 0);
 }
 
 export function getTicketVersions(surveyId: string): WorkSurveyVersion[] {
@@ -156,8 +172,15 @@ export async function createImmutableSurveyVersion(input: CreateVersionInput): P
   }
 
   const store = loadLocalVersions();
+  if (!isIsolatedLocalMode() && isDatabaseConfigured() && !store[input.surveyId] && Number(input.ticket.currentVersionNo || 0) > 0) {
+    await fetchTicketVersionsFromSupabase(input.surveyId).catch(() => {});
+  }
   const existing = store[input.surveyId] ? [...store[input.surveyId]] : [];
-  const nextVersionNo = existing.reduce((max, v) => Math.max(max, v.versionNo), 0) + 1;
+  const nextVersionNo =
+    Math.max(
+      Number(input.ticket.currentVersionNo) || 0,
+      existing.reduce((max, v) => Math.max(max, v.versionNo), 0)
+    ) + 1;
 
   if (existing.some((v) => v.versionNo === nextVersionNo)) {
     throw new Error(`[DUPLICATE_VERSION] Phiên bản v${nextVersionNo} của phiếu ${input.surveyId} đã tồn tại.`);

@@ -142,6 +142,168 @@ test('TC10: Thanh gạch chân cam #FD8C73 dùng border-b-[1.8px] đồng nhất
   }
 });
 
+test('TC11: Đồng nhất computeUnitProgressStage giữa unit-monitor-builder và history API', () => {
+  const builder = readSrc('src/services/admin/unit-monitor-builder.ts');
+  const histRoute = readSrc('src/app/api/workbooks/[id]/history/route.ts');
+  assert.ok(builder.includes('computeUnitProgressStage('), 'unit-monitor-builder phải dùng computeUnitProgressStage');
+  assert.ok(histRoute.includes('computeUnitProgressStage('), 'history/route.ts phải dùng computeUnitProgressStage');
+
+  const tmpRunner = path.join(root, '.data', '_tmp_tc11_progress.ts');
+  fs.mkdirSync(path.dirname(tmpRunner), { recursive: true });
+  fs.writeFileSync(
+    tmpRunner,
+    `
+import assert from 'node:assert';
+import { computeUnitProgressStage } from '../src/services/workbooks/workbook-history-service';
+
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 1, populatedSheetsCount: 6, approvedCount: 1, submittedCount: 0, changesRequestedCount: 0, draftCount: 0 }), { progressPercent: 100, stageLabel: 'Đã gộp B1/B2 & hoàn thiện biểu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 3, approvedCount: 1, submittedCount: 0, changesRequestedCount: 0, draftCount: 0 }), { progressPercent: 80, stageLabel: 'Đã duyệt phiếu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 3, approvedCount: 0, submittedCount: 1, changesRequestedCount: 0, draftCount: 0 }), { progressPercent: 60, stageLabel: 'Đang chờ duyệt phiếu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 3, approvedCount: 0, submittedCount: 0, changesRequestedCount: 1, draftCount: 0 }), { progressPercent: 60, stageLabel: 'Đang chờ bổ sung phiếu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 3, approvedCount: 0, submittedCount: 0, changesRequestedCount: 0, draftCount: 1 }), { progressPercent: 35, stageLabel: 'Đang lưu nháp phiếu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 1, approvedCount: 0, submittedCount: 0, changesRequestedCount: 0, draftCount: 0 }), { progressPercent: 20, stageLabel: 'Đã khởi tạo biểu mẫu' });
+assert.deepStrictEqual(computeUnitProgressStage({ mergedCount: 0, populatedSheetsCount: 0, approvedCount: 0, submittedCount: 0, changesRequestedCount: 0, draftCount: 0 }), { progressPercent: 0, stageLabel: 'Chưa kê khai' });
+`,
+    'utf8'
+  );
+  try {
+    execSync(`npx tsx "${tmpRunner}"`, { stdio: 'inherit' });
+  } finally {
+    if (fs.existsSync(tmpRunner)) fs.unlinkSync(tmpRunner);
+  }
+});
+
+test('TC12: getAuditLogs lọc actions thẩm định trước khi cắt limit và các API đều đồng bộ audit_logs từ DB', () => {
+  for (const rel of [
+    'src/app/api/audit-logs/route.ts',
+    'src/app/api/stats/overview/route.ts',
+    'src/app/api/admin/unit-monitor/route.ts',
+    'src/app/api/workbooks/[id]/history/route.ts'
+  ]) {
+    const code = readSrc(rel);
+    assert.ok(code.includes('syncAuditLogsFromSupabase('), `${rel} phải gọi syncAuditLogsFromSupabase`);
+  }
+  assert.ok(readSrc('src/app/api/audit-logs/route.ts').includes('no-store'), '/api/audit-logs phải trả Cache-Control: no-store');
+
+  const auditFile = path.join(root, '.data', 'audit-logs.json');
+  const backup = fs.existsSync(auditFile) ? fs.readFileSync(auditFile, 'utf8') : null;
+  const tmpRunner = path.join(root, '.data', '_tmp_tc12_audit.ts');
+  fs.mkdirSync(path.dirname(tmpRunner), { recursive: true });
+  fs.writeFileSync(
+    tmpRunner,
+    `
+import assert from 'node:assert';
+import { appendAuditLog, getAuditLogs } from '../src/services/storage/server-audit-store';
+import { REVIEW_ACTION_SET, deriveReviewMetaFromWorkbook } from '../src/services/workbooks/workbook-history-service';
+
+appendAuditLog({ unitCode: 'QA_TC12', unitName: 'QA Test', action: 'THAM_DINH_YEU_CAU_BO_SUNG', details: 'Cần bổ sung', actorEmail: 'tcns@hcmute.edu.vn', actorRole: 'admin' });
+for (let i = 0; i < 120; i++) {
+  appendAuditLog({ unitCode: 'QA_TC12', unitName: 'QA Test', action: 'SỬA_BIỂU', details: 'Sửa dòng ' + i, actorEmail: 'leader@hcmute.edu.vn', actorRole: 'unit_leader' });
+}
+const reviewOnly = getAuditLogs({ unitCode: 'qa_tc12', actions: REVIEW_ACTION_SET, limit: 10 });
+assert.ok(reviewOnly.some((l) => l.action === 'THAM_DINH_YEU_CAU_BO_SUNG'), 'Log thẩm định không được bị trôi mất bởi 120 log SỬA_BIỂU');
+const meta = deriveReviewMetaFromWorkbook({ id: 'wb_QA_TC12_2026', unitId: 'QA_TC12', status: 'draft', currentRevision: 1, updatedAt: '', data: {} as any }, reviewOnly);
+assert.strictEqual(meta.status, 'can_bo_sung', 'Trạng thái thẩm định suy ra phải giữ đúng can_bo_sung');
+`,
+    'utf8'
+  );
+  try {
+    execSync(`npx tsx "${tmpRunner}"`, { stdio: 'inherit' });
+  } finally {
+    if (fs.existsSync(tmpRunner)) fs.unlinkSync(tmpRunner);
+    if (backup !== null) fs.writeFileSync(auditFile, backup, 'utf8');
+    else if (fs.existsSync(auditFile)) fs.unlinkSync(auditFile);
+  }
+});
+
+test('TC13: Khớp nhóm lọc STEP_SUBMITTED và STEP_APPROVED giữa SchoolReviewProgressBar và TcnsReviewListPanel', () => {
+  const bar = readSrc('src/components/workbooks/SchoolReviewProgressBar.tsx');
+  const panel = readSrc('src/components/admin/TcnsReviewListPanel.tsx');
+  assert.ok(bar.includes("'STEP_SUBMITTED'") && bar.includes("'STEP_APPROVED'"), 'SchoolReviewProgressBar phải phát mã nhóm STEP_SUBMITTED và STEP_APPROVED');
+  assert.ok(panel.includes("statusFilter === 'STEP_SUBMITTED'") && panel.includes("da_gui_lai"), 'TcnsReviewListPanel phải lọc cả cho_tham_dinh + da_gui_lai cho STEP_SUBMITTED');
+  assert.ok(panel.includes("statusFilter === 'STEP_APPROVED'") && panel.includes("da_khoa"), 'TcnsReviewListPanel phải lọc cả dat_yeu_cau + da_khoa cho STEP_APPROVED');
+  assert.ok(panel.includes('activeFilter={statusFilter}'), 'TcnsReviewListPanel phải truyền activeFilter={statusFilter}');
+});
+
+test('TC14: UnitWorkbookCheckPanel cách ly isOwnSessionUnit/Auth header và UnitOrgTreeModal nạp dữ liệu thực', () => {
+  const checkPanel = readSrc('src/components/ra-soat/UnitWorkbookCheckPanel.tsx');
+  const orgModal = readSrc('src/components/admin/UnitOrgTreeModal.tsx');
+  assert.ok(checkPanel.includes('isOwnSessionUnit'), 'UnitWorkbookCheckPanel phải kiểm tra isOwnSessionUnit để tránh nhiễm chéo phiên đơn vị');
+  assert.ok(checkPanel.includes("mode !== 'tcns'"), 'UnitWorkbookCheckPanel ở mode tcns không tự ghi đè dữ liệu khi vừa mở tab');
+  assert.ok(checkPanel.includes('headers.Authorization = `Bearer ${op.accessToken}`'), 'handleSubmitToTcns phải đính kèm Authorization Bearer');
+  assert.ok(orgModal.includes('/api/workbooks/${encodeURIComponent(getCanonicalWorkbookId(upper))}'), 'UnitOrgTreeModal phải nạp dữ liệu workbook thực từ API khi mở từ /admin hoặc đổi đơn vị');
+});
+
+test('TC15: Tab Chờ duyệt & Yêu cầu bổ sung hỗ trợ 3 bộ lọc liên thông Nhiệm vụ -> Người khai -> Trạng thái duyệt', () => {
+  const filterBar = readSrc('src/components/staff-portal/UnitTicketsFilterBar.tsx');
+  const reviewList = readSrc('src/components/staff-portal/UnitTicketsReviewList.tsx');
+  assert.ok(filterBar.includes('pending-mission-cascade-filter'), 'Phải có dropdown Cấp 1 Nhiệm vụ');
+  assert.ok(filterBar.includes('pending-owner-cascade-filter'), 'Phải có dropdown Cấp 2 Người khai');
+  assert.ok(filterBar.includes('pending-status-cascade-filter'), 'Phải có dropdown Cấp 3 Trạng thái duyệt');
+  assert.ok(filterBar.includes('Yêu cầu bổ sung'), 'Phải giữ nhãn trạng thái Yêu cầu bổ sung');
+  assert.ok(reviewList.includes('buildPendingCascadeState('), 'UnitTicketsReviewList phải dùng buildPendingCascadeState');
+
+  const tmpRunner = path.join(root, '.data', '_tmp_tc15_cascade.ts');
+  fs.mkdirSync(path.dirname(tmpRunner), { recursive: true });
+  fs.writeFileSync(
+    tmpRunner,
+    `
+import assert from 'node:assert';
+import { buildPendingCascadeState } from '../src/components/staff-portal/unit-tickets-cascade-helpers';
+import type { StaffWorkTicket } from '../src/types/staff-ticket';
+
+const mk = (id: string, maNhiemVu: string, email: string, name: string, status: StaffWorkTicket['status']): StaffWorkTicket => ({
+  id, unitCode: 'TCNS', unitName: 'Phòng TCNS', ownerEmail: email, ownerName: name, ownerTitle: 'CV',
+  status, currentVersion: 1, maVtvl: 'TCNS.HT01', tenVtvl: 'Chuyên viên', maCongViec: id,
+  tenCongViec: 'Việc ' + id, maNhiemVu, tenSanPham: 'SP', tanSuat: 'THUONG_XUYEN',
+  soLanNam: 1, thoiGianPhut: 60, tongGioNam: 1, createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z',
+  submittedAt: '2026-11-02T00:00:00Z', isMergedToB1B2: false
+});
+
+const sample: StaffWorkTicket[] = [
+  mk('1', 'TCNS.NV01', 'an@hcmute.edu.vn', 'Nguyễn Văn An', 'submitted'),
+  mk('2', 'TCNS.NV01', 'an@hcmute.edu.vn', 'Nguyễn Văn An', 'resubmitted'),
+  mk('3', 'TCNS.NV01', 'binh@hcmute.edu.vn', 'Trần Thị Bình', 'changes_requested'),
+  mk('4', 'TCNS.NV02', 'cuong@hcmute.edu.vn', 'Lê Văn Cường', 'submitted'),
+  mk('5', 'TCNS.NV02', 'binh@hcmute.edu.vn', 'Trần Thị Bình', 'approved'),
+  mk('6', 'TCNS.NV02', 'cuong@hcmute.edu.vn', 'Lê Văn Cường', 'draft')
+];
+
+// Toàn bộ pool chỉ tính submitted + resubmitted + changes_requested (4 phiếu)
+const allState = buildPendingCascadeState(sample, 'ALL', 'ALL', 'ALL');
+assert.strictEqual(allState.totalPendingCount, 4);
+assert.strictEqual(allState.missionOptions.length, 3); // ALL + NV01 + NV02
+assert.strictEqual(allState.ownerOptions.length, 4); // ALL + 3 người khai hợp lệ
+
+// Chọn Cấp 1: TCNS.NV01 -> Cấp 2 chỉ còn An (2) & Bình (1), không còn Cường
+const m1State = buildPendingCascadeState(sample, 'TCNS.NV01', 'ALL', 'ALL');
+assert.strictEqual(m1State.effectiveMission, 'TCNS.NV01');
+assert.strictEqual(m1State.ownerOptions.length, 3);
+assert.ok(!m1State.ownerOptions.some((o) => o.value === 'cuong@hcmute.edu.vn'));
+
+// Chọn Cấp 2: Bình dưới NV01 -> Cấp 3 chỉ còn Yêu cầu bổ sung (1), không còn Chờ phê duyệt
+const m1OwnerState = buildPendingCascadeState(sample, 'TCNS.NV01', 'binh@hcmute.edu.vn', 'ALL');
+assert.strictEqual(m1OwnerState.effectiveOwner, 'binh@hcmute.edu.vn');
+assert.ok(m1OwnerState.statusOptions.some((s) => s.value === 'CHANGES' && s.label.includes('(1)')));
+assert.ok(!m1OwnerState.statusOptions.some((s) => s.value === 'WAITING'));
+assert.strictEqual(m1OwnerState.filteredTickets.map((t) => t.id).join(','), '3');
+
+// Đổi Cấp 1 sang TCNS.NV02 khi đang giữ Cấp 2/3 cũ -> tự chuẩn hóa về ALL
+const staleReset = buildPendingCascadeState(sample, 'TCNS.NV02', 'binh@hcmute.edu.vn', 'CHANGES');
+assert.strictEqual(staleReset.effectiveMission, 'TCNS.NV02');
+assert.strictEqual(staleReset.effectiveOwner, 'ALL');
+assert.strictEqual(staleReset.effectiveStatus, 'ALL');
+assert.strictEqual(staleReset.filteredTickets.map((t) => t.id).join(','), '4');
+`,
+    'utf8'
+  );
+  try {
+    execSync(`npx tsx "${tmpRunner}"`, { stdio: 'inherit' });
+  } finally {
+    if (fs.existsSync(tmpRunner)) fs.unlinkSync(tmpRunner);
+  }
+});
+
 console.log(`\n----------------------------------------------------------------`);
-console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/10 KỊCH BẢN PASS`);
+console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/15 KỊCH BẢN PASS`);
 console.log(`----------------------------------------------------------------\n`);

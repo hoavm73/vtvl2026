@@ -161,17 +161,21 @@ export async function getServerAdminAuth(reqEmail?: string, accessToken?: string
 }
 
 export async function setServerAdminCookie(token: string): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(ADMIN_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 24 * 60 * 60
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(ADMIN_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60
+    });
+  } catch { /* ignore */ }
 }
 
 export async function clearServerAdminCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(ADMIN_COOKIE_NAME);
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(ADMIN_COOKIE_NAME);
+  } catch { /* ignore */ }
 }

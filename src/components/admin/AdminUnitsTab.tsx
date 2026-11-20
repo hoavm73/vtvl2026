@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building2, Search, PlusCircle, RotateCcw, Edit2, Trash2,
-  CheckCircle2, Filter
+  Filter
 } from 'lucide-react';
 import { HcmuteUnit, UnitGroupKind } from '@/types/vtvl';
 import {
@@ -142,6 +142,10 @@ export function AdminUnitsTab() {
               size="md"
             />
           </div>
+
+          <span className="font-bold text-[11px] text-[#64748b] bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 shrink-0 tabular-nums">
+            {filtered.length}/{units.length} đơn vị
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end min-w-0">
@@ -166,20 +170,7 @@ export function AdminUnitsTab() {
         </div>
       </div>
 
-      {/* 6. Status row rút gọn mỏng ngay phía trên bảng */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1 text-xs text-[#004776] min-h-[32px] sm:min-h-[36px] min-w-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span className="text-xs font-medium text-[#004776] truncate">
-            Đồng bộ thời gian thực với dropdown và công thức của 10 biểu tính
-          </span>
-        </div>
-        <span className="font-bold text-[11px] text-[#64748b] bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200 shrink-0">
-          {filtered.length}/{units.length} đơn vị
-        </span>
-      </div>
-
-      {/* 7. Danh sách thẻ (< 768px) & Bảng dữ liệu (>= 768px) */}
+      {/* 6. Danh sách thẻ (< 768px) & Bảng dữ liệu (>= 768px) */}
       <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs overflow-hidden w-full max-w-full min-w-0">
         <AdminUnitMobileCards
           units={visibleUnits}
@@ -283,4 +274,3 @@ export function AdminUnitsTab() {
     </div>
   );
 }
-

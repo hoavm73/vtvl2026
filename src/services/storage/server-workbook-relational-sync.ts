@@ -127,7 +127,7 @@ export function buildWorkbookRelationalPayload(wb: ServerWorkbook) {
     du_bao_5_nam: duBaoRows, d2_phuong_an: d2Rows, k_kiem_tra: Array.from(kRows.values()), can_cu_goi_y: Array.from(canCuRows.values()),
     workbook: { id: wb.id, unit_id: unitCode, reporting_period: wb.reportingPeriod || '01/10/2025–30/9/2026', status: wb.status || 'draft', current_revision: Math.max(1, wb.currentRevision || 1), data: wb.data, touched_cells: wb.touchedCells || [], is_deleted: Boolean(wb.isDeleted), updated_at: nowIso },
     workbook_sessions: Array.from(sessionMap.values()), session_participants: partRows,
-    workbook_revisions: (wb.revisions || []).slice(0, 5).map((r) => ({ id: r.id || `rev_${wb.id}_${r.revision}`, workbook_id: wb.id, revision: Math.max(1, r.revision || 1), data: r.data, actor_email: r.actorEmail || 'tcns@hcmute.edu.vn', actor_title: r.actorTitle || null, change_summary: r.changeSummary || null })),
+    workbook_revisions: (wb.revisions || []).slice(0, 1).map((r) => ({ id: r.id || `rev_${wb.id}_${r.revision}`, workbook_id: wb.id, revision: Math.max(1, r.revision || 1), data: r.data, actor_email: r.actorEmail || 'tcns@hcmute.edu.vn', actor_title: r.actorTitle || null, change_summary: r.changeSummary || null })),
     activeKeys: {
       a1: Array.from(a1Rows.keys()), c1: Array.from(c1Rows.keys()), a2: Array.from(a2Rows.keys()),
       b1: Array.from(b1Rows.keys()), b2_ct: Array.from(b2CtRows.keys()), b2: Array.from(b2Rows.keys()),

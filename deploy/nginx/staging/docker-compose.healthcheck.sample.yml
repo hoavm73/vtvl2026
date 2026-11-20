@@ -1,0 +1,10 @@
+# Mẫu cấu hình Docker Healthcheck cho Phương án A (áp dụng sau khi duyệt triển khai Production)
+# Không tự động ghi đè docker-compose.yml gốc trước khi người dùng duyệt thay đổi Production.
+services:
+  app:
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3360/api/health/live > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s

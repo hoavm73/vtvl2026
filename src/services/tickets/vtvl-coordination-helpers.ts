@@ -1,8 +1,11 @@
 import {
   getActiveHcmuteUnits,
+  HCMUTE_UNITS,
   QD2266_UNIT_NAMES,
   UNIT_CODE_ALIASES
 } from '@/configs/hcmute-units';
+
+const CANONICAL_UNIT_CODES = new Set(HCMUTE_UNITS.map((u) => u.code.toUpperCase()));
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
 import {
   CoordinatedVtvlEntry,
@@ -24,6 +27,7 @@ export function resolveUnitCodeSafe(code: string): string {
   if (clean === 'BGH' || clean === 'BAN GIÁM HIỆU') return 'BGH';
   const alias = UNIT_CODE_ALIASES[clean];
   if (alias) return alias;
+  if (CANONICAL_UNIT_CODES.has(clean)) return clean;
   try {
     const units = getActiveHcmuteUnits();
     const direct = units.find((u) => u.code.toUpperCase() === clean);

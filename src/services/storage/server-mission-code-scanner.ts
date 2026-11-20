@@ -8,7 +8,7 @@ export function computeMaxMissionSeq(
   unitCode: string,
   missionCode: string,
   a2Rows: GenericGridRow[],
-  existingTickets: StaffWorkTicket[],
+  existingTickets: Iterable<StaffWorkTicket>,
   excludeTicketId?: string
 ): number {
   const cleanMission = missionCode.trim();
@@ -44,7 +44,7 @@ export function allocateNextTaskCode(
   unitCode: string,
   missionCode: string,
   a2Rows: GenericGridRow[],
-  existingTickets: StaffWorkTicket[],
+  existingTickets: Iterable<StaffWorkTicket>,
   excludeTicketId?: string
 ): string {
   const cleanMission = missionCode.trim();
@@ -57,7 +57,7 @@ export async function allocateNextTaskCodeAsync(
   unitCode: string,
   missionCode: string,
   a2Rows: GenericGridRow[],
-  existingTickets: StaffWorkTicket[],
+  existingTickets: Iterable<StaffWorkTicket>,
   excludeTicketId?: string
 ): Promise<string> {
   const cleanMission = missionCode.trim();

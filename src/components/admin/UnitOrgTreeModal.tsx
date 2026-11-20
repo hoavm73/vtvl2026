@@ -8,6 +8,8 @@ import { ModalPortal } from '@/components/ui/ModalPortal';
 import { buildUnitOrgTree } from '@/services/org-chart/unit-org-tree-builder';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { UnitOrgNode } from '@/services/org-chart/unit-org-tree-types';
+import { getCanonicalWorkbookId } from '@/services/context/workbook-context';
+import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { UnitOrgTreeView } from './UnitOrgTreeView';
 import { UnitOrgNodeDetailPane } from './UnitOrgNodeDetailPane';
 
@@ -33,13 +35,42 @@ export function UnitOrgTreeModal({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isFullscreen, setIsFullscreen] = useState(!inline);
   const [isCompact, setIsCompact] = useState(true);
+  const [remoteWorkbook, setRemoteWorkbook] = useState<{ unitCode: string; data: Record<string, GenericGridRow[]> } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const upper = selectedUnitCode.toUpperCase();
+    if (upper === defaultUnitCode.toUpperCase() && workbookData) return;
+    let cancelled = false;
+    const op = getCurrentOperatorSession();
+    const headers: Record<string, string> = {};
+    if (typeof window !== 'undefined') {
+      try {
+        const adm = sessionStorage.getItem('hcmute_vtvl_admin_token') || '';
+        if (adm) headers.Authorization = `Bearer ${adm}`;
+      } catch { /* ignore */ }
+    }
+    if (!headers.Authorization && op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
+    if (op?.email) headers['x-actor-email'] = op.email;
+    void fetch(`/api/workbooks/${encodeURIComponent(getCanonicalWorkbookId(upper))}`, { headers, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!cancelled && json?.workbook?.data) setRemoteWorkbook({ unitCode: upper, data: json.workbook.data });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOpen, selectedUnitCode, defaultUnitCode, workbookData]);
 
   const treeData = useMemo(() => {
-    return buildUnitOrgTree(
-      selectedUnitCode,
-      selectedUnitCode === defaultUnitCode ? workbookData : undefined
-    );
-  }, [selectedUnitCode, defaultUnitCode, workbookData]);
+    const upper = selectedUnitCode.toUpperCase();
+    const effectiveData =
+      upper === defaultUnitCode.toUpperCase() && workbookData
+        ? workbookData
+        : remoteWorkbook?.unitCode === upper
+          ? remoteWorkbook.data
+          : undefined;
+    return buildUnitOrgTree(selectedUnitCode, effectiveData);
+  }, [selectedUnitCode, defaultUnitCode, workbookData, remoteWorkbook]);
 
   useEffect(() => {
     if (defaultUnitCode) setSelectedUnitCode(defaultUnitCode);

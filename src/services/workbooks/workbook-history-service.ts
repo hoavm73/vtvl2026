@@ -46,7 +46,7 @@ export const REVIEW_STATUS_LABELS: Record<WorkbookReviewStatus, string> = {
   da_khoa: 'Đã khóa'
 };
 
-const REVIEW_ACTIONS = new Set([
+export const REVIEW_ACTION_SET: ReadonlySet<string> = new Set([
   'GUI_TCNS',
   'GUI_LAI_TCNS',
   'BAT_DAU_THAM_DINH',
@@ -56,6 +56,37 @@ const REVIEW_ACTIONS = new Set([
   'KHOA_HO_SO',
   'NHAN_XET_THAM_DINH'
 ]);
+
+const REVIEW_ACTIONS = REVIEW_ACTION_SET;
+
+export function computeUnitProgressStage(input: {
+  mergedCount: number;
+  populatedSheetsCount: number;
+  approvedCount: number;
+  submittedCount: number;
+  changesRequestedCount: number;
+  draftCount: number;
+}): { progressPercent: number; stageLabel: string } {
+  if (input.mergedCount > 0 && input.populatedSheetsCount >= 6) {
+    return { progressPercent: 100, stageLabel: 'Đã gộp B1/B2 & hoàn thiện biểu' };
+  }
+  if (input.approvedCount > 0) {
+    return { progressPercent: 80, stageLabel: 'Đã duyệt phiếu' };
+  }
+  if (input.submittedCount > 0 || input.changesRequestedCount > 0) {
+    return {
+      progressPercent: 60,
+      stageLabel: input.submittedCount > 0 ? 'Đang chờ duyệt phiếu' : 'Đang chờ bổ sung phiếu'
+    };
+  }
+  if (input.draftCount > 0) {
+    return { progressPercent: 35, stageLabel: 'Đang lưu nháp phiếu' };
+  }
+  if (input.populatedSheetsCount > 0) {
+    return { progressPercent: 20, stageLabel: 'Đã khởi tạo biểu mẫu' };
+  }
+  return { progressPercent: 0, stageLabel: 'Chưa kê khai' };
+}
 
 function mapAuditActionToStatus(action: string, current: WorkbookReviewStatus): WorkbookReviewStatus {
   if (action === 'GUI_TCNS') return current === 'can_bo_sung' ? 'da_gui_lai' : 'cho_tham_dinh';

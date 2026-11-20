@@ -4,6 +4,7 @@ import { getServerAdminAuth } from '@/services/storage/server-admin-auth';
 import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { syncAccountsFromSupabase } from '@/services/storage/server-account-store';
+import { syncAuditLogsFromSupabase } from '@/services/storage/server-audit-store';
 import { buildUnitMonitorPayload } from '@/services/admin/unit-monitor-builder';
 import { cacheGetOrSet } from '@/services/storage/runtime-cache';
 
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
     await Promise.all([
       syncTicketsFromSupabase().catch(() => {}),
       syncServerWorkbooksFromSupabase().catch(() => {}),
-      syncAccountsFromSupabase().catch(() => {})
+      syncAccountsFromSupabase().catch(() => {}),
+      syncAuditLogsFromSupabase(500).catch(() => {})
     ]);
     return buildUnitMonitorPayload(filterUnit, includeTest);
   });

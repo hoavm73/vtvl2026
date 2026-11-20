@@ -121,9 +121,6 @@ export default function AdminThamDinhPage() {
             <span>Thẩm định cấp trường — Phòng Tổ chức – Nhân sự</span>
           </div>
           <h1 className="page-title text-[#0072BC]">Thẩm định hồ sơ Đề án Vị trí việc làm</h1>
-          <p className="text-xs sm:text-sm text-[#476885]">
-            Tiếp nhận hồ sơ 39 đơn vị gửi lên, kiểm tra chéo 9 biểu mẫu, ghi nhận xét hoặc yêu cầu bổ sung / xác nhận đạt.
-          </p>
         </div>
         <Link href="/admin" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776]">
           <span>Quản trị hệ thống</span>

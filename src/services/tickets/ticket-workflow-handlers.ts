@@ -5,7 +5,7 @@ import {
   mergeApprovedTicketToUnitWorkbook,
   appendTicketStatusHistory,
   restoreTicketInMemory,
-  syncTicketsFromSupabase
+  syncSingleTicketFromSupabase
 } from '@/services/storage/server-ticket-store';
 import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
 import {
@@ -20,6 +20,7 @@ import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/se
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import {
   compensateRemoveCoordinationProjection,
+  hasTicketOrTargetCoordination,
   syncSubmittedCoordinationProjection
 } from './vtvl-coordination-service';
 import {
@@ -50,8 +51,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
 
   let target: StaffWorkTicket | null = getTicketById(targetId);
   if (!target) {
-    await syncTicketsFromSupabase(typeof body.unitCode === 'string' ? body.unitCode : undefined).catch(() => {});
-    target = getTicketById(targetId);
+    target = await syncSingleTicketFromSupabase(targetId).catch(() => null);
   }
   if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
   const unitLockErr = await checkUnitWorkbookApprovedLock(target.unitCode);
@@ -121,7 +121,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
           action: isResubmit ? 'RESUBMIT' : 'SUBMIT', reason: typeof changeSummary === 'string' ? changeSummary.trim() : undefined,
           actorId: caller.email, actorRole: caller.role, unitId: latest.unitCode
         });
-        await syncSubmittedCoordinationProjection(updated.ticket, ver);
+        if (hasTicketOrTargetCoordination(updated.ticket, latest)) await syncSubmittedCoordinationProjection(updated.ticket, ver);
 
         const audit = appendAuditLog({
           unitCode: latest.unitCode, unitName: findHcmuteUnit(latest.unitCode).nameVi,
@@ -163,8 +163,8 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
       const cached = await getRecordedIdempotencyResponse(idempotencyKey, `patch_${act}`);
       if (cached) return NextResponse.json({ ...cached, idempotent: true });
     }
-    await syncTicketsFromSupabase(target.unitCode).catch(() => {});
-    const latest = getTicketById(target.id) || target;
+    const syncedLatest = await syncSingleTicketFromSupabase(target.id).catch(() => null);
+    const latest = syncedLatest || getTicketById(target.id) || target;
     const concurrency = checkTicketOptimisticConcurrency(latest, body);
     if (concurrency.conflict) {
       return NextResponse.json({ error: concurrency.message, code: 'REVISION_CONFLICT', conflict: true }, { status: 409 });
@@ -214,7 +214,7 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
           code: 'FORBIDDEN_SELF_REVIEW'
         }, { status: 403 });
       }
-      if (curCanon === 'approved' && idempotencyKey) {
+      if (curCanon === 'approved' && idempotencyKey && normalizeEmail(latest.approvedBy || '') === normalizeEmail(caller.email)) {
         return NextResponse.json({ ok: true, idempotent: true, ticket: latest });
       }
       if (curCanon !== 'submitted' && curCanon !== 'resubmitted') {

@@ -3,8 +3,9 @@ import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { syncAccountsFromSupabase } from '@/services/storage/server-account-store';
 import { syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { syncVtvlAssignmentsFromSupabase } from '@/services/storage/server-vtvl-assignment-store';
-import { syncVersionsCacheFromSupabase } from '@/services/storage/server-coordination-store';
-import { normalizeEmail, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+import { syncCoordinationTicketsFromSupabase, syncVersionsCacheFromSupabase } from '@/services/storage/server-coordination-store';
+import { getAllActiveServerWorkbooks, normalizeEmail, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
+import { getDbTestHook } from '@/services/storage/prisma';
 import { isIsolatedLocalMode } from '@/services/storage/server-ticket-db';
 import {
   computeWorkRelationshipsAndEnrichProposals,
@@ -13,7 +14,10 @@ import {
   syncWorkRelationshipsFromSupabase
 } from '@/services/storage/server-work-relationship-store';
 import { resolveUnitCodeSafe } from '@/services/tickets/vtvl-coordination-helpers';
-import { invalidateCacheTags } from '@/services/storage/runtime-cache';
+import { invalidateCacheTags, cacheGetOrSet } from '@/services/storage/runtime-cache';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { readBoundedJsonBody, MAX_STANDARD_PAYLOAD_BYTES } from '@/services/auth/payload-limiter';
+import { getAssignmentsForEmail } from '@/services/storage/server-vtvl-assignment-store';
 import {
   queryProposedTaskDetailForUser,
   queryProposedTasksForUser
@@ -21,12 +25,13 @@ import {
 
 async function syncAllCoordinationSources(): Promise<void> {
   if (isIsolatedLocalMode()) return;
+  const useHook = Boolean(getDbTestHook());
   await Promise.all([
     syncAccountsFromSupabase().catch(() => {}),
     syncVtvlAssignmentsFromSupabase().catch(() => {}),
-    syncTicketsFromSupabase().catch(() => {}),
+    (useHook ? syncTicketsFromSupabase() : syncCoordinationTicketsFromSupabase()).catch(() => {}),
     syncVersionsCacheFromSupabase().catch(() => {}),
-    syncServerWorkbooksFromSupabase().catch(() => {}),
+    (useHook || getAllActiveServerWorkbooks().length === 0 ? syncServerWorkbooksFromSupabase() : Promise.resolve()).catch(() => {}),
     syncWorkRelationshipsFromSupabase().catch(() => {})
   ]);
 }
@@ -40,6 +45,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' }, { status: 403 });
   }
 
+  const rateErr = enforceApiRateLimit('read', caller.email);
+  if (rateErr) return rateErr;
+
   const sp = req.nextUrl.searchParams;
   const spoofEmail = sp.get('actorEmail') || sp.get('actor_id') || sp.get('asEmail') || '';
   if (spoofEmail && normalizeEmail(spoofEmail) !== normalizeEmail(caller.email)) {
@@ -49,35 +57,78 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  await syncAllCoordinationSources();
+  await cacheGetOrSet(
+    'coord:sources:sync',
+    ['coordination'],
+    5000,
+    async () => {
+      await syncAllCoordinationSources();
+      return true;
+    },
+    { forceSingleFlight: true }
+  );
 
   const surveyId = (sp.get('surveyId') || sp.get('id') || '').trim();
   const taskRowId = (sp.get('taskRowId') || '').trim() || undefined;
   const scope = (sp.get('scope') || '').trim();
+  const myAsg = getAssignmentsForEmail(caller.email);
+  const asgFp = myAsg.map((a) => `${a.unitCode.toUpperCase()}:${a.maVtvl.toUpperCase()}`).sort().join(',');
+  const coordKey = [
+    'coord:get',
+    `e:${caller.email.toLowerCase()}`,
+    `r:${caller.role}`,
+    `u:${caller.unitCode.toUpperCase()}`,
+    `sc:${scope.toLowerCase()}`,
+    `sid:${surveyId}`,
+    `tid:${taskRowId || ''}`,
+    `asg:${asgFp}`
+  ].join('|');
 
+  const forceCache = process.env.VTVL_COORD_CACHE_FORCE === 'true';
   if (surveyId) {
-    const result = queryProposedTaskDetailForUser(caller.email, surveyId, taskRowId, { unitCode: caller.unitCode, scope });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.error, code: result.code }, { status: result.status });
+    const cachedDetail = await cacheGetOrSet(
+      coordKey,
+      ['coordination', 'accounts'],
+      15000,
+      async () => {
+        const result = queryProposedTaskDetailForUser(caller.email, surveyId, taskRowId, { unitCode: caller.unitCode, scope });
+        if (!result.ok) {
+          return { ok: false as const, status: result.status, error: result.error, code: result.code };
+        }
+        await computeWorkRelationshipsAndEnrichProposals([result.item], caller.unitCode, caller.isAdmin, true);
+        return { ok: true as const, item: result.item };
+      },
+      { forceSingleFlight: forceCache }
+    );
+    if (!cachedDetail.ok) {
+      return NextResponse.json({ error: cachedDetail.error, code: cachedDetail.code }, { status: cachedDetail.status });
     }
-    await computeWorkRelationshipsAndEnrichProposals([result.item], caller.unitCode, caller.isAdmin);
-    return NextResponse.json({ item: result.item });
+    return NextResponse.json({ item: cachedDetail.item }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
-  const { items, myAssignments } = queryProposedTasksForUser(caller.email, { unitCode: caller.unitCode, scope });
-  const relationships = await computeWorkRelationshipsAndEnrichProposals(items, caller.unitCode, caller.isAdmin);
+  const listPayload = await cacheGetOrSet(
+    coordKey,
+    ['coordination', 'accounts'],
+    15000,
+    async () => {
+      const { items, myAssignments } = queryProposedTasksForUser(caller.email, { unitCode: caller.unitCode, scope });
+      const relationships = await computeWorkRelationshipsAndEnrichProposals(items, caller.unitCode, caller.isAdmin, true);
+      return {
+        items,
+        total: items.length,
+        relationships,
+        myAssignments: myAssignments.map((a) => ({
+          id: a.id,
+          unitCode: a.unitCode,
+          maVtvl: a.maVtvl,
+          tenVtvl: a.tenVtvl
+        }))
+      };
+    },
+    { forceSingleFlight: forceCache }
+  );
 
-  return NextResponse.json({
-    items,
-    total: items.length,
-    relationships,
-    myAssignments: myAssignments.map((a) => ({
-      id: a.id,
-      unitCode: a.unitCode,
-      maVtvl: a.maVtvl,
-      tenVtvl: a.tenVtvl
-    }))
-  });
+  return NextResponse.json(listPayload, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -88,9 +139,15 @@ export async function PATCH(req: NextRequest) {
   if (caller.isSuspended) {
     return NextResponse.json({ error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' }, { status: 403 });
   }
+  const rateErr = enforceApiRateLimit('ticket_review', caller.email);
+  if (rateErr) return rateErr;
 
   try {
-    const body = (await req.json()) as { relationshipId?: string; side?: string; approved?: boolean };
+    const parsed = await readBoundedJsonBody<{ relationshipId?: string; side?: string; approved?: boolean }>(req, MAX_STANDARD_PAYLOAD_BYTES);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
+    }
+    const body = parsed.data;
     const relationshipId = String(body.relationshipId || '').trim();
     const side = body.side === 'host' || body.side === 'target' || body.side === 'tcns' ? body.side : null;
     if (!relationshipId || !side) {

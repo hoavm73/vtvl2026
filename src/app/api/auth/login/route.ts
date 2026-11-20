@@ -15,15 +15,27 @@ import {
 } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 import {
+  MAX_AUTH_PAYLOAD_BYTES,
   checkAuthRateLimit,
+  checkDirectRateKey,
+  clearAuthFailures,
+  extractClientIp,
+  readBoundedJsonBody,
   recordAuthFailure,
-  clearAuthFailures
+  recordDirectFailure
 } from '@/services/auth/rate-limiter';
+
+const IP_SPRAY_MAX_ATTEMPTS = 60;
+const RATE_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const email = normalizeEmail(body.email || '');
+    const parsed = await readBoundedJsonBody<{ email?: unknown; password?: unknown }>(req, MAX_AUTH_PAYLOAD_BYTES);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
+    }
+    const body = parsed.data;
+    const email = normalizeEmail(String(body.email || ''));
     const password = String(body.password || '');
 
     if (!email || !password) {
@@ -33,15 +45,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sprayKey = `user_login_ip_spray:${extractClientIp(req)}`;
     const rateCheck = checkAuthRateLimit(req, 'user_login', email);
-    if (!rateCheck.allowed) {
+    const sprayCheck = checkDirectRateKey(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
+    if (!rateCheck.allowed || !sprayCheck.allowed) {
+      const retryAfterSeconds = Math.max(rateCheck.retryAfterSeconds, sprayCheck.retryAfterSeconds);
       return NextResponse.json(
         {
-          error: `Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          error: `Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau ${retryAfterSeconds} giây.`,
           code: 'RATE_LIMITED',
-          retryAfterSeconds: rateCheck.retryAfterSeconds
+          retryAfterSeconds
         },
-        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
       );
     }
 
@@ -50,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     if (!existing) {
       recordAuthFailure(req, 'user_login', email);
+      recordDirectFailure(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
       return NextResponse.json(
         { error: 'Tài khoản chưa được khởi tạo trong hệ thống. Vui lòng đăng nhập bằng Google (@hcmute.edu.vn) hoặc liên hệ Phòng TCNS.' },
         { status: 401 }
@@ -66,6 +82,7 @@ export async function POST(req: NextRequest) {
     const verified = await verifyUserPassword(email, password);
     if (!verified) {
       recordAuthFailure(req, 'user_login', email);
+      recordDirectFailure(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
       return NextResponse.json(
         { error: 'Mật khẩu không chính xác. Nếu dùng Google Workspace HCM-UTE, vui lòng chọn nút Đăng nhập bằng Google.' },
         { status: 401 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getTicketsByUnit, getTicketById, upsertTicketAndSyncUnit, deleteTicketAndSyncUnit,
-  allocateNextTaskCodeAsync, syncTicketsFromSupabase, appendTicketStatusHistory, restoreTicketInMemory
+  allocateNextTaskCodeAsync, syncSingleTicketFromSupabase, appendTicketStatusHistory, restoreTicketInMemory
 } from '@/services/storage/server-ticket-store';
 import { executeRevokeOrCancelTicket } from '@/services/storage/server-ticket-unmerge';
 import { createImmutableSurveyVersion, compensateRemoveSurveyVersion } from '@/services/storage/server-ticket-version-store';
@@ -13,16 +13,18 @@ import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { executePatchTicketAction } from '@/services/tickets/ticket-workflow-handlers';
-import { compensateRemoveCoordinationProjection, syncSubmittedCoordinationProjection } from '@/services/tickets/vtvl-coordination-service';
+import { compensateRemoveCoordinationProjection, hasTicketOrTargetCoordination, syncSubmittedCoordinationProjection } from '@/services/tickets/vtvl-coordination-service';
 import { normalizeCoordinatedVtvls } from '@/services/tickets/vtvl-coordination-helpers';
 import { computeWorkRelationshipsAndEnrichProposals } from '@/services/storage/server-work-relationship-store';
 import {
   checkTicketOptimisticConcurrency, extractIdempotencyKey, getRecordedIdempotencyResponse, saveIdempotencyResponse
 } from '@/services/storage/server-mission-counter';
 import {
-  executeGetTicketsRoute, handleTicketRouteError, isSameEditablePayload, validateMutableTicket
+  executeGetTicketsRoute, handleTicketRouteError, isSameEditablePayload, parseTicketJsonWithGuard, validateMutableTicket
 } from '@/services/tickets/ticket-route-helpers';
 import { checkUnitWorkbookApprovedLock } from '@/services/workbooks/workbook-lock-guard';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -32,6 +34,11 @@ export async function GET(req: NextRequest) {
   if (!caller.isAdmin && unitCodeParam === 'ALL') {
     return NextResponse.json({ error: 'Chỉ Quản trị viên mới được phép lọc toàn trường.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
   }
+  if (!caller.isAdmin && unitCodeParam && unitCodeParam !== caller.unitCode.toUpperCase()) {
+    return NextResponse.json({ error: 'Bạn không có quyền truy cập dữ liệu của đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
+  }
+  const rateErr = enforceApiRateLimit('read', caller.email);
+  if (rateErr) return rateErr;
   return executeGetTicketsRoute(req, caller);
 }
 
@@ -41,7 +48,9 @@ export async function POST(req: NextRequest) {
   if (caller.isSuspended) return NextResponse.json({ error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' }, { status: 403 });
 
   try {
-    const body = await req.json();
+    const parsed = await parseTicketJsonWithGuard(req);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const idempotencyKey = extractIdempotencyKey(req, body);
     const reqOwner = body.ownerEmail || body.owner_id, reqUnit = body.unitCode || body.unit_id, reqActor = body.actorEmail || body.actor_id;
     if (reqOwner && normalizeEmail(String(reqOwner)) !== normalizeEmail(caller.email)) return NextResponse.json({ error: 'Không ai được phép kê khai hoặc sửa trực tiếp nội dung của người khác.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
@@ -51,10 +60,12 @@ export async function POST(req: NextRequest) {
     if (!caller.isAdmin && reqUnit && String(reqUnit).toUpperCase() !== caller.unitCode.toUpperCase()) return NextResponse.json({ error: 'Bạn không thể lập phiếu cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
     if (!body.maNhiemVu || !body.tenCongViec || !body.maVtvl) return NextResponse.json({ error: 'Vui lòng chọn Mã nhiệm vụ, Mã vị trí việc làm và nhập Tên công việc.', code: 'MISSING_CORE_FIELDS' }, { status: 400 });
 
+    const rateErr = enforceApiRateLimit('ticket_write', caller.email);
+    if (rateErr) return rateErr;
     const effectiveUnit = caller.isAdmin && reqUnit ? String(reqUnit).toUpperCase() : caller.unitCode;
     const unitLockErr = await checkUnitWorkbookApprovedLock(effectiveUnit);
     if (unitLockErr) return unitLockErr;
-    if (body.id) await syncTicketsFromSupabase(effectiveUnit).catch(() => {});
+    if (body.id) await syncSingleTicketFromSupabase(String(body.id)).catch(() => null);
     const existing = body.id ? getTicketById(String(body.id)) : null;
     const preGuardErr = validateMutableTicket(existing, caller.email);
     if (preGuardErr) return preGuardErr;
@@ -74,12 +85,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vui lòng điền đủ các trường bắt buộc (trừ các mục "nếu có") để nộp hoặc cập nhật phiếu.', code: 'MISSING_REQUIRED_FIELDS' }, { status: 400 });
     }
 
-    return await withCrossProcessLock(`ticket_unit_${effectiveUnit.toUpperCase()}`, async () => {
+    return await withHeavyMutationBudget({ kind: 'ticket_mutation', op: 'submit_ticket', unitCode: effectiveUnit, actorEmail: caller.email }, () =>
+      withCrossProcessLock(`ticket_unit_${effectiveUnit.toUpperCase()}`, async () => {
       if (idempotencyKey) {
         const recorded = await getRecordedIdempotencyResponse(idempotencyKey, 'ticket_post');
         if (recorded) return NextResponse.json({ ...recorded, idempotent: true });
       }
-      if (body.id) await syncTicketsFromSupabase(effectiveUnit).catch(() => {});
+      if (body.id) await syncSingleTicketFromSupabase(String(body.id)).catch(() => null);
       const latestExisting = body.id ? getTicketById(String(body.id)) : null;
       const inLockGuardErr = validateMutableTicket(latestExisting, caller.email);
       if (inLockGuardErr) return inLockGuardErr;
@@ -151,8 +163,7 @@ export async function POST(req: NextRequest) {
             changeSummary: summaryNote, simulateFailure: Boolean(body._simulateVersionFailure)
           });
           createdVersionNo = ver.versionNo;
-          await syncSubmittedCoordinationProjection(result.ticket, ver);
-          await computeWorkRelationshipsAndEnrichProposals([], result.ticket.unitCode, caller.isAdmin).catch(() => {});
+          if (hasTicketOrTargetCoordination(result.ticket, latestExisting)) { await syncSubmittedCoordinationProjection(result.ticket, ver); await computeWorkRelationshipsAndEnrichProposals([], result.ticket.unitCode, caller.isAdmin).catch(() => {}); }
           await appendTicketStatusHistory(result.ticket, {
             surveyId: result.ticket.id, fromStatus: curCanon || 'draft', toStatus: toCanon,
             action: missionChangeNote ? 'CHANGE_MISSION_CODE' : (pendingEdit ? 'UPDATE_PENDING' : (isResubmitting ? 'RESUBMIT' : 'SUBMIT')),
@@ -195,7 +206,7 @@ export async function POST(req: NextRequest) {
         }
         throw txErr;
       }
-    });
+    }));
   } catch (err: unknown) {
     return handleTicketRouteError(err, 'Lưu phiếu công việc thất bại.');
   }
@@ -205,11 +216,13 @@ export async function DELETE(req: NextRequest) {
   const caller = await getCallerSession(req);
   if (!caller.isAuthenticated) return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   if (caller.isSuspended) return NextResponse.json({ error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' }, { status: 403 });
+  const rateErr = enforceApiRateLimit('ticket_write', caller.email);
+  if (rateErr) return rateErr;
   const id = req.nextUrl.searchParams.get('id') || '';
   if (!id) return NextResponse.json({ error: 'Thiếu mã phiếu cần xóa.', code: 'MISSING_ID' }, { status: 400 });
 
   let target = getTicketById(id);
-  if (!target) { await syncTicketsFromSupabase().catch(() => {}); target = getTicketById(id); }
+  if (!target) { await syncSingleTicketFromSupabase(id).catch(() => null); target = getTicketById(id); }
   if (!target) return NextResponse.json({ error: 'Không tìm thấy phiếu hoặc bạn không có quyền xóa.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
   const deleteLockErr = await checkUnitWorkbookApprovedLock(target.unitCode);
   if (deleteLockErr) return deleteLockErr;
@@ -217,7 +230,9 @@ export async function DELETE(req: NextRequest) {
   const isUnitReviewer = caller.isAdmin || (caller.isUnitLeader && target.unitCode.toUpperCase() === caller.unitCode.toUpperCase());
   const isDraft = toCanonicalStatus(target.status) === 'draft';
   if (!isDraft && isUnitReviewer) {
-    return await executeRevokeOrCancelTicket(caller, target, 'cancel_ticket', req.nextUrl.searchParams.get('reason') || 'Hủy / xóa phiếu kê khai sai');
+    return withHeavyMutationBudget({ kind: 'ticket_mutation', unitCode: target.unitCode, actorEmail: caller.email }, () =>
+      executeRevokeOrCancelTicket(caller, target, 'cancel_ticket', req.nextUrl.searchParams.get('reason') || 'Hủy / xóa phiếu kê khai sai')
+    );
   }
   if (normalizeEmail(target.ownerEmail) !== normalizeEmail(caller.email) && !caller.isAdmin) {
     return NextResponse.json({ error: 'Bạn không có quyền xóa phiếu của người khác.', code: 'FORBIDDEN_IDOR' }, { status: 403 });
@@ -225,7 +240,9 @@ export async function DELETE(req: NextRequest) {
   if (!isDraft && !caller.isAdmin) return NextResponse.json({ error: 'Chỉ phiếu Nháp mới được phép xóa.', code: 'FORBIDDEN_DELETE_NON_DRAFT' }, { status: 403 });
   try {
     const actor = caller.isAdmin ? (target.ownerEmail || caller.email) : caller.email;
-    const deleted = await deleteTicketAndSyncUnit(id, actor);
+    const deleted = await withHeavyMutationBudget({ kind: 'ticket_mutation', unitCode: target.unitCode, actorEmail: caller.email }, () =>
+      deleteTicketAndSyncUnit(id, actor)
+    );
     if (!deleted) return NextResponse.json({ error: 'Không tìm thấy phiếu.' }, { status: 403 });
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
@@ -236,7 +253,11 @@ export async function DELETE(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const caller = await getCallerSession(req);
   if (!caller.isAuthenticated) return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
-  const body = await req.json();
+  const rateErr = enforceApiRateLimit('ticket_write', caller.email);
+  if (rateErr) return rateErr;
+  const parsed = await parseTicketJsonWithGuard(req);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const requestedUnit = (body.unitCode || caller.unitCode).toUpperCase();
   if (!caller.isAdmin && requestedUnit !== caller.unitCode) {
     return NextResponse.json({ error: 'Không thể cấp mã cho đơn vị khác.', code: 'FORBIDDEN_CROSS_UNIT' }, { status: 403 });
@@ -244,7 +265,7 @@ export async function PUT(req: NextRequest) {
   const maNhiemVu = String(body.maNhiemVu || '').trim();
   if (!maNhiemVu) return NextResponse.json({ nextTaskCode: '' });
   return await withCrossProcessLock(`ticket_unit_${requestedUnit}`, async () => {
-    await syncServerWorkbooksFromSupabase(false);
+    await syncServerWorkbooksFromSupabase(false, requestedUnit);
     const wb = getOrCreateWorkbook(requestedUnit, '01/10/2025–30/9/2026', caller.email, caller.role);
     const nextTaskCode = await allocateNextTaskCodeAsync(requestedUnit, maNhiemVu, wb.data.A2 || [], getTicketsByUnit(requestedUnit, true), body.excludeTicketId);
     return NextResponse.json({ nextTaskCode, maCongViec: nextTaskCode });
@@ -256,10 +277,20 @@ export async function PATCH(req: NextRequest) {
   if (!caller.isAuthenticated) return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   if (caller.isSuspended) return NextResponse.json({ error: 'Tài khoản đang bị tạm khóa.', code: 'ACCOUNT_SUSPENDED' }, { status: 403 });
   try {
-    const body = (await req.json()) as Record<string, unknown>;
+    const parsed = await parseTicketJsonWithGuard(req);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+    const act = String(body.action || '').trim();
+    const rateGroup = act === 'submit' || act === 'resubmit' ? 'ticket_write' : 'ticket_review';
+    const rateErr = enforceApiRateLimit(rateGroup, caller.email);
+    if (rateErr) return rateErr;
     const idempotencyKey = extractIdempotencyKey(req, body);
     if (idempotencyKey) body.idempotencyKey = idempotencyKey;
-    return await executePatchTicketAction(caller, body);
+    const targetId = String(body.ticketId || body.id || '').trim();
+    const unitCode = (targetId ? getTicketById(targetId)?.unitCode : '') || String(body.unitCode || caller.unitCode || '');
+    return await withHeavyMutationBudget({ kind: 'ticket_mutation', op: 'review_ticket', unitCode, actorEmail: caller.email }, () =>
+      executePatchTicketAction(caller, body)
+    );
   } catch (err: unknown) {
     return handleTicketRouteError(err, 'Lỗi máy chủ khi thao tác phiếu.');
   }

@@ -6,7 +6,9 @@ import { postServerRestRequired } from '@/services/storage/server-supabase-store
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { getWorkbookById, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
-import { checkPayloadSizeLimit, MAX_WORKBOOK_PAYLOAD_BYTES } from '@/services/auth/rate-limiter';
+import { MAX_WORKBOOK_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
 export async function POST(req: Request) {
@@ -14,15 +16,12 @@ export async function POST(req: Request) {
   if (!caller.isAuthenticated) {
     return NextResponse.json({ error: 'Yêu cầu đăng nhập.', code: 'UNAUTHORIZED' }, { status: 401 });
   }
-  const sizeCheck = checkPayloadSizeLimit(req, MAX_WORKBOOK_PAYLOAD_BYTES);
-  if (!sizeCheck.allowed) {
-    return NextResponse.json(
-      { error: 'Dung lượng dữ liệu đồng bộ vượt quá giới hạn 5MB.', code: 'PAYLOAD_TOO_LARGE' },
-      { status: 413 }
-    );
+  const parsed = await readBoundedJsonBody<Record<string, unknown>>(req, MAX_WORKBOOK_PAYLOAD_BYTES);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
   }
   try {
-    const body = await req.json();
+    const body = parsed.data as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const summary: SplitResultSummary = body.summary;
     const extra = body.extra as {
       scaleMetrics?: UnitScaleMetrics;
@@ -61,6 +60,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const rateErr = enforceApiRateLimit('workbook_write', summary.unitCode);
+    if (rateErr) return rateErr;
+
+    return await withHeavyMutationBudget({ kind: 'workbook_save', unitCode: summary.unitCode, actorEmail: caller.email }, async () => {
 
     const c1Rows = (summary.positionBreakdown || []).map((p) => {
       const fwMatch = ND232_2026_VTVL_CATALOG.find((f) => f.positionName === (p.frameworkTitle || p.vtvlName));
@@ -181,7 +185,10 @@ export async function POST(req: Request) {
     invalidateUnitMutationCache(summary.unitCode);
 
     return NextResponse.json({ success: true, message: 'Đồng bộ hồ sơ máy chủ thành công.' });
+    });
   } catch (error: unknown) {
+    const busy = toHeavyBusyResponse(error);
+    if (busy) return busy;
     const errObj = error as { table?: string; status?: number; message?: string };
     const failedTable = errObj?.table || 'unknown';
     const status = errObj?.status && errObj.status >= 500 && errObj.status < 600 ? 502 : 500;
@@ -195,4 +202,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

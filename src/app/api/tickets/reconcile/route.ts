@@ -13,7 +13,9 @@ import {
   getRecordedIdempotencyResponse,
   saveIdempotencyResponse
 } from '@/services/storage/server-mission-counter';
-import { handleTicketRouteError } from '@/services/tickets/ticket-route-helpers';
+import { handleTicketRouteError, parseTicketJsonWithGuard } from '@/services/tickets/ticket-route-helpers';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -50,7 +52,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const parsed = await parseTicketJsonWithGuard(req);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const requestedUnit = String(body.unitCode || caller.unitCode || '').trim().toUpperCase();
     if (!requestedUnit) {
       return NextResponse.json({ error: 'Thiếu mã đơn vị cần đối soát.', code: 'MISSING_UNIT_CODE' }, { status: 400 });
@@ -68,6 +72,9 @@ export async function POST(req: NextRequest) {
       if (recorded) return NextResponse.json({ ...recorded, idempotent: true });
     }
 
+    const rateErr = enforceApiRateLimit('unit_reconcile', requestedUnit);
+    if (rateErr) return rateErr;
+
     if (body.async === true) {
       const queued = await enqueueBackgroundJob({
         jobType: 'batch_reconcile_unit',
@@ -79,7 +86,10 @@ export async function POST(req: NextRequest) {
       const claimed = await claimNextQueuedBackgroundJob('batch_reconcile_unit');
       if (claimed) {
         try {
-          const result = await batchReconcileUnitTickets(claimed.unitCode, claimed.actorEmail);
+          const result = await withHeavyMutationBudget(
+            { kind: 'unit_reconcile', op: 'reconcile_unit', unitCode: claimed.unitCode, actorEmail: claimed.actorEmail },
+            () => batchReconcileUnitTickets(claimed.unitCode, claimed.actorEmail)
+          );
           const completed = await completeBackgroundJob(claimed.id, result as unknown as Record<string, unknown>, 100);
           return NextResponse.json({ ok: true, mode: 'background_job', job: completed || claimed, result }, { status: 202 });
         } catch (jobErr) {
@@ -90,7 +100,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, mode: 'background_job', job: queued }, { status: 202 });
     }
 
-    const result = await batchReconcileUnitTickets(requestedUnit, caller.email);
+    const result = await withHeavyMutationBudget(
+      { kind: 'unit_reconcile', op: 'reconcile_unit', unitCode: requestedUnit, actorEmail: caller.email },
+      () => batchReconcileUnitTickets(requestedUnit, caller.email)
+    );
     const payload = { ok: true, mode: 'synchronous_batch', ...result };
     if (idempotencyKey) {
       await saveIdempotencyResponse({

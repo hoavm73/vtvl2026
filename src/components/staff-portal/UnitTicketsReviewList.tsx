@@ -14,6 +14,7 @@ import {
   UnitReviewMode,
   UnitTicketsFilterBar
 } from './UnitTicketsFilterBar';
+import { buildPendingCascadeState } from './unit-tickets-cascade-helpers';
 
 interface UnitTicketsReviewListProps {
   tickets: StaffWorkTicket[];
@@ -52,6 +53,8 @@ export function UnitTicketsReviewList({
   const activeUnitFilter = controlledUnitFilter !== undefined ? controlledUnitFilter : internalUnitFilter;
   const [search, setSearch] = useState('');
   const [pendingSubFilter, setPendingSubFilter] = useState<PendingSubFilter>('ALL');
+  const [pendingMissionFilter, setPendingMissionFilter] = useState('ALL');
+  const [pendingOwnerFilter, setPendingOwnerFilter] = useState('ALL');
   const [approvedSubFilter, setApprovedSubFilter] = useState<ApprovedSubFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [ownerFilter, setOwnerFilter] = useState('ALL');
@@ -68,27 +71,29 @@ export function UnitTicketsReviewList({
   const owners = useMemo(() => Array.from(new Set(unitScopedTickets.map((t) => t.ownerName || t.ownerEmail))), [unitScopedTickets]);
   const missions = useMemo(() => Array.from(new Set(unitScopedTickets.map((t) => t.maNhiemVu).filter(Boolean))), [unitScopedTickets]);
 
-  const { waitingCount, changesCount, unmergedCount, mergedCount } = useMemo(() => {
-    let waitingCount = 0, changesCount = 0, unmergedCount = 0, mergedCount = 0;
+  const { unmergedCount, mergedCount } = useMemo(() => {
+    let unmergedCount = 0, mergedCount = 0;
     for (const t of unitScopedTickets) {
-      const c = toCanonicalStatus(t.status);
-      if (c === 'submitted' || c === 'resubmitted') waitingCount += 1;
-      else if (c === 'changes_requested') changesCount += 1;
-      else if (c === 'approved') { if (t.isMergedToB1B2) mergedCount += 1; else unmergedCount += 1; }
+      if (toCanonicalStatus(t.status) === 'approved') {
+        if (t.isMergedToB1B2) mergedCount += 1; else unmergedCount += 1;
+      }
     }
-    return { waitingCount, changesCount, unmergedCount, mergedCount };
+    return { unmergedCount, mergedCount };
   }, [unitScopedTickets]);
+
+  const pendingCascade = useMemo(
+    () => buildPendingCascadeState(unitScopedTickets, pendingMissionFilter, pendingOwnerFilter, pendingSubFilter),
+    [unitScopedTickets, pendingMissionFilter, pendingOwnerFilter, pendingSubFilter]
+  );
+
+  const handlePendingMissionChange = (val: string) => { setPendingMissionFilter(val); setPendingOwnerFilter('ALL'); setPendingSubFilter('ALL'); setPage(1); };
+  const handlePendingOwnerChange = (val: string) => { setPendingOwnerFilter(val); setPendingSubFilter('ALL'); setPage(1); };
+  const handleResetPendingFilters = () => { setPendingMissionFilter('ALL'); setPendingOwnerFilter('ALL'); setPendingSubFilter('ALL'); setSearch(''); setPage(1); };
 
   const displayedTickets = useMemo(() => {
     let list = [...unitScopedTickets];
     if (mode === 'pending') {
-      list = list.filter((t) => {
-        const c = toCanonicalStatus(t.status);
-        if (pendingSubFilter === 'WAITING') return c === 'submitted' || c === 'resubmitted';
-        if (pendingSubFilter === 'CHANGES') return c === 'changes_requested';
-        return c === 'submitted' || c === 'resubmitted' || c === 'changes_requested';
-      });
-      list.sort((a, b) => (b.revisionRequestedAt || b.resubmittedAt || b.submittedAt || b.updatedAt).localeCompare(a.revisionRequestedAt || a.resubmittedAt || a.submittedAt || a.updatedAt));
+      list = pendingCascade.filteredTickets;
     } else if (mode === 'approved') {
       list = list.filter((t) => {
         if (toCanonicalStatus(t.status) !== 'approved') return false;
@@ -111,7 +116,7 @@ export function UnitTicketsReviewList({
       );
     }
     return list;
-  }, [unitScopedTickets, mode, pendingSubFilter, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
+  }, [unitScopedTickets, mode, pendingCascade, approvedSubFilter, statusFilter, ownerFilter, missionFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(displayedTickets.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -128,9 +133,17 @@ export function UnitTicketsReviewList({
     <div className="bg-white rounded-[14px] border border-[#e2e8f0] overflow-hidden">
       <UnitTicketsFilterBar
         mode={mode}
-        search={search} onSearchChange={setSearch}
-        pendingSubFilter={pendingSubFilter} onPendingSubFilterChange={setPendingSubFilter}
-        waitingCount={waitingCount} changesCount={changesCount}
+        search={search} onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        pendingSubFilter={pendingCascade.effectiveStatus}
+        onPendingSubFilterChange={(val) => { setPendingSubFilter(val); setPage(1); }}
+        pendingMissionFilter={pendingCascade.effectiveMission}
+        onPendingMissionFilterChange={handlePendingMissionChange}
+        pendingMissionOptions={pendingCascade.missionOptions}
+        pendingOwnerFilter={pendingCascade.effectiveOwner}
+        onPendingOwnerFilterChange={handlePendingOwnerChange}
+        pendingOwnerOptions={pendingCascade.ownerOptions}
+        pendingStatusOptions={pendingCascade.statusOptions}
+        onResetPendingFilters={handleResetPendingFilters}
         approvedSubFilter={approvedSubFilter} onApprovedSubFilterChange={setApprovedSubFilter}
         unmergedCount={unmergedCount} mergedCount={mergedCount}
         statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}

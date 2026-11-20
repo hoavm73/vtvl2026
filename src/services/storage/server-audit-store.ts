@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Prisma } from '@prisma/client';
-import { isDatabaseConfigured, prisma } from './prisma';
+import { isDatabaseConfigured, prisma, toIsoString } from './prisma';
 import { writeJsonFileAtomic } from './atomic-json-file';
 
 export interface ServerAuditLog {
@@ -112,7 +112,7 @@ export async function persistAuditLogToSupabase(log: ServerAuditLog): Promise<vo
         target_entity: log.targetEntity || null,
         old_values: log.oldValues ? (log.oldValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
         new_values: log.newValues ? (log.newValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
-        metadata: { details: log.details, unitName: log.unitName } as unknown as Prisma.InputJsonValue
+        metadata: { details: log.details, unitName: log.unitName, clientLogId: log.id } as unknown as Prisma.InputJsonValue
       }
     });
   } catch (e) {
@@ -133,14 +133,76 @@ export async function persistAuditLogToSupabase(log: ServerAuditLog): Promise<vo
   }
 }
 
-export function getAuditLogs(filter?: { unitCode?: string; workbookId?: string; limit?: number }): ServerAuditLog[] {
+export async function syncAuditLogsFromSupabase(limit = 500): Promise<void> {
+  if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return;
+  ensureLoaded();
+  try {
+    const rows = await prisma.audit_logs.findMany({
+      orderBy: { created_at: 'desc' },
+      take: Math.max(50, Math.min(limit, 2000))
+    });
+    const knownIds = new Set(memoryAuditLogs.map((l) => l.id));
+    let merged = false;
+    for (const row of rows) {
+      const dbId = `db_audit_${row.id.toString()}`;
+      const meta = (row.metadata && typeof row.metadata === 'object' ? row.metadata : {}) as Record<string, unknown>;
+      const clientLogId = typeof meta.clientLogId === 'string' ? meta.clientLogId : '';
+      if (knownIds.has(dbId) || (clientLogId && knownIds.has(clientLogId))) continue;
+      const unitUpper = String(row.unit_id || '').trim().toUpperCase();
+      const createdAt = toIsoString(row.created_at) || new Date().toISOString();
+      const ts = new Date(createdAt).getTime() || Date.now();
+      const details = typeof meta.details === 'string' && meta.details ? meta.details : row.action;
+      const actor = row.actor_email || 'system';
+      const fuzzyDup = memoryAuditLogs.some(
+        (m) => m.action === row.action && m.unitCode.toUpperCase() === unitUpper && (m.actorEmail || 'system') === actor && Math.abs((m.timestamp || 0) - ts) < 5000
+      );
+      if (fuzzyDup) { knownIds.add(dbId); continue; }
+      memoryAuditLogs.push({
+        id: clientLogId || dbId,
+        workbookId: row.workbook_id || undefined,
+        unitCode: unitUpper || 'TCNS',
+        unitId: unitUpper || 'TCNS',
+        unitName: typeof meta.unitName === 'string' && meta.unitName ? meta.unitName : (unitUpper || 'TCNS'),
+        action: row.action,
+        details,
+        actorEmail: actor,
+        actorRole: row.actor_role || undefined,
+        targetId: row.target_id || undefined,
+        targetEntity: row.target_entity || undefined,
+        oldValues: (row.old_values && typeof row.old_values === 'object' ? row.old_values : null) as Record<string, unknown> | null,
+        newValues: (row.new_values && typeof row.new_values === 'object' ? row.new_values : null) as Record<string, unknown> | null,
+        createdAt,
+        timestamp: ts
+      });
+      knownIds.add(clientLogId || dbId);
+      merged = true;
+    }
+    if (merged) {
+      memoryAuditLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      if (memoryAuditLogs.length > 5000) memoryAuditLogs.length = 5000;
+      persistLogs();
+    }
+  } catch { /* fallback cleanly to local/memory audit logs */ }
+}
+
+export function getAuditLogs(filter?: {
+  unitCode?: string;
+  workbookId?: string;
+  actions?: ReadonlySet<string> | string[];
+  limit?: number;
+}): ServerAuditLog[] {
   ensureLoaded();
   let list = [...memoryAuditLogs];
   if (filter?.unitCode) {
-    list = list.filter((l) => l.unitCode === filter.unitCode);
+    const targetUnit = filter.unitCode.trim().toUpperCase();
+    list = list.filter((l) => (l.unitCode || '').trim().toUpperCase() === targetUnit);
   }
   if (filter?.workbookId) {
     list = list.filter((l) => l.workbookId === filter.workbookId);
+  }
+  if (filter?.actions) {
+    const actionSet = filter.actions instanceof Set ? filter.actions : new Set(filter.actions);
+    list = list.filter((l) => actionSet.has(l.action));
   }
   const max = filter?.limit || 100;
   return list.slice(0, max);

@@ -83,7 +83,13 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
     return units.filter((u) => {
       if (groupFilter !== 'ALL' && u.group !== groupFilter) return false;
       const st = u.reviewStatus || 'chua_gui';
-      if (statusFilter !== 'ALL' && st !== statusFilter) return false;
+      if (statusFilter === 'STEP_SUBMITTED') {
+        if (st !== 'cho_tham_dinh' && st !== 'da_gui_lai') return false;
+      } else if (statusFilter === 'STEP_APPROVED') {
+        if (st !== 'dat_yeu_cau' && st !== 'da_khoa') return false;
+      } else if (statusFilter !== 'ALL' && st !== statusFilter) {
+        return false;
+      }
       if (reviewerFilter !== 'ALL' && (u.reviewerEmail || '') !== reviewerFilter) return false;
       if (onlyErrors && (u.errorCount ?? 0) === 0) return false;
       if (search.trim()) {
@@ -139,6 +145,8 @@ export function TcnsReviewListPanel({ onSelectUnit }: TcnsReviewListPanelProps) 
         </select>
         <select aria-label="Lọc theo trạng thái thẩm định" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 px-2.5 rounded-[8px] border border-[#cbd5e1] bg-white text-xs font-medium text-[#004776]">
           <option value="ALL">Mọi trạng thái thẩm định</option>
+          <option value="STEP_SUBMITTED">Đã gửi TCNS (Chờ / Gửi lại)</option>
+          <option value="STEP_APPROVED">Đạt &amp; khóa (Đạt / Đã khóa)</option>
           {(Object.keys(REVIEW_STATUS_LABELS) as WorkbookReviewStatus[]).map((st) => (
             <option key={st} value={st}>{REVIEW_STATUS_LABELS[st]}</option>
           ))}

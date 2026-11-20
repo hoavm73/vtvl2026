@@ -1,0 +1,5025 @@
+{
+  "generatedAt": "2026-11-19T16:01:12.677Z",
+  "environment": {
+    "postgresVersion": "PostgreSQL 16.16 (isolated local cluster port 5439)",
+    "nginxVersion": "nginx/1.31.9 (staging port 8360)",
+    "nextMode": "next build standalone (port 3369)",
+    "pgPoolMaxConfigured": 5,
+    "concurrentSessions": 250,
+    "activeUnits": 39
+  },
+  "stageDurationsSec": {
+    "stage1_initAndMigrateSec": 2.62,
+    "stage2_functionalAndChaosSec": 10.71,
+    "stage3_seedAndBurst39Sec": 7.26,
+    "stage4_loadAndCeilingSec": 133.49,
+    "stage5_processRecoverySec": 1.84,
+    "stage6_pgDumpAndRestoreSec": 7.05,
+    "totalBenchmarkWallSec": 162.95
+  },
+  "healthCheckVerification": {
+    "liveStatus": 200,
+    "liveBody": {
+      "status": "ok"
+    },
+    "readyStatus": 200,
+    "readyBody": {
+      "status": "ready"
+    }
+  },
+  "partA_functionalAndChaos": {
+    "sharedIpIsolationPassed": true,
+    "timeout429RetryPassed": true,
+    "dualApproverRacePassed": true,
+    "sigkillOrphanRecovered": true,
+    "ticketsTotal": 44,
+    "duplicateTaskCodes": 0,
+    "versionsCount": 46,
+    "historyTotalCount": 94,
+    "historyByAction": {
+      "APPROVE": 44,
+      "MERGE_TO_SHEETS": 2,
+      "REQUEST_CHANGES": 2,
+      "RESUBMIT": 2,
+      "SUBMIT": 44
+    },
+    "workbookA2AddedRows": 44,
+    "workbookB1AddedRows": 44,
+    "totalHoursSql": 564,
+    "totalHoursWbB1": 564,
+    "hoursDiff": 0,
+    "perUnitReconciliation": [
+      {
+        "unitCode": "BANTT",
+        "ticketsBefore": 0,
+        "ticketsAfter": 5,
+        "versionsAfter": 6,
+        "historyAfter": 12,
+        "a2Before": 5,
+        "a2After": 10,
+        "b1Before": 5,
+        "b1After": 10,
+        "sqlAddedHours": 52,
+        "wbB1AddedHours": 52,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "CK",
+        "ticketsBefore": 0,
+        "ticketsAfter": 5,
+        "versionsAfter": 6,
+        "historyAfter": 12,
+        "a2Before": 8,
+        "a2After": 13,
+        "b1Before": 8,
+        "b1After": 13,
+        "sqlAddedHours": 57,
+        "wbB1AddedHours": 57,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "CNPM",
+        "ticketsBefore": 0,
+        "ticketsAfter": 5,
+        "versionsAfter": 5,
+        "historyAfter": 11,
+        "a2Before": 4,
+        "a2After": 9,
+        "b1Before": 4,
+        "b1After": 9,
+        "sqlAddedHours": 70,
+        "wbB1AddedHours": 70,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "CNTT",
+        "ticketsBefore": 0,
+        "ticketsAfter": 5,
+        "versionsAfter": 5,
+        "historyAfter": 11,
+        "a2Before": 8,
+        "a2After": 13,
+        "b1Before": 8,
+        "b1After": 13,
+        "sqlAddedHours": 62,
+        "wbB1AddedHours": 62,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "CTL",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 8,
+        "a2After": 12,
+        "b1Before": 8,
+        "b1After": 12,
+        "sqlAddedHours": 66,
+        "wbB1AddedHours": 66,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "CTSV",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 5,
+        "a2After": 9,
+        "b1Before": 5,
+        "b1After": 9,
+        "sqlAddedHours": 41,
+        "wbB1AddedHours": 41,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "DDT",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 8,
+        "a2After": 12,
+        "b1Before": 8,
+        "b1After": 12,
+        "sqlAddedHours": 44.5,
+        "wbB1AddedHours": 44.5,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "DT",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 5,
+        "a2After": 9,
+        "b1Before": 5,
+        "b1After": 9,
+        "sqlAddedHours": 50,
+        "wbB1AddedHours": 50,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "DTTT",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 8,
+        "a2After": 12,
+        "b1Before": 8,
+        "b1After": 12,
+        "sqlAddedHours": 64.5,
+        "wbB1AddedHours": 64.5,
+        "hoursDiff": 0
+      },
+      {
+        "unitCode": "GDQPAN",
+        "ticketsBefore": 0,
+        "ticketsAfter": 4,
+        "versionsAfter": 4,
+        "historyAfter": 8,
+        "a2Before": 4,
+        "a2After": 8,
+        "b1Before": 4,
+        "b1After": 8,
+        "sqlAddedHours": 57,
+        "wbB1AddedHours": 57,
+        "hoursDiff": 0
+      }
+    ]
+  },
+  "burst39UnitsSummary": {
+    "datasetBeforeBurst": {
+      "totalTickets": 20000,
+      "totalVersions": 60000,
+      "totalHistory": 40000,
+      "totalVersionAndHistory": 100000,
+      "sampleIdsByUnit": {
+        "BANTT": "tkt-seed-BANTT-01001",
+        "CK": "tkt-seed-CK-01002",
+        "CNPM": "tkt-seed-CNPM-01003",
+        "CNTT": "tkt-seed-CNTT-01004",
+        "CTL": "tkt-seed-CTL-01005",
+        "CTSV": "tkt-seed-CTSV-01006",
+        "DDT": "tkt-seed-DDT-01007",
+        "DT": "tkt-seed-DT-01008",
+        "DTTT": "tkt-seed-DTTT-01009",
+        "GDQPAN": "tkt-seed-GDQPAN-01010",
+        "GDTC": "tkt-seed-GDTC-01011",
+        "GTNL": "tkt-seed-GTNL-01012",
+        "HCTH": "tkt-seed-HCTH-01013",
+        "HHKHSS": "tkt-seed-HHKHSS-01014",
+        "HLDHS": "tkt-seed-HLDHS-01015",
+        "KHCN": "tkt-seed-KHCN-01016",
+        "KHTC": "tkt-seed-KHTC-01017",
+        "KHUD": "tkt-seed-KHUD-01018",
+        "KT": "tkt-seed-KT-01058",
+        "KTDBCL": "tkt-seed-KTDBCL-01098",
+        "KTX": "tkt-seed-KTX-01021",
+        "MTTT": "tkt-seed-MTTT-01022",
+        "NN": "tkt-seed-NN-01023",
+        "PHBP": "tkt-seed-PHBP-01024",
+        "QHDN": "tkt-seed-QHDN-01025",
+        "QHQT": "tkt-seed-QHQT-01026",
+        "QLDTXDDT": "tkt-seed-QLDTXDDT-01027",
+        "QTCSVC": "tkt-seed-QTCSVC-01028",
+        "QTTHTT": "tkt-seed-QTTHTT-01029",
+        "SDH": "tkt-seed-SDH-01030",
+        "STKNCCCN": "tkt-seed-STKNCCCN-01031",
+        "TCKHGDKT": "tkt-seed-TCKHGDKT-01032",
+        "TCNS": "tkt-seed-TCNS-01033",
+        "TTTTMT": "tkt-seed-TTTTMT-01034",
+        "TYT": "tkt-seed-TYT-01035",
+        "VDTQT": "tkt-seed-VDTQT-01036",
+        "VPDU": "tkt-seed-VPDU-01037",
+        "VSPKT": "tkt-seed-VSPKT-01038",
+        "XD": "tkt-seed-XD-01078"
+      }
+    },
+    "warmAfterSeedReconcileCheck": {
+      "unitCode": "BANTT",
+      "status": 200,
+      "mergedCount": 382
+    },
+    "wave1Creates200": 39,
+    "wave1CreateInitial429": 0,
+    "wave1ReconcilesUnits200": 39,
+    "wave1TotalMergedTickets": 14588,
+    "remainingUnmergedApproved": 0,
+    "wave1Initial429": 0,
+    "wave1Retries": 0,
+    "wave1Initial5xx": 0,
+    "wave1WallMs": 3051.86,
+    "wave1ReconcileLatencies": {
+      "count": 39,
+      "avgMs": 1729.03,
+      "p50Ms": 1729.87,
+      "p95Ms": 2982.33,
+      "p99Ms": 3049.34,
+      "maxMs": 3049.34
+    },
+    "wave1HeavyGatePeakActive": 6,
+    "wave1HeavyGatePeakQueued": 37,
+    "wave1PgPool": {
+      "configuredMax": 5,
+      "isPgBouncer": false,
+      "liveTotalCount": 5,
+      "liveIdleCount": 5,
+      "liveWaitingCount": 0,
+      "peakWaitingCount": 7,
+      "peakTotalCount": 5,
+      "totalAcquires": 445,
+      "acquireErrors": 0,
+      "avgWaitMs": 0.46,
+      "p95WaitMs": 2.86,
+      "p99WaitMs": 7.89,
+      "maxWaitMs": 9.18
+    },
+    "wave2QueueShedTest": {
+      "total": 85,
+      "ok200": 70,
+      "busy429": 15,
+      "err5xx": 0
+    }
+  },
+  "perIdReconciliation": [
+    {
+      "phaseLabel": "stage2_afterChaos10Units",
+      "unitsChecked": 39,
+      "totalApprovedDbIds": 44,
+      "matchedA2Ids": 44,
+      "matchedB1Ids": 44,
+      "matchedMergeLinkPairs": 44,
+      "unmergedFlagCount": 0,
+      "missingInA2Count": 0,
+      "missingInB1Count": 0,
+      "duplicateInA2Count": 0,
+      "duplicateInB1Count": 0,
+      "orphanSourceIdsCount": 0,
+      "missingMergeLinksCount": 0
+    },
+    {
+      "phaseLabel": "stage3_afterBurst39Units",
+      "unitsChecked": 39,
+      "totalApprovedDbIds": 15014,
+      "matchedA2Ids": 15014,
+      "matchedB1Ids": 15014,
+      "matchedMergeLinkPairs": 15014,
+      "unmergedFlagCount": 0,
+      "missingInA2Count": 0,
+      "missingInB1Count": 0,
+      "duplicateInA2Count": 0,
+      "duplicateInB1Count": 0,
+      "orphanSourceIdsCount": 0,
+      "missingMergeLinksCount": 0
+    },
+    {
+      "phaseLabel": "stage4_afterHighLoad39Units",
+      "unitsChecked": 39,
+      "totalApprovedDbIds": 15581,
+      "matchedA2Ids": 15581,
+      "matchedB1Ids": 15581,
+      "matchedMergeLinkPairs": 15581,
+      "unmergedFlagCount": 0,
+      "missingInA2Count": 0,
+      "missingInB1Count": 0,
+      "duplicateInA2Count": 0,
+      "duplicateInB1Count": 0,
+      "orphanSourceIdsCount": 0,
+      "missingMergeLinksCount": 0
+    },
+    {
+      "phaseLabel": "stage6_afterPgRestore39Units",
+      "unitsChecked": 39,
+      "totalApprovedDbIds": 15581,
+      "matchedA2Ids": 15581,
+      "matchedB1Ids": 15581,
+      "matchedMergeLinkPairs": 15581,
+      "unmergedFlagCount": 0,
+      "missingInA2Count": 0,
+      "missingInB1Count": 0,
+      "duplicateInA2Count": 0,
+      "duplicateInB1Count": 0,
+      "orphanSourceIdsCount": 0,
+      "missingMergeLinksCount": 0
+    }
+  ],
+  "staticCacheVerification": {
+    "url": "/_next/static/chunks/webpack-b8e1e74fcc0052ca.js",
+    "hit1": "MISS",
+    "hit2": "HIT",
+    "apiCacheControl": "no-store"
+  },
+  "dryRunRuns": [
+    {
+      "mode": "nginx_dry_run_on",
+      "targetRps": 30,
+      "durationSec": 6,
+      "totalRequests": 180,
+      "wallTimeSec": 6.05,
+      "drainTailMs": 80.52,
+      "achievedRps": 29.7,
+      "achieved2xxRps": 29.75,
+      "status2xx": 180,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 7.57,
+      "p95Ms": 28.86,
+      "p99Ms": 96.81,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 72,
+          "avgMs": 7.59,
+          "p50Ms": 7.69,
+          "p95Ms": 9.66,
+          "p99Ms": 18.08,
+          "maxMs": 18.08,
+          "ok2xx": 72,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 27,
+          "avgMs": 5.18,
+          "p50Ms": 3.7,
+          "p95Ms": 23.74,
+          "p99Ms": 27.14,
+          "maxMs": 27.14,
+          "ok2xx": 27,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 27,
+          "avgMs": 17.23,
+          "p50Ms": 7.55,
+          "p95Ms": 28.86,
+          "p99Ms": 126.57,
+          "maxMs": 126.57,
+          "ok2xx": 27,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 45,
+          "avgMs": 11.86,
+          "p50Ms": 7.67,
+          "p95Ms": 38.58,
+          "p99Ms": 58.59,
+          "maxMs": 58.59,
+          "ok2xx": 45,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 9,
+          "avgMs": 36.15,
+          "p50Ms": 10.79,
+          "p95Ms": 96.81,
+          "p99Ms": 96.81,
+          "maxMs": 96.81,
+          "ok2xx": 9,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 126,
+          "distinctSubjects": 126,
+          "distinctActors": 126,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 45,
+          "distinctSubjects": 44,
+          "distinctActors": 44,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.02,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 0,
+          "distinctSubjects": 0,
+          "distinctActors": 0,
+          "minReqsPerSubject": 0,
+          "avgReqsPerSubject": 0,
+          "maxReqsPerSubject": 0,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 6,
+          "distinctSubjects": 6,
+          "distinctActors": 6,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 3,
+          "distinctSubjects": 3,
+          "distinctActors": 3,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 2,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 2,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.27,
+              "p50Ms": 5.45,
+              "p95Ms": 32.78,
+              "p99Ms": 53.68,
+              "maxMs": 53.68
+            }
+          },
+          "unit_reconcile": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.8,
+              "p50Ms": 8.64,
+              "p95Ms": 11.29,
+              "p99Ms": 11.29,
+              "maxMs": 11.29
+            }
+          },
+          "workbook_save": {
+            "count": 3,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 79.46,
+              "p50Ms": 77.82,
+              "p95Ms": 88.9,
+              "p99Ms": 88.9,
+              "maxMs": 88.9
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.27,
+              "p50Ms": 5.45,
+              "p95Ms": 32.78,
+              "p99Ms": 53.68,
+              "maxMs": 53.68
+            }
+          },
+          "reconcile_unit": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.8,
+              "p50Ms": 8.64,
+              "p95Ms": 11.29,
+              "p99Ms": 11.29,
+              "maxMs": 11.29
+            }
+          },
+          "save_workbook": {
+            "count": 3,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 79.46,
+              "p50Ms": 77.82,
+              "p95Ms": 88.9,
+              "p99Ms": 88.9,
+              "maxMs": 88.9
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.56,
+              "p50Ms": 0.42,
+              "p95Ms": 1.04,
+              "p99Ms": 2.63,
+              "maxMs": 2.63
+            },
+            "holdMs": {
+              "avgMs": 7.4,
+              "p50Ms": 4.87,
+              "p95Ms": 32.05,
+              "p99Ms": 53.03,
+              "maxMs": 53.03
+            }
+          },
+          "unit_wb": {
+            "count": 9,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.47,
+              "p50Ms": 0.42,
+              "p95Ms": 0.67,
+              "p99Ms": 0.67,
+              "maxMs": 0.67
+            },
+            "holdMs": {
+              "avgMs": 31.58,
+              "p50Ms": 8.2,
+              "p95Ms": 88.09,
+              "p99Ms": 88.09,
+              "maxMs": 88.09
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 178,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.03,
+        "p95WaitMs": 0.04,
+        "p99WaitMs": 0.7,
+        "maxWaitMs": 0.79
+      }
+    },
+    {
+      "mode": "nginx_dry_run_on",
+      "targetRps": 60,
+      "durationSec": 6,
+      "totalRequests": 360,
+      "wallTimeSec": 6.1,
+      "drainTailMs": 111.41,
+      "achievedRps": 59,
+      "achieved2xxRps": 59.02,
+      "status2xx": 360,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.98,
+      "p95Ms": 221.2,
+      "p99Ms": 393.28,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 144,
+          "avgMs": 29.72,
+          "p50Ms": 7.03,
+          "p95Ms": 232.78,
+          "p99Ms": 435.35,
+          "maxMs": 775.1,
+          "ok2xx": 144,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 54,
+          "avgMs": 13.38,
+          "p50Ms": 2.68,
+          "p95Ms": 165.43,
+          "p99Ms": 196.48,
+          "maxMs": 196.48,
+          "ok2xx": 54,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 54,
+          "avgMs": 44.07,
+          "p50Ms": 12.91,
+          "p95Ms": 379.65,
+          "p99Ms": 393.28,
+          "maxMs": 393.28,
+          "ok2xx": 54,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 90,
+          "avgMs": 28.02,
+          "p50Ms": 7.1,
+          "p95Ms": 332.91,
+          "p99Ms": 377.04,
+          "maxMs": 377.04,
+          "ok2xx": 90,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 18,
+          "avgMs": 52.87,
+          "p50Ms": 10.45,
+          "p95Ms": 395.11,
+          "p99Ms": 395.11,
+          "maxMs": 395.11,
+          "ok2xx": 18,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 252,
+          "distinctSubjects": 208,
+          "distinctActors": 208,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.21,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 81,
+          "distinctSubjects": 75,
+          "distinctActors": 75,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.08,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 9,
+          "distinctSubjects": 9,
+          "distinctActors": 9,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 12,
+          "distinctSubjects": 12,
+          "distinctActors": 12,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 6,
+          "distinctSubjects": 6,
+          "distinctActors": 6,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 1,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 1,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 90,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.05,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 4.21,
+              "maxMs": 4.21
+            },
+            "holdMs": {
+              "avgMs": 7.73,
+              "p50Ms": 5.09,
+              "p95Ms": 34.86,
+              "p99Ms": 38.25,
+              "maxMs": 38.25
+            }
+          },
+          "unit_reconcile": {
+            "count": 12,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.65,
+              "p50Ms": 8.05,
+              "p95Ms": 14.92,
+              "p99Ms": 14.92,
+              "maxMs": 14.92
+            }
+          },
+          "workbook_save": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.07,
+              "p50Ms": 0,
+              "p95Ms": 0.43,
+              "p99Ms": 0.43,
+              "maxMs": 0.43
+            },
+            "holdMs": {
+              "avgMs": 81.34,
+              "p50Ms": 71.15,
+              "p95Ms": 103.08,
+              "p99Ms": 103.08,
+              "maxMs": 103.08
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 81,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.05,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 4.21,
+              "maxMs": 4.21
+            },
+            "holdMs": {
+              "avgMs": 7.89,
+              "p50Ms": 4.79,
+              "p95Ms": 34.86,
+              "p99Ms": 38.25,
+              "maxMs": 38.25
+            }
+          },
+          "review_ticket": {
+            "count": 9,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 6.23,
+              "p50Ms": 6.17,
+              "p95Ms": 8.8,
+              "p99Ms": 8.8,
+              "maxMs": 8.8
+            }
+          },
+          "reconcile_unit": {
+            "count": 12,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 8.65,
+              "p50Ms": 8.05,
+              "p95Ms": 14.92,
+              "p99Ms": 14.92,
+              "maxMs": 14.92
+            }
+          },
+          "save_workbook": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.07,
+              "p50Ms": 0,
+              "p95Ms": 0.43,
+              "p99Ms": 0.43,
+              "maxMs": 0.43
+            },
+            "holdMs": {
+              "avgMs": 81.34,
+              "p50Ms": 71.15,
+              "p95Ms": 103.08,
+              "p99Ms": 103.08,
+              "maxMs": 103.08
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 90,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.46,
+              "p50Ms": 0.39,
+              "p95Ms": 0.87,
+              "p99Ms": 1.42,
+              "maxMs": 1.42
+            },
+            "holdMs": {
+              "avgMs": 7.04,
+              "p50Ms": 4.42,
+              "p95Ms": 34.27,
+              "p99Ms": 37.64,
+              "maxMs": 37.64
+            }
+          },
+          "unit_wb": {
+            "count": 18,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.52,
+              "p50Ms": 0.51,
+              "p95Ms": 1.08,
+              "p99Ms": 1.08,
+              "maxMs": 1.08
+            },
+            "holdMs": {
+              "avgMs": 32.07,
+              "p50Ms": 7.54,
+              "p95Ms": 102.36,
+              "p99Ms": 102.36,
+              "maxMs": 102.36
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 331,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.02,
+        "p95WaitMs": 0.04,
+        "p99WaitMs": 0.13,
+        "maxWaitMs": 0.42
+      }
+    },
+    {
+      "mode": "nginx_dry_run_on",
+      "targetRps": 100,
+      "durationSec": 8,
+      "totalRequests": 800,
+      "wallTimeSec": 8.08,
+      "drainTailMs": 87.12,
+      "achievedRps": 99,
+      "achieved2xxRps": 98.95,
+      "status2xx": 800,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.92,
+      "p95Ms": 33.22,
+      "p99Ms": 94.01,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 320,
+          "avgMs": 8.8,
+          "p50Ms": 6.95,
+          "p95Ms": 17.39,
+          "p99Ms": 40.05,
+          "maxMs": 55.89,
+          "ok2xx": 320,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 120,
+          "avgMs": 4.07,
+          "p50Ms": 2.92,
+          "p95Ms": 8.28,
+          "p99Ms": 14.32,
+          "maxMs": 22.45,
+          "ok2xx": 120,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 120,
+          "avgMs": 13.63,
+          "p50Ms": 11.98,
+          "p95Ms": 31.53,
+          "p99Ms": 37.53,
+          "maxMs": 58.21,
+          "ok2xx": 120,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 200,
+          "avgMs": 9.69,
+          "p50Ms": 7.19,
+          "p95Ms": 21.99,
+          "p99Ms": 69.09,
+          "maxMs": 72.18,
+          "ok2xx": 200,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 40,
+          "avgMs": 62.5,
+          "p50Ms": 82.23,
+          "p95Ms": 113.75,
+          "p99Ms": 115.27,
+          "maxMs": 115.27,
+          "ok2xx": 40,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 560,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.24,
+          "maxReqsPerSubject": 4,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 169,
+          "distinctSubjects": 112,
+          "distinctActors": 112,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.51,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 31,
+          "distinctSubjects": 19,
+          "distinctActors": 19,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.63,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 27,
+          "distinctSubjects": 22,
+          "distinctActors": 22,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.23,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 13,
+          "distinctSubjects": 13,
+          "distinctActors": 13,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 200,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 6.98,
+              "p50Ms": 4.99,
+              "p95Ms": 16.07,
+              "p99Ms": 53.44,
+              "maxMs": 60.29
+            }
+          },
+          "unit_reconcile": {
+            "count": 27,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 46.59,
+              "p50Ms": 21.03,
+              "p95Ms": 100.77,
+              "p99Ms": 108.08,
+              "maxMs": 108.08
+            }
+          },
+          "workbook_save": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 85.08,
+              "p50Ms": 81.64,
+              "p95Ms": 106.56,
+              "p99Ms": 106.56,
+              "maxMs": 106.56
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 169,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 6.94,
+              "p50Ms": 4.73,
+              "p95Ms": 16.07,
+              "p99Ms": 53.44,
+              "maxMs": 60.29
+            }
+          },
+          "review_ticket": {
+            "count": 31,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 7.23,
+              "p50Ms": 6.34,
+              "p95Ms": 12.72,
+              "p99Ms": 24.03,
+              "maxMs": 24.03
+            }
+          },
+          "reconcile_unit": {
+            "count": 27,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 46.59,
+              "p50Ms": 21.03,
+              "p95Ms": 100.77,
+              "p99Ms": 108.08,
+              "maxMs": 108.08
+            }
+          },
+          "save_workbook": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 85.08,
+              "p50Ms": 81.64,
+              "p95Ms": 106.56,
+              "p99Ms": 106.56,
+              "maxMs": 106.56
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 200,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.45,
+              "p50Ms": 0.41,
+              "p95Ms": 0.78,
+              "p99Ms": 1.46,
+              "maxMs": 2.14
+            },
+            "holdMs": {
+              "avgMs": 6.29,
+              "p50Ms": 4.32,
+              "p95Ms": 14.98,
+              "p99Ms": 52.72,
+              "maxMs": 58.71
+            }
+          },
+          "unit_wb": {
+            "count": 40,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.43,
+              "p50Ms": 0.4,
+              "p95Ms": 0.76,
+              "p99Ms": 1,
+              "maxMs": 1
+            },
+            "holdMs": {
+              "avgMs": 58.37,
+              "p50Ms": 77.8,
+              "p95Ms": 105.63,
+              "p99Ms": 107.34,
+              "maxMs": 107.34
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 807,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.03,
+        "p99WaitMs": 0.05,
+        "maxWaitMs": 0.3
+      }
+    }
+  ],
+  "enforceRuns": [
+    {
+      "mode": "nginx_enforced",
+      "targetRps": 30,
+      "durationSec": 6,
+      "totalRequests": 180,
+      "wallTimeSec": 5.99,
+      "drainTailMs": 11.76,
+      "achievedRps": 30.1,
+      "achieved2xxRps": 30.07,
+      "status2xx": 180,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.88,
+      "p95Ms": 32.64,
+      "p99Ms": 97.07,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 72,
+          "avgMs": 7.03,
+          "p50Ms": 7.07,
+          "p95Ms": 9.68,
+          "p99Ms": 21.02,
+          "maxMs": 21.02,
+          "ok2xx": 72,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 27,
+          "avgMs": 4.96,
+          "p50Ms": 2.96,
+          "p95Ms": 26.01,
+          "p99Ms": 28.36,
+          "maxMs": 28.36,
+          "ok2xx": 27,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 27,
+          "avgMs": 15.36,
+          "p50Ms": 6.2,
+          "p95Ms": 32.52,
+          "p99Ms": 32.64,
+          "maxMs": 32.64,
+          "ok2xx": 27,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 45,
+          "avgMs": 7.06,
+          "p50Ms": 6.82,
+          "p95Ms": 10.82,
+          "p99Ms": 15.93,
+          "maxMs": 15.93,
+          "ok2xx": 45,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 9,
+          "avgMs": 80.57,
+          "p50Ms": 85.97,
+          "p95Ms": 104.75,
+          "p99Ms": 104.75,
+          "maxMs": 104.75,
+          "ok2xx": 9,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 126,
+          "distinctSubjects": 126,
+          "distinctActors": 126,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 37,
+          "distinctSubjects": 37,
+          "distinctActors": 37,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 8,
+          "distinctSubjects": 8,
+          "distinctActors": 8,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 6,
+          "distinctSubjects": 6,
+          "distinctActors": 6,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 3,
+          "distinctSubjects": 3,
+          "distinctActors": 3,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 1,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 1,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 4.81,
+              "p50Ms": 5.06,
+              "p95Ms": 7.14,
+              "p99Ms": 9.07,
+              "maxMs": 9.07
+            }
+          },
+          "unit_reconcile": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 72.51,
+              "p50Ms": 80.48,
+              "p95Ms": 102.87,
+              "p99Ms": 102.87,
+              "maxMs": 102.87
+            }
+          },
+          "workbook_save": {
+            "count": 3,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 83.45,
+              "p50Ms": 82.07,
+              "p95Ms": 91.19,
+              "p99Ms": 91.19,
+              "maxMs": 91.19
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 37,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 4.65,
+              "p50Ms": 4.68,
+              "p95Ms": 8.35,
+              "p99Ms": 9.07,
+              "maxMs": 9.07
+            }
+          },
+          "review_ticket": {
+            "count": 8,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 5.54,
+              "p50Ms": 5.37,
+              "p95Ms": 6.57,
+              "p99Ms": 6.57,
+              "maxMs": 6.57
+            }
+          },
+          "reconcile_unit": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 72.51,
+              "p50Ms": 80.48,
+              "p95Ms": 102.87,
+              "p99Ms": 102.87,
+              "maxMs": 102.87
+            }
+          },
+          "save_workbook": {
+            "count": 3,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 83.45,
+              "p50Ms": 82.07,
+              "p95Ms": 91.19,
+              "p99Ms": 91.19,
+              "maxMs": 91.19
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.43,
+              "p50Ms": 0.42,
+              "p95Ms": 0.54,
+              "p99Ms": 0.8,
+              "maxMs": 0.8
+            },
+            "holdMs": {
+              "avgMs": 4.11,
+              "p50Ms": 4.26,
+              "p95Ms": 6.39,
+              "p99Ms": 8.4,
+              "maxMs": 8.4
+            }
+          },
+          "unit_wb": {
+            "count": 9,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.41,
+              "p50Ms": 0.41,
+              "p95Ms": 0.5,
+              "p99Ms": 0.5,
+              "maxMs": 0.5
+            },
+            "holdMs": {
+              "avgMs": 75.46,
+              "p50Ms": 79.73,
+              "p95Ms": 102.11,
+              "p99Ms": 102.11,
+              "maxMs": 102.11
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 191,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.02,
+        "p95WaitMs": 0.03,
+        "p99WaitMs": 0.61,
+        "maxWaitMs": 0.64
+      }
+    },
+    {
+      "mode": "nginx_enforced",
+      "targetRps": 60,
+      "durationSec": 6,
+      "totalRequests": 360,
+      "wallTimeSec": 6,
+      "drainTailMs": 9.87,
+      "achievedRps": 60,
+      "achieved2xxRps": 60.04,
+      "status2xx": 360,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.57,
+      "p95Ms": 27.61,
+      "p99Ms": 85.34,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 144,
+          "avgMs": 7.14,
+          "p50Ms": 6.69,
+          "p95Ms": 14.22,
+          "p99Ms": 20.47,
+          "maxMs": 20.52,
+          "ok2xx": 144,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 54,
+          "avgMs": 3.24,
+          "p50Ms": 2.7,
+          "p95Ms": 6.23,
+          "p99Ms": 24.22,
+          "maxMs": 24.22,
+          "ok2xx": 54,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 54,
+          "avgMs": 14.14,
+          "p50Ms": 12.73,
+          "p95Ms": 30.14,
+          "p99Ms": 31.48,
+          "maxMs": 31.48,
+          "ok2xx": 54,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 90,
+          "avgMs": 6.43,
+          "p50Ms": 6.41,
+          "p95Ms": 9.74,
+          "p99Ms": 12.06,
+          "maxMs": 12.06,
+          "ok2xx": 90,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 18,
+          "avgMs": 62.64,
+          "p50Ms": 80.62,
+          "p95Ms": 94.08,
+          "p99Ms": 94.08,
+          "maxMs": 94.08,
+          "ok2xx": 18,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 252,
+          "distinctSubjects": 208,
+          "distinctActors": 208,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.21,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 75,
+          "distinctSubjects": 68,
+          "distinctActors": 68,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.1,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 15,
+          "distinctSubjects": 15,
+          "distinctActors": 15,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 12,
+          "distinctSubjects": 12,
+          "distinctActors": 12,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 6,
+          "distinctSubjects": 6,
+          "distinctActors": 6,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 1,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 1,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 90,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 4.67,
+              "p50Ms": 4.73,
+              "p95Ms": 7.43,
+              "p99Ms": 9.93,
+              "maxMs": 9.93
+            }
+          },
+          "unit_reconcile": {
+            "count": 12,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 49.7,
+              "p50Ms": 77.62,
+              "p95Ms": 83.92,
+              "p99Ms": 83.92,
+              "maxMs": 83.92
+            }
+          },
+          "workbook_save": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 77.35,
+              "p50Ms": 78.4,
+              "p95Ms": 81.55,
+              "p99Ms": 81.55,
+              "maxMs": 81.55
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 75,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 4.35,
+              "p50Ms": 4.34,
+              "p95Ms": 7.38,
+              "p99Ms": 9.93,
+              "maxMs": 9.93
+            }
+          },
+          "review_ticket": {
+            "count": 15,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 6.24,
+              "p50Ms": 6.01,
+              "p95Ms": 8.17,
+              "p99Ms": 8.17,
+              "maxMs": 8.17
+            }
+          },
+          "reconcile_unit": {
+            "count": 12,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 49.7,
+              "p50Ms": 77.62,
+              "p95Ms": 83.92,
+              "p99Ms": 83.92,
+              "maxMs": 83.92
+            }
+          },
+          "save_workbook": {
+            "count": 6,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 77.35,
+              "p50Ms": 78.4,
+              "p95Ms": 81.55,
+              "p99Ms": 81.55,
+              "maxMs": 81.55
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 90,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.45,
+              "p50Ms": 0.41,
+              "p95Ms": 0.55,
+              "p99Ms": 3.15,
+              "maxMs": 3.15
+            },
+            "holdMs": {
+              "avgMs": 3.97,
+              "p50Ms": 4.12,
+              "p95Ms": 6.35,
+              "p99Ms": 9.23,
+              "maxMs": 9.23
+            }
+          },
+          "unit_wb": {
+            "count": 18,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.47,
+              "p50Ms": 0.47,
+              "p95Ms": 0.66,
+              "p99Ms": 0.66,
+              "maxMs": 0.66
+            },
+            "holdMs": {
+              "avgMs": 58.16,
+              "p50Ms": 77.02,
+              "p95Ms": 83.27,
+              "p99Ms": 83.27,
+              "maxMs": 83.27
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 375,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.02,
+        "p99WaitMs": 0.04,
+        "maxWaitMs": 0.3
+      }
+    },
+    {
+      "mode": "nginx_enforced",
+      "targetRps": 100,
+      "durationSec": 8,
+      "totalRequests": 800,
+      "wallTimeSec": 8.08,
+      "drainTailMs": 78.07,
+      "achievedRps": 99.1,
+      "achieved2xxRps": 99.07,
+      "status2xx": 800,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.85,
+      "p95Ms": 29.36,
+      "p99Ms": 86.77,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 320,
+          "avgMs": 7.57,
+          "p50Ms": 6.85,
+          "p95Ms": 16.55,
+          "p99Ms": 18.47,
+          "maxMs": 20.38,
+          "ok2xx": 320,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 120,
+          "avgMs": 4.5,
+          "p50Ms": 3,
+          "p95Ms": 12.55,
+          "p99Ms": 24.2,
+          "maxMs": 33.04,
+          "ok2xx": 120,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 120,
+          "avgMs": 13.52,
+          "p50Ms": 11.33,
+          "p95Ms": 31.74,
+          "p99Ms": 39.93,
+          "maxMs": 45.07,
+          "ok2xx": 120,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 200,
+          "avgMs": 8.41,
+          "p50Ms": 7.21,
+          "p95Ms": 18.63,
+          "p99Ms": 26.18,
+          "maxMs": 32.72,
+          "ok2xx": 200,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 40,
+          "avgMs": 60.18,
+          "p50Ms": 80.57,
+          "p95Ms": 94.57,
+          "p99Ms": 103.68,
+          "maxMs": 103.68,
+          "ok2xx": 40,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 560,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.24,
+          "maxReqsPerSubject": 4,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 165,
+          "distinctSubjects": 109,
+          "distinctActors": 109,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.51,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 35,
+          "distinctSubjects": 24,
+          "distinctActors": 24,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.46,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 27,
+          "distinctSubjects": 22,
+          "distinctActors": 22,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.23,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 13,
+          "distinctSubjects": 13,
+          "distinctActors": 13,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 3,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 3,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 200,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 5.86,
+              "p50Ms": 5.3,
+              "p95Ms": 12.23,
+              "p99Ms": 19.48,
+              "maxMs": 28.75
+            }
+          },
+          "unit_reconcile": {
+            "count": 27,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 45.21,
+              "p50Ms": 76.02,
+              "p95Ms": 84.52,
+              "p99Ms": 92.78,
+              "maxMs": 92.78
+            }
+          },
+          "workbook_save": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 80.64,
+              "p50Ms": 79.84,
+              "p95Ms": 97.27,
+              "p99Ms": 97.27,
+              "maxMs": 97.27
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 165,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 5.82,
+              "p50Ms": 4.93,
+              "p95Ms": 12.39,
+              "p99Ms": 19.48,
+              "maxMs": 28.75
+            }
+          },
+          "review_ticket": {
+            "count": 35,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 6.09,
+              "p50Ms": 5.84,
+              "p95Ms": 8.53,
+              "p99Ms": 12.17,
+              "maxMs": 12.17
+            }
+          },
+          "reconcile_unit": {
+            "count": 27,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 45.21,
+              "p50Ms": 76.02,
+              "p95Ms": 84.52,
+              "p99Ms": 92.78,
+              "maxMs": 92.78
+            }
+          },
+          "save_workbook": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 80.64,
+              "p50Ms": 79.84,
+              "p95Ms": 97.27,
+              "p99Ms": 97.27,
+              "maxMs": 97.27
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 200,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.41,
+              "p50Ms": 0.4,
+              "p95Ms": 0.57,
+              "p99Ms": 0.83,
+              "maxMs": 0.95
+            },
+            "holdMs": {
+              "avgMs": 5.17,
+              "p50Ms": 4.5,
+              "p95Ms": 11.51,
+              "p99Ms": 18.8,
+              "maxMs": 28.04
+            }
+          },
+          "unit_wb": {
+            "count": 40,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.45,
+              "p50Ms": 0.4,
+              "p95Ms": 0.76,
+              "p99Ms": 1.37,
+              "maxMs": 1.37
+            },
+            "holdMs": {
+              "avgMs": 55.99,
+              "p50Ms": 76.4,
+              "p95Ms": 91.7,
+              "p99Ms": 96.57,
+              "maxMs": 96.57
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 3,
+        "liveIdleCount": 3,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 814,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.03,
+        "p99WaitMs": 0.04,
+        "maxWaitMs": 0.31
+      }
+    },
+    {
+      "mode": "nginx_enforced",
+      "targetRps": 102,
+      "durationSec": 60,
+      "totalRequests": 6120,
+      "wallTimeSec": 60.07,
+      "drainTailMs": 77.01,
+      "achievedRps": 101.9,
+      "achieved2xxRps": 101.88,
+      "status2xx": 6120,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 6.95,
+      "p95Ms": 53.41,
+      "p99Ms": 98.99,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 2448,
+          "avgMs": 9.49,
+          "p50Ms": 6.78,
+          "p95Ms": 18.41,
+          "p99Ms": 58.94,
+          "maxMs": 253.47,
+          "ok2xx": 2448,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 918,
+          "avgMs": 6.55,
+          "p50Ms": 3.11,
+          "p95Ms": 22.88,
+          "p99Ms": 37.69,
+          "maxMs": 198.9,
+          "ok2xx": 918,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 918,
+          "avgMs": 16.54,
+          "p50Ms": 13.85,
+          "p95Ms": 37.47,
+          "p99Ms": 53.41,
+          "maxMs": 219.36,
+          "ok2xx": 918,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 1530,
+          "avgMs": 10.95,
+          "p50Ms": 7.32,
+          "p95Ms": 29.16,
+          "p99Ms": 57.22,
+          "maxMs": 146.82,
+          "ok2xx": 1530,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 306,
+          "avgMs": 73.95,
+          "p50Ms": 79.94,
+          "p95Ms": 107.96,
+          "p99Ms": 150.3,
+          "maxMs": 375.69,
+          "ok2xx": 306,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 4284,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 12,
+          "avgReqsPerSubject": 17.14,
+          "maxReqsPerSubject": 25,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 1260,
+          "distinctSubjects": 153,
+          "distinctActors": 153,
+          "minReqsPerSubject": 2,
+          "avgReqsPerSubject": 8.24,
+          "maxReqsPerSubject": 13,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 270,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 6,
+          "avgReqsPerSubject": 10.8,
+          "maxReqsPerSubject": 13,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 204,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 8,
+          "avgReqsPerSubject": 8.16,
+          "maxReqsPerSubject": 9,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 102,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 4,
+          "avgReqsPerSubject": 4.08,
+          "maxReqsPerSubject": 5,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 1,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 1,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 1530,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 1.52
+            },
+            "holdMs": {
+              "avgMs": 7.1,
+              "p50Ms": 5.29,
+              "p95Ms": 17.8,
+              "p99Ms": 38.29,
+              "maxMs": 128.83
+            }
+          },
+          "workbook_save": {
+            "count": 102,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.01,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0.62
+            },
+            "holdMs": {
+              "avgMs": 84.85,
+              "p50Ms": 84.47,
+              "p95Ms": 101.67,
+              "p99Ms": 115.51,
+              "maxMs": 116.58
+            }
+          },
+          "unit_reconcile": {
+            "count": 204,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0.02
+            },
+            "holdMs": {
+              "avgMs": 61.88,
+              "p50Ms": 76.43,
+              "p95Ms": 97.39,
+              "p99Ms": 138.5,
+              "maxMs": 373.75
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 1260,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 1.52
+            },
+            "holdMs": {
+              "avgMs": 7.08,
+              "p50Ms": 5,
+              "p95Ms": 18.36,
+              "p99Ms": 38.02,
+              "maxMs": 128.83
+            }
+          },
+          "review_ticket": {
+            "count": 270,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 7.05,
+              "p50Ms": 5.84,
+              "p95Ms": 13.83,
+              "p99Ms": 38.29,
+              "maxMs": 81.89
+            }
+          },
+          "save_workbook": {
+            "count": 102,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.01,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0.62
+            },
+            "holdMs": {
+              "avgMs": 84.85,
+              "p50Ms": 84.47,
+              "p95Ms": 101.67,
+              "p99Ms": 115.51,
+              "maxMs": 116.58
+            }
+          },
+          "reconcile_unit": {
+            "count": 204,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0.02
+            },
+            "holdMs": {
+              "avgMs": 61.88,
+              "p50Ms": 76.43,
+              "p95Ms": 97.39,
+              "p99Ms": 138.5,
+              "maxMs": 373.75
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 1530,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.42,
+              "p50Ms": 0.39,
+              "p95Ms": 0.58,
+              "p99Ms": 1.15,
+              "maxMs": 8.73
+            },
+            "holdMs": {
+              "avgMs": 6.38,
+              "p50Ms": 4.58,
+              "p95Ms": 16.7,
+              "p99Ms": 36.65,
+              "maxMs": 128.2
+            }
+          },
+          "unit_wb": {
+            "count": 306,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.41,
+              "p50Ms": 0.38,
+              "p95Ms": 0.56,
+              "p99Ms": 1.24,
+              "maxMs": 2.27
+            },
+            "holdMs": {
+              "avgMs": 68.82,
+              "p50Ms": 77.51,
+              "p95Ms": 100.79,
+              "p99Ms": 135.88,
+              "maxMs": 372.13
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 6460,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.02,
+        "p99WaitMs": 0.04,
+        "maxWaitMs": 43.86
+      }
+    }
+  ],
+  "ceilingProbes": [
+    {
+      "mode": "ceiling_nginx_1ip",
+      "targetRps": 150,
+      "durationSec": 6,
+      "totalRequests": 900,
+      "wallTimeSec": 6,
+      "drainTailMs": 8.38,
+      "achievedRps": 149.9,
+      "achieved2xxRps": 149.88,
+      "status2xx": 900,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 9.09,
+      "p95Ms": 72.56,
+      "p99Ms": 130.66,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 360,
+          "avgMs": 10.8,
+          "p50Ms": 8.42,
+          "p95Ms": 26.19,
+          "p99Ms": 43.58,
+          "maxMs": 59.58,
+          "ok2xx": 360,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 135,
+          "avgMs": 4.8,
+          "p50Ms": 4.61,
+          "p95Ms": 8.91,
+          "p99Ms": 16.02,
+          "maxMs": 23.36,
+          "ok2xx": 135,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 135,
+          "avgMs": 21.73,
+          "p50Ms": 17.56,
+          "p95Ms": 60.76,
+          "p99Ms": 75.73,
+          "maxMs": 89.59,
+          "ok2xx": 135,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 225,
+          "avgMs": 22.62,
+          "p50Ms": 16.44,
+          "p95Ms": 66.18,
+          "p99Ms": 80.58,
+          "maxMs": 87.22,
+          "ok2xx": 225,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 45,
+          "avgMs": 90.11,
+          "p50Ms": 93.12,
+          "p95Ms": 149.58,
+          "p99Ms": 174.08,
+          "maxMs": 174.08,
+          "ok2xx": 45,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 630,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.52,
+          "maxReqsPerSubject": 4,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 186,
+          "distinctSubjects": 115,
+          "distinctActors": 115,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.62,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 39,
+          "distinctSubjects": 22,
+          "distinctActors": 22,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.77,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 30,
+          "distinctSubjects": 23,
+          "distinctActors": 23,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.3,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 15,
+          "distinctSubjects": 15,
+          "distinctActors": 15,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 0,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 0,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 225,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 12.9,
+              "p50Ms": 7.75,
+              "p95Ms": 38.14,
+              "p99Ms": 55.48,
+              "maxMs": 68.46
+            }
+          },
+          "workbook_save": {
+            "count": 15,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 102.36,
+              "p50Ms": 95.16,
+              "p95Ms": 151.85,
+              "p99Ms": 151.85,
+              "maxMs": 151.85
+            }
+          },
+          "unit_reconcile": {
+            "count": 30,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 66.99,
+              "p50Ms": 80.24,
+              "p95Ms": 110.11,
+              "p99Ms": 113.93,
+              "maxMs": 113.93
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 186,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 12.89,
+              "p50Ms": 7.96,
+              "p95Ms": 38.14,
+              "p99Ms": 57.01,
+              "maxMs": 68.46
+            }
+          },
+          "review_ticket": {
+            "count": 39,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 12.95,
+              "p50Ms": 7.7,
+              "p95Ms": 40.47,
+              "p99Ms": 55.48,
+              "maxMs": 55.48
+            }
+          },
+          "save_workbook": {
+            "count": 15,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 102.36,
+              "p50Ms": 95.16,
+              "p95Ms": 151.85,
+              "p99Ms": 151.85,
+              "maxMs": 151.85
+            }
+          },
+          "reconcile_unit": {
+            "count": 30,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 66.99,
+              "p50Ms": 80.24,
+              "p95Ms": 110.11,
+              "p99Ms": 113.93,
+              "maxMs": 113.93
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 225,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.43,
+              "p50Ms": 0.39,
+              "p95Ms": 0.83,
+              "p99Ms": 1.49,
+              "maxMs": 1.94
+            },
+            "holdMs": {
+              "avgMs": 12.04,
+              "p50Ms": 7.02,
+              "p95Ms": 37.57,
+              "p99Ms": 52.23,
+              "maxMs": 67.75
+            }
+          },
+          "unit_wb": {
+            "count": 45,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.46,
+              "p50Ms": 0.41,
+              "p95Ms": 0.84,
+              "p99Ms": 1.24,
+              "maxMs": 1.24
+            },
+            "holdMs": {
+              "avgMs": 78.01,
+              "p50Ms": 87.8,
+              "p95Ms": 124.29,
+              "p99Ms": 151.19,
+              "maxMs": 151.19
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 936,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.03,
+        "p99WaitMs": 0.05,
+        "maxWaitMs": 0.28
+      }
+    },
+    {
+      "mode": "ceiling_nginx_1ip",
+      "targetRps": 200,
+      "durationSec": 6,
+      "totalRequests": 1200,
+      "wallTimeSec": 6.08,
+      "drainTailMs": 80.62,
+      "achievedRps": 197.4,
+      "achieved2xxRps": 197.37,
+      "status2xx": 1200,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 17.18,
+      "p95Ms": 90.25,
+      "p99Ms": 182,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 480,
+          "avgMs": 20.05,
+          "p50Ms": 14.91,
+          "p95Ms": 50.03,
+          "p99Ms": 75.82,
+          "maxMs": 88.41,
+          "ok2xx": 480,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 180,
+          "avgMs": 11.56,
+          "p50Ms": 7.49,
+          "p95Ms": 34.2,
+          "p99Ms": 57.41,
+          "maxMs": 63.61,
+          "ok2xx": 180,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 180,
+          "avgMs": 28,
+          "p50Ms": 22.36,
+          "p95Ms": 75.71,
+          "p99Ms": 98.58,
+          "maxMs": 108.4,
+          "ok2xx": 180,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 300,
+          "avgMs": 37.23,
+          "p50Ms": 30.12,
+          "p95Ms": 97.6,
+          "p99Ms": 133.65,
+          "maxMs": 183.99,
+          "ok2xx": 300,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 60,
+          "avgMs": 118.4,
+          "p50Ms": 111.85,
+          "p95Ms": 257.69,
+          "p99Ms": 317.7,
+          "maxMs": 317.7,
+          "ok2xx": 60,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 840,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 2,
+          "avgReqsPerSubject": 3.36,
+          "maxReqsPerSubject": 5,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 248,
+          "distinctSubjects": 130,
+          "distinctActors": 130,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.91,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 52,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.08,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 40,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.6,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 20,
+          "distinctSubjects": 20,
+          "distinctActors": 20,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 4,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 4,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 300,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.65,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 20.35,
+              "maxMs": 60.4
+            },
+            "holdMs": {
+              "avgMs": 20.79,
+              "p50Ms": 13.9,
+              "p95Ms": 64.06,
+              "p99Ms": 95.59,
+              "maxMs": 111.88
+            }
+          },
+          "workbook_save": {
+            "count": 20,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 5.66,
+              "p50Ms": 0,
+              "p95Ms": 106.69,
+              "p99Ms": 106.69,
+              "maxMs": 106.69
+            },
+            "holdMs": {
+              "avgMs": 110.63,
+              "p50Ms": 108.28,
+              "p95Ms": 148.46,
+              "p99Ms": 148.46,
+              "maxMs": 148.46
+            }
+          },
+          "unit_reconcile": {
+            "count": 40,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 3.59,
+              "p50Ms": 0,
+              "p95Ms": 34.21,
+              "p99Ms": 37.89,
+              "maxMs": 37.89
+            },
+            "holdMs": {
+              "avgMs": 94.81,
+              "p50Ms": 88.52,
+              "p95Ms": 218.35,
+              "p99Ms": 274.15,
+              "maxMs": 274.15
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 248,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.41,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 12.69,
+              "maxMs": 50.08
+            },
+            "holdMs": {
+              "avgMs": 20.1,
+              "p50Ms": 13.15,
+              "p95Ms": 59.01,
+              "p99Ms": 95.59,
+              "maxMs": 111.88
+            }
+          },
+          "review_ticket": {
+            "count": 52,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1.8,
+              "p50Ms": 0,
+              "p95Ms": 6.87,
+              "p99Ms": 60.4,
+              "maxMs": 60.4
+            },
+            "holdMs": {
+              "avgMs": 24.07,
+              "p50Ms": 18.76,
+              "p95Ms": 64.78,
+              "p99Ms": 83.97,
+              "maxMs": 83.97
+            }
+          },
+          "save_workbook": {
+            "count": 20,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 5.66,
+              "p50Ms": 0,
+              "p95Ms": 106.69,
+              "p99Ms": 106.69,
+              "maxMs": 106.69
+            },
+            "holdMs": {
+              "avgMs": 110.63,
+              "p50Ms": 108.28,
+              "p95Ms": 148.46,
+              "p99Ms": 148.46,
+              "maxMs": 148.46
+            }
+          },
+          "reconcile_unit": {
+            "count": 40,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 3.59,
+              "p50Ms": 0,
+              "p95Ms": 34.21,
+              "p99Ms": 37.89,
+              "maxMs": 37.89
+            },
+            "holdMs": {
+              "avgMs": 94.81,
+              "p50Ms": 88.52,
+              "p95Ms": 218.35,
+              "p99Ms": 274.15,
+              "maxMs": 274.15
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 300,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.39,
+              "p50Ms": 0.37,
+              "p95Ms": 0.57,
+              "p99Ms": 1.44,
+              "maxMs": 4.86
+            },
+            "holdMs": {
+              "avgMs": 19.74,
+              "p50Ms": 12.66,
+              "p95Ms": 62.25,
+              "p99Ms": 95.02,
+              "maxMs": 111.33
+            }
+          },
+          "unit_wb": {
+            "count": 60,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.43,
+              "p50Ms": 0.38,
+              "p95Ms": 1.36,
+              "p99Ms": 1.7,
+              "maxMs": 1.7
+            },
+            "holdMs": {
+              "avgMs": 99.37,
+              "p50Ms": 96.12,
+              "p95Ms": 187.03,
+              "p99Ms": 273.11,
+              "maxMs": 273.11
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 1276,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.15,
+        "p95WaitMs": 0.42,
+        "p99WaitMs": 4.34,
+        "maxWaitMs": 17.37
+      }
+    },
+    {
+      "mode": "ceiling_direct_multi_ip",
+      "targetRps": 150,
+      "durationSec": 5,
+      "totalRequests": 750,
+      "wallTimeSec": 5.02,
+      "drainTailMs": 24.25,
+      "achievedRps": 149.3,
+      "achieved2xxRps": 149.28,
+      "status2xx": 750,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 11.28,
+      "p95Ms": 80.57,
+      "p99Ms": 162.71,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 304,
+          "avgMs": 13.91,
+          "p50Ms": 9.17,
+          "p95Ms": 40.19,
+          "p99Ms": 52.45,
+          "maxMs": 60.74,
+          "ok2xx": 304,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 113,
+          "avgMs": 7.38,
+          "p50Ms": 6.63,
+          "p95Ms": 29.93,
+          "p99Ms": 30.9,
+          "maxMs": 40.32,
+          "ok2xx": 113,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 111,
+          "avgMs": 24.34,
+          "p50Ms": 22.52,
+          "p95Ms": 61.72,
+          "p99Ms": 77.5,
+          "maxMs": 80.56,
+          "ok2xx": 111,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 185,
+          "avgMs": 27.39,
+          "p50Ms": 18.21,
+          "p95Ms": 79.54,
+          "p99Ms": 98.78,
+          "maxMs": 98.9,
+          "ok2xx": 185,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 37,
+          "avgMs": 103.69,
+          "p50Ms": 110.33,
+          "p95Ms": 194.27,
+          "p99Ms": 207.95,
+          "maxMs": 207.95,
+          "ok2xx": 37,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 528,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.11,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 151,
+          "distinctSubjects": 100,
+          "distinctActors": 100,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.51,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 34,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.36,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 24,
+          "distinctSubjects": 20,
+          "distinctActors": 20,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.2,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 13,
+          "distinctSubjects": 13,
+          "distinctActors": 13,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 1,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 1,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 185,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 16.72,
+              "p50Ms": 9.53,
+              "p95Ms": 65.09,
+              "p99Ms": 77.68,
+              "maxMs": 89.56
+            }
+          },
+          "workbook_save": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 111.39,
+              "p50Ms": 113.22,
+              "p95Ms": 146.78,
+              "p99Ms": 146.78,
+              "maxMs": 146.78
+            }
+          },
+          "unit_reconcile": {
+            "count": 24,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.94,
+              "p50Ms": 0,
+              "p95Ms": 1.71,
+              "p99Ms": 20.96,
+              "maxMs": 20.96
+            },
+            "holdMs": {
+              "avgMs": 79.73,
+              "p50Ms": 82.12,
+              "p95Ms": 168.63,
+              "p99Ms": 195.53,
+              "maxMs": 195.53
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 151,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 15.71,
+              "p50Ms": 9.53,
+              "p95Ms": 52.46,
+              "p99Ms": 77.68,
+              "maxMs": 89.56
+            }
+          },
+          "review_ticket": {
+            "count": 34,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 21.17,
+              "p50Ms": 9.57,
+              "p95Ms": 70.47,
+              "p99Ms": 73.14,
+              "maxMs": 73.14
+            }
+          },
+          "save_workbook": {
+            "count": 13,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0,
+              "p50Ms": 0,
+              "p95Ms": 0,
+              "p99Ms": 0,
+              "maxMs": 0
+            },
+            "holdMs": {
+              "avgMs": 111.39,
+              "p50Ms": 113.22,
+              "p95Ms": 146.78,
+              "p99Ms": 146.78,
+              "maxMs": 146.78
+            }
+          },
+          "reconcile_unit": {
+            "count": 24,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.94,
+              "p50Ms": 0,
+              "p95Ms": 1.71,
+              "p99Ms": 20.96,
+              "maxMs": 20.96
+            },
+            "holdMs": {
+              "avgMs": 79.73,
+              "p50Ms": 82.12,
+              "p95Ms": 168.63,
+              "p99Ms": 195.53,
+              "maxMs": 195.53
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 0,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 0,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 185,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.43,
+              "p50Ms": 0.39,
+              "p95Ms": 0.59,
+              "p99Ms": 2.25,
+              "maxMs": 5.77
+            },
+            "holdMs": {
+              "avgMs": 15.68,
+              "p50Ms": 8.81,
+              "p95Ms": 59.98,
+              "p99Ms": 76.9,
+              "maxMs": 88.84
+            }
+          },
+          "unit_wb": {
+            "count": 37,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.6,
+              "p50Ms": 0.41,
+              "p95Ms": 0.84,
+              "p99Ms": 7.02,
+              "maxMs": 7.02
+            },
+            "holdMs": {
+              "avgMs": 89.93,
+              "p50Ms": 94.76,
+              "p95Ms": 167.84,
+              "p99Ms": 188.19,
+              "maxMs": 188.19
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 1,
+        "peakTotalCount": 5,
+        "totalAcquires": 767,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.01,
+        "p95WaitMs": 0.03,
+        "p99WaitMs": 0.1,
+        "maxWaitMs": 0.51
+      }
+    },
+    {
+      "mode": "ceiling_direct_multi_ip",
+      "targetRps": 220,
+      "durationSec": 5,
+      "totalRequests": 1100,
+      "wallTimeSec": 5.12,
+      "drainTailMs": 121.71,
+      "achievedRps": 214.7,
+      "achieved2xxRps": 214.65,
+      "status2xx": 1100,
+      "status429": 0,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 0,
+      "rate2xxPct": 100,
+      "rate429Pct": 0,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 0,
+      "p50Ms": 34,
+      "p95Ms": 226.1,
+      "p99Ms": 489.97,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 440,
+          "avgMs": 36.58,
+          "p50Ms": 24.41,
+          "p95Ms": 121.32,
+          "p99Ms": 169.83,
+          "maxMs": 240.85,
+          "ok2xx": 440,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 165,
+          "avgMs": 20.72,
+          "p50Ms": 14.31,
+          "p95Ms": 53.27,
+          "p99Ms": 87.96,
+          "maxMs": 240.29,
+          "ok2xx": 165,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 165,
+          "avgMs": 45.35,
+          "p50Ms": 39.29,
+          "p95Ms": 101.49,
+          "p99Ms": 142.23,
+          "maxMs": 215.54,
+          "ok2xx": 165,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 275,
+          "avgMs": 92.12,
+          "p50Ms": 65.58,
+          "p95Ms": 235.34,
+          "p99Ms": 353.94,
+          "maxMs": 364.33,
+          "ok2xx": 275,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 55,
+          "avgMs": 305.73,
+          "p50Ms": 361.19,
+          "p95Ms": 549.68,
+          "p99Ms": 571.69,
+          "maxMs": 571.69,
+          "ok2xx": 55,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {},
+        "byApi": {},
+        "byUnit": {},
+        "byRole": {},
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 0
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 770,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 2,
+          "avgReqsPerSubject": 3.08,
+          "maxReqsPerSubject": 5,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 226,
+          "distinctSubjects": 124,
+          "distinctActors": 124,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.82,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 49,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.96,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 36,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1.44,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 19,
+          "distinctSubjects": 19,
+          "distinctActors": 19,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 17,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 17,
+        "rejectedCount": 0,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 275,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 23.41,
+              "p50Ms": 0,
+              "p95Ms": 111.07,
+              "p99Ms": 142.73,
+              "maxMs": 160.92
+            },
+            "holdMs": {
+              "avgMs": 43.19,
+              "p50Ms": 29.42,
+              "p95Ms": 124.01,
+              "p99Ms": 199.22,
+              "maxMs": 214.62
+            }
+          },
+          "workbook_save": {
+            "count": 19,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 129.29,
+              "p50Ms": 162.47,
+              "p95Ms": 345.71,
+              "p99Ms": 345.71,
+              "maxMs": 345.71
+            },
+            "holdMs": {
+              "avgMs": 164.18,
+              "p50Ms": 155.66,
+              "p95Ms": 405.18,
+              "p99Ms": 405.18,
+              "maxMs": 405.18
+            }
+          },
+          "unit_reconcile": {
+            "count": 36,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 139.61,
+              "p50Ms": 168.81,
+              "p95Ms": 338.74,
+              "p99Ms": 351.83,
+              "maxMs": 351.83
+            },
+            "holdMs": {
+              "avgMs": 130.48,
+              "p50Ms": 120.13,
+              "p95Ms": 378.69,
+              "p99Ms": 436.85,
+              "maxMs": 436.85
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 226,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 20.84,
+              "p50Ms": 0,
+              "p95Ms": 107.38,
+              "p99Ms": 141.13,
+              "maxMs": 160.92
+            },
+            "holdMs": {
+              "avgMs": 42.45,
+              "p50Ms": 30.03,
+              "p95Ms": 118.43,
+              "p99Ms": 199.22,
+              "maxMs": 214.62
+            }
+          },
+          "review_ticket": {
+            "count": 49,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 35.29,
+              "p50Ms": 4.96,
+              "p95Ms": 115.3,
+              "p99Ms": 157.35,
+              "maxMs": 157.35
+            },
+            "holdMs": {
+              "avgMs": 46.6,
+              "p50Ms": 29.27,
+              "p95Ms": 131.67,
+              "p99Ms": 160.87,
+              "maxMs": 160.87
+            }
+          },
+          "save_workbook": {
+            "count": 19,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 129.29,
+              "p50Ms": 162.47,
+              "p95Ms": 345.71,
+              "p99Ms": 345.71,
+              "maxMs": 345.71
+            },
+            "holdMs": {
+              "avgMs": 164.18,
+              "p50Ms": 155.66,
+              "p95Ms": 405.18,
+              "p99Ms": 405.18,
+              "maxMs": 405.18
+            }
+          },
+          "reconcile_unit": {
+            "count": 36,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 139.61,
+              "p50Ms": 168.81,
+              "p95Ms": 338.74,
+              "p99Ms": 351.83,
+              "maxMs": 351.83
+            },
+            "holdMs": {
+              "avgMs": 130.48,
+              "p50Ms": 120.13,
+              "p95Ms": 378.69,
+              "p99Ms": 436.85,
+              "maxMs": 436.85
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 1,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 1,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 275,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.46,
+              "p50Ms": 0.34,
+              "p95Ms": 0.6,
+              "p99Ms": 1.4,
+              "maxMs": 21.87
+            },
+            "holdMs": {
+              "avgMs": 42.13,
+              "p50Ms": 28.21,
+              "p95Ms": 122.78,
+              "p99Ms": 198.59,
+              "maxMs": 214.07
+            }
+          },
+          "unit_wb": {
+            "count": 55,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 0.41,
+              "p50Ms": 0.37,
+              "p95Ms": 0.68,
+              "p99Ms": 1.24,
+              "maxMs": 1.24
+            },
+            "holdMs": {
+              "avgMs": 141.41,
+              "p50Ms": 121.61,
+              "p95Ms": 378.27,
+              "p99Ms": 436.4,
+              "maxMs": 436.4
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 3,
+        "peakTotalCount": 5,
+        "totalAcquires": 1136,
+        "acquireErrors": 0,
+        "avgWaitMs": 0.38,
+        "p95WaitMs": 1.25,
+        "p99WaitMs": 8.57,
+        "maxWaitMs": 40.45
+      }
+    },
+    {
+      "mode": "ceiling_direct_multi_ip",
+      "targetRps": 300,
+      "durationSec": 5,
+      "totalRequests": 1500,
+      "wallTimeSec": 5.89,
+      "drainTailMs": 876.68,
+      "achievedRps": 254.7,
+      "achieved2xxRps": 216.52,
+      "status2xx": 1275,
+      "status429": 225,
+      "status5xx": 0,
+      "statusOther": 0,
+      "dryRunFlagged": 0,
+      "validBlockedCount": 225,
+      "rate2xxPct": 85,
+      "rate429Pct": 15,
+      "rate5xxPct": 0,
+      "falsePositiveBlockPct": 15,
+      "p50Ms": 128.45,
+      "p95Ms": 2632.05,
+      "p99Ms": 3409.68,
+      "perFlow": {
+        "read_tickets_list": {
+          "count": 600,
+          "avgMs": 332.62,
+          "p50Ms": 115.22,
+          "p95Ms": 1952.06,
+          "p99Ms": 3169.83,
+          "maxMs": 3229.21,
+          "ok2xx": 600,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_overview_coord": {
+          "count": 225,
+          "avgMs": 339.1,
+          "p50Ms": 68.83,
+          "p95Ms": 2496.72,
+          "p99Ms": 3183.93,
+          "maxMs": 3252.19,
+          "ok2xx": 225,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "read_workbook": {
+          "count": 225,
+          "avgMs": 379.91,
+          "p50Ms": 129.07,
+          "p95Ms": 2277.56,
+          "p99Ms": 3205.61,
+          "maxMs": 3212.19,
+          "ok2xx": 225,
+          "rate2xxPct": 100,
+          "blocked429": 0,
+          "err5xx": 0,
+          "other": 0
+        },
+        "write_submit_review": {
+          "count": 375,
+          "avgMs": 936.71,
+          "p50Ms": 395.4,
+          "p95Ms": 3043.67,
+          "p99Ms": 4123.04,
+          "maxMs": 4123.32,
+          "ok2xx": 190,
+          "rate2xxPct": 50.67,
+          "blocked429": 185,
+          "err5xx": 0,
+          "other": 0
+        },
+        "heavy_reconcile_save": {
+          "count": 75,
+          "avgMs": 1049.64,
+          "p50Ms": 439.57,
+          "p95Ms": 3409.68,
+          "p99Ms": 4344.42,
+          "maxMs": 4344.42,
+          "ok2xx": 35,
+          "rate2xxPct": 46.67,
+          "blocked429": 40,
+          "err5xx": 0,
+          "other": 0
+        }
+      },
+      "breakdown429": {
+        "byCode": {
+          "SERVER_BUSY_RETRY": 225
+        },
+        "byApi": {
+          "POST /api/tickets (submit)": 77,
+          "POST /api/tickets (draft)": 79,
+          "PATCH /api/tickets (approve)": 29,
+          "POST /api/tickets/reconcile": 27,
+          "PUT /api/workbooks/[id]": 13
+        },
+        "byUnit": {
+          "KHTC": 5,
+          "KHUD": 7,
+          "KT": 8,
+          "KTDBCL": 8,
+          "GDQPAN": 9,
+          "BANTT": 9,
+          "GDTC": 10,
+          "KTX": 6,
+          "GTNL": 8,
+          "VPDU": 6,
+          "VSPKT": 5,
+          "XD": 7,
+          "CK": 8,
+          "CNPM": 6,
+          "NN": 5,
+          "MTTT": 7,
+          "PHBP": 3,
+          "CNTT": 5,
+          "QHDN": 2,
+          "CTL": 3,
+          "CTSV": 5,
+          "DT": 7,
+          "QLDTXDDT": 6,
+          "QTCSVC": 7,
+          "DTTT": 7,
+          "QHQT": 4,
+          "QTTHTT": 6,
+          "SDH": 8,
+          "DDT": 5,
+          "STKNCCCN": 8,
+          "TCKHGDKT": 7,
+          "TCNS": 4,
+          "HCTH": 6,
+          "HHKHSS": 5,
+          "TTTTMT": 2,
+          "TYT": 4,
+          "KHCN": 4,
+          "HLDHS": 2,
+          "VDTQT": 1
+        },
+        "byRole": {
+          "staff": 156,
+          "unit_leader": 69
+        },
+        "policyBlockedCount": 0,
+        "overloadFalsePositiveCount": 225
+      },
+      "error5xxSamples": [],
+      "workloadDistribution": {
+        "read": {
+          "keyBy": "email",
+          "totalRequests": 1050,
+          "distinctSubjects": 250,
+          "distinctActors": 250,
+          "minReqsPerSubject": 3,
+          "avgReqsPerSubject": 4.2,
+          "maxReqsPerSubject": 6,
+          "policyLimitPer60s": 180,
+          "policyBurst": 60,
+          "withinSustainedPolicy": true
+        },
+        "ticket_write": {
+          "keyBy": "email",
+          "totalRequests": 321,
+          "distinctSubjects": 156,
+          "distinctActors": 156,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.06,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 45,
+          "policyBurst": 15,
+          "withinSustainedPolicy": true
+        },
+        "ticket_review": {
+          "keyBy": "email",
+          "totalRequests": 54,
+          "distinctSubjects": 24,
+          "distinctActors": 24,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 2.25,
+          "maxReqsPerSubject": 3,
+          "policyLimitPer60s": 90,
+          "policyBurst": 25,
+          "withinSustainedPolicy": true
+        },
+        "unit_reconcile": {
+          "keyBy": "unitCode",
+          "totalRequests": 50,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 2,
+          "avgReqsPerSubject": 2,
+          "maxReqsPerSubject": 2,
+          "policyLimitPer60s": 12,
+          "policyBurst": 4,
+          "withinSustainedPolicy": true
+        },
+        "workbook_write": {
+          "keyBy": "unitCode",
+          "totalRequests": 25,
+          "distinctSubjects": 25,
+          "distinctActors": 25,
+          "minReqsPerSubject": 1,
+          "avgReqsPerSubject": 1,
+          "maxReqsPerSubject": 1,
+          "policyLimitPer60s": 24,
+          "policyBurst": 6,
+          "withinSustainedPolicy": true
+        }
+      },
+      "heavyGatePeakActive": 6,
+      "heavyGatePeakQueued": 60,
+      "heavyGateDetail": {
+        "maxConcurrent": 6,
+        "maxBulkConcurrent": 2,
+        "maxQueueTotal": 60,
+        "maxQueuePerUnit": 20,
+        "waitTimeoutMs": 8000,
+        "activeTotal": 0,
+        "activeBulk": 0,
+        "queuedTotal": 0,
+        "peakActive": 6,
+        "peakQueued": 60,
+        "rejectedCount": 225,
+        "timeoutCount": 0,
+        "byKind": {
+          "ticket_mutation": {
+            "count": 375,
+            "rejectedQueueFull": 185,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1157.93,
+              "p50Ms": 1130.15,
+              "p95Ms": 2490.48,
+              "p99Ms": 2834.79,
+              "maxMs": 2881.13
+            },
+            "holdMs": {
+              "avgMs": 120.65,
+              "p50Ms": 70.89,
+              "p95Ms": 410.28,
+              "p99Ms": 896.73,
+              "maxMs": 1005.05
+            }
+          },
+          "unit_reconcile": {
+            "count": 50,
+            "rejectedQueueFull": 27,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1358.39,
+              "p50Ms": 1342.02,
+              "p95Ms": 3039.56,
+              "p99Ms": 3260.77,
+              "maxMs": 3260.77
+            },
+            "holdMs": {
+              "avgMs": 302.53,
+              "p50Ms": 166.38,
+              "p95Ms": 782.74,
+              "p99Ms": 1158.34,
+              "maxMs": 1158.34
+            }
+          },
+          "workbook_save": {
+            "count": 25,
+            "rejectedQueueFull": 13,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1493.04,
+              "p50Ms": 1607.13,
+              "p95Ms": 3011.54,
+              "p99Ms": 3011.54,
+              "maxMs": 3011.54
+            },
+            "holdMs": {
+              "avgMs": 305.24,
+              "p50Ms": 338.36,
+              "p95Ms": 806.72,
+              "p99Ms": 806.72,
+              "maxMs": 806.72
+            }
+          }
+        },
+        "byOp": {
+          "submit_ticket": {
+            "count": 321,
+            "rejectedQueueFull": 156,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1189.05,
+              "p50Ms": 1217.42,
+              "p95Ms": 2490.48,
+              "p99Ms": 2834.79,
+              "maxMs": 2881.13
+            },
+            "holdMs": {
+              "avgMs": 122.12,
+              "p50Ms": 70.89,
+              "p95Ms": 410.28,
+              "p99Ms": 896.73,
+              "maxMs": 1005.05
+            }
+          },
+          "review_ticket": {
+            "count": 54,
+            "rejectedQueueFull": 29,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 952.49,
+              "p50Ms": 608.63,
+              "p95Ms": 2371.43,
+              "p99Ms": 2643.65,
+              "maxMs": 2643.65
+            },
+            "holdMs": {
+              "avgMs": 110.95,
+              "p50Ms": 54,
+              "p95Ms": 239.67,
+              "p99Ms": 590.92,
+              "maxMs": 590.92
+            }
+          },
+          "reconcile_unit": {
+            "count": 50,
+            "rejectedQueueFull": 27,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1358.39,
+              "p50Ms": 1342.02,
+              "p95Ms": 3039.56,
+              "p99Ms": 3260.77,
+              "maxMs": 3260.77
+            },
+            "holdMs": {
+              "avgMs": 302.53,
+              "p50Ms": 166.38,
+              "p95Ms": 782.74,
+              "p99Ms": 1158.34,
+              "maxMs": 1158.34
+            }
+          },
+          "save_workbook": {
+            "count": 25,
+            "rejectedQueueFull": 13,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1493.04,
+              "p50Ms": 1607.13,
+              "p95Ms": 3011.54,
+              "p99Ms": 3011.54,
+              "maxMs": 3011.54
+            },
+            "holdMs": {
+              "avgMs": 305.24,
+              "p50Ms": 338.36,
+              "p95Ms": 806.72,
+              "p99Ms": 806.72,
+              "maxMs": 806.72
+            }
+          }
+        }
+      },
+      "fileLockPeakQueued": 2,
+      "fileLocksDetail": {
+        "instanceId": "85024-d9da1cb5",
+        "activeInProcessLocks": 0,
+        "queuedWaiters": 0,
+        "peakQueuedWaiters": 2,
+        "timeoutsCount": 0,
+        "queueFullCount": 0,
+        "orphanRecoveriesCount": 0,
+        "byScope": {
+          "ticket_unit": {
+            "count": 190,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 5.03,
+              "p50Ms": 0.34,
+              "p95Ms": 20.02,
+              "p99Ms": 147.3,
+              "maxMs": 177.17
+            },
+            "holdMs": {
+              "avgMs": 115.07,
+              "p50Ms": 64.7,
+              "p95Ms": 361.56,
+              "p99Ms": 894.11,
+              "maxMs": 896.23
+            }
+          },
+          "unit_wb": {
+            "count": 35,
+            "rejectedQueueFull": 0,
+            "waitTimeouts": 0,
+            "waitMs": {
+              "avgMs": 1.13,
+              "p50Ms": 0.39,
+              "p95Ms": 1.41,
+              "p99Ms": 24.14,
+              "maxMs": 24.14
+            },
+            "holdMs": {
+              "avgMs": 302.02,
+              "p50Ms": 200.96,
+              "p95Ms": 805.99,
+              "p99Ms": 1157.67,
+              "maxMs": 1157.67
+            }
+          }
+        }
+      },
+      "pgPool": {
+        "configuredMax": 5,
+        "isPgBouncer": false,
+        "liveTotalCount": 5,
+        "liveIdleCount": 5,
+        "liveWaitingCount": 0,
+        "peakWaitingCount": 6,
+        "peakTotalCount": 5,
+        "totalAcquires": 777,
+        "acquireErrors": 0,
+        "avgWaitMs": 3.54,
+        "p95WaitMs": 21.89,
+        "p99WaitMs": 71.12,
+        "maxWaitMs": 123.47
+      }
+    }
+  ],
+  "recoveryMeasurement": {
+    "trial1_sigtermCleanRestart": {
+      "saw502WhileDown": true,
+      "stopSignalMs": 88,
+      "bootToLiveMs": 721.5,
+      "bootToReadyMs": 949.7,
+      "bootToList20kMs": 958.2,
+      "totalStopToReadyMs": 1037.7,
+      "totalStopToTrafficMs": 1046.2
+    },
+    "trial2_sigkillWithOrphanLock": {
+      "bootToLiveMs": 395.4,
+      "bootToReadyMs": 609.5,
+      "totalKillToReadyMs": 614.4,
+      "totalKillToReconcileLockRecoveredMs": 715.7
+    }
+  },
+  "backupRestoreVerification": {
+    "sourceDb": "utevtvl_db",
+    "restoredDb": "utevtvl_restore_verify_db",
+    "dumpFormat": "postgresql_custom_compressed (-Fc)",
+    "dumpDurationMs": 2498.4,
+    "dumpSizeBytes": 22249850,
+    "dumpSizeMb": 21.22,
+    "restoreDurationMs": 2849.8,
+    "restoredAppReadyMs": 600,
+    "sourceSnapshot": {
+      "total_tickets": 22847,
+      "active_tickets": 22847,
+      "merged_tickets": 15581,
+      "versions_count": 61502,
+      "history_count": 42069,
+      "progress_units_count": 39,
+      "workbooks_count": 39,
+      "accounts_count": 251,
+      "counters_count": 39,
+      "total_merged_hours": 224207.75
+    },
+    "restoredSnapshot": {
+      "total_tickets": 22847,
+      "active_tickets": 22847,
+      "merged_tickets": 15581,
+      "versions_count": 61502,
+      "history_count": 42069,
+      "progress_units_count": 39,
+      "workbooks_count": 39,
+      "accounts_count": 251,
+      "counters_count": 39,
+      "total_merged_hours": 224207.75
+    },
+    "exactTableCountsMatch": true,
+    "hoursDiff": 0,
+    "perIdReconciliation": {
+      "phaseLabel": "stage6_afterPgRestore39Units",
+      "unitsChecked": 39,
+      "totalApprovedDbIds": 15581,
+      "matchedA2Ids": 15581,
+      "matchedB1Ids": 15581,
+      "matchedMergeLinkPairs": 15581,
+      "unmergedFlagCount": 0,
+      "missingInA2Count": 0,
+      "missingInB1Count": 0,
+      "duplicateInA2Count": 0,
+      "duplicateInB1Count": 0,
+      "orphanSourceIdsCount": 0,
+      "missingMergeLinksCount": 0
+    },
+    "apiVerificationOnRestoredDb": {
+      "healthReadyStatus": 200,
+      "cnttListStatus": 200,
+      "cnttListTotalCount": 488,
+      "overviewStatus": 200,
+      "overviewTotalsTotal": 22847,
+      "cnttWorkbookStatus": 200,
+      "cnttWorkbookA2Rows": 409
+    }
+  },
+  "thresholdChecks": {
+    "apiOver1MbStatus": 413,
+    "chunkedBetween5And6MbNodeStatus": 413,
+    "chunkedNodeCode": "PAYLOAD_TOO_LARGE",
+    "nginxAuthBurst50Rejected429Count": 19
+  }
+}

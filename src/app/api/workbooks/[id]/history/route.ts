@@ -7,14 +7,16 @@ import {
   ServerRevision,
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
-import { appendAuditLog, getAuditLogs, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
+import { appendAuditLog, getAuditLogs, persistAuditLogToSupabase, syncAuditLogsFromSupabase } from '@/services/storage/server-audit-store';
 import { getTicketsByUnit, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { isDatabaseConfigured, prisma, toIsoString } from '@/services/storage/prisma';
 import { extractUnitCodeFromWorkbookId } from '@/services/context/workbook-context';
 import { cacheGetOrSet, buildScopedCacheKey, invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import {
   buildAggregatedWorkbookHistory,
+  computeUnitProgressStage,
   deriveReviewMetaFromWorkbook,
+  REVIEW_ACTION_SET,
   REVIEW_STATUS_LABELS,
   summarizeErrorCountFromWorkbookData
 } from '@/services/workbooks/workbook-history-service';
@@ -50,11 +52,17 @@ export async function GET(req: Request, context: RouteContext) {
 
     const key = buildScopedCacheKey('wb-history', { unitCode: requestedUnit || caller.unitCode, workbookId: id, role: caller.role });
     const payload = await cacheGetOrSet(key, ['audit-history', 'review-submission', 'workbooks', 'tickets'], 3000, async () => {
-      await syncServerWorkbooksFromSupabase(true).catch(() => {});
+      await Promise.all([
+      syncServerWorkbooksFromSupabase(true).catch(() => {}),
+      syncAuditLogsFromSupabase(300).catch(() => {})
+    ]);
       let wb = getWorkbookById(id);
       if (!wb && requestedUnit) wb = getOrCreateWorkbook(requestedUnit, '01/10/2025–30/9/2026', caller.email);
       if (!wb) return null;
-      await syncTicketsFromSupabase(wb.unitId).catch(() => {});
+      await Promise.all([
+        syncTicketsFromSupabase(wb.unitId).catch(() => {}),
+        syncAuditLogsFromSupabase(300).catch(() => {})
+      ]);
 
       const revMap = new Map<number, ServerRevision>();
       for (const r of wb.revisions || []) revMap.set(r.revision, r);
@@ -76,8 +84,9 @@ export async function GET(req: Request, context: RouteContext) {
 
       const revisions = Array.from(revMap.values()).sort((a, b) => b.revision - a.revision);
       const auditLogs = getAuditLogs({ unitCode: wb.unitId, limit: 150 });
+      const reviewLogs = getAuditLogs({ unitCode: wb.unitId, actions: REVIEW_ACTION_SET, limit: 500 });
       const unitTickets = getTicketsByUnit(wb.unitId, false);
-      const reviewMeta = deriveReviewMetaFromWorkbook(wb, auditLogs);
+      const reviewMeta = deriveReviewMetaFromWorkbook(wb, reviewLogs);
       const unitDef = findHcmuteUnit(wb.unitId);
       const groupLabel = UNIT_GROUPS.find((g) => g.id === unitDef.group)?.label || unitDef.group;
       const coreSheets = ['A1', 'A2', 'B1', 'B2_CT', 'B2', 'C1', 'C2', 'C3', 'D1', 'D2'] as const;
@@ -87,10 +96,20 @@ export async function GET(req: Request, context: RouteContext) {
         const rows = (wb.data as Record<string, unknown[]>)?.[k];
         if (Array.isArray(rows) && rows.length > 0) { populatedSheetsCount++; totalRows += rows.length; }
       }
+      const draftCount = unitTickets.filter((t) => toCanonicalStatus(t.status) === 'draft').length;
+      const resubmittedCount = unitTickets.filter((t) => toCanonicalStatus(t.status) === 'resubmitted').length;
       const submittedCount = unitTickets.filter((t) => { const c = toCanonicalStatus(t.status); return c === 'submitted' || c === 'resubmitted'; }).length;
+      const changesRequestedCount = unitTickets.filter((t) => toCanonicalStatus(t.status) === 'changes_requested').length;
       const approvedCount = unitTickets.filter((t) => toCanonicalStatus(t.status) === 'approved').length;
       const mergedCount = unitTickets.filter((t) => Boolean(t.isMergedToB1B2)).length;
-      const progressPercent = mergedCount > 0 && populatedSheetsCount >= 6 ? 100 : approvedCount > 0 ? 80 : submittedCount > 0 ? 60 : unitTickets.length > 0 ? 35 : populatedSheetsCount > 0 ? 20 : 0;
+      const { progressPercent, stageLabel } = computeUnitProgressStage({
+        mergedCount,
+        populatedSheetsCount,
+        approvedCount,
+        submittedCount,
+        changesRequestedCount,
+        draftCount
+      });
       return {
         success: true,
         workbookId: wb.id,
@@ -100,11 +119,11 @@ export async function GET(req: Request, context: RouteContext) {
         reviewMeta,
         unitSummary: {
           unitCode: wb.unitId, unitNameVi: wb.unitNameVi, group: unitDef.group, groupLabel,
-          totalTickets: unitTickets.length, draftCount: unitTickets.filter((t) => toCanonicalStatus(t.status) === 'draft').length,
-          submittedCount, resubmittedCount: 0, changesRequestedCount: unitTickets.filter((t) => toCanonicalStatus(t.status) === 'changes_requested').length,
+          totalTickets: unitTickets.length, draftCount,
+          submittedCount, resubmittedCount, changesRequestedCount,
           approvedCount, mergedCount, testTicketCount: 0, hasWorkbook: true, workbookRevision: wb.currentRevision || 1,
           populatedSheetsCount, totalCoreSheets: coreSheets.length, totalRows, accountCount: 0, leaderCount: 0, staffCount: 0,
-          progressPercent, stageLabel: progressPercent === 100 ? 'Đã gộp B1/B2 & hoàn thiện biểu' : populatedSheetsCount > 0 ? 'Đang hoàn thiện biểu mẫu' : 'Chưa kê khai',
+          progressPercent, stageLabel,
           lastUpdatedAt: wb.updatedAt || null, reviewStatus: reviewMeta.status, reviewStatusLabel: REVIEW_STATUS_LABELS[reviewMeta.status],
           submittedAt: reviewMeta.submittedAt, submittedBy: reviewMeta.submittedBy, submittedRevision: reviewMeta.submittedRevision,
           reviewerEmail: reviewMeta.reviewerEmail, reviewedAt: reviewMeta.reviewedAt, reviewNote: reviewMeta.reviewNote,
@@ -142,7 +161,10 @@ export async function POST(req: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Vui lòng nhập nhận xét / lý do yêu cầu bổ sung.', code: 'MISSING_REVIEW_NOTE' }, { status: 400 });
     }
 
-    await syncServerWorkbooksFromSupabase(true).catch(() => {});
+    await Promise.all([
+      syncServerWorkbooksFromSupabase(true).catch(() => {}),
+      syncAuditLogsFromSupabase(300).catch(() => {})
+    ]);
     const requestedUnit = extractUnitCodeFromWorkbookId(id);
     const wb = getWorkbookById(id) || (requestedUnit ? getOrCreateWorkbook(requestedUnit, '01/10/2025–30/9/2026', caller.email) : null);
     if (!wb) return NextResponse.json({ error: 'Không tìm thấy hồ sơ.', code: 'NOT_FOUND' }, { status: 404 });
@@ -162,7 +184,7 @@ export async function POST(req: Request, context: RouteContext) {
 
     const cleanNote = (note || '').trim();
     const nowText = new Date().toLocaleString('vi-VN');
-    const prevMeta = deriveReviewMetaFromWorkbook(wb, getAuditLogs({ unitCode: wb.unitId, limit: 150 }));
+    const prevMeta = deriveReviewMetaFromWorkbook(wb, getAuditLogs({ unitCode: wb.unitId, actions: REVIEW_ACTION_SET, limit: 500 }));
     const actualAuditAction = action === 'submit_to_tcns' && prevMeta.status === 'can_bo_sung' ? 'GUI_LAI_TCNS' : cfg.auditAction;
 
     const nextS = [
@@ -202,7 +224,7 @@ export async function POST(req: Request, context: RouteContext) {
     await persistAuditLogToSupabase(audit);
     invalidateUnitMutationCache(wb.unitId);
 
-    const freshLogs = getAuditLogs({ unitCode: wb.unitId, limit: 150 });
+    const freshLogs = getAuditLogs({ unitCode: wb.unitId, actions: REVIEW_ACTION_SET, limit: 500 });
     return NextResponse.json({
       success: true,
       workbookId: wb.id,

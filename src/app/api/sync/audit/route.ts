@@ -3,6 +3,9 @@ import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { postServerRestRequired } from '@/services/storage/server-supabase-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
+import { MAX_STANDARD_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
+import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
+import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 import { AuditReportResult } from '@/types/vtvl';
 
 export async function POST(req: Request) {
@@ -12,8 +15,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json();
-    const { report, unitCode } = body as { report: AuditReportResult; unitCode: string };
+    const parsed = await readBoundedJsonBody<{ report?: AuditReportResult; unitCode?: string }>(req, MAX_STANDARD_PAYLOAD_BYTES);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status });
+    }
+    const { report, unitCode } = parsed.data;
 
     if (!unitCode || unitCode === 'X99') {
       return NextResponse.json({ error: 'Mã đơn vị không hợp lệ.' }, { status: 400 });
@@ -34,6 +40,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const rateErr = enforceApiRateLimit('workbook_write', unitCode);
+    if (rateErr) return rateErr;
+
+    return await withHeavyMutationBudget({ kind: 'workbook_save', unitCode, actorEmail: caller.email }, async () => {
 
     const checkDefs = [
       { stt: 1, pair: 'A1 ↔ A2', label: 'Mọi nhiệm vụ A1 đều có đầu việc A2', sheet: 'A1' },
@@ -76,7 +87,10 @@ export async function POST(req: Request) {
     invalidateUnitMutationCache(unitCode);
 
     return NextResponse.json({ success: true, message: 'Đồng bộ kết quả rà soát thành công.' });
+    });
   } catch (error: unknown) {
+    const busy = toHeavyBusyResponse(error);
+    if (busy) return busy;
     const errObj = error as { table?: string; status?: number; message?: string };
     const failedTable = errObj?.table || 'unknown';
     const status = errObj?.status && errObj.status >= 500 && errObj.status < 600 ? 502 : 500;
@@ -90,4 +104,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

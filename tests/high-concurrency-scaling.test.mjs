@@ -411,7 +411,13 @@ main().catch((err) => {
 
   try {
     execSync(`npx tsx "${runnerPath}"`, {
-      env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' },
+      env: {
+        ...process.env,
+        VTVL_ISOLATED_LOCAL_STORE: 'true',
+        VTVL_API_RATE_LIMIT_ENABLED: process.env.VTVL_API_RATE_LIMIT_ENABLED ?? 'false',
+        VTVL_HEAVY_MAX_QUEUE: process.env.VTVL_HEAVY_MAX_QUEUE ?? '150',
+        VTVL_LOCK_MAX_WAITERS: process.env.VTVL_LOCK_MAX_WAITERS ?? '60'
+      },
       stdio: 'inherit'
     });
   } finally {

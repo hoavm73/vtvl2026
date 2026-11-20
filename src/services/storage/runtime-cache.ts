@@ -40,7 +40,7 @@ interface CacheEntry<T> {
 
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightPromises = new Map<string, Promise<unknown>>();
-const MAX_CACHE_ENTRIES = 250;
+const MAX_CACHE_ENTRIES = 2000;
 
 function isTestBypass(): boolean {
   return process.env.VTVL_ISOLATED_LOCAL_STORE === 'true';
@@ -146,6 +146,7 @@ export function invalidateUnitMutationCache(unitCode?: string): void {
   for (const [key, entry] of memoryCache.entries()) {
     const matchesTag = Array.from(entry.tags).some((t) => allTags.has(t));
     if (!matchesTag) continue;
+    if (target && key === 'coord:sources:sync') continue;
     const isScopedOtherUnit = Boolean(target && key.includes('|u:') && !key.includes(target));
     if (!isScopedOtherUnit) memoryCache.delete(key);
   }
@@ -156,4 +157,8 @@ export function clearAllRuntimeCache(): void {
   inFlightPromises.clear();
 }
 
-registerCacheInvalidator(clearAllRuntimeCache);
+registerCacheInvalidator((lockKey?: string) => {
+  const m = lockKey?.match(/^(?:unit_wb_|ticket_unit_)(.+)$/i);
+  if (m) invalidateUnitMutationCache(m[1]);
+  else clearAllRuntimeCache();
+});

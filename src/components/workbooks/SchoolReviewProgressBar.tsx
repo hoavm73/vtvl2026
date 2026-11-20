@@ -18,7 +18,7 @@ interface SchoolReviewProgressBarProps {
   loading?: boolean;
   hideHeader?: boolean;
   activeFilter?: string;
-  onSelectFilter?: (filter: 'ALL' | 'chua_gui' | 'cho_tham_dinh' | 'dang_tham_dinh' | 'can_bo_sung' | 'dat_yeu_cau') => void;
+  onSelectFilter?: (filter: 'chua_gui' | 'STEP_SUBMITTED' | 'dang_tham_dinh' | 'can_bo_sung' | 'STEP_APPROVED') => void;
 }
 
 export function SchoolReviewProgressBar({
@@ -36,7 +36,8 @@ export function SchoolReviewProgressBar({
   const submittedOrBeyond = progress.daGuiTcns + progress.dangThamDinh + progress.canBoSung + progress.datVaKhoa;
 
   const tiles: {
-    key: 'chua_gui' | 'cho_tham_dinh' | 'dang_tham_dinh' | 'can_bo_sung' | 'dat_yeu_cau';
+    key: 'chua_gui' | 'STEP_SUBMITTED' | 'dang_tham_dinh' | 'can_bo_sung' | 'STEP_APPROVED';
+    matchStatuses: string[];
     label: string;
     desc: string;
     count: number;
@@ -49,6 +50,7 @@ export function SchoolReviewProgressBar({
   }[] = [
     {
       key: 'chua_gui',
+      matchStatuses: ['chua_gui'],
       label: 'Bước 1 · Chưa gửi',
       desc: 'Đang hoàn thiện 10 biểu',
       count: progress.chuaGui,
@@ -60,7 +62,8 @@ export function SchoolReviewProgressBar({
       iconCls: 'text-[#476885]'
     },
     {
-      key: 'cho_tham_dinh',
+      key: 'STEP_SUBMITTED',
+      matchStatuses: ['STEP_SUBMITTED', 'cho_tham_dinh', 'da_gui_lai'],
       label: 'Bước 2 · Đã gửi TCNS',
       desc: 'Chờ Phòng TCNS tiếp nhận',
       count: progress.daGuiTcns,
@@ -73,6 +76,7 @@ export function SchoolReviewProgressBar({
     },
     {
       key: 'dang_tham_dinh',
+      matchStatuses: ['dang_tham_dinh'],
       label: 'Bước 3 · Đang thẩm định',
       desc: 'Phòng TCNS đang rà soát',
       count: progress.dangThamDinh,
@@ -85,6 +89,7 @@ export function SchoolReviewProgressBar({
     },
     {
       key: 'can_bo_sung',
+      matchStatuses: ['can_bo_sung'],
       label: 'Bước 3 · Cần bổ sung',
       desc: 'Trả lại đơn vị hoàn thiện',
       count: progress.canBoSung,
@@ -96,7 +101,8 @@ export function SchoolReviewProgressBar({
       iconCls: 'text-[#8f4f00]'
     },
     {
-      key: 'dat_yeu_cau',
+      key: 'STEP_APPROVED',
+      matchStatuses: ['STEP_APPROVED', 'dat_yeu_cau', 'da_khoa'],
       label: 'Bước 4 · Đạt & khóa',
       desc: 'Đã chốt số liệu, khóa sửa',
       count: progress.datVaKhoa,
@@ -151,7 +157,7 @@ export function SchoolReviewProgressBar({
         {tiles.map((t) => {
           const Icon = t.icon;
           const clickable = Boolean(onSelectFilter);
-          const isSelected = Boolean(clickable && activeFilter === t.key);
+          const isSelected = Boolean(clickable && activeFilter && t.matchStatuses.includes(activeFilter));
           return (
             <button
               key={t.key}

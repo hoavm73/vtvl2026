@@ -1,13 +1,13 @@
 import { ExcelSheetKey, GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
-import { fetchWorkbooksFromSupabase, persistWorkbookToSupabase, deleteWorkbookFromSupabase, invalidateSupabaseCache } from './server-supabase-store';
+import { fetchWorkbooksFromSupabase, fetchUnitWorkbookFromSupabase, persistWorkbookToSupabase, deleteWorkbookFromSupabase, invalidateSupabaseCache, upsertWorkbookInSupabaseCache, evictUnitFromSupabaseCache } from './server-supabase-store';
 import { getInitialSeedWorkbooks } from './server-seed-workbooks';
 import { registerCacheInvalidator, withCrossProcessLock } from './server-file-lock';
-import { invalidateCacheTags } from './runtime-cache';
-import { writeJsonFileAtomic } from './atomic-json-file';
-import fs from 'fs';
-import path from 'path';
+import { invalidateCacheTags, invalidateUnitMutationCache } from './runtime-cache';
+import { writeJsonFileAtomic, shouldPersistLocalJson } from './atomic-json-file';
+import { isDatabaseConfigured } from './prisma';
+import fs from 'fs'; import path from 'path';
 
 export interface ServerParticipant {
   id: string; sessionId: string; workbookId: string; displayName: string;
@@ -36,20 +36,25 @@ const STORE_FILE = path.join(DATA_DIR, 'server_workbooks.json');
 const DELETED_WB_FILE = path.join(DATA_DIR, 'deleted_workbooks.json');
 let memoryWorkbooks: Map<string, ServerWorkbook> | null = null;
 let deletedWbIds: Set<string> | null = null;
+const wbLockGlobal = globalThis as unknown as { __uteVtvlWbLockStatusCache?: Map<string, { locked: boolean; fetchedAt: number }> };
+const evictWbLockCache = (uc?: string) => { const m = wbLockGlobal.__uteVtvlWbLockStatusCache; if (m) uc ? m.delete(uc.trim().toUpperCase()) : m.clear(); };
+const onUnitMutated = (uc: string) => { evictWbLockCache(uc); invalidateUnitMutationCache(uc); };
+export function hasWorkbookInMemory(unitCode: string): boolean { return Boolean(memoryWorkbooks && findLatestUnitWorkbook(memoryWorkbooks, unitCode)); }
 export function resetWorkbookMemoryStore(): void {
-  memoryWorkbooks = null;
-  deletedWbIds = null;
-  invalidateSupabaseCache();
+  memoryWorkbooks = null; deletedWbIds = null; invalidateSupabaseCache(); evictWbLockCache();
   invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
 }
-registerCacheInvalidator(resetWorkbookMemoryStore);
+registerCacheInvalidator((lockKey?: string) => {
+  const m = lockKey?.match(/^(?:unit_wb_|ticket_unit_)(.+)$/i);
+  if (!m || !isDatabaseConfigured()) return resetWorkbookMemoryStore();
+  const uc = m[1].trim().toUpperCase();
+  if (memoryWorkbooks) for (const [id, wb] of memoryWorkbooks.entries()) if (wb.unitId.toUpperCase() === uc) memoryWorkbooks.delete(id);
+  evictUnitFromSupabaseCache(uc); onUnitMutated(uc);
+});
 export async function withUnitWorkbookLock<T>(unitCode: string, fn: () => Promise<T>): Promise<T> {
   return withCrossProcessLock(`unit_wb_${unitCode.trim().toUpperCase()}`, fn);
 }
-
-function ensureDataDir(): void {
-  try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch { /* ignore */ }
-}
+function ensureDataDir(): void { try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true }); } catch { /* ignore */ } }
 function loadDeletedWbIds(): Set<string> {
   if (deletedWbIds) return deletedWbIds;
   deletedWbIds = new Set();
@@ -62,14 +67,8 @@ function loadDeletedWbIds(): Set<string> {
   } catch { /* ignore */ }
   return deletedWbIds;
 }
-function persistDeletedWbIds(): void {
-  if (!deletedWbIds) return;
-  writeJsonFileAtomic(DELETED_WB_FILE, Array.from(deletedWbIds));
-}
-function persistStore(): void {
-  if (!memoryWorkbooks) return;
-  writeJsonFileAtomic(STORE_FILE, Array.from(memoryWorkbooks.values()), true);
-}
+function persistDeletedWbIds(): void { if (deletedWbIds) writeJsonFileAtomic(DELETED_WB_FILE, Array.from(deletedWbIds)); }
+function persistStore(): void { if (memoryWorkbooks && shouldPersistLocalJson()) writeJsonFileAtomic(STORE_FILE, Array.from(memoryWorkbooks.values()), true); }
 function loadStore(): Map<string, ServerWorkbook> {
   if (memoryWorkbooks) return memoryWorkbooks;
   memoryWorkbooks = new Map();
@@ -94,22 +93,25 @@ function findLatestUnitWorkbook(store: Map<string, ServerWorkbook>, unitCode: st
   return Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === target).sort((a, b) => (b.currentRevision || 0) - (a.currentRevision || 0))[0] || null;
 }
 
-export async function syncServerWorkbooksFromSupabase(forceRefresh = false): Promise<void> {
+export async function syncServerWorkbooksFromSupabase(forceRefresh = false, unitCode?: string): Promise<void> {
   const store = loadStore(), deleted = loadDeletedWbIds();
   try {
+    const items = unitCode ? [await fetchUnitWorkbookFromSupabase(unitCode, forceRefresh)].filter((x): x is ServerWorkbook => Boolean(x)) : await fetchWorkbooksFromSupabase(forceRefresh);
     let changed = false;
-    for (const sw of await fetchWorkbooksFromSupabase(forceRefresh)) {
+    for (const sw of items) {
       if (!sw.id || deleted.has(sw.id) || deleted.has(sw.unitId) || store.get(sw.id)?.isDeleted) continue;
       const sameUnit = Array.from(store.values()).filter((w) => !w.isDeleted && w.unitId.toUpperCase() === sw.unitId.toUpperCase());
       const maxRev = sameUnit.reduce((m, w) => Math.max(m, w.currentRevision || 0), 0);
-      if (!sameUnit.length || (sw.currentRevision && sw.currentRevision >= maxRev)) {
+      if (!sameUnit.length || forceRefresh || (sw.currentRevision && sw.currentRevision >= maxRev)) {
         sameUnit.forEach((oldWb) => { if (oldWb.id !== sw.id) store.delete(oldWb.id); });
         store.set(sw.id, sw);
         changed = true;
       }
     }
     if (changed) persistStore();
-  } catch { /* ignore */ }
+  } catch (err) {
+    if (forceRefresh && process.env.VTVL_ISOLATED_LOCAL_STORE !== 'true' && Boolean((process.env.DATABASE_URL || '').trim())) throw err;
+  }
 }
 
 export function getWorkbookForUnitReadOnly(unitId: string, reportingPeriod = '01/10/2025–30/9/2026'): ServerWorkbook {
@@ -167,7 +169,7 @@ export function getAllActiveServerWorkbooks(): ServerWorkbook[] {
 
 export function saveServerWorkbook(params: {
   workbookId: string; baseRevision: number; data: Record<ExcelSheetKey, GenericGridRow[]>;
-  actorEmail: string; actorTitle?: string; touchedCells?: string[]; changeSummary?: string; unitCode?: string;
+  actorEmail: string; actorTitle?: string; touchedCells?: string[]; changeSummary?: string; unitCode?: string; skipAsyncPersist?: boolean;
 }): { success: boolean; conflict?: boolean; currentRevision?: number; serverWorkbook?: ServerWorkbook } {
   const store = loadStore();
   let wb = store.get(params.workbookId) || getWorkbookById(params.workbookId);
@@ -201,9 +203,9 @@ export function saveServerWorkbook(params: {
   wb.revisions.unshift({ id: `rev_${wb.id}_${nextRev}`, workbookId: wb.id, revision: nextRev, data: params.data, actorEmail: normEmail, actorTitle: params.actorTitle, changeSummary: params.changeSummary || `Cập nhật lần ${nextRev}`, createdAt: now });
   if (wb.revisions.length > 15) wb.revisions = wb.revisions.slice(0, 15);
   persistStore();
-  invalidateSupabaseCache();
-  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
-  persistWorkbookToSupabase(wb).catch(() => {});
+  upsertWorkbookInSupabaseCache(wb);
+  onUnitMutated(wb.unitId);
+  if (!params.skipAsyncPersist) persistWorkbookToSupabase(wb).catch(() => {});
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
@@ -212,8 +214,8 @@ export async function saveServerWorkbookAndPersist(
 ): Promise<ReturnType<typeof saveServerWorkbook>> {
   const store = loadStore();
   const prev = store.get(params.workbookId) || getWorkbookById(params.workbookId);
-  const prevClone = prev ? (JSON.parse(JSON.stringify(prev)) as ServerWorkbook) : null;
-  const res = saveServerWorkbook(params);
+  const prevClone = prev ? { ...prev, participants: prev.participants.map((p) => ({ ...p })), revisions: [...prev.revisions] } : null;
+  const res = saveServerWorkbook({ ...params, skipAsyncPersist: true });
   if (res.success && res.serverWorkbook) {
     try {
       await persistWorkbookToSupabase(res.serverWorkbook, undefined, { simulateTxError: params.simulateTxError, requireAtomicRpc: params.requireAtomicRpc });
@@ -246,8 +248,8 @@ export function rollbackServerWorkbookRevision(
     createdAt: now
   });
   persistStore();
-  invalidateSupabaseCache();
-  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
+  upsertWorkbookInSupabaseCache(wb);
+  onUnitMutated(wb.unitId);
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
@@ -256,7 +258,7 @@ export async function rollbackServerWorkbookRevisionAndPersist(
 ): Promise<{ success: boolean; currentRevision?: number; serverWorkbook?: ServerWorkbook }> {
   const store = loadStore();
   const prev = store.get(workbookId);
-  const prevClone = prev ? (JSON.parse(JSON.stringify(prev)) as ServerWorkbook) : null;
+  const prevClone = prev ? { ...prev, participants: prev.participants.map((p) => ({ ...p })), revisions: [...prev.revisions] } : null;
   const res = rollbackServerWorkbookRevision(workbookId, targetRevision, actorEmail, reason);
   if (res.success && res.serverWorkbook) {
     try {
@@ -278,7 +280,7 @@ export async function deleteServerWorkbook(workbookId: string): Promise<boolean>
   [wb.id, wb.unitId, workbookId].forEach((k) => deleted.add(k));
   persistDeletedWbIds(); persistStore();
   await deleteWorkbookFromSupabase(wb.unitId);
-  invalidateCacheTags(['workbooks', 'overview-stats', 'unit-monitor']);
+  onUnitMutated(wb.unitId);
   return true;
 }
 

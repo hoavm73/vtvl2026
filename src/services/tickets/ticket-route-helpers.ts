@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWorkbookForUnitReadOnly, normalizeEmail, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { getTicketById, getTicketsByOwner, getTicketsByUnit, loadTickets, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
-import { ensureLegacyBaselineVersion } from '@/services/storage/server-ticket-version-store';
-import { syncVersionsCacheFromSupabase } from '@/services/storage/server-coordination-store';
+import { ensureLegacyBaselineVersion, fetchTicketVersionsFromSupabase } from '@/services/storage/server-ticket-version-store';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { CallerAuthContext } from '@/services/storage/server-auth-guard';
 import { CanonicalTicketStatus, StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { normalizeCoordinatedVtvls, resolveUnitCodeSafe } from './vtvl-coordination-helpers';
 import { paginateTicketsWithCursor, queryTicketsFromPostgresPaginated } from './ticket-query-service';
+import { MAX_STANDARD_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
 
 export async function executeGetTicketsRoute(req: NextRequest, caller: CallerAuthContext): Promise<NextResponse> {
   const singleTicketId = (req.nextUrl.searchParams.get('id') || '').trim();
   if (singleTicketId) {
-    await syncVersionsCacheFromSupabase().catch(() => {});
+    await fetchTicketVersionsFromSupabase(singleTicketId).catch(() => []);
     let found = getTicketById(singleTicketId);
     if (!found) { await syncTicketsFromSupabase().catch(() => {}); found = getTicketById(singleTicketId); }
     if (!found || (found.isArchived && !caller.isAdmin)) return NextResponse.json({ error: 'Không tìm thấy phiếu.', code: 'TICKET_NOT_FOUND' }, { status: 404 });
@@ -74,7 +74,7 @@ export async function executeGetTicketsRoute(req: NextRequest, caller: CallerAut
     }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
-  if (isKnownUnit) await syncServerWorkbooksFromSupabase(false);
+  if (isKnownUnit) await syncServerWorkbooksFromSupabase(false, isAllUnits ? undefined : unit.code);
   const latestWb = isKnownUnit ? getWorkbookForUnitReadOnly(unit.code) : null;
   const rawMyTickets = getTicketsByOwner(caller.email, queryCode === 'ALL' ? unit.code : queryCode);
   const rawUnitTickets = getTicketsByUnit(queryCode);
@@ -94,8 +94,33 @@ export async function executeGetTicketsRoute(req: NextRequest, caller: CallerAut
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
+export async function parseTicketJsonWithGuard<T = Record<string, unknown>>(
+  req: Request,
+  maxBytes = MAX_STANDARD_PAYLOAD_BYTES
+): Promise<{ ok: true; data: T } | { ok: false; response: NextResponse }> {
+  const parsed = await readBoundedJsonBody<T>(req, maxBytes);
+  if (parsed.ok) return { ok: true, data: parsed.data };
+  return {
+    ok: false,
+    response: NextResponse.json({ error: parsed.error, code: parsed.code }, { status: parsed.status })
+  };
+}
+
 export function handleTicketRouteError(err: unknown, defaultMessage: string) {
-  const errObj = err as { code?: string; status?: number; message?: string };
+  const errObj = err as { code?: string; status?: number; retryAfterSeconds?: number; message?: string };
+  if (
+    errObj?.code === 'LOCK_ACQUIRE_TIMEOUT' ||
+    errObj?.code === 'LOCK_QUEUE_FULL' ||
+    errObj?.code === 'SERVER_BUSY_RETRY' ||
+    errObj?.code === 'RATE_LIMITED' ||
+    errObj?.status === 429
+  ) {
+    const retryAfter = Math.max(1, Number(errObj?.retryAfterSeconds || 3));
+    return NextResponse.json(
+      { error: errObj?.message || 'Hệ thống đang bận xử lý nhiều thao tác đồng thời. Vui lòng thử lại sau.', code: errObj?.code || 'SERVER_BUSY_RETRY', retryAfterSeconds: retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    );
+  }
   if (errObj?.code === 'REVISION_CONFLICT' || errObj?.code === 'DUPLICATE_BUSINESS_CODE' || errObj?.status === 409) {
     return NextResponse.json(
       { error: errObj.message || 'Xung đột phiên bản dữ liệu máy chủ.', code: errObj.code || 'REVISION_CONFLICT' },

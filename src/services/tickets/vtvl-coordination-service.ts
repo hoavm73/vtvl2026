@@ -7,13 +7,14 @@ import {
   WorkSurveyVersion
 } from '@/types/staff-ticket';
 import { loadTickets } from '@/services/storage/server-ticket-store';
-import { ensureLegacyBaselineVersion } from '@/services/storage/server-ticket-version-store';
+import { ensureLegacyBaselineVersion, hasStoredTicketVersions } from '@/services/storage/server-ticket-version-store';
 import { getUserAccountByEmail } from '@/services/storage/server-account-store';
 import {
   getAssignmentsForEmail,
   resolveUnitVtvlName
 } from '@/services/storage/server-vtvl-assignment-store';
 import {
+  getCoordinatedCandidateTickets,
   loadCoordinationState,
   persistCoordinationState,
   SubmittedCoordinatedVtvlRow
@@ -29,6 +30,19 @@ import {
   resolveUnitCodeSafe,
   resolveUnitNameSafe
 } from './vtvl-coordination-helpers';
+
+export function hasTicketOrTargetCoordination(ticket: StaffWorkTicket, previous?: StaffWorkTicket | null): boolean {
+  if (ticket.maVtvlPhoiHop?.trim() || ticket.coordinatedVtvls?.length) return true;
+  if (previous?.maVtvlPhoiHop?.trim() || previous?.coordinatedVtvls?.length) return true;
+  const state = loadCoordinationState();
+  if ((state.submittedRowsBySurvey[ticket.id]?.length || 0) > 0) return true;
+  const uc = resolveUnitCodeSafe(ticket.unitCode), vtvl = normalizeCode(ticket.maVtvl);
+  if (!uc || !vtvl) return false;
+  for (const rows of Object.values(state.submittedRowsBySurvey)) {
+    if (rows.some((r) => resolveUnitCodeSafe(r.targetUnitCode) === uc && normalizeCode(r.targetVtvlCode) === vtvl)) return true;
+  }
+  return false;
+}
 
 export function getSubmittedCoordinationHistory(surveyId: string): SubmittedCoordinatedVtvlRow[] {
   return [...(loadCoordinationState().submittedRowsBySurvey[surveyId] || [])].sort(
@@ -202,9 +216,11 @@ export function queryProposedTasksForUser(
   const filter = includeAllUnits ? { includeAllUnits: true } : useUnitScope ? { targetUnitCode } : { viewerKeys };
   const items: ProposedCoordinatedTaskItem[] = [];
 
-  for (const ticket of loadTickets().values()) {
+  for (const ticket of getCoordinatedCandidateTickets()) {
     if (ticket.isTestData || ticket.isArchived) continue;
     if (toCanonicalStatus(ticket.status) === 'draft') continue;
+    const hasCoord = Boolean(ticket.maVtvlPhoiHop?.trim() || ticket.coordinatedVtvls?.length);
+    if (!hasCoord && !hasStoredTicketVersions(ticket.id)) continue;
     const versions = ensureLegacyBaselineVersion(ticket);
     if (versions.length === 0) continue;
     const item = buildMinimizedProposalForViewer(ticket, versions[versions.length - 1], filter);

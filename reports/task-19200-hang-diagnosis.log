@@ -1,0 +1,292 @@
+=== DIAGNOSIS TIMESTAMP: 2026-11-19T08:49:59Z ===
+--- task-19200.log ---
+
+[1/5] Khởi tạo PostgreSQL 16 (:5439), Next Standalone (:3369), Nginx Staging (:8360) & Healthchecks...
+[2026-11-19T07:38:42.868Z] 🗄️  Kiểm tra PostgreSQL & Prisma Migrations (17 SQL + 2 Prisma)...
+  🚀 [APPLIED SQL] 00-supabase-compat.sql (6 ms | sha256:fe03c5772e8a)
+  🚀 [APPLIED SQL] 20261107_init_vtvl_hcmute.sql (42 ms | sha256:3f41314e0a4d)
+  🚀 [APPLIED SQL] 01-seed-initial-units.sql (1 ms | sha256:2a2880948b10)
+  🚀 [APPLIED SQL] 20261110_vtvl_server_workbooks.sql (10 ms | sha256:cd5b05d87c7e)
+  🚀 [APPLIED SQL] 20261110_lockdown_supabase_rls.sql (11 ms | sha256:e2624f934e7a)
+  🚀 [APPLIED SQL] 20261113_google_auth_rls_and_indexes.sql (5 ms | sha256:3388ceaddc63)
+  🚀 [APPLIED SQL] 20261113_user_accounts_and_roles.sql (3 ms | sha256:a00fbd041093)
+  🚀 [APPLIED SQL] 20261114_add_rbac_and_tickets.sql (7 ms | sha256:aa0854cccb51)
+  🚀 [APPLIED SQL] 20261114_hardened_rls_data_protection.sql (9 ms | sha256:18d3a77b6f57)
+  🚀 [APPLIED SQL] 20261114220000_reconcile_production_schema.sql (15 ms | sha256:32c96a1437a4)
+  🚀 [APPLIED SQL] 20261115000000_sync_units_catalog_48.sql (31 ms | sha256:9fd4530a6712)
+  🚀 [APPLIED SQL] 20261115010000_enforce_vtvl_rbac_matrix.sql (3 ms | sha256:aa9dd128796e)
+  🚀 [APPLIED SQL] 20261115020000_hardened_rbac_database_erd.sql (8 ms | sha256:8d646321d3ea)
+  🚀 [APPLIED SQL] 20261115030000_work_survey_lifecycle_erd.sql (13 ms | sha256:7c949fd25afd)
+  🚀 [APPLIED SQL] 20261115140000_reconcile_vtvl_39_units_and_versions.sql (23 ms | sha256:7f9a3045c8dc)
+  🚀 [APPLIED SQL] 20261115210000_add_vtvl_coordination_proposals.sql (10 ms | sha256:faee13413816)
+  🚀 [APPLIED SQL] 20261116210000_create_work_relationships.sql (14 ms | sha256:a1cff58ab597)
+  🚀 [APPLIED PRISMA] 20261117000000_init_nextauth_and_vtvl_full (8 ms | sha256:290db47dea9b)
+  🚀 [APPLIED PRISMA] 20261118235500_high_concurrency_scaling (5 ms | sha256:e070ca923996)
+[2026-11-19T07:38:43.126Z] ✅ Hoàn tất Migration: mới áp dụng 19, bỏ qua 0 (schema_migrations=19, _prisma_migrations=2).
+[2026-11-19T07:38:43.245Z] 🧪 Bắt đầu kiểm thử hậu triển khai CSDL (45 Prisma models, 2 Prisma migrations)...
+  ✓ [PASS] Bảng Prisma: 45/45 bảng tồn tại đầy đủ trong public schema.
+  ✓ [PASS] Sổ cái _prisma_migrations: 2/2 phiên bản đã áp dụng thành công.
+  ✓ [PASS] Sổ cái schema_migrations: 19 bản ghi hợp lệ (0 lỗi).
+  ✓ [PASS] Chỉ mục chịu tải cao: 6/6 index hoạt động.
+  ✓ [PASS] Smoke-test chỉ đọc (Read-Only): dm_don_vi=49, user_accounts=1, staff_work_tickets=0, unit_mission_counters=0, idempotency_records=0, background_jobs=0.
+[2026-11-19T07:38:43.257Z] ✅ Hậu kiểm bảng & migration PostgreSQL ĐẠT 100% (0 lỗi).
+  ✓ Healthchecks qua Nginx: /api/health/live -> 200 {status:"ok"}, /api/health/ready -> 200 {status:"ready"}
+
+[2/5] Giai đoạn 2: Nghiệm thu toàn vẹn dữ liệu độc lập (chung IP, gộp lâu >8s, 2 người duyệt đồng thời, SIGKILL)...
+✓ Giai đoạn 2 PASS 100%: 44 phiếu, 46 versions, 94 history, 0 trùng mã, hoursDiff=0
+
+[3/5] Giai đoạn 3: Nạp dữ liệu thử 20.000 phiếu + 100.000 phiên bản/lịch sử & chạy đợt dồn tải 39 đơn vị...
+  ✓ Đã nạp PostgreSQL: 20000 phiếu, 60000 phiên bản, 40000 lịch sử
+  ✓ Đợt dồn tải 39 đơn vị hoàn tất: gộp 14970 phiếu, còn sót=0, 5xx=0, wall=11631.17 ms
+
+[4/5] Giai đoạn 4: Đo tải trên 20.000 phiếu (250 phiên chung IP) ở 30, 60, 100 req/s + dò trần 1 bản...
+
+--- ps / sockets summary ---
+  PID  PPID STAT    RSS  ELAPSED COMMAND
+36317     1 Ss     4912 01:11:17 /opt/homebrew/Cellar/postgresql@16/16.16/bin/postgres -D /tmp/utevtvl_pg16_staging -p 5439 -h 127.0.0.1 -k /tmp/utevtvl_pg16_staging -c max_connections=100 -c shared_buffers=256MB
+36351     1 Ss      336 01:11:15 nginx: master process /opt/homebrew/opt/nginx/bin/nginx -c /tmp/utevtvl_nginx_staging/nginx.conf
+36292  1911 Ss+    5152 01:11:18 node scripts/benchmark-postgres-staging.mjs
+36421 36292 S+     8576 01:11:00 next-server (v COMMAND_MODE=unix2003
+COMMAND    PID  USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node     36292 macaz   17u  IPv4 0x1575c51ef3fefe7f      0t0  TCP 127.0.0.1:53443->127.0.0.1:5439 (ESTABLISHED)
+postgres 36317 macaz    5u  IPv4 0xa1a4860e639e0daf      0t0  TCP 127.0.0.1:5439 (LISTEN)
+postgres 36334 macaz    9u  IPv4 0x23bb61f776e3606c      0t0  TCP 127.0.0.1:5439->127.0.0.1:53443 (ESTABLISHED)
+nginx    36351 macaz    5u  IPv4 0x4bdacc2a7ba1db49      0t0  TCP 127.0.0.1:8360 (LISTEN)
+nginx    36352 macaz    5u  IPv4 0x4bdacc2a7ba1db49      0t0  TCP 127.0.0.1:8360 (LISTEN)
+nginx    36353 macaz    5u  IPv4 0x4bdacc2a7ba1db49      0t0  TCP 127.0.0.1:8360 (LISTEN)
+node     36421 macaz   12u  IPv4 0xd1471d321b706710      0t0  TCP 127.0.0.1:3369 (LISTEN)
+node     36421 macaz   23u  IPv4 0xbedb03e095cb81bd      0t0  TCP 127.0.0.1:54219->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   24u  IPv4 0xe6d437b4c462b5aa      0t0  TCP 127.0.0.1:54202->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   25u  IPv4 0xbc219c140787fbe1      0t0  TCP 127.0.0.1:54210->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   26u  IPv4 0xe03e623e13f80adf      0t0  TCP 127.0.0.1:54220->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   27u  IPv4 0x1f82e37d249d0abe      0t0  TCP 127.0.0.1:54221->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   42u  IPv4 0x1048f3e8289a7c83      0t0  TCP 127.0.0.1:54203->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   44u  IPv4 0x41850291e1145d12      0t0  TCP 127.0.0.1:54211->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   45u  IPv4 0x2d0001e3b1fef0a8      0t0  TCP 127.0.0.1:54206->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   47u  IPv4 0x62f1a615bb936f13      0t0  TCP 127.0.0.1:54000->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   48u  IPv4 0xe26b7db7774723f2      0t0  TCP 127.0.0.1:54001->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   49u  IPv4 0x9d08085d5490b9c5      0t0  TCP 127.0.0.1:54209->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   50u  IPv4 0x5852e1955ee0a4a7      0t0  TCP 127.0.0.1:54003->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   51u  IPv4 0x95e19ee819f1ab3a      0t0  TCP 127.0.0.1:54205->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   52u  IPv4 0x1dcd4d0edd7c1c2a      0t0  TCP 127.0.0.1:54207->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   53u  IPv4 0xa078aa23e445d68f      0t0  TCP 127.0.0.1:54208->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   55u  IPv4 0x3da073f28840273c      0t0  TCP 127.0.0.1:54212->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   56u  IPv4 0x629f4087af60c7fb      0t0  TCP 127.0.0.1:54213->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   57u  IPv4 0x326ca183d783589b      0t0  TCP 127.0.0.1:54214->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz   84u  IPv4 0x9e1fa84541a94c05      0t0  TCP 127.0.0.1:54215->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz  106u  IPv4 0x65117f58f27be06b      0t0  TCP 127.0.0.1:54216->127.0.0.1:5439 (ESTABLISHED)
+node     36421 macaz  107u  IPv4 0x12e48e86a537f524      0t0  TCP 127.0.0.1:54217->127.0.0.1:5439 (ESTABLISHED)
+postgres 36469 macaz    9u  IPv4 0xc66e25e3eb7907b4      0t0  TCP 127.0.0.1:5439->127.0.0.1:54000 (ESTABLISHED)
+postgres 36470 macaz    9u  IPv4 0xf8d26e742afe9df2      0t0  TCP 127.0.0.1:5439->127.0.0.1:54001 (ESTABLISHED)
+postgres 36472 macaz    9u  IPv4 0xcf182e720e3a9b75      0t0  TCP 127.0.0.1:5439->127.0.0.1:54003 (ESTABLISHED)
+postgres 36564 macaz    9u  IPv4 0x2d0e8668848388e8      0t0  TCP 127.0.0.1:5439->127.0.0.1:54202 (ESTABLISHED)
+postgres 36565 macaz    9u  IPv4 0x46dab5322e046a1f      0t0  TCP 127.0.0.1:5439->127.0.0.1:54203 (ESTABLISHED)
+postgres 36567 macaz    9u  IPv4 0xc3c11cbb8f336db3      0t0  TCP 127.0.0.1:5439->127.0.0.1:54205 (ESTABLISHED)
+postgres 36568 macaz    9u  IPv4 0x68d10d854645a497      0t0  TCP 127.0.0.1:5439->127.0.0.1:54206 (ESTABLISHED)
+postgres 36569 macaz    9u  IPv4 0xfcc1dbadefb6f7cf      0t0  TCP 127.0.0.1:5439->127.0.0.1:54207 (ESTABLISHED)
+postgres 36570 macaz    9u  IPv4 0x3c127458154ab178      0t0  TCP 127.0.0.1:5439->127.0.0.1:54208 (ESTABLISHED)
+postgres 36571 macaz    9u  IPv4 0x2b62b4ba5e1efc93      0t0  TCP 127.0.0.1:5439->127.0.0.1:54209 (ESTABLISHED)
+postgres 36572 macaz    9u  IPv4 0xbd8a4526108e76d4      0t0  TCP 127.0.0.1:5439->127.0.0.1:54210 (ESTABLISHED)
+postgres 36573 macaz    9u  IPv4 0xae75fe34f1259238      0t0  TCP 127.0.0.1:5439->127.0.0.1:54211 (ESTABLISHED)
+postgres 36574 macaz    9u  IPv4 0x241c14969418ced1      0t0  TCP 127.0.0.1:5439->127.0.0.1:54212 (ESTABLISHED)
+postgres 36575 macaz    9u  IPv4 0x2b7649726c4d8d05      0t0  TCP 127.0.0.1:5439->127.0.0.1:54213 (ESTABLISHED)
+postgres 36576 macaz    9u  IPv4 0xed8652d9a055ad13      0t0  TCP 127.0.0.1:5439->127.0.0.1:54214 (ESTABLISHED)
+postgres 36577 macaz    9u  IPv4 0x40128cf95d6a689a      0t0  TCP 127.0.0.1:5439->127.0.0.1:54215 (ESTABLISHED)
+postgres 36578 macaz    9u  IPv4 0xdf04ae9be7eef2a6      0t0  TCP 127.0.0.1:5439->127.0.0.1:54216 (ESTABLISHED)
+postgres 36579 macaz    9u  IPv4 0x6950a3417875ea18      0t0  TCP 127.0.0.1:5439->127.0.0.1:54217 (ESTABLISHED)
+postgres 36580 macaz    9u  IPv4 0x88e69e09b33afe41      0t0  TCP 127.0.0.1:5439->127.0.0.1:54219 (ESTABLISHED)
+postgres 36581 macaz    9u  IPv4 0xf56cad66b856f01d      0t0  TCP 127.0.0.1:5439->127.0.0.1:54220 (ESTABLISHED)
+postgres 36582 macaz    9u  IPv4  0x68bb8083f5a775d      0t0  TCP 127.0.0.1:5439->127.0.0.1:54221 (ESTABLISHED)
+
+--- pg_stat_activity (port 5439) ---
+  pid  | state  | wait_event_type | wait_event |       age       |                                                  q
+-------+--------+-----------------+------------+-----------------+------------------------------------------------------------------------------------------------------
+ 36334 | idle   | Client          | ClientRead | 01:10:48.272727 | SELECT count(*)::int AS cnt FROM public.staff_work_tickets WHERE status = 'approved' AND is_merged_t
+ 41180 | active |                 |            | 00:00:00        | SELECT pid, state, wait_event_type, wait_event, now() - query_start AS age, left(query, 100) AS q FR
+ 36564 | idle   | Client          | ClientRead | 01:09:39.886604 | SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."ph
+ 36581 | idle   | Client          | ClientRead | 01:09:38.536292 | SELECT "public"."staff_work_tickets"."id", "public"."staff_work_tickets"."unit_code", "public"."staf
+ 36565 | idle   | Client          | ClientRead | 01:09:33.919288 | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36567 | idle   | Client          | ClientRead | 01:09:25.63092  | INSERT INTO "public"."audit_logs" ("workbook_id","actor_email","action","metadata","created_at","act
+ 36568 | idle   | Client          | ClientRead | 01:09:38.640362 | SELECT "public"."staff_work_tickets"."id", "public"."staff_work_tickets"."unit_code", "public"."staf
+ 36570 | idle   | Client          | ClientRead | 01:09:38.48539  | SELECT "public"."user_accounts"."email", "public"."user_accounts"."unit_code", "public"."user_accoun
+ 36569 | idle   | Client          | ClientRead | 01:09:33.920633 | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36571 | idle   | Client          | ClientRead | 01:09:39.817211 | SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."ph
+ 36572 | idle   | Client          | ClientRead | 01:09:39.834587 | SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."ph
+ 36574 | idle   | Client          | ClientRead | 01:09:28.05206  | INSERT INTO "public"."audit_logs" ("workbook_id","actor_email","action","metadata","created_at","act
+ 36573 | idle   | Client          | ClientRead | 01:09:39.81431  | SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."ph
+ 36575 | idle   | Client          | ClientRead | 01:09:33.92058  | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36580 | idle   | Client          | ClientRead | 01:09:30.266242 | COMMIT
+ 36576 | idle   | Client          | ClientRead | 01:09:33.918841 | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36469 | idle   | Client          | ClientRead | 01:09:38.664424 | SELECT "public"."staff_work_tickets"."id", "public"."staff_work_tickets"."unit_code", "public"."staf
+ 36470 | idle   | Client          | ClientRead | 01:09:40.207388 | SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."ph
+ 36577 | idle   | Client          | ClientRead | 01:09:26.740492 | INSERT INTO "public"."staff_work_tickets" ("id","unit_code","owner_email","owner_name","owner_title"
+ 36472 | idle   | Client          | ClientRead | 01:09:38.661504 | SELECT "public"."staff_work_tickets"."id", "public"."staff_work_tickets"."unit_code", "public"."staf
+ 36579 | idle   | Client          | ClientRead | 01:09:33.920964 | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36578 | idle   | Client          | ClientRead | 01:09:33.92064  | SELECT "public"."work_survey_status_history"."id", "public"."work_survey_status_history"."survey_id"
+ 36582 | idle   | Client          | ClientRead | 01:09:38.458729 | SELECT "public"."staff_work_tickets"."id", "public"."staff_work_tickets"."unit_code", "public"."staf
+(23 rows)
+
+
+--- /tmp/utevtvl_nginx_staging/logs/error.log (last 80) ---
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets/reconcile HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=STKNCCCN&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TCKHGDKT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TCNS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TTTTMT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TYT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=VDTQT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=VPDU&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/tkt-seed-VSPKT-01038/versions HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/admin/overview?unitCode=XD HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CNPM_1795073924501_00zu HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CNTT_1795073924508_w9ua HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CTL_1795073924515_0umc HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:52 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "PUT /api/workbooks/wb_GDTC_1795073924547_q0ae HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=GTNL&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HCTH&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HHKHSS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HLDHS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHCN&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHTC&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHUD&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/tkt-seed-KT-01058/versions HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/admin/overview?unitCode=KTDBCL HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *305 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_NN_1795073924607_34wh HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36352#0: *135 kevent() reported about an closed connection (54: Connection reset by peer) while reading response header from upstream, client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=DTTT&view=list&limit=50 HTTP/1.1", upstream: "http://127.0.0.1:3369/api/tickets?unitCode=DTTT&view=list&limit=50", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36352#0: *84 kevent() reported about an closed connection (54: Connection reset by peer) while reading response header from upstream, client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=DT&view=list&limit=50 HTTP/1.1", upstream: "http://127.0.0.1:3369/api/tickets?unitCode=DT&view=list&limit=50", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36352#0: *22 kevent() reported about an closed connection (54: Connection reset by peer) while reading response header from upstream, client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=CTSV&view=list&limit=50 HTTP/1.1", upstream: "http://127.0.0.1:3369/api/tickets?unitCode=CTSV&view=list&limit=50", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *10 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_PHBP_1795073924612_4omo HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *10 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_QHDN_1795073924616_gmlx HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets/reconcile HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TCKHGDKT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TCNS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TTTTMT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=TYT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=VDTQT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=VPDU&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=VSPKT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/tkt-seed-XD-01078/versions HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/admin/overview?unitCode=BANTT HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CNTT_1795073924508_w9ua HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CTL_1795073924515_0umc HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_CTSV_1795073924520_t3b2 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets/reconcile HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HCTH&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HHKHSS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=HLDHS&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHCN&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHTC&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KHUD&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=KT&view=list&limit=50 HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/tkt-seed-KTDBCL-01098/versions HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/admin/overview?unitCode=KTX HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets/coordinated HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_PHBP_1795073924612_4omo HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_QHDN_1795073924616_gmlx HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/workbooks/wb_QHQT_1795073924619_vdzy HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "POST /api/tickets HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:39:53 [error] 36353#0: *393 limiting connections by zone "vtvl_conn_ip", client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "PUT /api/workbooks/wb_TCKHGDKT_1795073924640_ym7m HTTP/1.1", host: "127.0.0.1:8360"
+2026/11/19 14:40:20 [error] 36353#0: *75 upstream sent invalid chunked response while reading upstream, client: 127.0.0.1, server: kekhaivtvl.hcmute.edu.vn, request: "GET /api/tickets?unitCode=PHBP&view=list&limit=50 HTTP/1.1", upstream: "http://127.0.0.1:3369/api/tickets?unitCode=PHBP&view=list&limit=50", host: "127.0.0.1:8360"
+
+--- /tmp/utevtvl_pg16_staging/pg.log (last 80) ---
+	PL/pgSQL function rpc_sync_workbook_atomic(text,jsonb,jsonb,boolean) line 183 at SQL statement
+2026-11-19 14:39:00.863 +07 [36427] STATEMENT:  SELECT * FROM public."rpc_sync_workbook_atomic"(p_unit_code := $1, p_snapshot := $2, p_relational := $3, p_simulate_error := $4)
+2026-11-19 14:40:19.922 +07 [36464] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36464] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36464] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36464] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36474] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36474] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36456] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36456] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36456] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36456] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36431] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36431] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36474] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36474] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36431] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36431] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36475] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36475] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36475] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36475] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36465] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.922 +07 [36465] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.922 +07 [36465] FATAL:  connection to client lost
+2026-11-19 14:40:19.922 +07 [36465] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.924 +07 [36467] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.924 +07 [36467] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.924 +07 [36467] FATAL:  connection to client lost
+2026-11-19 14:40:19.924 +07 [36467] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36424] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.925 +07 [36424] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36430] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.925 +07 [36430] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36430] FATAL:  connection to client lost
+2026-11-19 14:40:19.925 +07 [36430] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36424] FATAL:  connection to client lost
+2026-11-19 14:40:19.925 +07 [36424] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36479] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.925 +07 [36479] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36479] FATAL:  connection to client lost
+2026-11-19 14:40:19.925 +07 [36479] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36466] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.925 +07 [36466] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.925 +07 [36466] FATAL:  connection to client lost
+2026-11-19 14:40:19.925 +07 [36466] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.923 +07 [36471] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.923 +07 [36471] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.926 +07 [36471] FATAL:  connection to client lost
+2026-11-19 14:40:19.926 +07 [36471] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.926 +07 [36473] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.926 +07 [36473] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.927 +07 [36473] FATAL:  connection to client lost
+2026-11-19 14:40:19.927 +07 [36473] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.923 +07 [36478] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.923 +07 [36478] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.929 +07 [36478] FATAL:  connection to client lost
+2026-11-19 14:40:19.929 +07 [36478] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.926 +07 [36432] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.926 +07 [36432] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.926 +07 [36477] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:19.926 +07 [36477] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.929 +07 [36477] FATAL:  connection to client lost
+2026-11-19 14:40:19.929 +07 [36477] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:19.929 +07 [36432] FATAL:  connection to client lost
+2026-11-19 14:40:19.929 +07 [36432] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.382 +07 [36468] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:20.382 +07 [36468] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.382 +07 [36468] FATAL:  connection to client lost
+2026-11-19 14:40:20.382 +07 [36468] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.382 +07 [36566] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:20.382 +07 [36566] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.382 +07 [36566] FATAL:  connection to client lost
+2026-11-19 14:40:20.382 +07 [36566] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.386 +07 [36476] LOG:  could not send data to client: No buffer space available
+2026-11-19 14:40:20.386 +07 [36476] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:40:20.386 +07 [36476] FATAL:  connection to client lost
+2026-11-19 14:40:20.386 +07 [36476] STATEMENT:  SELECT "public"."t_tien_do"."ma_don_vi", "public"."t_tien_do"."ten_don_vi", "public"."t_tien_do"."phien_ban", "public"."t_tien_do"."updated_at", "public"."t_tien_do"."du_lieu_ho_so_json" FROM "public"."t_tien_do" WHERE 1=1 ORDER BY "public"."t_tien_do"."updated_at" DESC LIMIT $1 OFFSET $2
+2026-11-19 14:43:42.511 +07 [36318] LOG:  checkpoint starting: time
+2026-11-19 14:48:12.037 +07 [36318] LOG:  checkpoint complete: wrote 17418 buffers (53.2%); 0 WAL file(s) added, 0 removed, 15 recycled; write=269.493 s, sync=0.024 s, total=269.527 s; sync files=665, longest=0.001 s, average=0.001 s; distance=251288 kB, estimate=251288 kB; lsn=0/10A95A10, redo lsn=0/10A959D8

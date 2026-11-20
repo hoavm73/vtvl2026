@@ -3,12 +3,13 @@ import path from 'path';
 import { Prisma } from '@prisma/client';
 import {
   ProposedCoordinatedTaskItem, StaffWorkTicket, WorkRelationshipApprovalLevel,
-  WorkRelationshipItem, toCanonicalStatus, toDisplayStatus
+  WorkRelationshipItem, WorkSurveySnapshot, toCanonicalStatus, toDisplayStatus
 } from '@/types/staff-ticket';
 import { registerCacheInvalidator } from './server-file-lock';
+import { getCoordinatedCandidateTickets } from './server-coordination-store';
 import { isIsolatedLocalMode } from './server-ticket-db';
 import { loadTickets } from './server-ticket-store';
-import { ensureLegacyBaselineVersion } from './server-ticket-version-store';
+import { ensureLegacyBaselineVersion, getTicketVersions, hasStoredTicketVersions } from './server-ticket-version-store';
 import { resolveUnitVtvlName } from './server-vtvl-assignment-store';
 import { normalizeEmail } from './server-workbook-store';
 import { getDbTestHook, isDatabaseConfigured, prisma, toIsoString } from './prisma';
@@ -55,13 +56,8 @@ function persistState(state: WorkRelationshipStoreState): void {
   writeJsonFileAtomic(REL_FILE, state, true);
 }
 
-export function getWorkRelationshipStateSnapshot(): WorkRelationshipStoreState {
-  return JSON.parse(JSON.stringify(loadState())) as WorkRelationshipStoreState;
-}
-
-export function commitWorkRelationshipState(state: WorkRelationshipStoreState): void {
-  persistState(state);
-}
+export function getWorkRelationshipStateSnapshot(): WorkRelationshipStoreState { return JSON.parse(JSON.stringify(loadState())) as WorkRelationshipStoreState; }
+export function commitWorkRelationshipState(state: WorkRelationshipStoreState): void { persistState(state); }
 
 function mapRelItemToDbRow(r: WorkRelationshipItem) {
   return {
@@ -192,23 +188,44 @@ function buildApprovalMeta(hostUnit: string, targetUnit: string, targetTicket: S
 }
 
 export async function computeWorkRelationshipsAndEnrichProposals(
-  items: ProposedCoordinatedTaskItem[], callerUnitCode: string, isAdmin: boolean
+  items: ProposedCoordinatedTaskItem[], callerUnitCode: string, isAdmin: boolean, skipPersist = false
 ): Promise<WorkRelationshipItem[]> {
-  const validTickets = Array.from(loadTickets().values()).filter((t) => !t.isTestData && !t.isArchived && toCanonicalStatus(t.status) !== 'draft');
+  const coordSources: Array<{ src: StaffWorkTicket; snap: WorkSurveySnapshot; targets: ReturnType<typeof extractEffectiveCoordinatedVtvls> }> = [];
+  const neededTargetKeys = new Set<string>();
+  for (const src of getCoordinatedCandidateTickets()) {
+    if (src.isTestData || src.isArchived || toCanonicalStatus(src.status) === 'draft') continue;
+    const hasVer = hasStoredTicketVersions(src.id);
+    const hasCoordOnTicket = Boolean((src.maVtvlPhoiHop && src.maVtvlPhoiHop.trim()) || (src.coordinatedVtvls && src.coordinatedVtvls.length > 0));
+    if (!hasVer && !hasCoordOnTicket) continue;
+    const versions = hasVer ? getTicketVersions(src.id) : ensureLegacyBaselineVersion(src);
+    if (versions.length === 0) continue;
+    const snap = versions[versions.length - 1].snapshot;
+    const targets = extractEffectiveCoordinatedVtvls(snap, resolveUnitCodeSafe(snap.unitCode || src.unitCode));
+    if (targets.length === 0) continue;
+    coordSources.push({ src, snap, targets });
+    for (const tg of targets) if (tg.maVtvl) neededTargetKeys.add(`${resolveUnitCodeSafe(tg.targetUnitCode)}|${normalizeCode(tg.maVtvl)}`);
+  }
+  const ticketsByUnitVtvl = new Map<string, StaffWorkTicket[]>();
+  if (neededTargetKeys.size > 0) {
+    for (const t of loadTickets().values()) {
+      if (t.isTestData || t.isArchived || toCanonicalStatus(t.status) === 'draft') continue;
+      const k = `${resolveUnitCodeSafe(t.unitCode)}|${normalizeCode(t.maVtvl)}`;
+      if (!neededTargetKeys.has(k)) continue;
+      const bucket = ticketsByUnitVtvl.get(k);
+      if (bucket) bucket.push(t); else ticketsByUnitVtvl.set(k, [t]);
+    }
+  }
   const state = loadState();
   const relMap = new Map<string, WorkRelationshipItem>();
 
-  for (const src of validTickets) {
-    const versions = ensureLegacyBaselineVersion(src);
-    if (versions.length === 0) continue;
-    const snap = versions[versions.length - 1].snapshot;
+  for (const { src, snap, targets } of coordSources) {
     const hostUnit = resolveUnitCodeSafe(snap.unitCode || src.unitCode);
-    for (const target of extractEffectiveCoordinatedVtvls(snap, hostUnit)) {
+    for (const target of targets) {
       const targetUnit = resolveUnitCodeSafe(target.targetUnitCode);
       if (!targetUnit || !target.maVtvl) continue;
       const relId = makeWorkRelationshipId(src.id, targetUnit, target.maVtvl);
       const manual = state.manualApprovals[relId] || {};
-      const targetTicket = findTargetDeclaredTicket(validTickets, src, hostUnit, targetUnit, target.maVtvl);
+      const targetTicket = findTargetDeclaredTicket(ticketsByUnitVtvl.get(`${targetUnit}|${normalizeCode(target.maVtvl)}`) || [], src, hostUnit, targetUnit, target.maVtvl);
       const srcApproved = toCanonicalStatus(src.status) === 'approved', tgtApproved = Boolean(targetTicket && toCanonicalStatus(targetTicket.status) === 'approved');
       const hostApproved = srcApproved || Boolean(manual.hostLeaderApproved);
       const targetApproved = tgtApproved || Boolean(manual.targetLeaderApproved);
@@ -253,31 +270,22 @@ export async function computeWorkRelationshipsAndEnrichProposals(
   }
 
   const allComputed = Array.from(relMap.values());
-  persistState(state);
-  await persistRelationshipsToSupabase(allComputed);
+  if (!skipPersist) { persistState(state); await persistRelationshipsToSupabase(allComputed); }
   const cleanCallerUnit = resolveUnitCodeSafe(callerUnitCode);
   return allComputed
     .filter((r) => (r.hostLeaderApproved || r.targetLeaderApproved || r.tcnsApproved) &&
       (isAdmin || r.hostUnitCode === cleanCallerUnit || r.targetUnitCode === cleanCallerUnit))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
-
-export function getWorkRelationshipById(relationshipId: string): WorkRelationshipItem | null {
-  return loadState().relationships[relationshipId] || null;
-}
-
+export function getWorkRelationshipById(relationshipId: string): WorkRelationshipItem | null { return loadState().relationships[relationshipId] || null; }
 export async function setRelationshipManualApproval(params: {
   relationshipId: string; side: 'host' | 'target' | 'tcns'; approved: boolean; actorEmail: string;
 }): Promise<WorkRelationshipItem | null> {
-  const state = loadState();
-  const prev = state.manualApprovals[params.relationshipId] || {};
-  const nowIso = new Date().toISOString();
-  const actor = normalizeEmail(params.actorEmail);
+  const state = loadState(), prev = state.manualApprovals[params.relationshipId] || {}, nowIso = new Date().toISOString(), actor = normalizeEmail(params.actorEmail);
   if (params.side === 'host') { prev.hostLeaderApproved = params.approved; prev.hostApprovedBy = actor; prev.hostApprovedAt = nowIso; }
   else if (params.side === 'target') { prev.targetLeaderApproved = params.approved; prev.targetApprovedBy = actor; prev.targetApprovedAt = nowIso; }
   else { prev.tcnsApproved = params.approved; prev.tcnsApprovedBy = actor; prev.tcnsApprovedAt = nowIso; }
-  state.manualApprovals[params.relationshipId] = prev;
-  persistState(state);
+  state.manualApprovals[params.relationshipId] = prev; persistState(state);
   const rels = await computeWorkRelationshipsAndEnrichProposals([], '', true);
   return rels.find((r) => r.id === params.relationshipId) || state.relationships[params.relationshipId] || null;
 }

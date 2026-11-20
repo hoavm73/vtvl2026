@@ -5,7 +5,9 @@ import { getAllUserAccounts } from '@/services/storage/server-account-store';
 import { getAuditLogs } from '@/services/storage/server-audit-store';
 import { toCanonicalStatus, StaffWorkTicket } from '@/types/staff-ticket';
 import {
+  computeUnitProgressStage,
   deriveReviewMetaFromWorkbook,
+  REVIEW_ACTION_SET,
   REVIEW_STATUS_LABELS,
   summarizeErrorCountFromWorkbookData
 } from '@/services/workbooks/workbook-history-service';
@@ -30,8 +32,9 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
   const wbByUnit = new Map(workbooks.map((w) => [w.unitId.toUpperCase(), w]));
   const allAccounts = getAllUserAccounts();
   const allAuditLogs = getAuditLogs({ unitCode: filterUnit || undefined, limit: 300 });
-  const auditsByUnit = new Map<string, typeof allAuditLogs>();
-  for (const log of allAuditLogs) {
+  const reviewLogs = getAuditLogs({ unitCode: filterUnit || undefined, actions: REVIEW_ACTION_SET, limit: 2000 });
+  const auditsByUnit = new Map<string, typeof reviewLogs>();
+  for (const log of reviewLogs) {
     const uc = (log.unitCode || '').toUpperCase();
     const list = auditsByUnit.get(uc) || [];
     list.push(log);
@@ -95,24 +98,14 @@ export function buildUnitMonitorPayload(filterUnit: string, includeTest: boolean
     const wbTime = wb?.updatedAt || '';
     const lastUpdatedAt = latestTicketTime > wbTime ? latestTicketTime : wbTime;
 
-    let progressPercent = 0;
-    let stageLabel = 'Chưa kê khai';
-    if (mergedCount > 0 && populatedSheetsCount >= 6) {
-      progressPercent = 100;
-      stageLabel = 'Đã gộp B1/B2 & hoàn thiện biểu';
-    } else if (approvedCount > 0) {
-      progressPercent = 80;
-      stageLabel = 'Đã duyệt phiếu';
-    } else if (submittedCount > 0 || changesRequestedCount > 0) {
-      progressPercent = 60;
-      stageLabel = submittedCount > 0 ? 'Đang chờ duyệt phiếu' : 'Đang chờ bổ sung phiếu';
-    } else if (draftCount > 0) {
-      progressPercent = 35;
-      stageLabel = 'Đang lưu nháp phiếu';
-    } else if (populatedSheetsCount > 0) {
-      progressPercent = 20;
-      stageLabel = 'Đã khởi tạo biểu mẫu';
-    }
+    const { progressPercent, stageLabel } = computeUnitProgressStage({
+      mergedCount,
+      populatedSheetsCount,
+      approvedCount,
+      submittedCount,
+      changesRequestedCount,
+      draftCount
+    });
 
     const groupInfo = UNIT_GROUPS.find((g) => g.id === unit.group);
     const reviewMeta = deriveReviewMetaFromWorkbook(wb, auditsByUnit.get(uc) || []);

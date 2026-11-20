@@ -98,19 +98,13 @@ export function WorkRelationshipsTab({
       aria-label="Mối quan hệ công việc phối hợp giữa các đơn vị"
       className="bg-white border border-t-0 border-[#cbd5e1] rounded-b-2xl p-4 sm:p-5 space-y-3.5"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#f8fbff] border border-[#dbeafe]">
-        <p className="text-xs text-[#20446c]">
-          Hiển thị các công việc phối hợp khi có ít nhất 1 trong 2 Lãnh đạo đơn vị hoặc Phòng Tổ chức – Nhân sự đã phê duyệt.
-        </p>
-        {selectedVtvl && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#006cee] text-white text-xs font-bold">
-            VTVL: {selectedVtvl}
-          </span>
-        )}
-      </div>
-
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {selectedVtvl && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#006cee] text-white text-xs font-bold">
+              VTVL: {selectedVtvl}
+            </span>
+          )}
           {filterButtons.map((b) => (
             <button
               key={b.key}

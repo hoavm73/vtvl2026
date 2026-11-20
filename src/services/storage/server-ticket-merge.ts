@@ -1,18 +1,37 @@
 import { StaffWorkTicket, TicketStatus, toCanonicalStatus } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { recalculateGridFormulas } from '@/components/excel-grid/excel-grid-formulas';
-import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
+import { ExcelSheetKey, GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import {
-  getOrCreateWorkbook, saveServerWorkbookAndPersist, normalizeEmail,
+  getOrCreateWorkbook, getWorkbookById, hasWorkbookInMemory, saveServerWorkbookAndPersist, normalizeEmail,
   syncServerWorkbooksFromSupabase, withUnitWorkbookLock, ServerWorkbook
 } from './server-workbook-store';
 import { persistTicketToSupabase, batchMarkTicketsMergedInDb } from './server-ticket-db';
 import { recordIdempotentMergeLinks, batchRecordMergeLinksInDb } from './server-ticket-version-store';
-import { loadTickets, persistTickets, enrichTicket } from './server-ticket-store';
-import { applyTicketsToSheetArrays, buildUnmergedApprovedProjection } from './server-ticket-merge-helpers';
+import {
+  loadTickets, persistTickets, enrichTicket,
+  syncTicketsFromSupabase, syncUnitTicketsAuthoritative, bumpTicketMutationWatermark
+} from './server-ticket-store';
+import {
+  applyTicketsToSheetArrays,
+  buildMergedTicketArtifacts,
+  buildUnmergedApprovedProjection,
+  collectPendingApprovedTicketsForData,
+  hasUnmergedApprovedTickets,
+  syncPendingApprovedTicketsDelta,
+  syncUnitWorkbookIfRevisionChanged,
+  tryFastVerifyNoPendingReconcile
+} from './server-ticket-merge-helpers';
 
 export function projectUnmergedApprovedTicketsReadOnly(workbook: ServerWorkbook): ServerWorkbook {
-  return buildUnmergedApprovedProjection(workbook, Array.from(loadTickets().values()));
+  return buildUnmergedApprovedProjection(workbook, loadTickets().values());
+}
+
+export function hasUnmergedApprovedTicketsForWorkbook(
+  workbook: ServerWorkbook,
+  unitTickets?: Iterable<StaffWorkTicket>
+): boolean {
+  return hasUnmergedApprovedTickets(workbook, unitTickets || loadTickets().values());
 }
 
 export async function mergeApprovedTicketToUnitWorkbook(
@@ -20,16 +39,21 @@ export async function mergeApprovedTicketToUnitWorkbook(
   actorEmail: string,
   simulateFailure = false
 ): Promise<{ ticket: StaffWorkTicket; unitWorkbookRevision: number }> {
-  const initialTicket = loadTickets().get(ticketId);
+  let initialTicket = loadTickets().get(ticketId);
+  if (!initialTicket) {
+    await syncTicketsFromSupabase(undefined, true);
+    initialTicket = loadTickets().get(ticketId);
+  }
   if (!initialTicket) {
     throw Object.assign(new Error('Không tìm thấy phiếu cần gộp.'), { code: 'TICKET_NOT_FOUND', status: 404 });
   }
   const unit = findHcmuteUnit(initialTicket.unitCode);
 
   return withUnitWorkbookLock(unit.code, async () => {
-    await syncServerWorkbooksFromSupabase(false);
+    await syncServerWorkbooksFromSupabase(true, unit.code);
+    const unitTickets = await syncUnitTicketsAuthoritative(unit.code);
     const store = loadTickets();
-    const existing = store.get(ticketId);
+    const existing = unitTickets.find((t) => t.id === ticketId) || store.get(ticketId);
     if (!existing) throw Object.assign(new Error('Không tìm thấy phiếu cần gộp.'), { code: 'TICKET_NOT_FOUND', status: 404 });
     if (existing.isTestData || existing.isArchived) {
       throw Object.assign(new Error('Phiếu dữ liệu thử nghiệm hoặc đã lưu trữ không được gộp vào biểu tổng hợp chính thức.'), { code: 'FORBIDDEN_TEST_OR_ARCHIVED_MERGE', status: 400 });
@@ -77,6 +101,7 @@ export async function mergeApprovedTicketToUnitWorkbook(
     }
 
     store.set(updatedTicket.id, updatedTicket);
+    bumpTicketMutationWatermark(unit.code);
     persistTickets();
     return { ticket: enrichTicket(updatedTicket), unitWorkbookRevision: saved.currentRevision || wb.currentRevision };
   });
@@ -92,98 +117,123 @@ export interface BatchReconcileResult {
   durationMs: number;
 }
 
+async function finalizeMergedTicketItems(params: {
+  unitCode: string;
+  actorEmail?: string;
+  updatedData: Record<ExcelSheetKey, GenericGridRow[]>;
+  items: Array<{ ticket: StaffWorkTicket; a2RowId: string; b1RowId: string; sourceVersion: number }>;
+  store: Map<string, StaffWorkTicket>;
+}): Promise<string[]> {
+  const { updatedTickets, allMergeLinks, mergedTicketIds } = buildMergedTicketArtifacts(params);
+  for (const t of updatedTickets) params.store.set(t.id, t);
+  bumpTicketMutationWatermark(params.unitCode);
+  await batchMarkTicketsMergedInDb(updatedTickets);
+  await batchRecordMergeLinksInDb(allMergeLinks);
+  bumpTicketMutationWatermark(params.unitCode);
+  persistTickets();
+  return mergedTicketIds;
+}
+
+/**
+ * Lõi gộp hàng loạt khi caller đã giữ sẵn `withUnitWorkbookLock(unitCode)`.
+ */
+export async function batchReconcileUnitTicketsUnlocked(unitCode: string, actorEmail?: string): Promise<BatchReconcileResult> {
+  const startedAt = Date.now();
+  const uc = (unitCode || '').trim().toUpperCase();
+  if (!uc) return { unitCode: uc, mergedCount: 0, formulaRuns: 0, workbookWrites: 0, unitWorkbookRevision: 0, mergedTicketIds: [], durationMs: 0 };
+
+  const unit = findHcmuteUnit(uc);
+  if (hasWorkbookInMemory(unit.code)) {
+    const memWb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', actorEmail || 'tcns@hcmute.edu.vn');
+    if (await tryFastVerifyNoPendingReconcile(unit.code, memWb)) {
+      return { unitCode: unit.code, mergedCount: 0, formulaRuns: 0, workbookWrites: 0, unitWorkbookRevision: memWb.currentRevision, mergedTicketIds: [], durationMs: Date.now() - startedAt };
+    }
+  }
+
+  await syncUnitWorkbookIfRevisionChanged(unit.code);
+  const store = loadTickets();
+  const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', actorEmail || 'tcns@hcmute.edu.vn');
+  const delta = await syncPendingApprovedTicketsDelta(unit.code, wb.data, store);
+  const pendingTickets =
+    delta && delta.orphanIds.length === 0
+      ? delta.pendingTickets
+      : collectPendingApprovedTicketsForData(unit.code, wb.data, await syncUnitTicketsAuthoritative(unit.code));
+  if (pendingTickets.length === 0) {
+    return { unitCode: unit.code, mergedCount: 0, formulaRuns: 0, workbookWrites: 0, unitWorkbookRevision: wb.currentRevision, mergedTicketIds: [], durationMs: Date.now() - startedAt };
+  }
+
+  const { nextData, items } = applyTicketsToSheetArrays(wb.data, pendingTickets);
+  const updatedData = recalculateGridFormulas(nextData, unit.code, unit.nameVi);
+  const saved = await saveServerWorkbookAndPersist({
+    workbookId: wb.id, baseRevision: wb.currentRevision, data: updatedData,
+    actorEmail: actorEmail || 'tcns@hcmute.edu.vn',
+    changeSummary: `[Gộp hàng loạt] Đối soát ${items.length} phiếu đã duyệt vào A2 & B1`, unitCode: unit.code
+  });
+  if (saved.conflict) {
+    throw Object.assign(new Error('Xung đột phiên bản bảng tính khi gộp hàng loạt.'), { code: 'REVISION_CONFLICT', status: 409 });
+  }
+
+  const mergedTicketIds = await finalizeMergedTicketItems({ unitCode: unit.code, actorEmail, updatedData, items, store: loadTickets() });
+  return {
+    unitCode: unit.code, mergedCount: items.length, formulaRuns: 1, workbookWrites: 1,
+    unitWorkbookRevision: saved.currentRevision || wb.currentRevision, mergedTicketIds, durationMs: Date.now() - startedAt
+  };
+}
+
+export interface SaveWorkbookWithMergeParams {
+  workbookId: string; unitCode: string; existingWb: ServerWorkbook | null;
+  data: Record<ExcelSheetKey, GenericGridRow[]>; touchedCells: string[];
+  baseRevision: number; changeSummary: string; actorEmail: string; actorTitle: string;
+}
+
+export async function saveWorkbookWithPendingApprovedTicketsUnlocked(params: SaveWorkbookWithMergeParams) {
+  const unit = findHcmuteUnit(params.unitCode);
+  const existingWb = params.existingWb || getWorkbookById(params.workbookId);
+  if (existingWb && params.baseRevision > 0 && params.baseRevision !== existingWb.currentRevision) {
+    return { success: false, conflict: true, currentRevision: existingWb.currentRevision, serverWorkbook: existingWb };
+  }
+
+  const store = loadTickets();
+  const delta = await syncPendingApprovedTicketsDelta(unit.code, params.data, store);
+  const pendingTickets =
+    delta && delta.orphanIds.length === 0
+      ? delta.pendingTickets
+      : collectPendingApprovedTicketsForData(unit.code, params.data, await syncUnitTicketsAuthoritative(unit.code));
+  let dataToSave = params.data;
+  let mergedItems: Array<{ ticket: StaffWorkTicket; a2RowId: string; b1RowId: string; sourceVersion: number }> = [];
+  if (pendingTickets.length > 0) {
+    const applied = applyTicketsToSheetArrays(params.data, pendingTickets);
+    dataToSave = recalculateGridFormulas(applied.nextData, unit.code, unit.nameVi);
+    mergedItems = applied.items;
+  }
+
+  const saved = await saveServerWorkbookAndPersist({
+    workbookId: params.workbookId, data: dataToSave, touchedCells: params.touchedCells,
+    baseRevision: params.baseRevision, changeSummary: params.changeSummary,
+    actorEmail: params.actorEmail, actorTitle: params.actorTitle, unitCode: unit.code
+  });
+  if (saved.conflict || !saved.success) return saved;
+  if (mergedItems.length > 0) {
+    await finalizeMergedTicketItems({ unitCode: unit.code, actorEmail: params.actorEmail, updatedData: dataToSave, items: mergedItems, store: loadTickets() });
+  }
+  return saved;
+}
+
+export async function saveWorkbookWithPendingApprovedTickets(params: SaveWorkbookWithMergeParams) {
+  return withUnitWorkbookLock(findHcmuteUnit(params.unitCode).code, () => saveWorkbookWithPendingApprovedTicketsUnlocked(params));
+}
+
 /**
  * Batch Reconcile theo lô duy nhất cho 1 đơn vị:
  * - Lọc phiếu `status = approved` chưa gộp (`!isMergedToB1B2` hoặc thiếu dòng A2/B1).
  * - Gộp toàn bộ vào RAM -> chạy `recalculateGridFormulas` TỐI ĐA 1 LẦN -> ghi workbook TỐI ĐA 1 LẦN.
  */
 export async function batchReconcileUnitTickets(unitCode: string, actorEmail?: string): Promise<BatchReconcileResult> {
-  const startedAt = Date.now();
   const uc = (unitCode || '').trim().toUpperCase();
   if (!uc) return { unitCode: uc, mergedCount: 0, formulaRuns: 0, workbookWrites: 0, unitWorkbookRevision: 0, mergedTicketIds: [], durationMs: 0 };
 
   const unit = findHcmuteUnit(uc);
-  return withUnitWorkbookLock(unit.code, async () => {
-    const store = loadTickets();
-    const wb = getOrCreateWorkbook(unit.code, '01/10/2025–30/9/2026', actorEmail || 'tcns@hcmute.edu.vn');
-    const a2Ids = new Set((wb.data.A2 || []).map((r) => String(r.id || '').trim()));
-    const a2Src = new Set((wb.data.A2 || []).map((r) => String(r.sourceTicketId || '').trim()).filter(Boolean));
-    const b1Ids = new Set((wb.data.B1 || []).map((r) => String(r.id || '').trim()));
-    const b1Src = new Set((wb.data.B1 || []).map((r) => String(r.sourceTicketId || '').trim()).filter(Boolean));
-
-    const pendingTickets = Array.from(store.values()).filter((t) => {
-      if (t.unitCode.toUpperCase() !== unit.code || toCanonicalStatus(t.status) !== 'approved' || t.isTestData || t.isArchived) return false;
-      const hasA2 = a2Ids.has(`a2-${t.id}`) || a2Src.has(t.id);
-      const hasB1 = b1Ids.has(`b1-${t.id}`) || b1Src.has(t.id);
-      return !t.isMergedToB1B2 || !hasA2 || !hasB1;
-    });
-
-    if (pendingTickets.length === 0) {
-      return { unitCode: unit.code, mergedCount: 0, formulaRuns: 0, workbookWrites: 0, unitWorkbookRevision: wb.currentRevision, mergedTicketIds: [], durationMs: Date.now() - startedAt };
-    }
-
-    const { nextData, items } = applyTicketsToSheetArrays(wb.data, pendingTickets);
-    const updatedData = recalculateGridFormulas(nextData, unit.code, unit.nameVi);
-    const formulaRuns = 1;
-
-    const b2ByTaskCode = new Map<string, string>();
-    for (const r of updatedData.B2 || []) {
-      const code = String(r.maCongViec || '').trim();
-      if (code) b2ByTaskCode.set(code, String(r.id || `b2-${code}`));
-    }
-
-    const expectedBaseRevision = wb.currentRevision;
-    const saved = await saveServerWorkbookAndPersist({
-      workbookId: wb.id,
-      baseRevision: expectedBaseRevision,
-      data: updatedData,
-      actorEmail: actorEmail || 'tcns@hcmute.edu.vn',
-      changeSummary: `[Gộp hàng loạt] Đối soát ${items.length} phiếu đã duyệt vào A2 & B1`,
-      unitCode: unit.code
-    });
-    if (saved.conflict) {
-      throw Object.assign(new Error('Xung đột phiên bản bảng tính khi gộp hàng loạt.'), { code: 'REVISION_CONFLICT', status: 409 });
-    }
-    const workbookWrites = 1;
-
-    const nowIso = new Date().toISOString();
-    const normActor = normalizeEmail(actorEmail || 'tcns@hcmute.edu.vn');
-    const mergedTicketIds: string[] = [];
-    const updatedTickets: StaffWorkTicket[] = [];
-    const allMergeLinks: Array<{ surveyId: string; targetSheet: 'A2' | 'B1' | 'B2'; targetRecordId: string; sourceVersion: number; mergedBy: string }> = [];
-
-    for (const item of items) {
-      const b2RowId = b2ByTaskCode.get(item.ticket.maCongViec);
-      const updatedTicket: StaffWorkTicket = {
-        ...item.ticket, isMergedToB1B2: true, mergedBy: normActor, mergedAt: item.ticket.mergedAt || nowIso,
-        a2RowId: item.a2RowId, b1RowId: item.b1RowId, b2RowId,
-        currentVersionNo: item.sourceVersion, updatedAt: nowIso
-      };
-      updatedTickets.push(updatedTicket);
-      allMergeLinks.push(
-        { surveyId: item.ticket.id, targetSheet: 'A2', targetRecordId: item.a2RowId, sourceVersion: item.sourceVersion, mergedBy: normActor },
-        { surveyId: item.ticket.id, targetSheet: 'B1', targetRecordId: item.b1RowId, sourceVersion: item.sourceVersion, mergedBy: normActor }
-      );
-      if (b2RowId) {
-        allMergeLinks.push({ surveyId: item.ticket.id, targetSheet: 'B2', targetRecordId: b2RowId, sourceVersion: item.sourceVersion, mergedBy: normActor });
-      }
-      store.set(updatedTicket.id, updatedTicket);
-      mergedTicketIds.push(updatedTicket.id);
-    }
-
-    await batchMarkTicketsMergedInDb(updatedTickets);
-    await batchRecordMergeLinksInDb(allMergeLinks);
-    persistTickets();
-    return {
-      unitCode: unit.code,
-      mergedCount: items.length,
-      formulaRuns,
-      workbookWrites,
-      unitWorkbookRevision: saved.currentRevision || wb.currentRevision,
-      mergedTicketIds,
-      durationMs: Date.now() - startedAt
-    };
-  });
+  return withUnitWorkbookLock(unit.code, () => batchReconcileUnitTicketsUnlocked(unit.code, actorEmail));
 }
 
 export async function reconcileApprovedUnitTicketsToWorkbook(unitCode: string, actorEmail?: string): Promise<number> {

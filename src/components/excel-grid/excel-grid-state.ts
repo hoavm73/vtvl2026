@@ -126,8 +126,11 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
       if (sheetKey === 'C1' && field === 'maVtvl') {
         return recalculateGridFormulas(syncC1VtvlChange(prev, rowId, String(value), currentUnit.code), currentUnit.code, currentUnit.nameVi);
       }
-      if (sheetKey === 'C1' && (field === 'tenVtvl' || field === 'nhomVtvl4' || field === 'maNgach')) {
-        return prev;
+      if (sheetKey === 'C1' && ['tenVtvl', 'nhomVtvl4', 'maNgach'].includes(field)) return prev;
+      if (sheetKey === 'C2' && field === 'maVtvl') {
+        const vCode = String(value);
+        const tenVtvl = String((prev.C1 || []).find((c) => String(c.maVtvl) === vCode)?.tenVtvl || '');
+        return recalculateGridFormulas({ ...prev, C2: sheetRows.map((r) => (r.id === rowId ? { ...r, maVtvl: vCode, tenVtvl } : r)) }, currentUnit.code, currentUnit.nameVi);
       }
 
       // 4. Khi chọn mã công việc ở B2_CT -> tự tra cứu mã VTVL từ A2

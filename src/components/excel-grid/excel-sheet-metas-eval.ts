@@ -15,7 +15,7 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
     ruleHint: 'Cột C quy định Bậc nghề nghiệp (Bậc 1 đến Bậc 5) gắn ngạch viên chức tương ứng.',
     columns: [
       { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL', width: '240px' },
+      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL', width: '240px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn (Biểu C1)' },
       { colLetter: 'C', field: 'bacNgheNghiep', headerName: 'Bậc nghề nghiệp', width: '150px', type: 'select', selectOptions: ['Bậc 1 (Nhân viên)', 'Bậc 2 (Cán sự)', 'Bậc 3 (Chuyên viên)', 'Bậc 4 (Chuyên viên chính)', 'Bậc 5 (Chuyên viên cao cấp)'] },
       { colLetter: 'D', field: 'nhomNangLuc', headerName: 'Nhóm năng lực', width: '160px', type: 'select', selectOptions: ['Năng lực chung', 'Năng lực chuyên môn', 'Năng lực quản lý'] },
       { colLetter: 'E', field: 'tenNangLuc', headerName: 'Tên năng lực', width: '220px' },
@@ -140,13 +140,13 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Bảng kiểm soát chéo 6 chỉ tiêu tự động giữa các sheet: A2 ↔ A1, B1 ↔ C1, B1 cảnh báo, B2_CT ↔ B1, D1 ↔ C1, C3 ↔ D2.',
     ruleHint: 'Hồ sơ chỉ đủ điều kiện nộp thẩm định khi Số dòng lỗi = 0 trên toàn bộ 6 chỉ tiêu.',
     columns: [
-      { colLetter: 'A', field: 'stt', headerName: 'STT', width: '60px', type: 'number' },
-      { colLetter: 'B', field: 'nhomBieu', headerName: 'Nhóm biểu đối chiếu', width: '140px' },
-      { colLetter: 'C', field: 'chiTieu', headerName: 'Chỉ tiêu kiểm tra chéo', width: '320px' },
-      { colLetter: 'D', field: 'bangNguon', headerName: 'Bảng nguồn', width: '160px' },
-      { colLetter: 'E', field: 'bangDich', headerName: 'Bảng đích', width: '160px' },
+      { colLetter: 'A', field: 'stt', headerName: 'STT', width: '60px', type: 'number', isFormula: true },
+      { colLetter: 'B', field: 'nhomBieu', headerName: 'Nhóm biểu đối chiếu', width: '140px', isFormula: true },
+      { colLetter: 'C', field: 'chiTieu', headerName: 'Chỉ tiêu kiểm tra chéo', width: '320px', isFormula: true },
+      { colLetter: 'D', field: 'bangNguon', headerName: 'Bảng nguồn', width: '160px', isFormula: true },
+      { colLetter: 'E', field: 'bangDich', headerName: 'Bảng đích', width: '160px', isFormula: true },
       { colLetter: 'F', field: 'soDongLoi', headerName: 'Số dòng lỗi', width: '100px', type: 'number', isFormula: true },
-      { colLetter: 'G', field: 'nguongChoPhep', headerName: 'Ngưỡng cho phép', width: '130px' },
+      { colLetter: 'G', field: 'nguongChoPhep', headerName: 'Ngưỡng cho phép', width: '130px', isFormula: true },
       { colLetter: 'H', field: 'ketLuan', headerName: 'Kết luận', width: '110px', type: 'status', isFormula: true }
     ]
   },
@@ -179,11 +179,11 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 15: Tự động ghi lại nhật ký mọi thao tác thêm, sửa, xóa hoặc thẩm định trên toàn bộ 15 trang tính.',
     ruleHint: 'Bảo đảm tính toàn vẹn và minh bạch của hồ sơ VTVL đơn vị.',
     columns: [
-      { colLetter: 'A', field: 'thoiGian', headerName: 'Thời gian', width: '160px' },
-      { colLetter: 'B', field: 'nguoiThaoTac', headerName: 'Người thao tác', width: '160px' },
-      { colLetter: 'C', field: 'bieuThayDoi', headerName: 'Biểu thay đổi', width: '160px' },
-      { colLetter: 'D', field: 'noiDungThayDoi', headerName: 'Nội dung thay đổi', width: '340px' },
-      { colLetter: 'E', field: 'canCuThayDoi', headerName: 'Căn cứ thay đổi', width: '200px' }
+      { colLetter: 'A', field: 'thoiGian', headerName: 'Thời gian', width: '160px', isFormula: true },
+      { colLetter: 'B', field: 'nguoiThaoTac', headerName: 'Người thao tác', width: '160px', isFormula: true },
+      { colLetter: 'C', field: 'bieuThayDoi', headerName: 'Biểu thay đổi', width: '160px', isFormula: true },
+      { colLetter: 'D', field: 'noiDungThayDoi', headerName: 'Nội dung thay đổi', width: '340px', isFormula: true },
+      { colLetter: 'E', field: 'canCuThayDoi', headerName: 'Căn cứ thay đổi', width: '200px', isFormula: true }
     ]
   }
 };

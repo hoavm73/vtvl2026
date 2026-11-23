@@ -14,7 +14,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 1 (Bước 1 nghiệp vụ): Rà soát chức năng, nhiệm vụ được giao theo QĐ chức năng nhiệm vụ (QĐ 2266, Phụ lục 18) và phân loại tiếp tục thực hiện.',
     ruleHint: 'Mã nhiệm vụ chuẩn: [MÃ_ĐV].NV[01..99] (ví dụ: TCNS.NV01). Mỗi nhiệm vụ có một mã riêng, tự động tăng dần khi thêm mới.',
     columns: [
-      { colLetter: 'A', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ ([ĐV].NVxx)', width: '170px' },
+      { colLetter: 'A', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ ([ĐV].NVxx)', width: '170px', isFormula: true, formulaHint: 'Tự động cấp mã nhiệm vụ tăng dần ([MÃ_ĐV].NVxx)' },
       { colLetter: 'B', field: 'tenNhiemVu', headerName: 'Tên nhiệm vụ được giao', width: '480px' },
       { colLetter: 'C', field: 'coQuan', headerName: 'Cơ quan / Đơn vị thực hiện', width: '250px' },
       { colLetter: 'D', field: 'canCu', headerName: 'Căn cứ giao nhiệm vụ (QĐ 2266)', width: '280px' },
@@ -33,7 +33,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 2 (Bước 2 nghiệp vụ): Phân rã nhiệm vụ thành từng công việc, xác định sản phẩm đầu ra, đơn vị tính, chất lượng và gán trực tiếp Mã VTVL chịu trách nhiệm.',
     ruleHint: 'Mã công việc chuẩn: [Mã nhiệm vụ].CV[01..99] (ví dụ: TCNS.NV01.CV01). Tự động kế thừa mã nhiệm vụ và tăng dần theo từng nhiệm vụ.',
     columns: [
-      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc ([NV].CVxx)', width: '170px' },
+      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc ([NV].CVxx)', width: '170px', isFormula: true, formulaHint: 'Tự động sinh mã công việc theo Mã nhiệm vụ ([Mã NV].CVxx)' },
       { colLetter: 'B', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ (A1)', width: '140px', type: 'select', dynamicOptionsKey: 'missionList' },
       { colLetter: 'C', field: 'maVtvl', headerName: 'Mã VTVL (từ C1)', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
       { colLetter: 'D', field: 'tenCongViec', headerName: 'Tên công việc cụ thể', width: '420px' },
@@ -124,7 +124,7 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 6: Bảng tổng hợp tự động giờ tăng/giảm bằng công thức SUMIFS từ Biểu 5. B2_CT theo từng Mã công việc và Mã VTVL.',
     ruleHint: 'Giờ tổng sau tác động (Cột F) = Giờ B1 (Cột C) + Giờ biến động (Cột D) + Giờ mới (Cột E).',
     columns: [
-      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '150px' },
+      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '150px', isFormula: true, formulaHint: 'Tự động tổng hợp từ Biểu 5. B2_CT_TacDong' },
       { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '120px', isFormula: true, formulaHint: '=INDEX(B1!B,MATCH(A,B1!A,0))' },
       { colLetter: 'C', field: 'gioB1', headerName: 'Giờ B1 gốc', width: '110px', isFormula: true, formulaHint: '=INDEX(B1!G,MATCH(A,B1!A,0))' },
       { colLetter: 'D', field: 'gioGiam', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm) (SUMIFS)', width: '130px', isFormula: true, formulaHint: '=SUMIFS(B2_CT!F,A,B2_CT!A)' },

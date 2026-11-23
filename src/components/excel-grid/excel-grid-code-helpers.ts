@@ -54,6 +54,7 @@ export function getNextTaskCode(
   missionCode: string,
   excludeRowId?: string
 ): string {
+  if (!missionCode || !missionCode.trim()) return '';
   const prefix = `${missionCode}.CV`;
   let maxNum = 0;
   for (const r of a2Rows) {

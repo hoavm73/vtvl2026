@@ -35,8 +35,7 @@ export function StaffTicketDetailModal({
   const badge = getTicketStatusMeta(ticket);
   const canonical = badge.canonical;
   const StatusIcon = badge.Icon;
-  const isOwnTicket = ticket.ownerEmail.toLowerCase() === (currentUserEmail || '').toLowerCase();
-  const canModerate = currentUserRole === 'admin' || (currentUserRole === 'unit_leader' && !isOwnTicket);
+  const canModerate = currentUserRole === 'admin' || currentUserRole === 'unit_leader';
   const canReview = Boolean(canModerate && (canonical === 'submitted' || canonical === 'resubmitted') && onApprove && onRequestChanges);
 
   const soSp = Number(ticket.soSpNam) || 0;

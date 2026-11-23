@@ -842,7 +842,7 @@ runTest('Ca 18: Hủy / xóa phiếu đã duyệt & đã gộp -> tự gỡ B1/A
         }));
         assert.strictEqual(rNoReason.status, 400, 'Thu hồi/hủy thiếu lý do phải báo lỗi 400');
 
-        // Phiếu cá nhân của chính Lãnh đạo CK do Admin duyệt -> Lãnh đạo không được tự thu hồi, Admin thu hồi được
+        // Phiếu cá nhân của chính Lãnh đạo CK: phải bấm duyệt (không tự duyệt lúc khai), sau đó Lãnh đạo tự duyệt & tự thu hồi được
         const subLeaderOwn = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
           method: 'POST', headers: { authorization: 'Bearer ' + tokenLeaderCk, 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -852,20 +852,17 @@ runTest('Ca 18: Hủy / xóa phiếu đã duyệt & đã gộp -> tự gỡ B1/A
           })
         }));
         const tLeaderOwn = (await subLeaderOwn.json()).ticket;
-        await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
-          method: 'PATCH', headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
+        assert.strictEqual(tLeaderOwn.status, 'Đã nộp', 'Phiếu Lãnh đạo vừa khai phải ở trạng thái Đã nộp');
+        const rSelfApprove = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
+          method: 'PATCH', headers: { authorization: 'Bearer ' + tokenLeaderCk, 'content-type': 'application/json' },
           body: JSON.stringify({ ticketId: tLeaderOwn.id, action: 'approve', unitCode: 'CK' })
         }));
+        assert.strictEqual(rSelfApprove.status, 200, 'Lãnh đạo đơn vị phải tự bấm duyệt được phiếu của chính mình');
         const rSelfRevoke = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
           method: 'PATCH', headers: { authorization: 'Bearer ' + tokenLeaderCk, 'content-type': 'application/json' },
-          body: JSON.stringify({ ticketId: tLeaderOwn.id, action: 'revoke_approval', unitCode: 'CK', reason: 'Tự thu hồi' })
+          body: JSON.stringify({ ticketId: tLeaderOwn.id, action: 'revoke_approval', unitCode: 'CK', reason: 'Tự thu hồi để chỉnh sửa lại' })
         }));
-        assert.strictEqual(rSelfRevoke.status, 403, 'Lãnh đạo không được tự thu hồi phiếu cá nhân của chính mình');
-        const rAdminRevoke = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
-          method: 'PATCH', headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
-          body: JSON.stringify({ ticketId: tLeaderOwn.id, action: 'revoke_approval', unitCode: 'CK', reason: 'Admin thu hồi giúp lãnh đạo sửa' })
-        }));
-        assert.strictEqual(rAdminRevoke.status, 200, 'Admin phải thu hồi được phiếu cá nhân của lãnh đạo đơn vị');
+        assert.strictEqual(rSelfRevoke.status, 200, 'Lãnh đạo đơn vị phải tự thu hồi duyệt được phiếu của chính mình');
 
         // Lãnh đạo CK hủy phiếu t đã duyệt & đã gộp
         const cancelRes = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {

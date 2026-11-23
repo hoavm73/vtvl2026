@@ -116,15 +116,6 @@ export async function executeRevokeOrCancelTicket(
       { status: 403 }
     );
   }
-  if (!caller.isAdmin && normalizeEmail(latest.ownerEmail) === normalizeEmail(caller.email)) {
-    return NextResponse.json(
-      {
-        error: 'Phiếu cá nhân của Lãnh đạo đơn vị cần Quản trị viên (TCNS) thực hiện thu hồi hoặc hủy sau khi nộp/duyệt.',
-        code: 'FORBIDDEN_SELF_REVIEW'
-      },
-      { status: 403 }
-    );
-  }
 
   const nowIso = new Date().toISOString();
   const curCanon = toCanonicalStatus(latest.status);

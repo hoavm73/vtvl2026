@@ -25,13 +25,13 @@ interface UnitTicketActionButtonsProps {
 }
 
 export function UnitTicketActionButtons({
-  ticket: t, canonical, isLeader, isOwnTicket, isOwnLeaderTicket,
+  ticket: t, canonical, isLeader, isOwnTicket,
   onViewTicket, onPrintTicket, onEditTicket, onCoordTicket, onSubmitTicket,
   onApproveTicket, onRequestChanges, onMergeTicket, onRevokeApproval, onCancelTicket
 }: UnitTicketActionButtonsProps) {
   const canReview = isLeader && (canonical === 'submitted' || canonical === 'resubmitted');
   const canMerge = isLeader && canonical === 'approved';
-  const canModerateOthers = isLeader && !isOwnLeaderTicket;
+  const canModerate = isLeader;
 
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center xl:justify-end gap-1.5 w-full">
@@ -62,22 +62,16 @@ export function UnitTicketActionButtons({
       )}
 
       {isLeader && onApproveTicket && canReview && (
-        isOwnLeaderTicket ? (
-          <span className="text-[11px] font-medium text-[#b45309] bg-[#fff8eb] px-2.5 py-1 rounded-lg border border-[#fcd34d] whitespace-nowrap shrink-0">
-            Phiếu cá nhân của Lãnh đạo (Cần TCNS duyệt)
-          </span>
-        ) : (
-          <>
-            {onRequestChanges && (
-              <button type="button" onClick={() => onRequestChanges(t)} className="h-8 px-2.5 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                <AlertTriangle className="w-3.5 h-3.5 text-[#f99c00] shrink-0" /> Yêu cầu bổ sung
-              </button>
-            )}
-            <button type="button" onClick={() => onApproveTicket(t)} className="h-8 px-2.5 rounded-lg bg-[#00a86b] hover:bg-[#008f5d] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors whitespace-nowrap shrink-0">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Duyệt phiếu
+        <>
+          {onRequestChanges && (
+            <button type="button" onClick={() => onRequestChanges(t)} className="h-8 px-2.5 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 text-[#f99c00] shrink-0" /> Yêu cầu bổ sung
             </button>
-          </>
-        )
+          )}
+          <button type="button" onClick={() => onApproveTicket(t)} className="h-8 px-2.5 rounded-lg bg-[#00a86b] hover:bg-[#008f5d] text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors whitespace-nowrap shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Duyệt phiếu
+          </button>
+        </>
       )}
 
       {canMerge && onMergeTicket && (
@@ -95,18 +89,18 @@ export function UnitTicketActionButtons({
         </button>
       )}
 
-      {canModerateOthers && canonical === 'approved' && onRevokeApproval && (
+      {canModerate && canonical === 'approved' && onRevokeApproval && (
         <button
           type="button"
           onClick={() => onRevokeApproval(t)}
           className="h-8 px-2.5 rounded-lg border border-[#fcd34d] bg-white hover:bg-[#fff8eb] text-[#b45309] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-          title="Thu hồi phê duyệt để nhân viên chỉnh sửa lại phiếu (tự gỡ khỏi B1/A2 nếu đã gộp)"
+          title="Thu hồi phê duyệt để chỉnh sửa lại phiếu (tự gỡ khỏi B1/A2 nếu đã gộp)"
         >
           <RotateCcw className="w-3.5 h-3.5 text-[#d97706] shrink-0" /> Thu hồi duyệt
         </button>
       )}
 
-      {canModerateOthers && (canonical === 'approved' || canonical === 'submitted' || canonical === 'resubmitted' || canonical === 'changes_requested' || canonical === 'draft') && onCancelTicket && (
+      {canModerate && (canonical === 'approved' || canonical === 'submitted' || canonical === 'resubmitted' || canonical === 'changes_requested' || canonical === 'draft') && onCancelTicket && (
         <button
           type="button"
           onClick={() => onCancelTicket(t)}

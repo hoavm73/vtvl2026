@@ -793,8 +793,8 @@ async function main() {
     assert.strictEqual(adminAccRes.status, 403, 'Cán bộ truy cập quản trị tài khoản phải bị chặn 403');
   });
 
-  // CA 12: Kiểm thử chặn quyền Lãnh đạo (không truy cập khác đơn vị, không tự duyệt, không cấp Admin/sửa Admin/đổi đơn vị)
-  await runCase('E2E-12', 'Lãnh đạo (SDH) bị chặn truy cập QTTHTT, tự duyệt phiếu của mình, cấp Admin, sửa Admin hoặc đổi đơn vị', async () => {
+  // CA 12: Kiểm thử phân quyền Lãnh đạo (chặn truy cập khác đơn vị, chặn tự gán Đã duyệt khi tạo, cho phép bấm duyệt phiếu của mình sau khi nộp, chặn cấp Admin/sửa Admin/đổi đơn vị)
+  await runCase('E2E-12', 'Lãnh đạo (SDH) bị chặn truy cập QTTHTT, chặn tạo thẳng Đã duyệt, được bấm duyệt phiếu của mình, chặn cấp Admin/sửa Admin/đổi đơn vị', async () => {
     // 1. Truy cập chéo sang QTTHTT
     const crossWbRes = await getWorkbookById(new NextRequest(\`http://localhost:3360/api/workbooks/\${wbQtthtt.id}\`, {
       headers: { authorization: 'Bearer ' + tokenLeaderSdh }
@@ -806,7 +806,28 @@ async function main() {
     }));
     assert.strictEqual(crossTicketsRes.status, 403, 'Lãnh đạo SDH không được đọc danh sách phiếu của QTTHTT');
 
-    // 2. Lãnh đạo tạo và nộp phiếu của chính mình -> tự duyệt bị chặn 403 FORBIDDEN_SELF_REVIEW -> Admin duyệt thành công
+    // 2. Lãnh đạo không được tạo thẳng trạng thái Đã duyệt -> phải nộp rồi bấm phê duyệt phiếu của chính mình
+    const directApproveRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        unitCode: 'SDH',
+        maNhiemVu: 'SDH.NV01',
+        tenCongViec: '[QA] Phiếu gán thẳng Đã duyệt',
+        maVtvl: 'SDH.QL01',
+        sanPham: 'Kế hoạch năm học',
+        chatLuong: 'Đạt chuẩn',
+        canCu: 'QĐ 1907',
+        soSpNam: 2,
+        phutThucTe: 240,
+        gioBoSung: 0,
+        nguonSoLieu: 'Báo cáo tổng kết',
+        status: 'approved'
+      })
+    }));
+    assert.strictEqual(directApproveRes.status, 403, 'Khai phiếu không được phép tự gán thẳng trạng thái Đã duyệt');
+    assert.strictEqual((await directApproveRes.json()).code, 'FORBIDDEN_DIRECT_APPROVAL');
+
     const leaderCreateRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
@@ -826,22 +847,16 @@ async function main() {
       })
     }));
     assert.strictEqual(leaderCreateRes.status, 200);
-    const leaderTicketId = (await leaderCreateRes.json()).ticket.id;
+    const createdLeaderTicket = (await leaderCreateRes.json()).ticket;
+    assert.strictEqual(createdLeaderTicket.status, 'Đã nộp', 'Phiếu Lãnh đạo vừa khai phải ở trạng thái Đã nộp, không tự duyệt');
 
     const selfApproveRes = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
       method: 'PATCH',
       headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
-      body: JSON.stringify({ ticketId: leaderTicketId, action: 'approve' })
+      body: JSON.stringify({ ticketId: createdLeaderTicket.id, action: 'approve' })
     }));
-    assert.strictEqual(selfApproveRes.status, 403, 'Lãnh đạo tự duyệt phiếu của mình phải bị chặn 403');
-    assert.strictEqual((await selfApproveRes.json()).code, 'FORBIDDEN_SELF_REVIEW');
-
-    const adminApproveLeaderRes = await patchTicket(new NextRequest('http://localhost:3360/api/tickets', {
-      method: 'PATCH',
-      headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
-      body: JSON.stringify({ ticketId: leaderTicketId, action: 'approve' })
-    }));
-    assert.strictEqual(adminApproveLeaderRes.status, 200, 'Admin phải duyệt được phiếu của Lãnh đạo đơn vị');
+    assert.strictEqual(selfApproveRes.status, 200, 'Lãnh đạo đơn vị phải được bấm phê duyệt phiếu do chính mình khai');
+    assert.strictEqual((await selfApproveRes.json()).ticket.status, 'Đã duyệt');
 
     // 3. Lãnh đạo thử cấp quyền Admin, sửa Admin, chuyển đơn vị tài khoản
     const grantAdminRes = await postAdminAccount(new NextRequest('http://localhost:3360/api/admin/accounts', {

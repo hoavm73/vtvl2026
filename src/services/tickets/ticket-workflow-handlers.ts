@@ -206,14 +206,8 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
       return NextResponse.json(payload);
     }
 
-    // 3. APPROVE
+    // 3. APPROVE (Lãnh đạo đơn vị được duyệt phiếu trong đơn vị mình, kể cả phiếu do mình khai sau khi đã nộp)
     if (act === 'approve') {
-      if (!caller.isAdmin && normalizeEmail(latest.ownerEmail) === normalizeEmail(caller.email)) {
-        return NextResponse.json({
-          error: 'Lãnh đạo đơn vị không thể tự duyệt phiếu của chính mình. Vui lòng chuyển Quản trị viên (TCNS) phê duyệt.',
-          code: 'FORBIDDEN_SELF_REVIEW'
-        }, { status: 403 });
-      }
       if (curCanon === 'approved' && idempotencyKey && normalizeEmail(latest.approvedBy || '') === normalizeEmail(caller.email)) {
         return NextResponse.json({ ok: true, idempotent: true, ticket: latest });
       }
@@ -253,9 +247,6 @@ export async function executePatchTicketAction(caller: CallerAuthContext, body: 
     if (act === 'changes_requested' || act === 'return' || act === 'request_changes') {
       if (!reasonText) {
         return NextResponse.json({ error: 'Lý do yêu cầu bổ sung là bắt buộc và không được để trống.', code: 'MISSING_REVISION_REASON' }, { status: 400 });
-      }
-      if (!caller.isAdmin && normalizeEmail(latest.ownerEmail) === normalizeEmail(caller.email)) {
-        return NextResponse.json({ error: 'Lãnh đạo đơn vị không được tự xét duyệt phiếu của chính mình.', code: 'FORBIDDEN_SELF_REVIEW' }, { status: 403 });
       }
       if (curCanon !== 'submitted' && curCanon !== 'resubmitted') {
         return NextResponse.json({ error: 'Chỉ phiếu Đã nộp hoặc Đã nộp lại mới có thể yêu cầu bổ sung.', code: 'INVALID_STATUS_FOR_RETURN' }, { status: 400 });

@@ -1,4 +1,5 @@
 import { ExcelSheetKey, GenericGridRow } from './excel-grid-types';
+import { findPl1Item } from '@/configs/hcmute-pl1-builder';
 
 export function recalculateGridFormulas(
   prev: Record<ExcelSheetKey, GenericGridRow[]>,
@@ -112,8 +113,12 @@ export function recalculateGridFormulas(
   const c1Positions: GenericGridRow[] = (next.C1 || []).map((c): GenericGridRow => {
     const mode = String(c.cheDoLamViec || '').trim();
     const resolvedStd = mode === 'Đặc thù' ? 1760 : mode.startsWith('Phổ biến') ? 1904 : (Number(c.gioChuanPp2) || 1904);
+    const pl1 = findPl1Item(String(c.maVtvl || ''));
+    const rawName = String(c.tenVtvl || '').trim();
+    const resolvedName = pl1 && (!rawName || rawName === pl1.titleOrRole) ? pl1.positionName : c.tenVtvl;
     return {
       ...c,
+      tenVtvl: resolvedName,
       gioChuanPp2: resolvedStd,
       kiemTra: resolvedStd > 0 ? 'ĐẠT' : 'LỖI'
     };

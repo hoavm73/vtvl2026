@@ -55,7 +55,9 @@ function ensureCatalog(): Map<string, SchoolVtvlCatalogItem> {
         for (const raw of parsed) {
           if (raw && typeof raw.code === 'string' && raw.code.trim()) {
             const c = raw.code.trim().toUpperCase();
-            base.set(c, { ...base.get(c), ...raw, code: c });
+            const def = base.get(c);
+            const isSystemLegacy = raw.updatedBy === 'system@hcmute.edu.vn' && def;
+            base.set(c, { ...def, ...raw, ...(isSystemLegacy ? { name: def.name } : {}), code: c });
           }
         }
       }

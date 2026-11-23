@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { SidebarTechDocTree } from './SidebarTechDocTree';
+import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 
 const GROUP_STATE_STORAGE_KEY = 'vtvl_sidebar_open_groups_v1';
 
@@ -136,7 +137,7 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
   return (
     <aside
       aria-label="Thanh điều hướng nghiệp vụ chính"
-      className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-[#d8e3ef] shadow-[2px_0_12px_-4px_rgba(0,71,118,0.04)] transition-all duration-300 z-20 print:hidden ${
+      className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-[#d8e3ef] shadow-[2px_0_12px_-4px_rgba(0,71,118,0.04)] transition-all duration-300 z-20 print:hidden sticky top-16 h-[calc(100vh-4rem)] ${
         collapsed ? 'w-[72px]' : 'w-[272px]'
       }`}
     >
@@ -253,12 +254,10 @@ export function AppSidebar({ collapsed, session, onToggle }: AppSidebarProps) {
         })}
       </div>
 
-      {/* Footer nhỏ dưới đáy sidebar */}
-      {!collapsed && (
-        <div className="p-3 border-t border-[#e2ecf7] text-[11px] text-[#20446c] text-center bg-[#fafcff]">
-          <div className="font-semibold text-[#004776]">HCM-UTE VTVL 360</div>
-        </div>
-      )}
+      {/* Cụm tài khoản cố định dưới đáy sidebar trái */}
+      <div className={`border-t border-[#e2ecf7] bg-[#fafcff] shrink-0 ${collapsed ? 'p-2 flex justify-center' : 'p-2.5'}`}>
+        <UserProfilePopover placement="sidebar" collapsed={collapsed} />
+      </div>
     </aside>
   );
 }

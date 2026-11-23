@@ -21,6 +21,7 @@ import { syncOperatorAccountWithServer } from '@/services/auth/account-client';
 import { getCanonicalWorkbookId, persistUnitContextSelection, resolveSafeUnitCode, syncContextQueryParams } from '@/services/context/workbook-context';
 import { StaffWorkTicket } from '@/types/staff-ticket';
 import { WorkbookReviewProgressStepper } from '@/components/workbooks/WorkbookReviewProgressStepper';
+import { PageHeaderActions, useSetPageBreadcrumbs } from '@/components/layout/PageHeaderContext';
 
 type UnitWorkspaceTabKey = 'overview' | 'workbook' | 'tickets' | 'org-tree' | 'workforce-chart' | 'history' | 'check';
 
@@ -72,6 +73,13 @@ export default function NghiepVuDonViPage() {
 
   const canonicalWbId = getCanonicalWorkbookId(selectedUnitCode);
   const activeUnit = findHcmuteUnit(selectedUnitCode);
+  const activeTabLabel = UNIT_TABS.find((t) => t.key === activeTab)?.label || 'Tổng quan đơn vị';
+  const activeTabIcon = activeTab === 'workbook' ? 'sheet' : activeTab === 'tickets' ? 'tickets' : activeTab === 'org-tree' ? 'org' : activeTab === 'workforce-chart' ? 'chart' : activeTab === 'check' ? 'shield' : 'unit';
+  useSetPageBreadcrumbs([
+    { label: 'Tổng quan', href: '/' },
+    { label: `Hồ sơ đơn vị [${activeUnit.code}]`, href: `/nghiep-vu-don-vi?tab=overview&unitCode=${encodeURIComponent(activeUnit.code)}` },
+    { label: activeTabLabel, icon: activeTabIcon }
+  ]);
   const groupLabel = UNIT_GROUPS.find((g) => g.id === activeUnit.group)?.label || activeUnit.group;
 
   const loadUnitWorkspaceData = useCallback(async () => {
@@ -146,9 +154,40 @@ export default function NghiepVuDonViPage() {
     syncContextQueryParams({ tab: activeTab, unitCode: safe, workbookId: getCanonicalWorkbookId(safe) }, 'push');
   };
 
+  const headerActionControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      {isAdmin ? (
+        <div className="flex items-center gap-2">
+          <label htmlFor="unit-workspace-select" className="text-xs font-semibold text-[#20446c] whitespace-nowrap">Đơn vị:</label>
+          <select
+            id="unit-workspace-select"
+            aria-label="Chọn đơn vị để xem hồ sơ"
+            value={selectedUnitCode}
+            onChange={(e) => handleUnitChange(e.target.value)}
+            className="h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] max-w-[240px]"
+          >
+            {HCMUTE_UNITS.map((u) => (
+              <option key={u.code} value={u.code}>[{u.code}] {u.nameVi}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-[#f8fafc] text-xs font-semibold text-[#004776] max-w-[260px] truncate" title={`[${activeUnit.code}] ${activeUnit.nameVi}`}>
+          <Building2 className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
+          <span className="truncate">[{activeUnit.code}] {activeUnit.nameVi}</span>
+        </span>
+      )}
+      <Link href={`/bang-tinh?unit=${encodeURIComponent(selectedUnitCode)}`} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] whitespace-nowrap">
+        <ExternalLink className="w-3.5 h-3.5 text-[#006cee]" /><span>Mở bảng tính toàn trang</span>
+      </Link>
+    </div>
+  );
+
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5 print:p-0 print:m-0 print:max-w-none print:space-y-0">
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#e2e8f0] pb-4 print:hidden">
+    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-5 space-y-4 print:p-0 print:m-0 print:max-w-none print:space-y-0">
+      <PageHeaderActions>{headerActionControls}</PageHeaderActions>
+
+      <header className="flex lg:hidden flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3 print:hidden">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006cee]">
             <Building2 className="w-4 h-4" />
@@ -156,33 +195,7 @@ export default function NghiepVuDonViPage() {
           </div>
           <h1 className="page-title text-[#0072BC]">Hồ sơ &amp; nghiệp vụ đơn vị [{activeUnit.code}]</h1>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdmin ? (
-            <div className="flex items-center gap-2">
-              <label htmlFor="unit-workspace-select" className="text-xs font-semibold text-[#20446c] whitespace-nowrap">Đơn vị:</label>
-              <select
-                id="unit-workspace-select"
-                aria-label="Chọn đơn vị để xem hồ sơ"
-                value={selectedUnitCode}
-                onChange={(e) => handleUnitChange(e.target.value)}
-                className="h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white text-xs font-semibold text-[#004776] max-w-[260px]"
-              >
-                {HCMUTE_UNITS.map((u) => (
-                  <option key={u.code} value={u.code}>[{u.code}] {u.nameVi}</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-[#f8fafc] text-xs font-semibold text-[#004776] max-w-[280px] truncate" title={`[${activeUnit.code}] ${activeUnit.nameVi}`}>
-              <Building2 className="w-3.5 h-3.5 text-[#006cee] shrink-0" />
-              <span className="truncate">[{activeUnit.code}] {activeUnit.nameVi}</span>
-            </span>
-          )}
-          <Link href={`/bang-tinh?unit=${encodeURIComponent(selectedUnitCode)}`} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776]">
-            <ExternalLink className="w-3.5 h-3.5 text-[#006cee]" /><span>Mở bảng tính toàn trang</span>
-          </Link>
-        </div>
+        {headerActionControls}
       </header>
 
       <div className="sm:hidden print:hidden">

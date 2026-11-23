@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { UnitReviewMode } from '@/components/staff-portal/UnitTicketsFilterBar';
+import { PageHeaderActions, useSetPageBreadcrumbs } from '@/components/layout/PageHeaderContext';
 
 interface UnitTicketsHeaderBarProps {
   isAdmin: boolean;
@@ -47,9 +48,46 @@ export function UnitTicketsHeaderBar({
     : `${sessionUnitNameVi} (${sessionUnitCode})`;
   const activeUnitQuery = encodeURIComponent(selectedUnit === 'ALL' ? sessionUnitCode : selectedUnit);
 
+  useSetPageBreadcrumbs([
+    { label: 'Tổng quan', href: '/' },
+    { label: 'Nghiệp vụ đơn vị', href: `/nghiep-vu-don-vi?unitCode=${activeUnitQuery}` },
+    { label: 'Quản lý phiếu đơn vị', icon: 'tickets' }
+  ]);
+
+  const actionControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      {isAdmin && (
+        <select
+          value={selectedUnit}
+          onChange={(e) => onSelectUnit(e.target.value)}
+          aria-label="Chọn đơn vị cần xem và xử lý phiếu"
+          className="h-9 px-2.5 rounded-lg border border-[#cbd5e1] bg-[#f8fbff] text-xs font-bold text-[#004776] focus:border-[#006cee] outline-none cursor-pointer max-w-[230px]"
+        >
+          <option value="ALL">Tất cả 39 đơn vị ({totalTicketsCount} phiếu)</option>
+          {HCMUTE_UNITS.map((u) => (
+            <option key={u.code} value={u.code}>
+              [{u.code}] {u.nameVi} ({unitCounts[u.code.toUpperCase()] || 0} phiếu)
+            </option>
+          ))}
+        </select>
+      )}
+      <Link href={`/nghiep-vu-don-vi?unitCode=${activeUnitQuery}`} className="h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 whitespace-nowrap">
+        <Building2 className="w-3.5 h-3.5 text-[#0072BC]" /><span>Hồ sơ đơn vị</span>
+      </Link>
+      <Link href={`/bang-tinh?unit=${activeUnitQuery}`} className="h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 whitespace-nowrap">
+        <FileSpreadsheet className="w-3.5 h-3.5 text-[#0072BC]" /><span>Bảng tính 10 biểu</span>
+      </Link>
+      <button type="button" onClick={onRefresh} className="h-9 px-3 rounded-lg bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /><span>Làm mới</span>
+      </button>
+    </div>
+  );
+
   return (
     <>
-      <header className="pb-4 border-b border-[#e2e8f0] flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      <PageHeaderActions>{actionControls}</PageHeaderActions>
+
+      <header className="flex lg:hidden pb-4 border-b border-[#e2e8f0] flex-col gap-3">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
             {isAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
@@ -60,33 +98,7 @@ export function UnitTicketsHeaderBar({
             <span>Quản lý &amp; xử lý phiếu công việc đơn vị</span>
           </h1>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && (
-            <select
-              value={selectedUnit}
-              onChange={(e) => onSelectUnit(e.target.value)}
-              aria-label="Chọn đơn vị cần xem và xử lý phiếu"
-              className="h-10 px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fbff] text-xs font-bold text-[#004776] focus:border-[#006cee] outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả 39 đơn vị ({totalTicketsCount} phiếu)</option>
-              {HCMUTE_UNITS.map((u) => (
-                <option key={u.code} value={u.code}>
-                  [{u.code}] {u.nameVi} ({unitCounts[u.code.toUpperCase()] || 0} phiếu)
-                </option>
-              ))}
-            </select>
-          )}
-          <Link href={`/nghiep-vu-don-vi?unitCode=${activeUnitQuery}`} className="h-10 px-3.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-[#0072BC]" /><span>Hồ sơ đơn vị</span>
-          </Link>
-          <Link href={`/bang-tinh?unit=${activeUnitQuery}`} className="h-10 px-4 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5">
-            <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" /><span>Bảng tính 10 biểu</span>
-          </Link>
-          <button type="button" onClick={onRefresh} className="h-10 px-3.5 rounded-xl bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /><span>Làm mới</span>
-          </button>
-        </div>
+        {actionControls}
       </header>
 
       <nav role="tablist" aria-label="Bộ lọc xử lý phiếu đơn vị" className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-[#e2e8f0] overflow-x-auto no-scrollbar">

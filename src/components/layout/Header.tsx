@@ -5,10 +5,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FileSpreadsheet, FileText, ClipboardCheck, Home,
+  FileSpreadsheet, FileText, ClipboardCheck, Home, ChevronRight,
   Menu, X, ShieldCheck, Building2, BookOpen, Settings, Network, BarChart3
 } from 'lucide-react';
 import { InfoTip } from './MilestonesBar';
+import { BreadcrumbIconKey, getDefaultBreadcrumbs, HEADER_ACTIONS_SLOT_ID, usePageBreadcrumbs } from './PageHeaderContext';
+
+const BREADCRUMB_ICONS: Record<BreadcrumbIconKey, React.ComponentType<{ className?: string }>> = {
+  home: Home,
+  file: FileText,
+  unit: Building2,
+  sheet: FileSpreadsheet,
+  tickets: ClipboardCheck,
+  shield: ShieldCheck,
+  settings: Settings,
+  book: BookOpen,
+  org: Network,
+  chart: BarChart3
+};
 import { UserProfilePopover } from '@/components/auth/UserProfilePopover';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
 
@@ -25,8 +39,10 @@ const MOBILE_NAV_ITEMS: { href: string; label: string; icon: React.ComponentType
   { href: '/huong-dan', label: 'Hướng dẫn nghiệp vụ', icon: BookOpen }
 ];
 
-export function Header() {
+export function Header({ sidebarCollapsed = false }: { sidebarCollapsed?: boolean }) {
   const pathname = usePathname();
+  const customBreadcrumbs = usePageBreadcrumbs();
+  const breadcrumbs = customBreadcrumbs || getDefaultBreadcrumbs(pathname);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [session, setSession] = useState<OperatorSession | null>(null);
 
@@ -68,9 +84,13 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#d8e3ef] shadow-[0_2px_12px_-4px_rgba(0,71,118,0.06)] print:hidden">
-      <div className="w-full px-3 sm:px-5 lg:px-6 flex h-16 items-center justify-between gap-3">
-        {/* Nhận diện thương hiệu HCM-UTE bên trái */}
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="w-full flex h-16 items-stretch justify-between">
+        {/* Khu vực Logo HCM-UTE bên trái — gióng khớp chính xác bề rộng và đường kẻ dọc với Sidebar */}
+        <div
+          className={`flex items-center shrink-0 transition-all duration-300 px-3 sm:px-5 lg:border-r lg:border-[#d8e3ef] ${
+            sidebarCollapsed ? 'lg:w-[72px] lg:justify-center lg:px-2' : 'lg:w-[272px] lg:justify-between lg:px-4'
+          }`}
+        >
           <Link
             href="/"
             aria-label="Trang chủ tổng quan Vị trí việc làm HCM-UTE"
@@ -79,51 +99,88 @@ export function Header() {
             <Image
               src="/ute_logo.png"
               alt="HCM-UTE Logo"
-              width={32}
-              height={32}
-              sizes="32px"
+              width={36}
+              height={36}
+              sizes="36px"
               priority
-              className="block h-8 w-auto md:hidden object-contain shrink-0"
+              className={`block h-9 w-auto object-contain shrink-0 ${sidebarCollapsed ? '' : 'md:hidden'}`}
             />
             <span className="md:hidden text-base font-bold text-[#004776] truncate">
               VTVL HCM-UTE
             </span>
-            <Image
-              src="/horizontal-ute-logo.png"
-              alt="HCM-UTE Logo"
-              width={180}
-              height={44}
-              sizes="180px"
-              priority
-              className="hidden h-9 lg:h-10 w-auto md:block object-contain shrink-0"
-            />
+            {!sidebarCollapsed && (
+              <Image
+                src="/horizontal-ute-logo.png"
+                alt="HCM-UTE Logo"
+                width={180}
+                height={44}
+                sizes="180px"
+                priority
+                className="hidden h-9 w-auto md:block object-contain shrink-0"
+              />
+            )}
           </Link>
 
-          <div className="hidden sm:block shrink-0">
-            <InfoTip title="Căn cứ pháp lý & Cơ quan thường trực">
-              <p><strong>Đơn vị chủ trì:</strong> Phòng Tổ chức - Nhân sự — Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE).</p>
-              <p><strong>Căn cứ:</strong> Hướng dẫn số 07-HD/BTCTW; Nghị định số 232/2026/NĐ-CP; Thông tư số 31/2026/TT-BGDĐT; Hướng dẫn số 02 (1907/HD-ĐHCNKT ngày 17/6/2026).</p>
-            </InfoTip>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="hidden sm:block shrink-0 ml-2">
+              <InfoTip title="Căn cứ pháp lý & Cơ quan thường trực">
+                <p><strong>Đơn vị chủ trì:</strong> Phòng Tổ chức - Nhân sự — Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCM-UTE).</p>
+                <p><strong>Căn cứ:</strong> Hướng dẫn số 07-HD/BTCTW; Nghị định số 232/2026/NĐ-CP; Thông tư số 31/2026/TT-BGDĐT; Hướng dẫn số 02 (1907/HD-ĐHCNKT ngày 17/6/2026).</p>
+              </InfoTip>
+            </div>
+          )}
         </div>
 
-        {/* Tiện ích và Tài khoản bên phải (Cụm điều khiển tài khoản duy nhất) */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Popover Hồ sơ người dùng */}
-          <UserProfilePopover />
+        {/* Thanh Breadcrumb điều hướng nghiệp vụ ở giữa — phẳng, gọn, cùng hàng logo */}
+        <div className="flex-1 flex items-center justify-between gap-3 min-w-0 px-3 sm:px-5 lg:px-6">
+          <nav aria-label="Đường dẫn nghiệp vụ" className="hidden md:flex items-center gap-2 min-w-0 overflow-hidden">
+            {breadcrumbs.map((item, idx) => {
+              const isLast = idx === breadcrumbs.length - 1;
+              const CrumbIcon = item.icon ? BREADCRUMB_ICONS[item.icon] : null;
+              return (
+                <React.Fragment key={`${item.label}-${idx}`}>
+                  {idx > 0 && <ChevronRight className="w-4 h-4 text-[#004776]/50 shrink-0" aria-hidden="true" />}
+                  {item.href && !isLast ? (
+                    <Link
+                      href={item.href}
+                      className="text-[14.5px] font-medium text-[#004776]/85 hover:text-[#006cee] transition-colors whitespace-nowrap truncate"
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-[15px] whitespace-nowrap truncate ${
+                        isLast ? 'font-bold text-[#0072BC]' : 'font-medium text-[#004776]/85'
+                      }`}
+                    >
+                      {isLast && CrumbIcon && <CrumbIcon className="w-[18px] h-[18px] text-[#006cee] shrink-0" aria-hidden="true" />}
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </nav>
 
-          {/* Nút mở Menu điều hướng di động / Drawer */}
-          {mobileNavItems.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-expanded={mobileOpen}
-              aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu điều hướng'}
-              className="lg:hidden h-11 w-11 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
-            >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          )}
+          {/* Cụm nút / bộ lọc nghiệp vụ của trang đang mở (Desktop >= lg, vì tài khoản đã chuyển xuống đáy Sidebar) */}
+          <div id={HEADER_ACTIONS_SLOT_ID} className="hidden lg:flex items-center gap-2 shrink-0 ml-auto" />
+
+          {/* Tài khoản & Menu di động (chỉ hiển thị trên < lg khi Sidebar đang ẩn) */}
+          <div className="flex lg:hidden items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+            <UserProfilePopover placement="header" />
+
+            {mobileNavItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-expanded={mobileOpen}
+                aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu điều hướng'}
+                className="lg:hidden h-11 w-11 rounded-xl border border-[#d8e3ef] bg-white text-[#004776] flex items-center justify-center cursor-pointer hover:bg-[#f4f7fb]"
+              >
+                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

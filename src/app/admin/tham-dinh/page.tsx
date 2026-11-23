@@ -6,6 +6,7 @@ import { ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import { TcnsReviewListPanel } from '@/components/admin/TcnsReviewListPanel';
 import { TcnsReviewDetailPanel, TcnsDetailTabKey } from '@/components/admin/TcnsReviewDetailPanel';
+import { PageHeaderActions, useSetPageBreadcrumbs } from '@/components/layout/PageHeaderContext';
 import { AdminSkeletonLoading } from '@/components/admin/AdminSkeletonLoading';
 import { getCurrentOperatorSession } from '@/services/telemetry/operator-session';
 import { getCanonicalWorkbookId, syncContextQueryParams } from '@/services/context/workbook-context';
@@ -20,6 +21,17 @@ export default function AdminThamDinhPage() {
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedWorkbookId, setSelectedWorkbookId] = useState<string | undefined>(undefined);
   const [activeSubTab, setActiveSubTab] = useState<TcnsDetailTabKey>('overview');
+  useSetPageBreadcrumbs(
+    authState === 'allowed'
+      ? [
+          { label: 'Tổng quan', href: '/' },
+          { label: 'Thẩm định cấp trường', href: selectedUnit ? '/admin/tham-dinh' : undefined },
+          ...(selectedUnit
+            ? [{ label: `Hồ sơ [${selectedUnit}]`, icon: 'shield' as const }]
+            : [{ label: 'Thẩm định hồ sơ Đề án Vị trí việc làm', icon: 'shield' as const }])
+        ]
+      : null
+  );
 
   const verifyAdminAccess = useCallback(async () => {
     const cur = getCurrentOperatorSession();
@@ -113,8 +125,14 @@ export default function AdminThamDinhPage() {
   }
 
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-5">
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#e2e8f0] pb-4">
+    <div className="w-full max-w-[1360px] mx-auto px-3.5 sm:px-5 lg:px-6 py-4 sm:py-5 space-y-4">
+      <PageHeaderActions>
+        <Link href="/admin" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] whitespace-nowrap">
+          <span>Quản trị hệ thống</span>
+        </Link>
+      </PageHeaderActions>
+
+      <header className="flex lg:hidden flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2e8f0] pb-3">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006cee]">
             <ShieldCheck className="w-4 h-4" />
@@ -122,7 +140,7 @@ export default function AdminThamDinhPage() {
           </div>
           <h1 className="page-title text-[#0072BC]">Thẩm định hồ sơ Đề án Vị trí việc làm</h1>
         </div>
-        <Link href="/admin" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776]">
+        <Link href="/admin" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] self-start sm:self-auto">
           <span>Quản trị hệ thống</span>
         </Link>
       </header>

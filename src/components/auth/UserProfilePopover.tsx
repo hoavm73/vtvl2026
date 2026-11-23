@@ -21,7 +21,12 @@ import {
   isEmailAlreadyOnboarded, markEmailAsOnboarded
 } from '@/services/auth/account-client';
 
-export function UserProfilePopover() {
+export interface UserProfilePopoverProps {
+  placement?: 'header' | 'sidebar';
+  collapsed?: boolean;
+}
+
+export function UserProfilePopover({ placement = 'header', collapsed = false }: UserProfilePopoverProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const [session, setSession] = useState<OperatorSession | null>(null);
@@ -152,29 +157,47 @@ export function UserProfilePopover() {
   const unitCode = activeUnit?.code || session.unitCode;
   const unitNameVi = activeUnit?.nameVi || session.unitNameVi;
 
+  const isSidebar = placement === 'sidebar';
+
   return (
     <>
-      <Popover>
-        <PopoverTrigger ariaLabel={`Mở hồ sơ tài khoản ${label}`}>
-          <span className="inline-flex items-center gap-2 md:gap-2.5 h-10 px-1.5 md:pl-1.5 md:pr-3 rounded-full border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer">
-            {session.avatarUrl ? (
-              <img src={session.avatarUrl} alt={label} className="w-7 h-7 rounded-full object-cover shrink-0" />
-            ) : (
-              <span className="w-7 h-7 rounded-full bg-[#004776] text-white text-xs font-bold inline-flex items-center justify-center shrink-0">{initials}</span>
-            )}
-            <span className="hidden md:flex flex-col text-left leading-tight">
-              <span className="text-[13px] font-bold text-[#004776] max-w-[180px] lg:max-w-[220px] truncate" title={label}>
-                {label}
-              </span>
-              <span className="text-[11px] font-semibold text-[#476885]">
-                [{unitCode}] · {roleTitle}
-              </span>
+      <Popover className={isSidebar ? 'w-full block' : ''}>
+        <PopoverTrigger ariaLabel={`Mở hồ sơ tài khoản ${label}`} className={isSidebar ? 'w-full' : ''}>
+          <span
+            className={
+              isSidebar
+                ? `w-full inline-flex items-center ${collapsed ? 'justify-center px-1.5' : 'justify-between gap-2 px-2.5'} h-11 rounded-xl border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer`
+                : 'inline-flex items-center gap-2 md:gap-2.5 h-10 px-1.5 md:pl-1.5 md:pr-3 rounded-full border border-[#d8e3ef] bg-white hover:border-[#004776] hover:bg-[#f4f7fb] transition-all shadow-2xs cursor-pointer'
+            }
+          >
+            <span className="inline-flex items-center gap-2 min-w-0">
+              {session.avatarUrl ? (
+                <img src={session.avatarUrl} alt={label} className="w-7 h-7 rounded-full object-cover shrink-0" />
+              ) : (
+                <span className="w-7 h-7 rounded-full bg-[#004776] text-white text-xs font-bold inline-flex items-center justify-center shrink-0">{initials}</span>
+              )}
+              {(!isSidebar || !collapsed) && (
+                <span className={`${isSidebar ? 'flex' : 'hidden md:flex'} flex-col text-left leading-tight min-w-0`}>
+                  <span className={`text-[13px] font-bold text-[#004776] truncate ${isSidebar ? 'max-w-[160px]' : 'max-w-[180px] lg:max-w-[220px]'}`} title={label}>
+                    {label}
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#476885] truncate">
+                    [{unitCode}] · {roleTitle}
+                  </span>
+                </span>
+              )}
             </span>
-            <ChevronDown className="hidden sm:block w-3.5 h-3.5 text-[#476885] shrink-0" />
+            {(!isSidebar || !collapsed) && (
+              <ChevronDown className={`${isSidebar ? 'block rotate-180' : 'hidden sm:block'} w-3.5 h-3.5 text-[#476885] shrink-0`} />
+            )}
           </span>
         </PopoverTrigger>
 
-        <PopoverContent align="end" className="w-[min(330px,calc(100vw-24px))] p-4 space-y-3">
+        <PopoverContent
+          align={isSidebar ? 'start' : 'end'}
+          side={isSidebar ? 'top' : 'bottom'}
+          className="w-[min(330px,calc(100vw-24px))] p-4 space-y-3"
+        >
           <div className="flex items-center gap-3 pb-3 border-b border-[#e8eff7]">
             {session.avatarUrl ? (
               <img src={session.avatarUrl} alt={label} className="w-11 h-11 rounded-full object-cover shrink-0 border border-[#d8e3ef]" />

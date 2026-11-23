@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { StaffWorkTicket } from '@/types/staff-ticket';
+import { PageHeaderActions, useSetPageBreadcrumbs } from '@/components/layout/PageHeaderContext';
 
 export type StaffTicketsTabKey = 'my-tickets' | 'create' | 'coordination' | 'relationships';
 
@@ -26,44 +27,58 @@ export function StaffPortalHeaderBanner({
 }: StaffPortalHeaderBannerProps) {
   const unitInfo = findHcmuteUnit(unitCode);
 
-  return (
-    <div className="pb-4 border-b border-[#e2e8f0] flex flex-col xl:flex-row xl:items-center justify-between gap-4 print:hidden">
-      <div className="space-y-1">
-        <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
-          <Building2 className="w-3.5 h-3.5" />
-          <span>{unitNameVi || unitInfo.nameVi} ({unitInfo.code})</span>
-        </div>
-        <h1 className="text-lg sm:text-2xl font-bold text-[#0072BC]">
-          Phiếu khảo sát khối lượng công việc cá nhân HCM-UTE
-        </h1>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href="/bang-tinh?sheet=A2"
-          className="h-10 px-3.5 rounded-[10px] bg-white hover:bg-[#eef5ff] border border-[#cbd5e1] text-xs font-semibold text-[#004776] flex items-center gap-1.5 transition-colors"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
-          <span>Bảng tính toàn đơn vị</span>
-        </Link>
-        <button
-          type="button"
-          onClick={onCreateNew}
-          className="h-10 px-4 rounded-[10px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tạo phiếu mới</span>
-        </button>
-        <button
-          type="button"
-          onClick={onLogout}
-          aria-label="Đăng xuất"
-          className="min-h-[40px] min-w-[40px] px-3 rounded-[10px] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] hover:bg-red-50 inline-flex items-center justify-center cursor-pointer transition-colors"
-          title="Đăng xuất"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
-      </div>
+  useSetPageBreadcrumbs([
+    { label: 'Tổng quan', href: '/' },
+    { label: 'Nghiệp vụ cá nhân' },
+    { label: 'Phiếu khảo sát khối lượng công việc cá nhân', icon: 'file' }
+  ]);
+
+  const actionControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link
+        href="/bang-tinh?sheet=A2"
+        className="h-9 px-3 rounded-[9px] bg-white hover:bg-[#eef5ff] border border-[#cbd5e1] text-xs font-semibold text-[#004776] flex items-center gap-1.5 transition-colors whitespace-nowrap"
+      >
+        <FileSpreadsheet className="w-4 h-4 text-[#0072BC]" />
+        <span>Bảng tính toàn đơn vị</span>
+      </Link>
+      <button
+        type="button"
+        onClick={onCreateNew}
+        className="h-9 px-3.5 rounded-[9px] bg-[#0072BC] hover:bg-[#004776] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+      >
+        <Plus className="w-4 h-4" />
+        <span>Tạo phiếu mới</span>
+      </button>
+      <button
+        type="button"
+        onClick={onLogout}
+        aria-label="Đăng xuất"
+        className="h-9 w-9 rounded-[9px] text-xs font-medium text-[#476b8e] hover:text-[#f4212e] hover:bg-red-50 inline-flex items-center justify-center cursor-pointer transition-colors"
+        title="Đăng xuất"
+      >
+        <LogOut className="w-4 h-4" />
+      </button>
     </div>
+  );
+
+  return (
+    <>
+      <PageHeaderActions>{actionControls}</PageHeaderActions>
+
+      <div className="flex lg:hidden pb-4 border-b border-[#e2e8f0] flex-col gap-3 print:hidden">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0072BC] bg-[#eef5ff] px-3 py-1 rounded-full">
+            <Building2 className="w-3.5 h-3.5" />
+            <span>{unitNameVi || unitInfo.nameVi} ({unitInfo.code})</span>
+          </div>
+          <h1 className="text-lg sm:text-2xl font-bold text-[#0072BC]">
+            Phiếu khảo sát khối lượng công việc cá nhân
+          </h1>
+        </div>
+        {actionControls}
+      </div>
+    </>
   );
 }
 

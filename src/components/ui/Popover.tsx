@@ -67,11 +67,13 @@ export function PopoverTrigger({ children, className = '', ariaLabel }: { childr
 
 export interface PopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
   align?: 'start' | 'center' | 'end';
+  side?: 'bottom' | 'top';
   sideOffset?: number;
 }
 
 export function PopoverContent({
   align = 'end',
+  side = 'bottom',
   sideOffset = 8,
   className = '',
   children,
@@ -115,11 +117,14 @@ export function PopoverContent({
     end: 'right-0'
   }[align];
 
+  const posStyle = side === 'top' ? { marginBottom: `${sideOffset}px` } : { marginTop: `${sideOffset}px` };
+  const sideCls = side === 'top' ? 'bottom-full' : 'top-full';
+
   return (
     <div
       ref={contentRef}
-      style={{ marginTop: `${sideOffset}px` }}
-      className={`absolute z-50 ${alignStyles} min-w-[220px] max-w-[calc(100vw-24px)] rounded-2xl border border-[#d8e3ef] bg-white p-2 text-[#004776] shadow-[0_12px_32px_-4px_rgba(0,71,118,0.14)] outline-none ${className}`}
+      style={posStyle}
+      className={`absolute z-50 ${sideCls} ${alignStyles} min-w-[220px] max-w-[calc(100vw-24px)] rounded-2xl border border-[#d8e3ef] bg-white p-2 text-[#004776] shadow-[0_12px_32px_-4px_rgba(0,71,118,0.14)] outline-none ${className}`}
       {...props}
     >
       {children}

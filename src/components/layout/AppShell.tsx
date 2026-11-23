@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthHydration } from '@/components/auth/AuthSessionProvider';
 import { Header } from '@/components/layout/Header';
+import { PageHeaderProvider } from '@/components/layout/PageHeaderContext';
 import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
@@ -102,8 +103,9 @@ export function AppShell({ children }: AppShellProps) {
   const isLoggedIn = Boolean(session);
 
   return (
+    <PageHeaderProvider>
     <div className="min-h-screen w-full max-w-full flex flex-col overflow-x-clip relative bg-[#f8fbff] print:block print:overflow-visible print:min-h-0 print:bg-white">
-      {!isLoginPage && isLoggedIn && <Header />}
+      {!isLoginPage && isLoggedIn && <Header sidebarCollapsed={collapsed} />}
 
       {isLoginPage ? (
         <main className="flex-1 w-full max-w-full flex flex-col min-h-screen print:block print:overflow-visible print:min-h-0">{children}</main>
@@ -128,5 +130,6 @@ export function AppShell({ children }: AppShellProps) {
 
       {!isLoginPage && isLoggedIn && <Footer />}
     </div>
+    </PageHeaderProvider>
   );
 }

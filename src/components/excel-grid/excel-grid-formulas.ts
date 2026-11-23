@@ -124,6 +124,13 @@ export function recalculateGridFormulas(
     };
   });
   next.C1 = c1Positions;
+  const c1NameByCode = new Map(c1Positions.map((c) => [String(c.maVtvl || '').trim().toUpperCase(), String(c.tenVtvl || '')]));
+  if (Array.isArray(next.C2)) {
+    next.C2 = next.C2.map((r) => {
+      const matchedName = c1NameByCode.get(String(r.maVtvl || '').trim().toUpperCase());
+      return matchedName ? { ...r, tenVtvl: matchedName } : r;
+    });
+  }
   const c3Map = new Map((next.C3 || []).map((r) => [String(r.maVtvl), r]));
   const updatedC3: GenericGridRow[] = c1Positions.map((c, idx) => {
     const vCode = String(c.maVtvl);

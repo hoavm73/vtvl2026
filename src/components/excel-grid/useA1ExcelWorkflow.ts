@@ -23,6 +23,12 @@ interface UseA1ExcelWorkflowParams {
   ) => Promise<boolean>;
 }
 
+export interface A1FeedbackToast {
+  kind: 'success' | 'error' | 'info';
+  title: string;
+  detail?: string;
+}
+
 export function useA1ExcelWorkflow({
   unitCode,
   unitNameVi,
@@ -33,9 +39,17 @@ export function useA1ExcelWorkflow({
 }: UseA1ExcelWorkflowParams) {
   const [cellErrors, setCellErrors] = useState<Record<string, string>>({});
   const [validationBanner, setValidationBanner] = useState<string | null>(null);
+  const [feedbackToast, setFeedbackToast] = useState<A1FeedbackToast | null>(null);
   const [showA1ImportModal, setShowA1ImportModal] = useState(false);
   const [isImportingA1, setIsImportingA1] = useState(false);
   const baselineA1Ref = useRef<GenericGridRow[]>([]);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((toast: A1FeedbackToast) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setFeedbackToast(toast);
+    toastTimerRef.current = setTimeout(() => setFeedbackToast(null), 6000);
+  }, []);
 
   const syncA1Baseline = useCallback((rows: GenericGridRow[] | undefined) => {
     baselineA1Ref.current = Array.isArray(rows) ? rows.map((r) => ({ ...r })) : [];
@@ -81,35 +95,56 @@ export function useA1ExcelWorkflow({
   }, []);
 
   const handleDownloadA1Template = useCallback(() => {
-    void downloadA1ExcelFile({ unitCode, unitNameVi, mode: 'template' });
-  }, [unitCode, unitNameVi]);
+    void downloadA1ExcelFile({ unitCode, unitNameVi, mode: 'template' })
+      .then((fileName) => showToast({ kind: 'info', title: 'Đã tải tệp mẫu trống Biểu A1', detail: `${fileName} (có sẵn bộ lọc 7 cột và danh sách chọn 4 trạng thái).` }))
+      .catch(() => showToast({ kind: 'error', title: 'Không thể tạo tệp mẫu Excel', detail: 'Vui lòng thử lại.' }));
+  }, [unitCode, unitNameVi, showToast]);
 
   const handleExportA1 = useCallback(() => {
-    void downloadA1ExcelFile({ unitCode, unitNameVi, rows: data.A1 || [], mode: 'export' });
-  }, [unitCode, unitNameVi, data.A1]);
+    const count = (data.A1 || []).length;
+    void downloadA1ExcelFile({ unitCode, unitNameVi, rows: data.A1 || [], mode: 'export' })
+      .then((fileName) => showToast({ kind: 'success', title: 'Xuất dữ liệu Biểu A1 thành công', detail: `Đã xuất ${count} nhiệm vụ ra tệp ${fileName}.` }))
+      .catch(() => showToast({ kind: 'error', title: 'Xuất dữ liệu A1 thất bại', detail: 'Vui lòng thử lại.' }));
+  }, [unitCode, unitNameVi, data.A1, showToast]);
 
   const handleConfirmA1Import = useCallback(async (preview: A1ImportPreviewResult): Promise<boolean> => {
     if (isReadOnly) return false;
     const applied = applyA1ImportPreview({ preview, existingA1: data.A1 || [], unitCode });
-    if (!applied.ok) return false;
-    if (applied.addedCount === 0) return true;
+    if (!applied.ok) {
+      showToast({ kind: 'error', title: 'Nhập Excel thất bại', detail: applied.error });
+      return false;
+    }
+    if (applied.addedCount === 0) {
+      showToast({ kind: 'info', title: 'Không có dòng mới cần thêm', detail: `Tất cả ${preview.summary.unchangedCount} dòng trong tệp đã tồn tại và trùng nội dung.` });
+      return true;
+    }
 
     setIsImportingA1(true);
     try {
       const nextWorkbook = recalculateGridFormulas({ ...data, A1: applied.nextA1 }, unitCode, unitNameVi);
       const savedOk = await persistDataForSession(nextWorkbook, true, unitCode);
-      if (!savedOk) return false;
+      if (!savedOk) {
+        showToast({ kind: 'error', title: 'Lưu dữ liệu nhập thất bại', detail: 'Máy chủ từ chối lưu hoặc phiên bản hồ sơ đã thay đổi. Vui lòng kiểm tra thông báo.' });
+        return false;
+      }
       restoreWorkbookData(nextWorkbook, unitCode);
       syncA1Baseline(nextWorkbook.A1);
+      showToast({
+        kind: 'success',
+        title: `Nhập Excel thành công (+${applied.addedCount} nhiệm vụ)`,
+        detail: preview.summary.unchangedCount > 0 ? `Đã bỏ qua ${preview.summary.unchangedCount} dòng đã tồn tại và giữ nguyên liên kết A2.` : 'Toàn bộ nhiệm vụ mới đã được lưu vào hồ sơ đơn vị.'
+      });
       return true;
     } finally {
       setIsImportingA1(false);
     }
-  }, [isReadOnly, data, unitCode, unitNameVi, persistDataForSession, restoreWorkbookData, syncA1Baseline]);
+  }, [isReadOnly, data, unitCode, unitNameVi, persistDataForSession, restoreWorkbookData, syncA1Baseline, showToast]);
 
   return {
     cellErrors,
     validationBanner,
+    feedbackToast,
+    dismissToast: () => setFeedbackToast(null),
     showA1ImportModal,
     setShowA1ImportModal,
     isImportingA1,

@@ -233,6 +233,12 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       <C1AdminLockModal isOpen={showUnlockModal} onClose={() => setShowUnlockModal(false)} onUnlock={unlockC1} />
       <DataQualityReportModal isOpen={showQualityModal} onClose={() => setShowQualityModal(false)} report={qualityReport} onSelectSheet={handleSelectSheetSafe} />
       <A1ImportModal isOpen={a1Flow.showA1ImportModal} unitCode={unitCode} unitNameVi={currentUnit.nameVi} existingA1={data.A1 || []} isSaving={a1Flow.isImportingA1} onClose={() => a1Flow.setShowA1ImportModal(false)} onDownloadTemplate={a1Flow.handleDownloadA1Template} onConfirmImport={a1Flow.handleConfirmA1Import} />
+      {a1Flow.feedbackToast && (
+        <div role="status" className={`fixed bottom-5 right-5 z-[110] max-w-md rounded-xl border px-4 py-3 shadow-lg text-xs flex items-start justify-between gap-3 ${a1Flow.feedbackToast.kind === 'error' ? 'bg-[#fdeceb] border-[#f8b4af] text-[#b42318]' : a1Flow.feedbackToast.kind === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-[#eef5ff] border-[#bfe0fa] text-[#004776]'}`}>
+          <div className="space-y-0.5"><div className="font-bold">{a1Flow.feedbackToast.title}</div>{a1Flow.feedbackToast.detail && <div className="opacity-90">{a1Flow.feedbackToast.detail}</div>}</div>
+          <button type="button" onClick={a1Flow.dismissToast} aria-label="Đóng thông báo" className="font-bold opacity-70 hover:opacity-100 cursor-pointer shrink-0">✕</button>
+        </div>
+      )}
       <WorkforceStructureChartModal
         isOpen={showChartModal} onClose={() => setShowChartModal(false)}
         unitCode={unitCode} unitNameVi={currentUnit.nameVi}

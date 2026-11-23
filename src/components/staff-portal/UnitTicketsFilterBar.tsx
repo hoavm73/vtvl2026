@@ -5,7 +5,7 @@ import { ChevronRight, RotateCcw, Search } from 'lucide-react';
 import { ShadcnSelect, type ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
 import type { PendingSubFilter } from './unit-tickets-cascade-helpers';
 
-export type UnitReviewMode = 'pending' | 'approved' | 'all';
+export type UnitReviewMode = 'pending' | 'approved' | 'draft' | 'all';
 export type { PendingSubFilter };
 export type ApprovedSubFilter = 'ALL' | 'UNMERGED' | 'MERGED';
 
@@ -190,6 +190,30 @@ export function UnitTicketsFilterBar({
               Đã đưa vào Biểu A2 &amp; B1 ({mergedCount})
             </button>
           </div>
+        </div>
+      )}
+
+      {mode === 'draft' && (
+        <div className="p-3 bg-[#f8fafc] border-b border-[#e2e8f0] grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-[#20446c]/70 absolute left-2.5 top-2.5" aria-hidden="true" />
+            <input
+              type="text"
+              aria-label="Tìm phiếu lưu nháp theo tên việc, mã hoặc người kê khai"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Tìm phiếu nháp theo tên việc, mã, người..."
+              className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] focus:border-[#006cee] outline-none"
+            />
+          </div>
+          <select aria-label="Lọc phiếu nháp theo người kê khai" value={ownerFilter} onChange={(e) => onOwnerFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
+            <option value="ALL">Tất cả người kê khai</option>
+            {owners.map((o) => (<option key={o} value={o}>{o}</option>))}
+          </select>
+          <select aria-label="Lọc phiếu nháp theo mã nhiệm vụ Biểu A1" value={missionFilter} onChange={(e) => onMissionFilterChange(e.target.value)} className="p-1.5 rounded-lg border border-[#cbd5e1] bg-white text-[#004776] outline-none">
+            <option value="ALL">Tất cả nhiệm vụ (A1)</option>
+            {missions.map((m) => (<option key={m} value={m}>{m}</option>))}
+          </select>
         </div>
       )}
 

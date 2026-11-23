@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Clock, ExternalLink, RefreshCw, Users } from 'lucide-react';
+import { CheckCircle2, Clock, ExternalLink, FileEdit, RefreshCw, Users } from 'lucide-react';
 import { OperatorSession } from '@/services/telemetry/operator-session';
 import { StaffWorkTicket, toCanonicalStatus } from '@/types/staff-ticket';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
@@ -40,15 +40,17 @@ export function UnitWorkspaceTicketsPanel({
 
   const isLeader = session?.role === 'admin' || session?.role === 'unit_leader';
 
-  const { pendingCount, approvedCount } = useMemo(() => {
+  const { pendingCount, approvedCount, draftCount } = useMemo(() => {
     let pending = 0;
     let approved = 0;
+    let draft = 0;
     for (const t of tickets) {
       const c = toCanonicalStatus(t.status);
       if (c === 'submitted' || c === 'resubmitted' || c === 'changes_requested') pending += 1;
       else if (c === 'approved') approved += 1;
+      else if (c === 'draft') draft += 1;
     }
-    return { pendingCount: pending, approvedCount: approved };
+    return { pendingCount: pending, approvedCount: approved, draftCount: draft };
   }, [tickets]);
 
   const sendPatchAction = async (payload: Record<string, unknown>) => {
@@ -118,6 +120,16 @@ export function UnitWorkspaceTicketsPanel({
             >
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; đưa vào Biểu A2 &amp; B1</span>
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#13653f]">{approvedCount}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'draft'}
+              onClick={() => setMode('draft')}
+              className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[1.8px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'draft' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
+            >
+              <FileEdit className="w-3.5 h-3.5 shrink-0" /><span>Phiếu lưu nháp</span>
+              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${draftCount > 0 ? 'bg-[#64748b] text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{draftCount}</span>
             </button>
           </nav>
 

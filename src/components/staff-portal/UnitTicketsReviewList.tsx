@@ -102,6 +102,11 @@ export function UnitTicketsReviewList({
         return true;
       });
       list.sort((a, b) => (b.approvedAt || b.updatedAt).localeCompare(a.approvedAt || a.updatedAt));
+    } else if (mode === 'draft') {
+      list = list.filter((t) => toCanonicalStatus(t.status) === 'draft');
+      if (ownerFilter !== 'ALL') list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
+      if (missionFilter !== 'ALL') list = list.filter((t) => t.maNhiemVu === missionFilter);
+      list.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
     } else {
       if (statusFilter !== 'ALL') list = list.filter((t) => toCanonicalStatus(t.status) === statusFilter);
       if (ownerFilter !== 'ALL') list = list.filter((t) => (t.ownerName || t.ownerEmail) === ownerFilter);
@@ -125,30 +130,20 @@ export function UnitTicketsReviewList({
     [displayedTickets, safePage, pageSize]
   );
 
-  const emptyText = mode === 'pending'
-    ? 'Hiện tại không có phiếu nào đang chờ duyệt hoặc yêu cầu bổ sung.'
-    : mode === 'approved' ? 'Chưa có phiếu nào được phê duyệt.' : 'Không có phiếu công việc phù hợp điều kiện lọc.';
+  const emptyText = mode === 'pending' ? 'Hiện tại không có phiếu nào đang chờ duyệt hoặc yêu cầu bổ sung.' : mode === 'approved' ? 'Chưa có phiếu nào được phê duyệt.' : mode === 'draft' ? 'Hiện tại không có phiếu nào đang lưu nháp.' : 'Không có phiếu công việc phù hợp điều kiện lọc.';
 
   return (
     <div className="bg-white rounded-[14px] border border-[#e2e8f0] overflow-hidden">
       <UnitTicketsFilterBar
-        mode={mode}
-        search={search} onSearchChange={(val) => { setSearch(val); setPage(1); }}
-        pendingSubFilter={pendingCascade.effectiveStatus}
-        onPendingSubFilterChange={(val) => { setPendingSubFilter(val); setPage(1); }}
-        pendingMissionFilter={pendingCascade.effectiveMission}
-        onPendingMissionFilterChange={handlePendingMissionChange}
-        pendingMissionOptions={pendingCascade.missionOptions}
-        pendingOwnerFilter={pendingCascade.effectiveOwner}
-        onPendingOwnerFilterChange={handlePendingOwnerChange}
-        pendingOwnerOptions={pendingCascade.ownerOptions}
-        pendingStatusOptions={pendingCascade.statusOptions}
-        onResetPendingFilters={handleResetPendingFilters}
+        mode={mode} search={search} onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        pendingSubFilter={pendingCascade.effectiveStatus} onPendingSubFilterChange={(val) => { setPendingSubFilter(val); setPage(1); }}
+        pendingMissionFilter={pendingCascade.effectiveMission} onPendingMissionFilterChange={handlePendingMissionChange}
+        pendingMissionOptions={pendingCascade.missionOptions} pendingOwnerFilter={pendingCascade.effectiveOwner}
+        onPendingOwnerFilterChange={handlePendingOwnerChange} pendingOwnerOptions={pendingCascade.ownerOptions}
+        pendingStatusOptions={pendingCascade.statusOptions} onResetPendingFilters={handleResetPendingFilters}
         approvedSubFilter={approvedSubFilter} onApprovedSubFilterChange={setApprovedSubFilter}
-        unmergedCount={unmergedCount} mergedCount={mergedCount}
-        statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
-        ownerFilter={ownerFilter} onOwnerFilterChange={setOwnerFilter}
-        missionFilter={missionFilter} onMissionFilterChange={setMissionFilter}
+        unmergedCount={unmergedCount} mergedCount={mergedCount} statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
+        ownerFilter={ownerFilter} onOwnerFilterChange={setOwnerFilter} missionFilter={missionFilter} onMissionFilterChange={setMissionFilter}
         owners={owners} missions={missions}
       />
 

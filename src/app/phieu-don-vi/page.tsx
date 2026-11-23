@@ -69,7 +69,7 @@ export default function UnitTicketsManagementPage() {
       else if (cur.role !== 'admin') setSelectedUnit(cur.unitCode);
       else if (!uParam) setSelectedUnit('ALL');
       const mParam = params.get('tab') || params.get('mode');
-      setMode(mParam === 'pending' || mParam === 'approved' || mParam === 'all' ? mParam : 'all');
+      setMode(mParam === 'pending' || mParam === 'approved' || mParam === 'draft' || mParam === 'all' ? mParam : 'all');
     };
     applyUrlParams();
     window.addEventListener('popstate', applyUrlParams);
@@ -106,14 +106,15 @@ export default function UnitTicketsManagementPage() {
     return tickets.filter((t) => (t.unitCode || '').toUpperCase() === uc);
   }, [tickets, isAdmin, selectedUnit]);
 
-  const { pendingCount, approvedCount } = useMemo(() => {
-    let pending = 0, approved = 0;
+  const { pendingCount, approvedCount, draftCount } = useMemo(() => {
+    let pending = 0, approved = 0, draft = 0;
     for (const t of scopedTickets) {
       const c = toCanonicalStatus(t.status);
       if (c === 'submitted' || c === 'resubmitted' || c === 'changes_requested') pending += 1;
       else if (c === 'approved') approved += 1;
+      else if (c === 'draft') draft += 1;
     }
-    return { pendingCount: pending, approvedCount: approved };
+    return { pendingCount: pending, approvedCount: approved, draftCount: draft };
   }, [scopedTickets]);
 
   const sendPatchAction = async (payload: Record<string, unknown>) => {
@@ -160,6 +161,7 @@ export default function UnitTicketsManagementPage() {
           scopedCount={scopedTickets.length}
           pendingCount={pendingCount}
           approvedCount={approvedCount}
+          draftCount={draftCount}
           unitCounts={unitCounts}
           mode={mode}
           loading={loading}

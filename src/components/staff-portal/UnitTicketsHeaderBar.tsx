@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  Building2, CheckCircle2, ClipboardCheck, Clock, FileSpreadsheet, RefreshCw, ShieldCheck, Users
+  Building2, CheckCircle2, ClipboardCheck, Clock, FileEdit, FileSpreadsheet, RefreshCw, ShieldCheck, Users
 } from 'lucide-react';
 import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { UnitReviewMode } from '@/components/staff-portal/UnitTicketsFilterBar';
@@ -18,6 +18,7 @@ interface UnitTicketsHeaderBarProps {
   scopedCount: number;
   pendingCount: number;
   approvedCount: number;
+  draftCount?: number;
   unitCounts: Record<string, number>;
   mode: UnitReviewMode;
   loading: boolean;
@@ -35,6 +36,7 @@ export function UnitTicketsHeaderBar({
   scopedCount,
   pendingCount,
   approvedCount,
+  draftCount = 0,
   unitCounts,
   mode,
   loading,
@@ -112,6 +114,10 @@ export function UnitTicketsHeaderBar({
         <button type="button" role="tab" aria-selected={mode === 'approved'} onClick={() => onSelectMode('approved')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[1.8px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
           <CheckCircle2 className="w-4 h-4 shrink-0" /><span>Đã duyệt &amp; đưa vào Biểu A2 &amp; B1</span>
           <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${approvedCount > 0 ? 'bg-emerald-600 text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{approvedCount}</span>
+        </button>
+        <button type="button" role="tab" aria-selected={mode === 'draft'} onClick={() => onSelectMode('draft')} className={`inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-bold border-b-[1.8px] transition-colors whitespace-nowrap cursor-pointer ${mode === 'draft' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476b8e] hover:text-[#004776]'}`}>
+          <FileEdit className="w-4 h-4 shrink-0" /><span>Phiếu lưu nháp</span>
+          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-extrabold ${draftCount > 0 ? 'bg-[#64748b] text-white' : 'bg-[#e1edf8] text-[#20446c]'}`}>{draftCount}</span>
         </button>
       </nav>
     </>

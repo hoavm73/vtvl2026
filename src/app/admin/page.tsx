@@ -124,7 +124,7 @@ export default function AdminPage() {
         if (!sessRes.ok || !accRes.ok) setStatsError('Không thể tải đủ số liệu tổng hợp.');
         if (migRes.ok) {
           const migJson = await migRes.json();
-          if (migJson?.ok) setMigrationSummary(`Đã đồng bộ CSDL (${migJson.sqlMigrations?.length || 0} SQL / ${migJson.prismaMigrations?.length || 0} Prisma)`);
+          if (migJson?.ok) setMigrationSummary('Đã đồng bộ CSDL');
         }
       }
     } catch {

@@ -185,8 +185,6 @@ export default function NghiepVuDonViPage() {
         </div>
       </header>
 
-      <WorkbookReviewProgressStepper status={summary?.reviewStatus} statusLabel={summary?.reviewStatusLabel} submittedBy={summary?.submittedBy} submittedAt={summary?.submittedAt} reviewerEmail={summary?.reviewerEmail} reviewedAt={summary?.reviewedAt} reviewNote={summary?.reviewNote} loading={loading} />
-
       <div className="sm:hidden print:hidden">
         <label htmlFor="unit-workspace-mobile-tab" className="block text-xs font-semibold text-[#20446c] mb-1">Phân hệ hồ sơ đơn vị</label>
         <select
@@ -221,16 +219,19 @@ export default function NghiepVuDonViPage() {
       </nav>
 
       {activeTab === 'overview' && (
-        <UnitProfileOverviewPanel
-          unitCode={activeUnit.code}
-          unitNameVi={activeUnit.nameVi}
-          groupLabel={groupLabel}
-          summary={summary}
-          loading={loading}
-          error={error}
-          recentEvents={recentEvents}
-          onSelectTab={(t) => handleSelectTab(t)}
-        />
+        <>
+          <WorkbookReviewProgressStepper status={summary?.reviewStatus} statusLabel={summary?.reviewStatusLabel} submittedBy={summary?.submittedBy} submittedAt={summary?.submittedAt} reviewerEmail={summary?.reviewerEmail} reviewedAt={summary?.reviewedAt} reviewNote={summary?.reviewNote} loading={loading} />
+          <UnitProfileOverviewPanel
+            unitCode={activeUnit.code}
+            unitNameVi={activeUnit.nameVi}
+            groupLabel={groupLabel}
+            summary={summary}
+            loading={loading}
+            error={error}
+            recentEvents={recentEvents}
+            onSelectTab={(t) => handleSelectTab(t)}
+          />
+        </>
       )}
 
       {activeTab === 'workbook' && (

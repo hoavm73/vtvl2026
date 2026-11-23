@@ -156,7 +156,6 @@ runTest('10. Kiểm tra Rule 8 (< 300 dòng) trên tất cả các tệp mã ngu
     'src/app/api/admin/units/route.ts',
     'src/app/api/auth/login/route.ts',
     'src/app/api/admin/auth/route.ts',
-    'src/components/auth/AdminLoginModal.tsx',
     'src/app/api/sync/split/route.ts',
     'src/app/api/sync/audit/route.ts'
   ];

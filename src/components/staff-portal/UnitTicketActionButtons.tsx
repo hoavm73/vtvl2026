@@ -30,7 +30,7 @@ export function UnitTicketActionButtons({
   onApproveTicket, onRequestChanges, onMergeTicket, onRevokeApproval, onCancelTicket
 }: UnitTicketActionButtonsProps) {
   const canReview = isLeader && (canonical === 'submitted' || canonical === 'resubmitted');
-  const canMerge = isLeader && canonical === 'approved';
+  const canMerge = isLeader && canonical === 'approved' && !t.isMergedToB1B2;
   const canModerate = isLeader;
 
   return (
@@ -78,14 +78,10 @@ export function UnitTicketActionButtons({
         <button
           type="button"
           onClick={() => onMergeTicket(t)}
-          className={`h-8 px-2.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors whitespace-nowrap shrink-0 ${
-            t.isMergedToB1B2
-              ? 'border border-[#a7f3d0] bg-[#e6f9f1] text-[#008f5d] hover:bg-[#d1fae5]'
-              : 'bg-[#006cee] hover:bg-[#005ecc] text-white'
-          }`}
+          className="h-8 px-2.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shadow-2xs transition-colors whitespace-nowrap shrink-0 bg-[#006cee] hover:bg-[#005ecc] text-white"
         >
           <Layers className="w-3.5 h-3.5 shrink-0" />
-          <span>{t.isMergedToB1B2 ? 'Cập nhật gộp B1/B2' : 'Gộp vào B1/B2'}</span>
+          <span>Đưa vào Biểu A2 &amp; B1</span>
         </button>
       )}
 

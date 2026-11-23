@@ -514,21 +514,21 @@ async function runBrowserE2E() {
       }),
     });
 
-    // 6. Switch browser to Leader on /phieu-don-vi?tab=all, check "Gộp vào B1/B2" label & open Detail Modal -> "Thay đổi so với bản trước" (v1/v2/v3 diff)
+    // 6. Switch browser to Leader on /phieu-don-vi?tab=all, check "Đưa vào Biểu A2 & B1" label & open Detail Modal -> "Thay đổi so với bản trước" (v1/v2/v3 diff)
     await switchBrowserRole(qaLeader, '/phieu-don-vi?tab=all');
     const leaderApprovedDom = await waitForCondition(async () => {
       return await cdp.evalJs(`(() => {
         if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const buttons = Array.from(document.querySelectorAll('button'));
-        const hasMergeBtn = buttons.some((b) => b.textContent.includes('Gộp vào B1/B2'));
-        const hasWrongBtn = buttons.some((b) => b.textContent.includes('Gộp vào A2 & B1'));
+        const hasMergeBtn = buttons.some((b) => b.textContent.includes('Đưa vào Biểu A2 & B1'));
+        const hasWrongBtn = buttons.some((b) => b.textContent.includes('Gộp vào B1/B2'));
         return hasMergeBtn && !hasWrongBtn ? { hasMergeBtn, hasWrongBtn } : null;
       })()`);
     }, 12000);
 
     assert(
       Boolean(leaderApprovedDom && leaderApprovedDom.hasMergeBtn && !leaderApprovedDom.hasWrongBtn),
-      'DOM hiển thị đúng nhãn nút "Gộp vào B1/B2" (đã khôi phục nhãn gốc, không còn "Gộp vào A2 & B1")'
+      'DOM hiển thị đúng nhãn nút "Đưa vào Biểu A2 & B1" (không còn gây hiểu lầm B1/B2)'
     );
 
     // Click "Xem chi tiết" button in DOM, then click "Thay đổi so với bản trước" tab inside StaffTicketDetailModal
@@ -585,10 +585,10 @@ async function runBrowserE2E() {
       return await cdp.evalJs(`(() => {
         if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const text = document.body.innerText || '';
-        return text.includes('Đã gộp B1/B2');
+        return text.includes('Đã đưa vào Biểu A2 & B1');
       })()`);
     }, 12000);
-    assert(Boolean(mergedBadgeDom), 'Sau khi gộp và reload trình duyệt, phiếu hiển thị huy hiệu "Đã gộp B1/B2"');
+    assert(Boolean(mergedBadgeDom), 'Sau khi gộp và reload trình duyệt, phiếu hiển thị huy hiệu "Đã đưa vào Biểu A2 & B1"');
 
     // Switch back to personal /phieu-cong-viec and click "Xem trước bản in A4"
     await switchBrowserRole(qaStaff, '/phieu-cong-viec');
@@ -612,10 +612,10 @@ async function runBrowserE2E() {
       return await cdp.evalJs(`(() => {
         if (!document.body || window.location.pathname !== '/phieu-don-vi') return null;
         const text = document.body.innerText || '';
-        return text.includes('Thiết kế bộ nhận diện sự kiện tuyển sinh 2026') && text.includes('Đã gộp B1/B2');
+        return text.includes('Thiết kế bộ nhận diện sự kiện tuyển sinh 2026') && text.includes('Đã đưa vào Biểu A2 & B1');
       })()`);
     }, 12000);
-    assert(Boolean(adminViewDom), 'Admin mở trình duyệt kiểm tra chéo đơn vị QTTHTT thấy đầy đủ phiếu và trạng thái "Đã gộp B1/B2"');
+    assert(Boolean(adminViewDom), 'Admin mở trình duyệt kiểm tra chéo đơn vị QTTHTT thấy đầy đủ phiếu và trạng thái "Đã đưa vào Biểu A2 & B1"');
 
   } finally {
     if (cdp) cdp.close();

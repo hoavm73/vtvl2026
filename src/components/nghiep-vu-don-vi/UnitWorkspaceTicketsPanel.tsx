@@ -116,7 +116,7 @@ export function UnitWorkspaceTicketsPanel({
               onClick={() => setMode('approved')}
               className={`inline-flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border-b-[1.8px] whitespace-nowrap cursor-pointer transition-colors ${mode === 'approved' ? 'border-[#FD8C73] text-[#006cee]' : 'border-transparent text-[#476885] hover:text-[#004776]'}`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; Gộp B1/B2</span>
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>Đã duyệt &amp; đưa vào Biểu A2 &amp; B1</span>
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#13653f]">{approvedCount}</span>
             </button>
           </nav>

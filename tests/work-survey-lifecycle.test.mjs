@@ -115,12 +115,12 @@ runTest('Ca 4: Biểu mẫu kiểm tra bắt buộc nhập Giải trình nội d
   assert.ok(pageCode.includes("if (isResubmit && !t.lastChangeSummary?.trim()) missing.push('Giải trình nội dung đã cập nhật / chỉnh sửa')"), 'Trang phiếu công việc phải kiểm tra Giải trình khi bấm Nộp lại');
 });
 
-runTest('Ca 5: Modal Xem trước gộp (StaffTicketMergePreviewModal) giữ nhãn nút "Gộp vào B1/B2" và mô tả trung thực Biểu A2 & B1', () => {
-  assert.ok(mergePreviewCode.includes('Gộp vào B1/B2 — Xem trước dữ liệu') && mergePreviewCode.includes("'Gộp vào B1/B2'"), 'Nút và tiêu đề modal giữ nhãn cũ "Gộp vào B1/B2"');
+runTest('Ca 5: Modal Xem trước gộp (StaffTicketMergePreviewModal) hiển thị nhãn chuẩn "Đưa vào Biểu A2 & B1" và mô tả trung thực Biểu A2 & B1', () => {
+  assert.ok(mergePreviewCode.includes('Đưa vào Biểu A2 &amp; B1 — Xem trước dữ liệu') && mergePreviewCode.includes("'Đưa vào Biểu A2 & B1'"), 'Nút và tiêu đề modal hiển thị nhãn chuẩn "Đưa vào Biểu A2 & B1"');
   assert.ok(mergePreviewCode.includes('1. Bản ghi vào Biểu A2 (Danh mục công việc & sản phẩm)'), 'Mục 1 của modal phải ghi rõ Biểu A2, không gọi nhầm A2 là B2');
   assert.ok(mergePreviewCode.includes('2. Bản ghi vào Biểu B1 (Thống kê sản phẩm & định mức giờ)'), 'Mục 2 của modal phải ghi rõ Biểu B1');
   assert.ok(mergePreviewCode.includes('3. Liên kết Biểu B2 (Tổng hợp nhật ký khảo sát giờ):'), 'Mục 3 giải thích rõ điều kiện liên kết Biểu B2 từ B2_CT');
-  assert.ok(reviewListCode.includes('Gộp vào B1/B2') && reviewListCode.includes('Đã gộp B1/B2') && myListCode.includes('Đã gộp B1/B2'), 'Nút và badge danh sách giữ nhãn "Gộp vào B1/B2" / "Đã gộp B1/B2"');
+  assert.ok(reviewListCode.includes('Đưa vào Biểu A2 &amp; B1') && reviewListCode.includes('Đã đưa vào Biểu A2 &amp; B1') && myListCode.includes('Đã đưa vào Biểu A2 &amp; B1'), 'Nút và badge danh sách hiển thị nhãn chuẩn "Đưa vào Biểu A2 & B1" / "Đã đưa vào Biểu A2 & B1"');
 });
 
 runTest('Ca 8: Nhiều cán bộ cùng kê khai một mã công việc — không ghi đè mất kê khai và không cộng trùng khi gộp lại', () => {

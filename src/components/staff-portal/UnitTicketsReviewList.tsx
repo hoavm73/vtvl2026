@@ -258,7 +258,7 @@ export function UnitTicketsReviewList({
                   <div className="xl:w-auto xl:min-w-[440px] shrink-0 flex flex-col xl:items-end justify-between gap-2.5 pt-3 xl:pt-0 border-t xl:border-t-0 xl:border-l border-[#e8eff7] xl:pl-4">
                     <div className="flex flex-wrap items-center xl:justify-end gap-1.5">
                       <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${meta.pillCls}`}><StatusIcon className="w-3 h-3" />{meta.label}</span>
-                      {t.isMergedToB1B2 && <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">Đã gộp B1/B2</span>}
+                      {t.isMergedToB1B2 && <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">Đã đưa vào Biểu A2 &amp; B1</span>}
                     </div>
                     <TicketApprovalProgress ticket={t} />
                     <UnitTicketActionButtons

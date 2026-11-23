@@ -94,7 +94,7 @@ export function StaffMyTicketsList({
                     </span>
                     {t.isMergedToB1B2 && (
                       <span className="text-[11px] font-bold text-[#008f5d] bg-[#e6f9f1] px-2.5 py-0.5 rounded-full border border-[#a7f3d0]">
-                        Đã gộp B1/B2
+                        Đã đưa vào Biểu A2 &amp; B1
                       </span>
                     )}
                   </div>

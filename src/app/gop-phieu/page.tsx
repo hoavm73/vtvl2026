@@ -24,7 +24,7 @@ export default function GopPhieuRedirectPage() {
       <div className="min-w-0 rounded-[14px] border border-[#e2e8f0] bg-white p-6 space-y-3 text-center">
         <h1 className="text-base font-bold text-[#004776]">Chuyển hướng sang Quản lý &amp; Gộp phiếu đơn vị</h1>
         <p className="text-xs sm:text-sm text-[#476885]">
-          Thao tác gộp phiếu công việc đã duyệt vào Biểu B1/B2 được thực hiện thống nhất tại phân hệ Quản lý phiếu đơn vị.
+          Thao tác đưa phiếu công việc đã duyệt vào Biểu A2 &amp; B1 được thực hiện thống nhất tại phân hệ Quản lý phiếu đơn vị.
         </p>
         <div className="pt-1">
           <Link href={targetUrl} className="inline-flex items-center gap-1.5 min-h-[40px] px-4 rounded-[10px] bg-[#006cee] hover:bg-[#005ecc] text-white text-xs font-semibold">

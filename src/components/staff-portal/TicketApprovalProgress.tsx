@@ -151,7 +151,7 @@ function buildApprovalSteps(ticket: StaffWorkTicket): ProgressStep[] {
   const step4: ProgressStep = {
     key: 'merge',
     num: 4,
-    label: isMerged ? 'Đã gộp' : 'Gộp B1/B2',
+    label: isMerged ? 'Đã vào A2 & B1' : 'Vào A2 & B1',
     sub: isMerged ? formatShortDate(ticket.mergedAt, true) || 'Đồng bộ' : isApproved ? 'Sẵn sàng' : 'Sau duyệt',
     state: isMerged ? 'done' : isApproved ? 'active' : 'upcoming',
     Icon: Layers

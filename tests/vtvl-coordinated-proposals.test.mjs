@@ -412,7 +412,7 @@ async function main() {
     const proposedTab = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedTasksTab.tsx'), 'utf8');
     const coordHelpers = fs.readFileSync(path.join(root, 'src/services/tickets/vtvl-coordination-helpers.ts'), 'utf8');
     const proposedModal = fs.readFileSync(path.join(root, 'src/components/staff-portal/ProposedCoordinatedDetailModal.tsx'), 'utf8');
-    assert.ok(mergeModal.includes('Gộp vào B1/B2'), 'Phải giữ nguyên nhãn "Gộp vào B1/B2"');
+    assert.ok(mergeModal.includes('Đưa vào Biểu A2 & B1'), 'Phải hiển thị nhãn chuẩn "Đưa vào Biểu A2 & B1"');
     assert.ok(modernForm.includes('<ShadcnSelect'), 'Phải giữ ShadcnSelect ở các trường chọn');
     assert.ok(proposedTab.includes('PROPOSED_TAB_EMPTY_MESSAGE'));
     assert.ok(coordHelpers.includes('Chưa có nhiệm vụ được đề xuất phối hợp với vị trí việc làm của bạn.'));

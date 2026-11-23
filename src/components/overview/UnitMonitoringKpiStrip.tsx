@@ -76,7 +76,7 @@ export function UnitMonitoringKpiStrip({
     },
     {
       filterKey: 'has_merged',
-      label: 'Đã gộp B1/B2',
+      label: 'Đã đưa vào Biểu A2 & B1',
       value: totals.mergedCount,
       accentText: 'text-[#6d28d9]',
       dotColor: 'bg-[#7c3aed]',
@@ -180,7 +180,7 @@ export function UnitMonitoringKpiStrip({
             <div className="w-full h-2 rounded-full overflow-hidden bg-[#e2e8f0] flex">
               {totals.totalTickets > 0 && (
                 <>
-                  {mergedOnly > 0 && <div className="h-full bg-[#7c3aed]" style={{ width: pct(mergedOnly) }} title={`Đã gộp B1/B2: ${mergedOnly}`} />}
+                  {mergedOnly > 0 && <div className="h-full bg-[#7c3aed]" style={{ width: pct(mergedOnly) }} title={`Đã đưa vào Biểu A2 & B1: ${mergedOnly}`} />}
                   {approvedUnmerged > 0 && <div className="h-full bg-[#00b87a]" style={{ width: pct(approvedUnmerged) }} title={`Đã duyệt chờ gộp: ${approvedUnmerged}`} />}
                   {totals.submittedCount > 0 && <div className="h-full bg-[#006cee]" style={{ width: pct(totals.submittedCount) }} title={`Gửi chờ duyệt: ${totals.submittedCount}`} />}
                   {totals.changesRequestedCount > 0 && <div className="h-full bg-[#f99c00]" style={{ width: pct(totals.changesRequestedCount) }} title={`Yêu cầu bổ sung: ${totals.changesRequestedCount}`} />}
@@ -189,7 +189,7 @@ export function UnitMonitoringKpiStrip({
               )}
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-[#20446c]">
-              <span className="inline-flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#7c3aed]" /> Đã gộp B1/B2</span>
+              <span className="inline-flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#7c3aed]" /> Đã đưa vào Biểu A2 &amp; B1</span>
               <span className="inline-flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#00b87a]" /> Đã duyệt</span>
               <span className="inline-flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#006cee]" /> Chờ duyệt</span>
               <span className="inline-flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#f99c00]" /> Cần bổ sung</span>

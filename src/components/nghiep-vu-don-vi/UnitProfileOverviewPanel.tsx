@@ -137,7 +137,7 @@ export function UnitProfileOverviewPanel({
         <Link href={`/phieu-don-vi?unitCode=${encodeURIComponent(unitCode)}`} className="p-3 rounded-[10px] hover:bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between gap-2 transition-colors">
           <div>
             <div className="text-xs font-bold text-[#004776] flex items-center gap-1"><ClipboardCheck className="w-3.5 h-3.5 text-[#006cee]" /><span>Duyệt &amp; gộp phiếu đơn vị</span></div>
-            <div className="text-[11px] text-[#476885] mt-0.5">Quản lý phiếu chờ duyệt và gộp vào B1/B2</div>
+            <div className="text-[11px] text-[#476885] mt-0.5">Quản lý phiếu chờ duyệt và đưa vào Biểu A2 &amp; B1</div>
           </div>
           <ArrowRight className="w-4 h-4 text-[#006cee] shrink-0" />
         </Link>

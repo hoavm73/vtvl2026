@@ -92,7 +92,7 @@ export function StaffTicketDetailModal({
                 )}
                 {ticket.isMergedToB1B2 && (
                   <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    Đã gộp B1/B2
+                    Đã đưa vào Biểu A2 &amp; B1
                   </span>
                 )}
               </div>

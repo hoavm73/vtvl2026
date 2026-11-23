@@ -41,7 +41,7 @@ const ACTION_META: Record<ApprovalActionType, { label: string; dotCls: string; b
   REQUEST_CHANGES: { label: 'Yêu cầu bổ sung / phản hồi', dotCls: 'bg-[#f99c00] ring-[#fff4e5]', badgeCls: 'bg-[#fff8eb] text-[#b45309]', boxCls: 'bg-[#fff8eb] border-[#fcd34d]' },
   RESUBMIT: { label: 'Nộp lại sau chỉnh sửa', dotCls: 'bg-[#7c3aed] ring-[#f3e8ff]', badgeCls: 'bg-[#f5f3ff] text-[#6d28d9]', boxCls: 'bg-[#f5f3ff] border-[#ddd6fe]' },
   APPROVE: { label: 'Phê duyệt phiếu', dotCls: 'bg-[#00b87a] ring-[#e6f9f1]', badgeCls: 'bg-[#e6f9f1] text-[#008f5d]', boxCls: 'bg-[#e6f9f1] border-[#a7f3d0]' },
-  MERGE_TO_SHEETS: { label: 'Gộp vào Biểu A2/B1/B2', dotCls: 'bg-[#008f5d] ring-[#e6f9f1]', badgeCls: 'bg-[#e6f9f1] text-[#008f5d]', boxCls: 'bg-[#f1f9f5] border-[#a7f3d0]' },
+  MERGE_TO_SHEETS: { label: 'Đưa vào Biểu A2 & B1', dotCls: 'bg-[#008f5d] ring-[#e6f9f1]', badgeCls: 'bg-[#e6f9f1] text-[#008f5d]', boxCls: 'bg-[#f1f9f5] border-[#a7f3d0]' },
   REVOKE_APPROVAL: { label: 'Thu hồi phê duyệt (yêu cầu sửa lại)', dotCls: 'bg-[#d97706] ring-[#fff4e5]', badgeCls: 'bg-[#fff8eb] text-[#b45309]', boxCls: 'bg-[#fff8eb] border-[#fcd34d]' },
   CANCEL_TICKET: { label: 'Hủy / xóa phiếu kê khai sai', dotCls: 'bg-[#e11d48] ring-[#ffe4e6]', badgeCls: 'bg-rose-50 text-rose-700', boxCls: 'bg-rose-50 border-rose-200' }
 };
@@ -153,7 +153,7 @@ export function TicketApprovalSummaryStrip({
             </div>
             {ticket.isMergedToB1B2 && (mergerLabel || ticket.mergedAt) && (
               <div className="flex flex-wrap items-center gap-x-1.5 text-[10.5px] text-[#008f5d] pl-5 tabular-nums">
-                <span>Gộp B1/B2:</span>
+                <span>Đưa vào Biểu A2 &amp; B1:</span>
                 {mergerLabel && <strong className="font-semibold">{mergerLabel}</strong>}
                 {ticket.mergedAt && <span>· {formatApprovalDateTime(ticket.mergedAt)}</span>}
               </div>

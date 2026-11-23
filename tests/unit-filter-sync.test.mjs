@@ -118,7 +118,7 @@ test('TC9: UnitTicketsFilterBar và UnitWorkspaceTicketsPanel bỏ tiêu đề l
   assert.ok(!filterBar.includes('renderHeader'), 'UnitTicketsFilterBar không được render lại dòng tiêu đề lặp dưới thanh tab');
   assert.ok(filterBar.includes('Yêu cầu bổ sung'), 'Vẫn giữ bộ lọc con Yêu cầu bổ sung');
   assert.ok(!reviewList.includes('showUnitFilter='), 'UnitTicketsReviewList không truyền bộ lọc đơn vị lặp xuống filter bar');
-  assert.ok(panel.includes('Toàn bộ phiếu đơn vị') && panel.includes('Chờ duyệt &amp; Yêu cầu bổ sung') && panel.includes('Đã duyệt &amp; Gộp B1/B2'), 'UnitWorkspaceTicketsPanel giữ nguyên 3 tab điều hướng ở trên');
+  assert.ok(panel.includes('Toàn bộ phiếu đơn vị') && panel.includes('Chờ duyệt &amp; Yêu cầu bổ sung') && panel.includes('Đã duyệt &amp; đưa vào Biểu A2 &amp; B1'), 'UnitWorkspaceTicketsPanel giữ nguyên 3 tab điều hướng ở trên');
   assert.ok(!panel.includes('Phiếu công việc đơn vị [{unitCode}]'), 'Đã bỏ khối tiêu đề mô tả thừa trong UnitWorkspaceTicketsPanel');
   assert.ok(headerRow.includes('hideUnitSelector ? ('), 'WorkspaceHeaderRow dùng h2 khi nhúng để giữ đúng 1 thẻ h1 trên trang');
 });

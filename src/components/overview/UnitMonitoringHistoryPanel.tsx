@@ -33,7 +33,7 @@ const TICKET_TABS = [
   { id: 'pending', label: 'Chờ duyệt' },
   { id: 'changes_requested', label: 'Cần bổ sung' },
   { id: 'approved', label: 'Đã duyệt' },
-  { id: 'merged', label: 'Đã gộp B1/B2' },
+  { id: 'merged', label: 'Đã đưa vào Biểu A2 & B1' },
   { id: 'draft', label: 'Lưu nháp' }
 ] as const;
 
@@ -166,7 +166,7 @@ export function UnitMonitoringHistoryPanel({
                           <BadgeIcon className="w-3 h-3" /> {meta.label}
                         </span>
                         {t.isMergedToB1B2 && (
-                          <span className="text-[11px] font-semibold text-[#008f5d] bg-[#e6f9f1] px-2 py-0.5 rounded-full">Đã gộp B1/B2</span>
+                          <span className="text-[11px] font-semibold text-[#008f5d] bg-[#e6f9f1] px-2 py-0.5 rounded-full">Đã đưa vào Biểu A2 &amp; B1</span>
                         )}
                         {t.isTestData && (
                           <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Dữ liệu thử</span>

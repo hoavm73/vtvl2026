@@ -184,10 +184,10 @@ export function UnitTicketsFilterBar({
               Tất cả ({unmergedCount + mergedCount})
             </button>
             <button type="button" onClick={() => onApprovedSubFilterChange('UNMERGED')} className={pillCls(approvedSubFilter === 'UNMERGED')}>
-              Chưa gộp B1/B2 ({unmergedCount})
+              Chưa đưa vào Biểu A2 &amp; B1 ({unmergedCount})
             </button>
             <button type="button" onClick={() => onApprovedSubFilterChange('MERGED')} className={pillCls(approvedSubFilter === 'MERGED')}>
-              Đã gộp B1/B2 ({mergedCount})
+              Đã đưa vào Biểu A2 &amp; B1 ({mergedCount})
             </button>
           </div>
         </div>

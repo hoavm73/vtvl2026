@@ -195,7 +195,7 @@ export function UnitMonitoringTable({
               <th className="py-2.5 px-2 text-center">Gửi duyệt</th>
               <th className="py-2.5 px-2 text-center">Cần sửa</th>
               <th className="py-2.5 px-2 text-center">Đã duyệt</th>
-              <th className="py-2.5 px-2 text-center">Đã gộp B1/B2</th>
+              <th className="py-2.5 px-2 text-center">Đã đưa vào A2 &amp; B1</th>
               <th className="py-2.5 px-2.5 text-center">Biểu đã nhập</th>
               <th className="py-2.5 px-2.5 text-center">Nhân sự</th>
               <th className="py-2.5 px-4 text-right">Thao tác</th>

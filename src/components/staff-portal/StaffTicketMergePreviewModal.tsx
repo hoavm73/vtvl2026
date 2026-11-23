@@ -32,7 +32,7 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-[#0072BC]" />
             <h2 className="text-base font-bold text-[#004776]">
-              Gộp vào B1/B2 — Xem trước dữ liệu [{ticket.maCongViec}]
+              Đưa vào Biểu A2 &amp; B1 — Xem trước dữ liệu [{ticket.maCongViec}]
             </h2>
           </div>
           <button type="button" onClick={onClose} className="p-1 rounded-lg text-[#64748b] hover:text-[#004776] cursor-pointer">
@@ -103,7 +103,7 @@ export function StaffTicketMergePreviewModal({ ticket, onClose, onConfirmMerge }
             className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{merging ? 'Đang gộp...' : 'Gộp vào B1/B2'}</span>
+            <span>{merging ? 'Đang đưa vào...' : 'Đưa vào Biểu A2 & B1'}</span>
           </button>
         </div>
       </div>

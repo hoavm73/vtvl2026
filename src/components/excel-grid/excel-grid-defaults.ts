@@ -92,23 +92,35 @@ function buildTcnsDefaultWorkbook(unitNameVi: string): Record<ExcelSheetKey, Gen
     const prof = TCNS_C2_PROFILES[String(c.maVtvl)];
     if (!prof) return createC2RowFromPl1(c, idx);
     return {
-      id: `c2-${idx + 1}`, maVtvl: c.maVtvl, tenVtvl: c.tenVtvl,
-      bacNgheNghiep: String(c.maVtvl).includes('QL') ? 'Không áp dụng bậc riêng' : 'Bậc 3 (Chuyên viên)',
-      nhomNangLuc: 'Năng lực chuyên môn', tenNangLuc: prof.responsibility.slice(0, 45) + '...',
-      capDoYeuCau: String(c.maVtvl).includes('QL') ? 'Cấp độ 4' : 'Cấp độ 3',
-      moTaChiTiet: `${prof.general} | ${prof.professional}`
+      id: `c2-${idx + 1}`,
+      maVtvl: c.maVtvl,
+      tenVtvl: c.tenVtvl,
+      trachNhiem: prof.responsibility,
+      nangLucChung: prof.general,
+      chuyenMon: prof.professional,
+      lanhDao: prof.leadership,
+      canCu: prof.basis,
+      nguonBanMoTa: prof.source
     };
   });
 
-  const d1Rows: GenericGridRow[] = c1Rows.map((c, idx) => ({
-    id: `d1-${idx + 1}`, hoTen: `Cán bộ ${idx + 1} (${unitNameVi})`, maVtvl: c.maVtvl,
-    ngaySinh: '1985-05-15', gioiTinh: idx % 2 === 0 ? 'Nam' : 'Nữ',
-    trinhDo: String(c.maVtvl).startsWith('QL') ? 'Tiến sĩ' : 'Thạc sĩ',
-    ngachVienChuc: String(c.maVtvl).startsWith('QL') ? 'Chuyên viên chính' : 'Chuyên viên',
-    maSoNgach: String(c.maVtvl).startsWith('QL') ? '01.002' : '01.003',
-    heSoLuong: String(c.maVtvl).startsWith('QL') ? 4.74 : 3.0,
-    loaiHopDong: 'Viên chức không thời hạn', ghiChu: 'Chốt ngày 30/9/2026'
-  }));
+  const d1Rows: GenericGridRow[] = c1Rows.map((c, idx) => {
+    const stdHours = Number(c.gioChuanPp2) || 1904;
+    return {
+      id: `d1-${idx + 1}`,
+      maNguonLuc: `${unitCode}-NL${String(idx + 1).padStart(3, '0')}`,
+      maVtvl: c.maVtvl,
+      loaiNhanLuc: String(c.loaiNhanLuc || 'Viên chức'),
+      gioQuyDoiNam: stdHours,
+      gioChoVtvl: stdHours,
+      gioViecKhac: 0,
+      noiTinhBc: unitNameVi,
+      nguon: 'Danh sách nhân sự chốt ngày 30/9/2026',
+      trangThai: 'Đã kiểm chứng',
+      canhBao: 'Đạt',
+      gioRieng: ''
+    };
+  });
 
   const c3Rows: GenericGridRow[] = c1Rows.map((c, idx) => {
     const vCode = String(c.maVtvl);

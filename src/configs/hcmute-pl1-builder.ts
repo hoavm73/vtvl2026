@@ -53,22 +53,19 @@ export function createC2RowFromPl1(c1Row: GenericGridRow, index: number): Generi
   const maVtvl = String(c1Row.maVtvl || '');
   const item = findPl1Item(maVtvl);
   const isQl = item?.pl1Code.startsWith('QL') ?? maVtvl.includes('QL');
+  const posName = item?.positionName || String(c1Row.tenVtvl || maVtvl);
+  const careerLvl = getPl1CareerLevel(item?.pl1Code || maVtvl);
 
   return {
     id: `c2-pl1-${index + 1}`,
     maVtvl: c1Row.maVtvl,
-    tenVtvl: c1Row.tenVtvl,
-    bacNgheNghiep: getPl1CareerLevel(item?.pl1Code || maVtvl),
-    nhomNangLuc: isQl
-      ? 'Năng lực quản lý'
-      : item?.groupRoman === 'II'
-      ? 'Năng lực chuyên môn'
-      : 'Năng lực chung',
-    tenNangLuc: `Khung năng lực VTVL ${item?.positionName || c1Row.tenVtvl}`,
-    capDoYeuCau: isQl ? 'Cấp độ 4' : 'Cấp độ 3',
-    moTaChiTiet: `Yêu cầu năng lực theo QĐ phê duyệt VTVL và Bậc nghề nghiệp sử dụng: ${getPl1CareerLevel(
-      item?.pl1Code || maVtvl
-    )}. Căn cứ Điều 8 & PL IV NĐ 232/2026/NĐ-CP.`
+    tenVtvl: posName,
+    trachNhiem: `Thực hiện chức trách, nhiệm vụ của vị trí ${posName} theo phân công của đơn vị.`,
+    nangLucChung: 'Đạo đức nghề nghiệp, tuân thủ quy định pháp luật, giao tiếp phối hợp và ứng dụng công nghệ số.',
+    chuyenMon: `Đáp ứng năng lực chuyên môn vị trí ${posName} (${careerLvl}).`,
+    lanhDao: isQl ? 'Định hướng, điều hành, phân công và giải trình trong phạm vi quản lý.' : 'Không áp dụng',
+    canCu: 'Điều 8 và PL IV NĐ 232/2026/NĐ-CP; QĐ 2266/QĐ-ĐHCNKT.',
+    nguonBanMoTa: `BMTCV&KNL ${item?.pl1Code || maVtvl} (Hồ sơ thẩm định VTVL 2026)`
   };
 }
 

@@ -10,17 +10,17 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
     sheetNumberPrefix: '7',
     sheetName: '7. C2_NangLuc',
     shortLabel: '7. C2_NangLuc',
-    title: 'Biểu C2_ Năng lực (Bản mô tả vị trí việc làm & Khung năng lực Bậc 1–5)',
-    guideDesc: 'Biểu 7 (Bước 5 nghiệp vụ): Khung năng lực chuẩn theo Nghị định 232/2026/NĐ-CP và Thông tư 31/2026/TT-BGDĐT phân bổ Bậc 1–5 cho từng VTVL.',
-    ruleHint: 'Cột C quy định Bậc nghề nghiệp (Bậc 1 đến Bậc 5) gắn ngạch viên chức tương ứng.',
+    title: 'Biểu C2_ Mô tả năng lực (Bản mô tả VTVL & Khung năng lực theo chuẩn HD07)',
+    guideDesc: 'Biểu 7 (Bước 5 nghiệp vụ): Mỗi VTVL khai đúng 1 dòng gồm 7 cột chuẩn HD07: Mã VTVL, Trách nhiệm, Năng lực chung, Chuyên môn, Lãnh đạo, Căn cứ và Nguồn bản mô tả.',
+    ruleHint: 'Mỗi Mã VTVL tại Biểu 3. C1_VTVL tương ứng 1 dòng mô tả tại Biểu 7. C2_NangLuc (ghi rõ Bậc nghề nghiệp 1–5 tại cột Chuyên môn theo NĐ 232/2026/NĐ-CP).',
     columns: [
-      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL', width: '240px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn (Biểu C1)' },
-      { colLetter: 'C', field: 'bacNgheNghiep', headerName: 'Bậc nghề nghiệp', width: '150px', type: 'select', selectOptions: ['Bậc 1 (Nhân viên)', 'Bậc 2 (Cán sự)', 'Bậc 3 (Chuyên viên)', 'Bậc 4 (Chuyên viên chính)', 'Bậc 5 (Chuyên viên cao cấp)'] },
-      { colLetter: 'D', field: 'nhomNangLuc', headerName: 'Nhóm năng lực', width: '160px', type: 'select', selectOptions: ['Năng lực chung', 'Năng lực chuyên môn', 'Năng lực quản lý'] },
-      { colLetter: 'E', field: 'tenNangLuc', headerName: 'Tên năng lực', width: '220px' },
-      { colLetter: 'F', field: 'capDoYeuCau', headerName: 'Cấp độ yêu cầu', width: '140px', type: 'select', selectOptions: ['Cấp độ 1', 'Cấp độ 2', 'Cấp độ 3', 'Cấp độ 4', 'Cấp độ 5', 'Đáp ứng năng lực'] },
-      { colLetter: 'G', field: 'moTaChiTiet', headerName: 'Mô tả chi tiết', width: '300px' }
+      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL', width: '140px', type: 'select', dynamicOptionsKey: 'vtvlList' },
+      { colLetter: 'B', field: 'trachNhiem', headerName: 'Trách nhiệm', width: '300px' },
+      { colLetter: 'C', field: 'nangLucChung', headerName: 'Năng lực chung', width: '260px' },
+      { colLetter: 'D', field: 'chuyenMon', headerName: 'Chuyên môn', width: '300px' },
+      { colLetter: 'E', field: 'lanhDao', headerName: 'Lãnh đạo', width: '240px' },
+      { colLetter: 'F', field: 'canCu', headerName: 'Căn cứ', width: '240px' },
+      { colLetter: 'G', field: 'nguonBanMoTa', headerName: 'Nguồn bản mô tả', width: '240px' }
     ]
   },
   C3: {
@@ -53,20 +53,21 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
     sheetNumberPrefix: '9',
     sheetName: '9. D1_NhanLuc',
     shortLabel: '9. D1_NhanLuc',
-    title: 'Biểu D1_ Nhân lực (Danh sách nhân sự hiện có chốt ngày 30/9/2026)',
-    guideDesc: 'Biểu 9 (Bước 7 nghiệp vụ): Kê khai danh sách viên chức và người lao động của đơn vị tính đến ngày 30/9/2026 (mỗi nhân sự 1 dòng).',
-    ruleHint: 'Mã VTVL đảm nhận (Cột B) phải khớp với danh mục VTVL đã khai tại Biểu 3. C1_VTVL.',
+    title: 'Biểu D1_ Nhân lực (Phân bổ mã nguồn lực & quỹ giờ chốt ngày 30/9/2026)',
+    guideDesc: 'Biểu 9 (Bước 7 nghiệp vụ): Kê khai phân bổ nguồn lực theo Mã nguồn lực (11 cột chuẩn HD07), tự động đối chiếu quỹ giờ chuẩn năm từ C1 và cảnh báo vượt quỹ giờ.',
+    ruleHint: 'Mỗi cá nhân chốt ngày 30/9/2026 dùng một Mã nguồn lực duy nhất; tổng Giờ dành cho VTVL (Cột E) + Giờ việc khác (Cột F) không được vượt Giờ quy đổi/năm (Cột D).',
     columns: [
-      { colLetter: 'A', field: 'hoTen', headerName: 'Họ và tên nhân sự', width: '220px' },
-      { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL đảm nhận', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'C', field: 'ngaySinh', headerName: 'Ngày sinh', width: '110px' },
-      { colLetter: 'D', field: 'gioiTinh', headerName: 'Giới tính', width: '90px', type: 'select', selectOptions: ['Nam', 'Nữ'] },
-      { colLetter: 'E', field: 'trinhDo', headerName: 'Trình độ đào tạo', width: '130px', type: 'select', selectOptions: ['Tiến sĩ', 'Thạc sĩ', 'Đại học', 'Cao đẳng', 'Trung cấp'] },
-      { colLetter: 'F', field: 'ngachVienChuc', headerName: 'Ngạch viên chức', width: '140px' },
-      { colLetter: 'G', field: 'maSoNgach', headerName: 'Mã số ngạch', width: '110px' },
-      { colLetter: 'H', field: 'heSoLuong', headerName: 'Hệ số lương', width: '100px', type: 'number' },
-      { colLetter: 'I', field: 'loaiHopDong', headerName: 'Loại hợp đồng', width: '150px', type: 'select', selectOptions: ['Viên chức không thời hạn', 'Viên chức có thời hạn', 'Hợp đồng NĐ 111'] },
-      { colLetter: 'J', field: 'ghiChu', headerName: 'Ghi chú', width: '180px' }
+      { colLetter: 'A', field: 'maNguonLuc', headerName: 'Mã nguồn lực', width: '150px' },
+      { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '140px', type: 'select', dynamicOptionsKey: 'vtvlList' },
+      { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '150px', type: 'select', selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
+      { colLetter: 'D', field: 'gioQuyDoiNam', headerName: 'Giờ quy đổi/năm (tự lấy)', width: '140px', type: 'number', isFormula: true, formulaHint: '=IF(ISNUMBER(K),K,INDEX(C1!E,MATCH(B,C1!A,0)))' },
+      { colLetter: 'E', field: 'gioChoVtvl', headerName: 'Giờ dành cho VTVL', width: '130px', type: 'number' },
+      { colLetter: 'F', field: 'gioViecKhac', headerName: 'Giờ việc khác', width: '120px', type: 'number' },
+      { colLetter: 'G', field: 'noiTinhBc', headerName: 'Nơi tính BC', width: '200px' },
+      { colLetter: 'H', field: 'nguon', headerName: 'Nguồn', width: '220px' },
+      { colLetter: 'I', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Đã kiểm chứng', 'Chưa kiểm chứng', 'Đang rà soát'] },
+      { colLetter: 'J', field: 'canhBao', headerName: 'Cảnh báo', width: '120px', type: 'status', isFormula: true, formulaHint: '=IF(E+F>D,"Vượt quỹ giờ","Đạt")' },
+      { colLetter: 'K', field: 'gioRieng', headerName: 'Giờ riêng theo chế độ', width: '140px', type: 'number' }
     ]
   },
   DU_BAO: {

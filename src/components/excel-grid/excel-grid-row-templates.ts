@@ -121,6 +121,40 @@ export function buildNewGridRow(
     };
   }
 
+  if (sheetKey === 'C2') {
+    return {
+      newRow: {
+        id: newId,
+        maVtvl: '',
+        trachNhiem: '',
+        nangLucChung: '',
+        chuyenMon: '',
+        lanhDao: '',
+        canCu: '',
+        nguonBanMoTa: ''
+      }
+    };
+  }
+
+  if (sheetKey === 'D1') {
+    return {
+      newRow: {
+        id: newId,
+        maNguonLuc: '',
+        maVtvl: '',
+        loaiNhanLuc: '',
+        gioQuyDoiNam: '',
+        gioChoVtvl: '',
+        gioViecKhac: '',
+        noiTinhBc: '',
+        nguon: '',
+        trangThai: '',
+        canhBao: '',
+        gioRieng: ''
+      }
+    };
+  }
+
   if (sheetKey === 'DU_BAO') {
     return {
       newRow: {

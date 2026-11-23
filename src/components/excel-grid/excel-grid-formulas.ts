@@ -1,5 +1,6 @@
 import { ExcelSheetKey, GenericGridRow } from './excel-grid-types';
 import { findPl1Item } from '@/configs/hcmute-pl1-builder';
+import { normalizeC2Rows, normalizeD1Rows } from './excel-c2-d1-helpers';
 
 export function recalculateGridFormulas(
   prev: Record<ExcelSheetKey, GenericGridRow[]>,
@@ -124,13 +125,7 @@ export function recalculateGridFormulas(
     };
   });
   next.C1 = c1Positions;
-  const c1NameByCode = new Map(c1Positions.map((c) => [String(c.maVtvl || '').trim().toUpperCase(), String(c.tenVtvl || '')]));
-  if (Array.isArray(next.C2)) {
-    next.C2 = next.C2.map((r) => {
-      const matchedName = c1NameByCode.get(String(r.maVtvl || '').trim().toUpperCase());
-      return matchedName ? { ...r, tenVtvl: matchedName } : r;
-    });
-  }
+  next.C2 = normalizeC2Rows(next.C2, c1Positions);
   const c3Map = new Map((next.C3 || []).map((r) => [String(r.maVtvl), r]));
   const updatedC3: GenericGridRow[] = c1Positions.map((c, idx) => {
     const vCode = String(c.maVtvl);
@@ -209,7 +204,8 @@ export function recalculateGridFormulas(
 
   // 5. D2_PhuongAn (Tự động đồng bộ số người cần bố trí từ 10. DU_BAO_5_NAM & tự sinh đủ 5 năm khi nhập mới C1)
   const duBaoLookup = new Map(updatedDuBao.map((d) => [`${d.maVtvl}_${d.nam}`, d]));
-  const d1Staff = next.D1 || [];
+  const d1Staff = normalizeD1Rows(next.D1, c1Positions, unitNameVi);
+  next.D1 = d1Staff;
   const d2SourceRows: GenericGridRow[] = [];
   const seenD2Keys = new Set<string>();
   for (const r of next.D2 || []) {

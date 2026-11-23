@@ -76,8 +76,10 @@ export function buildWorkbookRelationalPayload(wb: ServerWorkbook) {
   for (const r of wb.data?.C2 || []) {
     const vtvl = String(r.maVtvl || '').trim();
     if (!vtvl || !c1Rows.has(vtvl)) continue;
-    const prev = c2Rows.get(vtvl), compText = [r.nhomNangLuc, r.tenNangLuc, r.capDoYeuCau].filter(Boolean).join(': ');
-    c2Rows.set(vtvl, { ma_vtvl: vtvl, ma_don_vi: unitCode, muc_tieu_vi_tri: String(r.tenVtvl || prev?.muc_tieu_vi_tri || vtvl), trach_nhiem_chinh: [prev?.trach_nhiem_chinh, r.moTaChiTiet].filter(Boolean).join('; ') || String(r.tenNangLuc || vtvl), khung_nang_luc_bac: [prev?.khung_nang_luc_bac, compText].filter(Boolean).join(' | ') || String(r.bacNgheNghiep || 'Bậc 3'), yeu_cau_trinh_do_chuyen_mon: String(r.bacNgheNghiep || 'Đại học / Bậc 3'), updated_at: nowIso });
+    const prev = c2Rows.get(vtvl);
+    const trachNhiem = String(r.trachNhiem || r.moTaChiTiet || r.tenNangLuc || prev?.trach_nhiem_chinh || vtvl).trim();
+    const khungNl = [r.nangLucChung, r.chuyenMon, r.lanhDao].filter(Boolean).join(' | ') || [r.nhomNangLuc, r.tenNangLuc, r.capDoYeuCau].filter(Boolean).join(': ') || String(r.bacNgheNghiep || 'Bậc 3');
+    c2Rows.set(vtvl, { ma_vtvl: vtvl, ma_don_vi: unitCode, muc_tieu_vi_tri: String(r.tenVtvl || r.canCu || prev?.muc_tieu_vi_tri || vtvl), trach_nhiem_chinh: trachNhiem, khung_nang_luc_bac: khungNl, yeu_cau_trinh_do_chuyen_mon: String(r.chuyenMon || r.bacNgheNghiep || 'Đại học / Bậc 3'), ma_chuc_danh_nghe_nghiep: r.nguonBanMoTa ? String(r.nguonBanMoTa).slice(0, 120) : null, updated_at: nowIso });
   }
   const c3Rows = new Map<string, Record<string, unknown>>();
   for (const r of wb.data?.C3 || []) {
@@ -86,10 +88,13 @@ export function buildWorkbookRelationalPayload(wb: ServerWorkbook) {
   }
   const d1Rows = new Map<string, Record<string, unknown>>();
   (wb.data?.D1 || []).forEach((r, idx) => {
-    const vtvl = String(r.maVtvl || '').trim(), hoTen = String(r.hoTen || '').trim();
-    if (!vtvl || !hoTen || !c1Rows.has(vtvl)) return;
-    const id = String(r.id || `d1-${unitCode}-${vtvl}-${idx + 1}`).trim();
-    d1Rows.set(id, { ma_nguon_luc: id, ma_don_vi: unitCode, ma_vtvl: vtvl, ho_va_ten: hoTen, chuc_danh_hien_giu: String(r.ngachVienChuc || 'Chuyên viên'), ma_ngach_chuc_danh: String(r.maSoNgach || 'V.01.03'), loai_nhan_luc: VALID_LOAI_NL.has(String(r.loaiHopDong || '')) ? String(r.loaiHopDong) : 'Viên chức', ty_le_phan_bo_chinh: 100, updated_at: nowIso });
+    const vtvl = String(r.maVtvl || '').trim(), resourceCode = String(r.maNguonLuc || r.hoTen || '').trim();
+    if (!vtvl || !resourceCode || !c1Rows.has(vtvl)) return;
+    const id = String(r.maNguonLuc || r.id || `d1-${unitCode}-${vtvl}-${idx + 1}`).trim();
+    const stdH = Number(r.gioQuyDoiNam) || 1904;
+    const pct = stdH > 0 && Number(r.gioChoVtvl) > 0 ? Math.min(100, Math.round((Number(r.gioChoVtvl) / stdH) * 10000) / 100) : 100;
+    const loaiRaw = String(r.loaiNhanLuc || r.loaiHopDong || '');
+    d1Rows.set(id, { ma_nguon_luc: id, ma_don_vi: unitCode, ma_vtvl: vtvl, ho_va_ten: String(r.hoTen || resourceCode), chuc_danh_hien_giu: String(r.noiTinhBc || r.ngachVienChuc || unitCode), ma_ngach_chuc_danh: String(r.maSoNgach || r.trangThai || 'HD07'), loai_nhan_luc: VALID_LOAI_NL.has(loaiRaw) ? loaiRaw : 'Viên chức', ty_le_phan_bo_chinh: pct, gio_quy_doi_nam: stdH, canh_bao_d1: String(r.canhBao || 'ĐẠT'), updated_at: nowIso });
   });
   const duBaoRows: Record<string, unknown>[] = [], duBaoKeys = new Set<string>();
   for (const r of wb.data?.DU_BAO || []) {

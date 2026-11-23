@@ -137,7 +137,7 @@ export const HD07_OFFICIAL_DOCS = [
   { code: 'HD-07', title: 'Hướng dẫn số 07-HD/BTCTW (Bản ký chính thức PDF)', href: '/tai-ve/hd-07-btctw-2026.pdf', badge: 'PDF gốc' },
   { code: 'PL-01', title: 'Phụ lục I — Danh mục VTVL và Bậc nghề nghiệp HCM-UTE (QL10–QL60, CM63–CM113, HT26–HT62)', href: '/tai-ve/pl1-danh-muc-vtvl-bac-nghe-nghiep-hcmute.docx', badge: 'PL1 Chuẩn' },
   { code: 'MAU-TCNS', title: 'Bộ biểu thực tế Phòng Tổ chức – Nhân sự (TCNS_HCMUTE_Bo_bieu_HD07.xlsx — 39 nhiệm vụ, 200 công việc)', href: '/tai-ve/tcns-hcmute-bo-bieu-hd07.xlsx', badge: 'Mẫu thực tế' },
-  { code: 'TL-01', title: '01. Hướng dẫn quy trình 08 bước xác định VTVL & định biên', href: '/tai-ve/01-huong-dan-vtvl.docx', badge: 'DOCX' },
+  { code: 'TL-01', title: '01. Hướng dẫn quy trình 08 bước xác định VTVL & Số VTVL áp dụng', href: '/tai-ve/01-huong-dan-vtvl.docx', badge: 'DOCX' },
   { code: 'TL-02', title: '02. Bộ Phụ lục I–VIII quy trình & phương pháp tính VTVL', href: '/tai-ve/02-bo-phu-luc.docx', badge: 'DOCX' },
   { code: 'TL-04', title: '04. Hướng dẫn điền bộ biểu VTVL Excel (10 biểu A1–D2)', href: '/tai-ve/04-huong-dan-dien-bieu.docx', badge: 'DOCX' },
   { code: 'TL-05', title: '05. Cẩm nang nghiệp vụ xây dựng Vị trí việc làm', href: '/tai-ve/05-cam-nang-vtvl.docx', badge: 'DOCX' },

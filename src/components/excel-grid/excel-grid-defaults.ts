@@ -126,7 +126,7 @@ function buildTcnsDefaultWorkbook(unitNameVi: string): Record<ExcelSheetKey, Gen
       gioPp2: stdHours, nguoiQuyDoi: isQl ? '' : fteCalc, nguoiPp1: isQl ? qlPeople : 0, nguoiCanBoTri: requiredPeople,
       trangThai: 'Đã kiểm chứng', canhBao: 'ĐẠT',
       nguonGiaiTrinh: isQl
-        ? 'Định biên theo PP1; QĐ 2266, PL18 và BMTCV&KNL'
+        ? 'Số VTVL áp dụng theo PP1; QĐ 2266, PL18 và BMTCV&KNL'
         : 'Kết quả đo lường khối lượng công việc tại Biểu B1 kỳ 01/10/2025–30/9/2026; quỹ giờ chuẩn 1.904 giờ theo C1'
     };
   });

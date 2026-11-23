@@ -129,7 +129,7 @@ export function validateC3Sheet(rows: GenericGridRow[], validVtvlCodes: Set<stri
         id: `c3-explain-${idx}`, ruleId: 'R-C3-04', sheetKey: 'C3', sheetName: '8. C3_NhuCau',
         cellRef: `8. C3_NhuCau!K${rowNum}`, rowId: r.id, field: 'nguonGiaiTrinh', severity: 'evidence',
         title: 'THIẾU NGUỒN/GIẢI TRÌNH CĂN CỨ NHU CẦU', currentValue: explain || 'Trống',
-        suggestion: 'Ghi rõ căn cứ định biên theo PP1 (QĐ 2266, PL18) hoặc kết quả đo lường PP2.'
+        suggestion: 'Ghi rõ căn cứ Số VTVL áp dụng theo PP1 (QĐ 2266, PL18) hoặc kết quả đo lường PP2.'
       });
     }
 

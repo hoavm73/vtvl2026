@@ -9,7 +9,7 @@ import { InlineStatus, SaveLifecycleState, ValidationMessage } from '@/component
 import { TextInput, NumberInput, Select, SearchableSelect } from '@/components/ui/FormInputs';
 
 const METHODS: { value: WorkforceMethod; label: string }[] = [
-  { value: 'PP1', label: 'PP1 (Định biên theo chức danh)' },
+  { value: 'PP1', label: 'PP1 (Số VTVL áp dụng theo chức danh)' },
   { value: 'PP2', label: 'PP2 (Tính theo khối lượng giờ)' },
   { value: 'PP3', label: 'PP3 (Định mức kiêm nhiệm)' },
   { value: 'PP1+PP2', label: 'PP1+PP2 (Kết hợp chức danh & giờ)' },

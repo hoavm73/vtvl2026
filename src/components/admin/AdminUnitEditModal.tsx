@@ -198,7 +198,7 @@ export function AdminUnitEditModal({
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-[#004776]">Định biên nhân sự mặc định</label>
+              <label className="block text-xs font-bold text-[#004776]">Số VTVL áp dụng mặc định</label>
               <input
                 type="number"
                 min={1}

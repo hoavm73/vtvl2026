@@ -193,7 +193,7 @@ export function AdminSheetDataModal({ session, onClose }: AdminSheetDataModalPro
             <div className="flex flex-col items-center justify-center p-12 text-center text-[#64748b]">
               <FileSpreadsheet className="w-12 h-12 text-[#cbd5e1] mb-2" />
               <p className="font-bold text-sm text-[#0072BC]">Chưa có dữ liệu nhập riêng cho biểu {currentSheetMeta?.shortLabel || selectedSheet}</p>
-              <p className="text-xs text-[#64748b] mt-1">Biểu này đang sử dụng thiết lập định biên ngầm định của Ban Tổ chức Trung ương.</p>
+              <p className="text-xs text-[#64748b] mt-1">Biểu này đang sử dụng thiết lập Số VTVL áp dụng ngầm định của Ban Tổ chức Trung ương.</p>
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-[#cbd5e1] shadow-2xs overflow-hidden">

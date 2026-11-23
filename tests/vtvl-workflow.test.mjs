@@ -304,7 +304,7 @@ runTest('9. Kiểm tra chuẩn hóa Mã nhiệm vụ ([MÃ_ĐV].NVxx), Mã công
   const metasEval = fs.readFileSync(path.join(root, 'src/components/excel-grid/excel-sheet-metas-eval.ts'), 'utf8');
   assert.ok(metasEval.includes("'PP1', 'PP2', 'PP3', 'PP1+PP2', 'PP1+PP3', 'PP2+PP3'"), 'C3 Cột B phải có đủ 6 phương pháp tính nhân lực');
   assert.ok(defaults.includes('01/10/2025–30/9/2026'), 'A1 Cột E phải chuẩn hóa kỳ 01/10/2025–30/9/2026');
-  assert.ok(defaults.includes('Định biên theo PP1; QĐ 2266, PL18 và BMTCV&KNL'), 'C3 Cột K phải có giải trình PP1 chuẩn');
+  assert.ok(defaults.includes('Số VTVL áp dụng theo PP1; QĐ 2266, PL18 và BMTCV&KNL'), 'C3 Cột K phải có giải trình PP1 chuẩn');
   assert.ok(defaults.includes('Phòng Tổ chức – Nhân sự (HCM-UTE)'), '14. T_TienDo phải hiển thị Phòng Tổ chức – Nhân sự (HCM-UTE)');
 
   const formulas = fs.readFileSync(path.join(root, 'src/components/excel-grid/excel-grid-formulas.ts'), 'utf8');

@@ -103,7 +103,7 @@ export const TCNS_C2_PROFILES: Record<string, { responsibility: string; general:
     general: 'Công tâm, liêm chính và trách nhiệm giải trình. Giao tiếp, phối hợp và xử lý tình huống quản lý. Chủ động đổi mới quy trình. Sử dụng dữ liệu, công cụ số và ngoại ngữ theo yêu cầu.',
     professional: 'Đáp ứng năng lực của VTVL chuyên môn, nghiệp vụ hoặc hỗ trợ gắn với chức vụ (Bậc 4). Phân tích chính sách, tham mưu giải pháp TCNS, kiểm soát chất lượng nghiệp vụ và vận dụng quy định quản trị đại học.',
     leadership: 'Định hướng và điều hành toàn Phòng. Quyết định trong thẩm quyền, phân công và phát triển đội ngũ. Quản trị nguồn lực, kiểm soát rủi ro, thúc đẩy cải tiến và giải trình.',
-    basis: 'Điều 8 và PL IV NĐ 232/2026/NĐ-CP. PL18 QĐ 2266. BMTCV&KNL QL33. Định biên theo PP1.',
+    basis: 'Điều 8 và PL IV NĐ 232/2026/NĐ-CP. PL18 QĐ 2266. BMTCV&KNL QL33. Số VTVL áp dụng theo PP1.',
     source: 'QL33_BMTCV VTVL Truong Phong.docx (Hồ sơ thẩm định VTVL 2026)'
   },
   'TCNS.QL43': {
@@ -111,7 +111,7 @@ export const TCNS_C2_PROFILES: Record<string, { responsibility: string; general:
     general: 'Trách nhiệm, công tâm và bảo mật. Giao tiếp, phối hợp và phản hồi kịp thời. Phát hiện bất cập, đề xuất cải tiến. Sử dụng dữ liệu, công cụ số và ngoại ngữ theo nhiệm vụ.',
     professional: 'Đáp ứng năng lực của VTVL chuyên môn, nghiệp vụ hoặc hỗ trợ gắn với chức vụ (Bậc 3, Bậc 4). Phân tích và tham mưu trong mảng được giao, hướng dẫn thực hiện và rà soát chất lượng hồ sơ.',
     leadership: 'Cụ thể hóa kế hoạch của Phòng thành nhiệm vụ của mảng phụ trách. Điều phối, kiểm soát kết quả, hướng dẫn đội ngũ, xử lý rủi ro và giải trình trong phạm vi được giao.',
-    basis: 'Điều 8 và PL IV NĐ 232/2026/NĐ-CP. PL18 QĐ 2266. BMTCV&KNL QL43. Định biên theo PP1.',
+    basis: 'Điều 8 và PL IV NĐ 232/2026/NĐ-CP. PL18 QĐ 2266. BMTCV&KNL QL43. Số VTVL áp dụng theo PP1.',
     source: 'QL43_BMTCV VTVL Pho Truong Phong.docx (Hồ sơ thẩm định VTVL 2026)'
   },
   'TCNS.HT45': {

@@ -42,7 +42,7 @@ export function UnitOrgNodeDetailPane({ node }: UnitOrgNodeDetailPaneProps) {
           </div>
 
           <div className="text-right shrink-0">
-            <span className="text-xs text-[#64748b] block">Định biên dự kiến</span>
+            <span className="text-xs text-[#64748b] block">Số VTVL áp dụng dự kiến</span>
             <span className="text-base font-bold text-[#0072BC]">
               {node.expectedStaffCount} người
             </span>

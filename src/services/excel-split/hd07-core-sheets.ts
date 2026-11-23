@@ -231,7 +231,7 @@ export function buildHd07CoreSheets(
         p.method.includes('PP1') ? p.recommendedFte : '', '',
         fNum(p.recommendedFte, isPp1Only ? `H${r}` : `ROUNDUP(G${r},0)`),
         isPp1Only
-          ? 'Định biên theo PP1; QĐ 2266, PL18 và BMTCV&KNL'
+          ? 'Số VTVL áp dụng theo PP1; QĐ 2266, PL18 và BMTCV&KNL'
           : 'Kết quả đo lường khối lượng công việc tại Biểu B1 kỳ 01/10/2025–30/9/2026; quỹ giờ chuẩn 1.904 giờ theo C1',
         'Đã kiểm chứng',
         fStr('ĐẠT', `IF(A${r}="","",IF(J${r}="","CHƯA KẾT LUẬN NGƯỜI CẦN BỐ TRÍ","ĐẠT"))`),

@@ -188,7 +188,7 @@ export function AdminUnitsTab() {
                 <th className="p-3 font-bold text-[#004776] border-r border-[#cbd5e1] bg-[#f8fafc]">Tên tiếng Việt</th>
                 <th className="p-3 font-bold text-[#004776] border-r border-[#cbd5e1] bg-[#f8fafc]">Khối phân nhóm</th>
                 <th className="p-3 font-bold text-[#004776] border-r border-[#cbd5e1] bg-[#f8fafc]">Người đứng đầu</th>
-                <th className="p-3 font-bold text-[#004776] border-r border-[#cbd5e1] text-center w-24 bg-[#f8fafc]">Định biên</th>
+                <th className="p-3 font-bold text-[#004776] border-r border-[#cbd5e1] text-center w-32 bg-[#f8fafc]">Số VTVL áp dụng</th>
                 <th className="p-3 font-bold text-[#004776] text-center w-28 sticky right-0 bg-[#f8fafc] border-l border-[#cbd5e1]">Thao tác</th>
               </tr>
             </thead>

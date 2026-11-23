@@ -143,7 +143,7 @@ export function recalculateGridFormulas(
     const fteCalc = Math.round((netHours / stdHours) * 100) / 100;
     const qlPeople = existing?.nguoiPp1 ? Number(existing.nguoiPp1) : (vCode.includes('QL43') || vCode.includes('PTP') || vCode.includes('PTK') ? 2 : 1);
     const people = isQl ? qlPeople : Math.max(1, Math.ceil(fteCalc));
-    const pp1Explain = 'Định biên theo PP1; QĐ 2266, PL18 và BMTCV&KNL';
+    const pp1Explain = 'Số VTVL áp dụng theo PP1; QĐ 2266, PL18 và BMTCV&KNL';
     const pp2Explain = 'Kết quả đo lường khối lượng công việc tại Biểu B1 kỳ 01/10/2025–30/9/2026; quỹ giờ chuẩn 1.904 giờ theo C1';
     const rawExplain = String(existing?.nguonGiaiTrinh || '').trim();
     const resolvedExplain = (rawExplain === '' || rawExplain === 'a')

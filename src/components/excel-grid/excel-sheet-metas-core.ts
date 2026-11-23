@@ -35,15 +35,15 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     ruleHint: 'Mã công việc chuẩn: [Mã nhiệm vụ].CV[01..99] (ví dụ: TCNS.NV01.CV01). Tự động kế thừa mã nhiệm vụ và tăng dần theo từng nhiệm vụ.',
     columns: [
       { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc ([NV].CVxx)', width: '170px', isFormula: true, formulaHint: 'Tự động sinh mã công việc theo Mã nhiệm vụ ([Mã NV].CVxx)' },
-      { colLetter: 'B', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ (A1)', width: '140px', type: 'select', dynamicOptionsKey: 'missionList' },
-      { colLetter: 'C', field: 'maVtvl', headerName: 'Mã VTVL (từ C1)', width: '130px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'D', field: 'tenCongViec', headerName: 'Tên công việc cụ thể', width: '420px' },
-      { colLetter: 'E', field: 'sanPham', headerName: 'Sản phẩm đầu ra', width: '250px' },
-      { colLetter: 'F', field: 'dvt', headerName: 'Đơn vị tính', width: '130px' },
-      { colLetter: 'G', field: 'chatLuong', headerName: 'Yêu cầu chất lượng', width: '250px' },
-      { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px' },
+      { colLetter: 'B', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ (A1)', width: '140px', type: 'select', required: true, dynamicOptionsKey: 'missionList' },
+      { colLetter: 'C', field: 'maVtvl', headerName: 'Mã VTVL (từ C1)', width: '130px', type: 'select', required: true, dynamicOptionsKey: 'vtvlList' },
+      { colLetter: 'D', field: 'tenCongViec', headerName: 'Tên công việc cụ thể', width: '420px', required: true },
+      { colLetter: 'E', field: 'sanPham', headerName: 'Sản phẩm đầu ra', width: '250px', required: true },
+      { colLetter: 'F', field: 'dvt', headerName: 'Đơn vị tính', width: '130px', required: true },
+      { colLetter: 'G', field: 'chatLuong', headerName: 'Yêu cầu chất lượng', width: '250px', required: true },
+      { colLetter: 'H', field: 'canCu', headerName: 'Căn cứ (nguồn tài liệu)', width: '240px', required: true },
       { colLetter: 'I', field: 'maVtvlPhoiHop', headerName: 'Mã VTVL phối hợp', width: '150px', type: 'select', dynamicOptionsKey: 'vtvlList' },
-      { colLetter: 'J', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', selectOptions: ['Đã nộp', 'Nháp'] }
+      { colLetter: 'J', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', required: true, selectOptions: ['Đã nộp', 'Nháp'] }
     ]
   },
   C1: {
@@ -56,18 +56,18 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 3 (Bước 3 nghiệp vụ): Khai danh mục VTVL của đơn vị, chọn chế độ làm việc và xác định quỹ giờ chuẩn PP2 (1.904h hoặc 1.760h).',
     ruleHint: 'Áp dụng mã Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62) theo quy định HCM-UTE.',
     columns: [
-      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Danh mục chuẩn)', width: '170px', type: 'select', dynamicOptionsKey: 'pl1VtvlList', allowCustom: false },
+      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Danh mục chuẩn)', width: '170px', type: 'select', required: true, dynamicOptionsKey: 'pl1VtvlList', allowCustom: false },
       { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL chuẩn (chỉ đọc)', width: '260px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường (chỉ Admin/TCNS được sửa)' },
       { colLetter: 'B1', field: 'nhomVtvl4', headerName: 'Nhóm VTVL chuẩn', width: '220px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường' },
       { colLetter: 'B2', field: 'maNgach', headerName: 'Ngạch / Chức danh chuẩn', width: '150px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường' },
-      { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '130px', type: 'select', selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
-      { colLetter: 'D', field: 'quyetDinh', headerName: 'Quyết định / Căn cứ VTVL', width: '200px' },
+      { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '130px', type: 'select', required: true, selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
+      { colLetter: 'D', field: 'quyetDinh', headerName: 'Quyết định / Căn cứ VTVL', width: '200px', required: true },
       { colLetter: 'E', field: 'gioChuanPp2', headerName: 'Giờ chuẩn PP2', width: '110px', isFormula: true, formulaHint: '=IF(J="Đặc thù",1760,1904)' },
-      { colLetter: 'F', field: 'canCuQuyGio', headerName: 'Căn cứ xác định quỹ giờ', width: '220px' },
-      { colLetter: 'G', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Tiếp tục sử dụng', 'Cần cập nhật', 'Đề nghị bổ sung', 'Đề nghị sửa đổi', 'Đề nghị bãi bỏ'] },
+      { colLetter: 'F', field: 'canCuQuyGio', headerName: 'Căn cứ xác định quỹ giờ', width: '220px', required: true },
+      { colLetter: 'G', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', required: true, selectOptions: ['Tiếp tục sử dụng', 'Cần cập nhật', 'Đề nghị bổ sung', 'Đề nghị sửa đổi', 'Đề nghị bãi bỏ'] },
       { colLetter: 'H', field: 'gioRieng', headerName: 'Giờ riêng được xác nhận', width: '110px' },
       { colLetter: 'I', field: 'xacNhanGioRieng', headerName: 'Xác nhận giờ riêng', width: '130px' },
-      { colLetter: 'J', field: 'cheDoLamViec', headerName: 'Chế độ làm việc', width: '170px', type: 'select', selectOptions: ['Phổ biến (40 giờ/tuần)', 'Đặc thù'] },
+      { colLetter: 'J', field: 'cheDoLamViec', headerName: 'Chế độ làm việc', width: '170px', type: 'select', required: true, selectOptions: ['Phổ biến (40 giờ/tuần)', 'Đặc thù'] },
       { colLetter: 'K', field: 'kiemTra', headerName: 'Kiểm tra quỹ giờ', width: '100px', type: 'status', isFormula: true, formulaHint: '=IF(E>0,"ĐẠT","LỖI")' }
     ]
   },
@@ -81,19 +81,19 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 4 (Bước 4 nghiệp vụ): Kê khai sản lượng thực tế trong 12 tháng (Cột C), số phút đo thực tế (Cột D), công thức tự tính Giờ SP và Giờ tổng.',
     ruleHint: 'Mã VTVL (Cột B) tự lấy từ A2; Giờ SP (Cột F) = Cột C × Cột P / 60; Giờ tổng (Cột G) = F + E.',
     columns: [
-      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', dynamicOptionsKey: 'taskList' },
+      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', required: true, dynamicOptionsKey: 'taskList' },
       { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '120px', isFormula: true, formulaHint: '=INDEX(A2!C,MATCH(A,A2!A,0))' },
-      { colLetter: 'C', field: 'soSpNam', headerName: 'Số SP/năm', width: '100px', type: 'number' },
-      { colLetter: 'D', field: 'phutThucTe', headerName: 'Phút/SP (thực tế)', width: '120px', type: 'number' },
-      { colLetter: 'E', field: 'gioBoSung', headerName: 'Giờ bổ sung', width: '110px', type: 'number' },
+      { colLetter: 'C', field: 'soSpNam', headerName: 'Số SP/năm', width: '100px', type: 'number', required: true },
+      { colLetter: 'D', field: 'phutThucTe', headerName: 'Phút/SP (thực tế)', width: '120px', type: 'number', required: true },
+      { colLetter: 'E', field: 'gioBoSung', headerName: 'Giờ bổ sung', width: '110px', type: 'number', required: true },
       { colLetter: 'F', field: 'gioSp', headerName: 'Giờ SP (công thức)', width: '130px', isFormula: true, formulaHint: '=ROUND(C*P/60,2)' },
       { colLetter: 'G', field: 'gioTong', headerName: 'Giờ tổng (công thức)', width: '130px', isFormula: true, formulaHint: '=ROUND(F+E,2)' },
-      { colLetter: 'H', field: 'nguon', headerName: 'Nguồn số liệu sản lượng', width: '200px' },
-      { colLetter: 'I', field: 'ppThucTe', headerName: 'PP đo thực tế', width: '120px', type: 'select', selectOptions: ['bấm giờ', 'nhật ký công việc', 'ước lượng chuyên gia'] },
+      { colLetter: 'H', field: 'nguon', headerName: 'Nguồn số liệu sản lượng', width: '200px', required: true },
+      { colLetter: 'I', field: 'ppThucTe', headerName: 'PP đo thực tế', width: '120px', type: 'select', required: true, selectOptions: ['bấm giờ', 'nhật ký công việc', 'ước lượng chuyên gia'] },
       { colLetter: 'P', field: 'phutApDung', headerName: 'Phút/SP áp dụng', width: '120px', isFormula: true, formulaHint: '=IF(D>0,D,INDEX(DM_SP!E,...))' },
       { colLetter: 'R', field: 'canhBao', headerName: 'Cảnh báo dữ liệu', width: '160px', type: 'status', isFormula: true, formulaHint: '=IF(AND(S<>"",LEFT(S,12)<>"Đã xác nhận:"),"CHỜ XÁC NHẬN KHÁC CHUẨN",IF(G>0,"ĐẠT","CHƯA ĐẠT"))' },
       { colLetter: 'S', field: 'giaiTrinhKhacChuan', headerName: 'Giải trình khác chuẩn (Cột S)', width: '260px' },
-      { colLetter: 'T', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', selectOptions: ['Đã nộp', 'Nháp'] }
+      { colLetter: 'T', field: 'trangThaiPhieu', headerName: 'Trạng thái phiếu', width: '120px', type: 'select', required: true, selectOptions: ['Đã nộp', 'Nháp'] }
     ]
   },
   B2_CT: {
@@ -106,13 +106,13 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 5 (Bước 5 nghiệp vụ): Kê khai các công đoạn được số hóa (phần mềm quản trị, ERP...), ứng dụng AI hoặc chuyển giao giúp tăng năng suất/giảm thời gian.',
     ruleHint: 'Giờ biến động (Cột F) âm khi giảm thời gian nhờ CĐS, dương khi phát sinh nhiệm vụ mới.',
     columns: [
-      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', dynamicOptionsKey: 'taskList' },
+      { colLetter: 'A', field: 'maCongViec', headerName: 'Mã công việc', width: '160px', type: 'select', required: true, dynamicOptionsKey: 'taskList' },
       { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '120px', isFormula: true, formulaHint: '=INDEX(A2!C,MATCH(A,A2!A,0))' },
-      { colLetter: 'C', field: 'congDoan', headerName: 'Công đoạn / Quy trình tác động', width: '240px' },
-      { colLetter: 'D', field: 'loaiTacDong', headerName: 'Loại tác động', width: '160px', type: 'select', selectOptions: ['Số hóa', 'Cải tiến quy trình', 'Thuê dịch vụ/đặt hàng', 'Tự chủ', 'Xã hội hóa', 'Công việc mới phát sinh'] },
-      { colLetter: 'E', field: 'mucDo', headerName: 'Mức độ', width: '100px', type: 'select', selectOptions: ['Toàn phần', 'Một phần'] },
-      { colLetter: 'F', field: 'gioBienDong', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm)', width: '140px', type: 'number' },
-      { colLetter: 'G', field: 'vanBan', headerName: 'Văn bản / Đề án căn cứ', width: '220px' }
+      { colLetter: 'C', field: 'congDoan', headerName: 'Công đoạn / Quy trình tác động', width: '240px', required: true },
+      { colLetter: 'D', field: 'loaiTacDong', headerName: 'Loại tác động', width: '160px', type: 'select', required: true, selectOptions: ['Số hóa', 'Cải tiến quy trình', 'Thuê dịch vụ/đặt hàng', 'Tự chủ', 'Xã hội hóa', 'Công việc mới phát sinh'] },
+      { colLetter: 'E', field: 'mucDo', headerName: 'Mức độ', width: '100px', type: 'select', required: true, selectOptions: ['Toàn phần', 'Một phần'] },
+      { colLetter: 'F', field: 'gioBienDong', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm)', width: '140px', type: 'number', required: true },
+      { colLetter: 'G', field: 'vanBan', headerName: 'Văn bản / Đề án căn cứ', width: '220px', required: true }
     ]
   },
   B2: {
@@ -129,11 +129,11 @@ export const CORE_EXCEL_SHEET_METAS: Record<
       { colLetter: 'B', field: 'maVtvl', headerName: 'Mã VTVL', width: '120px', isFormula: true, formulaHint: '=INDEX(B1!B,MATCH(A,B1!A,0))' },
       { colLetter: 'C', field: 'gioB1', headerName: 'Giờ B1 gốc', width: '110px', isFormula: true, formulaHint: '=INDEX(B1!G,MATCH(A,B1!A,0))' },
       { colLetter: 'D', field: 'gioGiam', headerName: 'Giờ biến động (– giảm, + tăng) (h/năm) (SUMIFS)', width: '130px', isFormula: true, formulaHint: '=SUMIFS(B2_CT!F,A,B2_CT!A)' },
-      { colLetter: 'E', field: 'gioMoi', headerName: 'Giờ việc mới', width: '110px', type: 'number' },
+      { colLetter: 'E', field: 'gioMoi', headerName: 'Giờ việc mới', width: '110px', type: 'number', required: true },
       { colLetter: 'F', field: 'gioSauTacDong', headerName: 'Giờ sau tác động', width: '140px', isFormula: true, formulaHint: '=ROUND(C+D+E,2)' },
       { colLetter: 'G', field: 'tyLeThayDoi', headerName: 'Tỷ lệ thay đổi', width: '110px', isFormula: true, formulaHint: '=ROUND(D/C*100,1)&"%"' },
-      { colLetter: 'H', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Đã kiểm chứng', 'Chưa kiểm chứng', 'Ước lượng tham khảo'] },
-      { colLetter: 'I', field: 'doiChieuTrung', headerName: 'Đối chiếu trùng/phạm vi', width: '160px', type: 'select', selectOptions: ['Đã đối chiếu', 'Chờ đối chiếu'] }
+      { colLetter: 'H', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', required: true, selectOptions: ['Đã kiểm chứng', 'Chưa kiểm chứng', 'Ước lượng tham khảo'] },
+      { colLetter: 'I', field: 'doiChieuTrung', headerName: 'Đối chiếu trùng/phạm vi', width: '160px', type: 'select', required: true, selectOptions: ['Đã đối chiếu', 'Chờ đối chiếu'] }
     ]
   }
 };

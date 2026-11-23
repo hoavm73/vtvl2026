@@ -141,6 +141,7 @@ function ExcelDataCellComponent({
       <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative">
         <input
           type="number"
+          data-cell-key={cellKey}
           value={strVal}
           placeholder="Nhập nội dung"
           aria-label={col.headerName}
@@ -157,7 +158,7 @@ function ExcelDataCellComponent({
         />
         {isEmptyRequired && (
           <span id={errorId} className="text-[11px] text-[var(--fix)] mt-0.5 px-1 font-medium flex items-center gap-0.5">
-            <AlertCircle className="w-3 h-3 shrink-0" /> Bắt buộc nhập
+            <AlertCircle className="w-3 h-3 shrink-0" /> {errorMessage || 'Bắt buộc nhập'}
           </span>
         )}
       </td>

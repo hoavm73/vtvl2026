@@ -25,6 +25,7 @@ import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage
 import { cacheGetOrSet, invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import { validateAndNormalizeUnitC1Rows } from '@/services/storage/server-vtvl-catalog-store';
 import { validateNewA1RowsForSave } from '@/services/a1/a1-validation';
+import { validateNewSheetRowsForSave } from '@/services/workbooks/workbook-sheet-validation';
 import { buildUnitWorkbookLockedResponse, isWorkbookStatusLocked } from '@/services/workbooks/workbook-lock-guard';
 
 interface RouteContext {
@@ -211,6 +212,13 @@ export async function PUT(req: Request, context: RouteContext) {
               { error: a1Check.error, code: a1Check.code, rowErrors: a1Check.entries },
               { status: a1Check.status }
             );
+          }
+        }
+        for (const sk of ['A2', 'B2_CT', 'D1'] as const) {
+          if (!Array.isArray(normalizedData?.[sk])) continue;
+          const sCheck = validateNewSheetRowsForSave({ sheetKey: sk, incomingRows: normalizedData[sk], existingRows: existingWb?.data?.[sk] });
+          if (!sCheck.ok) {
+            return NextResponse.json({ error: sCheck.error, code: sCheck.code, rowErrors: sCheck.entries }, { status: sCheck.status });
           }
         }
 

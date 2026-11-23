@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { ExcelSheetKey, GenericGridRow } from './excel-grid-types';
 import { validateNewA1RowsForSave } from '@/services/a1/a1-validation';
+import { validateNewSheetRowsForSave } from '@/services/workbooks/workbook-sheet-validation';
 import {
   A1ImportPreviewResult,
   applyA1ImportPreview,
@@ -42,7 +43,7 @@ export function useA1ExcelWorkflow({
   const [feedbackToast, setFeedbackToast] = useState<A1FeedbackToast | null>(null);
   const [showA1ImportModal, setShowA1ImportModal] = useState(false);
   const [isImportingA1, setIsImportingA1] = useState(false);
-  const baselineA1Ref = useRef<GenericGridRow[]>([]);
+  const baselineBySheetRef = useRef<Partial<Record<ExcelSheetKey, GenericGridRow[]>>>({});
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((toast: A1FeedbackToast) => {
@@ -51,10 +52,16 @@ export function useA1ExcelWorkflow({
     toastTimerRef.current = setTimeout(() => setFeedbackToast(null), 6000);
   }, []);
 
-  const syncA1Baseline = useCallback((rows: GenericGridRow[] | undefined) => {
-    baselineA1Ref.current = Array.isArray(rows) ? rows.map((r) => ({ ...r })) : [];
-    setCellErrors({});
-    setValidationBanner(null);
+  const syncWorkbookBaseline = useCallback((wbData: Partial<Record<ExcelSheetKey, GenericGridRow[]>> | undefined) => {
+    const next: Partial<Record<ExcelSheetKey, GenericGridRow[]>> = {};
+    if (wbData) {
+      for (const [k, rows] of Object.entries(wbData)) {
+        if (Array.isArray(rows)) next[k as ExcelSheetKey] = rows.map((r) => ({ ...r }));
+      }
+    }
+    baselineBySheetRef.current = next;
+    setCellErrors((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    setValidationBanner((prev) => (prev === null ? prev : null));
   }, []);
 
   const clearCellError = useCallback((cellKey: string) => {
@@ -67,18 +74,20 @@ export function useA1ExcelWorkflow({
     });
   }, []);
 
-  const isA1ValidForAutoSave = useCallback((a1Rows: GenericGridRow[]): boolean => {
-    return validateNewA1RowsForSave({
-      incomingA1: a1Rows,
-      existingA1: baselineA1Ref.current
-    }).ok;
+  const runSheetCheck = useCallback((sheetKey: ExcelSheetKey, rows: GenericGridRow[]) => {
+    const existing = baselineBySheetRef.current[sheetKey] || [];
+    if (sheetKey === 'A1') {
+      return validateNewA1RowsForSave({ incomingA1: rows, existingA1: existing });
+    }
+    return validateNewSheetRowsForSave({ sheetKey, incomingRows: rows, existingRows: existing });
   }, []);
 
-  const checkA1BeforeSave = useCallback((a1Rows: GenericGridRow[], focusOnError: boolean): boolean => {
-    const check = validateNewA1RowsForSave({
-      incomingA1: a1Rows,
-      existingA1: baselineA1Ref.current
-    });
+  const isSheetValidForAutoSave = useCallback((sheetKey: ExcelSheetKey, rows: GenericGridRow[]): boolean => {
+    return runSheetCheck(sheetKey, rows).ok;
+  }, [runSheetCheck]);
+
+  const checkSheetBeforeSave = useCallback((sheetKey: ExcelSheetKey, rows: GenericGridRow[], focusOnError: boolean): boolean => {
+    const check = runSheetCheck(sheetKey, rows);
     if (check.ok) {
       setCellErrors((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       setValidationBanner((prev) => (prev === null ? prev : null));
@@ -86,7 +95,7 @@ export function useA1ExcelWorkflow({
     }
     if (focusOnError) {
       setCellErrors(check.cellErrors);
-      setValidationBanner(check.error || 'Vui lòng điền đủ 6 trường bắt buộc cho nhiệm vụ mới tại Biểu A1.');
+      setValidationBanner(check.error || 'Vui lòng điền đủ tất cả các trường bắt buộc trước khi lưu.');
       if (check.firstErrorCellKey && typeof document !== 'undefined') {
         requestAnimationFrame(() => {
           const el = document.querySelector<HTMLElement>(`[data-cell-key="${check.firstErrorCellKey}"]`);
@@ -99,7 +108,7 @@ export function useA1ExcelWorkflow({
       }
     }
     return false;
-  }, []);
+  }, [runSheetCheck]);
 
   const handleDownloadA1Template = useCallback(() => {
     void downloadA1ExcelFile({ unitCode, unitNameVi, mode: 'template' })
@@ -139,7 +148,7 @@ export function useA1ExcelWorkflow({
         return false;
       }
       restoreWorkbookData(nextWorkbook, unitCode);
-      syncA1Baseline(nextWorkbook.A1);
+      syncWorkbookBaseline(nextWorkbook);
       showToast({
         kind: 'success',
         title: `Nhập Excel thành công (+${applied.addedCount} nhiệm vụ)`,
@@ -149,7 +158,7 @@ export function useA1ExcelWorkflow({
     } finally {
       setIsImportingA1(false);
     }
-  }, [isReadOnly, data, unitCode, unitNameVi, persistDataForSession, restoreWorkbookData, syncA1Baseline, showToast]);
+  }, [isReadOnly, data, unitCode, unitNameVi, persistDataForSession, restoreWorkbookData, syncWorkbookBaseline, showToast]);
 
   return {
     cellErrors,
@@ -159,10 +168,10 @@ export function useA1ExcelWorkflow({
     showA1ImportModal,
     setShowA1ImportModal,
     isImportingA1,
-    syncA1Baseline,
+    syncWorkbookBaseline,
     clearCellError,
-    isA1ValidForAutoSave,
-    checkA1BeforeSave,
+    isSheetValidForAutoSave,
+    checkSheetBeforeSave,
     handleDownloadA1Template,
     handleExportA1,
     handleConfirmA1Import

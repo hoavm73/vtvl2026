@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
-import { A1_HEADERS, A1_SHEET_NAME, A1_STATUS_OPTIONS, trimA1Value } from './a1-validation';
+import { A1_DEFAULT_PERIOD, A1_HEADERS, A1_SHEET_NAME, A1_STATUS_OPTIONS, trimA1Value } from './a1-validation';
 
 function escapeXmlText(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -69,6 +69,10 @@ export async function buildA1ExcelBuffer(params: {
   mode: 'template' | 'export';
 }): Promise<Uint8Array> {
   const rows = params.mode === 'export' && Array.isArray(params.rows) ? params.rows : [];
+  const templateBlankRows: (string | number)[][] =
+    params.mode === 'template'
+      ? Array.from({ length: 20 }, () => ['', '', params.unitNameVi || '', '', A1_DEFAULT_PERIOD, '', ''])
+      : [];
   const aoa: (string | number)[][] = [
     [
       `Biểu A1_ Nhiệm vụ (${params.unitCode} — ${params.unitNameVi})`,
@@ -80,6 +84,7 @@ export async function buildA1ExcelBuffer(params: {
       ''
     ],
     [...A1_HEADERS],
+    ...templateBlankRows,
     ...rows.map((r) => [
       trimA1Value(r.maNhiemVu),
       trimA1Value(r.tenNhiemVu),
@@ -128,7 +133,7 @@ export async function buildA1ExcelBuffer(params: {
       xml = applyCellStyle(xml, `${col}2`, 3);
     }
     xml = applyCellStyle(xml, 'F2', 4);
-    for (let r = 3; r <= rows.length + 2; r += 1) {
+    for (let r = 3; r <= Math.max(rows.length, templateBlankRows.length) + 2; r += 1) {
       xml = applyCellStyle(xml, `F${r}`, 5);
     }
 

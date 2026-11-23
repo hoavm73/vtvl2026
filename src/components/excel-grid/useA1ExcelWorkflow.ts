@@ -114,15 +114,19 @@ export function useA1ExcelWorkflow({
       .catch(() => showToast({ kind: 'error', title: 'Xuất dữ liệu A1 thất bại', detail: 'Vui lòng thử lại.' }));
   }, [unitCode, unitNameVi, data.A1, showToast]);
 
-  const handleConfirmA1Import = useCallback(async (preview: A1ImportPreviewResult): Promise<boolean> => {
+  const handleConfirmA1Import = useCallback(async (
+    preview: A1ImportPreviewResult,
+    duplicateDecisions: Record<number, 'skip' | 'add_new'> = {}
+  ): Promise<boolean> => {
     if (isReadOnly) return false;
-    const applied = applyA1ImportPreview({ preview, existingA1: data.A1 || [], unitCode });
+    const applied = applyA1ImportPreview({ preview, existingA1: data.A1 || [], unitCode, duplicateDecisions });
     if (!applied.ok) {
       showToast({ kind: 'error', title: 'Nhập Excel thất bại', detail: applied.error });
       return false;
     }
+    const totalSkipped = preview.summary.unchangedCount + applied.skippedDuplicateCount;
     if (applied.addedCount === 0) {
-      showToast({ kind: 'info', title: 'Không có dòng mới cần thêm', detail: `Tất cả ${preview.summary.unchangedCount} dòng trong tệp đã tồn tại và trùng nội dung.` });
+      showToast({ kind: 'info', title: 'Không có dòng mới cần thêm', detail: `Đã bỏ qua ${totalSkipped} dòng trùng với dữ liệu đã có trên bảng.` });
       return true;
     }
 
@@ -139,7 +143,7 @@ export function useA1ExcelWorkflow({
       showToast({
         kind: 'success',
         title: `Nhập Excel thành công (+${applied.addedCount} nhiệm vụ)`,
-        detail: preview.summary.unchangedCount > 0 ? `Đã bỏ qua ${preview.summary.unchangedCount} dòng đã tồn tại và giữ nguyên liên kết A2.` : 'Toàn bộ nhiệm vụ mới đã được lưu vào hồ sơ đơn vị.'
+        detail: totalSkipped > 0 ? `Đã bỏ qua ${totalSkipped} dòng trùng dữ liệu và giữ nguyên liên kết A2.` : 'Toàn bộ nhiệm vụ mới đã được lưu vào hồ sơ đơn vị.'
       });
       return true;
     } finally {

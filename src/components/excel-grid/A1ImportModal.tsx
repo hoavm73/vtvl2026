@@ -17,7 +17,7 @@ interface A1ImportModalProps {
   isSaving?: boolean;
   onClose: () => void;
   onDownloadTemplate: () => void;
-  onConfirmImport: (preview: A1ImportPreviewResult) => Promise<boolean>;
+  onConfirmImport: (preview: A1ImportPreviewResult, duplicateDecisions: Record<number, 'skip' | 'add_new'>) => Promise<boolean>;
 }
 
 export function A1ImportModal({
@@ -33,6 +33,7 @@ export function A1ImportModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
   const [preview, setPreview] = useState<A1ImportPreviewResult | null>(null);
+  const [duplicateDecisions, setDuplicateDecisions] = useState<Record<number, 'skip' | 'add_new'>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -40,6 +41,7 @@ export function A1ImportModal({
   const resetState = () => {
     setFileName('');
     setPreview(null);
+    setDuplicateDecisions({});
     setSubmitError(null);
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -57,6 +59,9 @@ export function A1ImportModal({
     try {
       const buf = await file.arrayBuffer();
       const res = parseAndPreviewA1Import({ buffer: buf, unitCode, existingA1 });
+      const initDecisions: Record<number, 'skip' | 'add_new'> = {};
+      (res.duplicateContentRows || []).forEach((d) => { initDecisions[d.excelRow] = 'skip'; });
+      setDuplicateDecisions(initDecisions);
       setPreview(res);
     } catch {
       setSubmitError('Không thể đọc tệp Excel đã chọn. Vui lòng thử lại với tệp .xlsx hợp lệ.');
@@ -64,10 +69,13 @@ export function A1ImportModal({
     }
   };
 
+  const approvedDupCount = (preview?.duplicateContentRows || []).filter((d) => duplicateDecisions[d.excelRow] === 'add_new').length;
+  const totalWillAdd = (preview?.summary.newCount || 0) + approvedDupCount;
+
   const handleConfirm = async () => {
     if (!preview || !preview.ok) return;
     setSubmitError(null);
-    const ok = await onConfirmImport(preview);
+    const ok = await onConfirmImport(preview, duplicateDecisions);
     if (ok) handleClose();
     else setSubmitError('Không thể lưu dữ liệu nhập vào máy chủ. Vui lòng kiểm tra thông báo lỗi hoặc tải lại phiên bản mới nhất.');
   };
@@ -76,7 +84,7 @@ export function A1ImportModal({
     preview &&
     preview.ok &&
     !isSaving &&
-    (preview.summary.newCount > 0 || preview.summary.unchangedCount > 0)
+    (totalWillAdd > 0 || preview.summary.unchangedCount > 0 || preview.summary.duplicateContentCount > 0)
   );
 
   return (
@@ -202,13 +210,45 @@ export function A1ImportModal({
                   </div>
                 )}
 
+                {preview.duplicateContentRows.length > 0 && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3 space-y-2.5 max-h-60 overflow-y-auto">
+                    <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>Phát hiện {preview.duplicateContentRows.length} dòng có nội dung giống dữ liệu đã nhập trên bảng — vui lòng xác nhận:</span>
+                    </div>
+                    {preview.duplicateContentRows.map((dup) => {
+                      const decision = duplicateDecisions[dup.excelRow] || 'skip';
+                      return (
+                        <div key={`dup-${dup.excelRow}`} className="rounded-lg border border-amber-200 bg-white p-2.5 space-y-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <div className="p-2 rounded-md bg-[#f8fafc] border border-[#cbd5e1]">
+                              <div className="font-bold text-[#476885] mb-0.5">Đã có trên bảng ({dup.existing.maNhiemVu})</div>
+                              <div className="font-semibold text-[#004776]">{dup.existing.tenNhiemVu}</div>
+                              <div className="text-[#476885] mt-0.5">{dup.existing.canCu} · {dup.existing.trangThai}</div>
+                            </div>
+                            <div className="p-2 rounded-md bg-[#eef5ff] border border-[#bfe0fa]">
+                              <div className="font-bold text-[#0072BC] mb-0.5">File Excel (Dòng {dup.excelRow})</div>
+                              <div className="font-semibold text-[#004776]">{dup.incoming.tenNhiemVu}</div>
+                              <div className="text-[#476885] mt-0.5">{dup.incoming.canCu} · {dup.incoming.trangThai}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button type="button" onClick={() => setDuplicateDecisions((p) => ({ ...p, [dup.excelRow]: 'skip' }))} className={`h-7 px-2.5 rounded-md text-[11px] font-semibold border cursor-pointer ${decision === 'skip' ? 'bg-[#004776] text-white border-[#004776]' : 'bg-white text-[#004776] border-[#cbd5e1]'}`}>Bỏ qua (đã nhập)</button>
+                            <button type="button" onClick={() => setDuplicateDecisions((p) => ({ ...p, [dup.excelRow]: 'add_new' }))} className={`h-7 px-2.5 rounded-md text-[11px] font-semibold border cursor-pointer ${decision === 'add_new' ? 'bg-[#006cee] text-white border-[#006cee]' : 'bg-white text-[#004776] border-[#cbd5e1]'}`}>Xác nhận là dữ liệu mới (thêm mới)</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {preview.ok && (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-emerald-900 flex items-center gap-2 font-medium">
                     <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
                     <span>
-                      {preview.summary.newCount > 0
-                        ? `Sẵn sàng nhập ${preview.summary.newCount} nhiệm vụ mới vào Biểu A1 (giữ nguyên ${preview.summary.unchangedCount} dòng đã tồn tại).`
-                        : `Tất cả ${preview.summary.unchangedCount} dòng trong tệp đều đã tồn tại và trùng nội dung — không có dòng mới cần thêm.`}
+                      {totalWillAdd > 0
+                        ? `Sẵn sàng nhập ${totalWillAdd} nhiệm vụ mới vào Biểu A1 (bỏ qua ${preview.summary.unchangedCount + (preview.summary.duplicateContentCount - approvedDupCount)} dòng đã tồn tại).`
+                        : `Tất cả dòng trong tệp đều đã tồn tại hoặc chọn bỏ qua — không có dòng mới cần thêm.`}
                     </span>
                   </div>
                 )}
@@ -226,7 +266,7 @@ export function A1ImportModal({
               onClick={handleConfirm}
               className="h-9 px-4 rounded-lg bg-[#006cee] hover:bg-[#0058c4] disabled:opacity-45 disabled:cursor-not-allowed text-xs font-bold text-white cursor-pointer"
             >
-              {isSaving ? 'Đang lưu…' : preview?.summary.newCount ? `Xác nhận nhập ${preview.summary.newCount} dòng` : 'Xác nhận'}
+              {isSaving ? 'Đang lưu…' : totalWillAdd > 0 ? `Xác nhận nhập ${totalWillAdd} dòng` : 'Xác nhận'}
             </button>
           </div>
         </div>

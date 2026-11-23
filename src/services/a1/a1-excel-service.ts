@@ -5,5 +5,6 @@ export {
   type A1ImportRowError,
   type A1ImportConflictRow,
   type A1ImportCandidateRow,
+  type A1ImportDuplicateContentRow,
   type A1ImportPreviewResult
 } from './a1-excel-import';

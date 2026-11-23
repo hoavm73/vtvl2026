@@ -135,6 +135,21 @@ async function main() {
   assert.strictEqual(mixedApply.ok, false, 'Còn lỗi thì không được ghi một phần lô');
   assert.strictEqual(mixedApply.nextA1.length, 2, 'Dữ liệu gốc phải nguyên vẹn');
 
+  // 8b. Dòng mới để trống mã nhưng trùng nội dung với dòng đã có trên bảng -> hỏi xác nhận bỏ qua hoặc thêm mới
+  const wbDup = XLSX.read(tplBytes, { type: 'array' });
+  XLSX.utils.sheet_add_aoa(wbDup.Sheets[A1_SHEET_NAME], [
+    ['', 'Nhiệm vụ mới A', 'Khoa Cơ khí', 'QĐ 2266', '01/10/2025–30/9/2026', 'Tiếp tục thực hiện', 'QĐ 2266']
+  ], { origin: 'A3' });
+  const dupBuf = new Uint8Array(XLSX.write(wbDup, { bookType: 'xlsx', type: 'array' }));
+  const dupPreview = parseAndPreviewA1Import({ buffer: dupBuf, unitCode: 'CK', existingA1: applied1.nextA1 });
+  assert.strictEqual(dupPreview.ok, true);
+  assert.strictEqual(dupPreview.summary.duplicateContentCount, 1, 'Phải phát hiện 1 dòng trùng nội dung với dữ liệu đã có');
+  const dupSkip = applyA1ImportPreview({ preview: dupPreview, existingA1: applied1.nextA1, unitCode: 'CK', duplicateDecisions: { 3: 'skip' } });
+  assert.strictEqual(dupSkip.addedCount, 0, 'Chọn bỏ qua thì không thêm dòng');
+  const dupAdd = applyA1ImportPreview({ preview: dupPreview, existingA1: applied1.nextA1, unitCode: 'CK', duplicateDecisions: { 3: 'add_new' } });
+  assert.strictEqual(dupAdd.addedCount, 1, 'Xác nhận dữ liệu mới thì thêm 1 dòng');
+  assert.strictEqual(dupAdd.nextA1[2].maNhiemVu, 'CK.NV03', 'Dòng xác nhận mới phải tự cấp mã CK.NV03');
+
   // 9. Kiểm thử API PUT /api/workbooks/[id] trên dữ liệu cô lập (thiếu quyền, thiếu trường, hồ sơ khóa, ghi đồng thời)
   process.env.VTVL_ISOLATED_LOCAL_STORE = 'true';
   resetWorkbookMemoryStore();

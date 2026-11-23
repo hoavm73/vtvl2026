@@ -32,7 +32,7 @@ function buildDefaultCatalog(): Map<string, SchoolVtvlCatalogItem> {
     const code = item.pl1Code.trim().toUpperCase();
     map.set(code, {
       code,
-      name: item.titleOrRole || item.positionName,
+      name: item.positionName,
       groupName: item.vtvlGroup4,
       groupRoman: item.groupRoman,
       rankTitle: item.tt31OrNgachCode,

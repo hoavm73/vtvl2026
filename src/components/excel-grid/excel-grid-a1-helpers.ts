@@ -179,7 +179,7 @@ export function syncC1VtvlChange(
   const newVtvl = resolveUniqueC1Code(sheetRows, rowId, effectiveUnit, rawTrimmed);
   const pl1Item = findPl1Item(newVtvl);
   const isQl = pl1Item?.pl1Code.startsWith('QL') ?? newVtvl.includes('.QL');
-  const resolvedName = pl1Item ? (pl1Item.titleOrRole || pl1Item.positionName) : '';
+  const resolvedName = pl1Item ? pl1Item.positionName : '';
   const resolvedGroup = pl1Item?.vtvlGroup4 || '';
   const resolvedRank = pl1Item?.tt31OrNgachCode || '';
 
@@ -190,8 +190,8 @@ export function syncC1VtvlChange(
           maVtvl: newVtvl,
           tenVtvl: resolvedName,
           tenKhung: resolvedName,
-          nhomVtvl4: resolvedGroup || row.nhomVtvl4 || '',
-          maNgach: resolvedRank || row.maNgach || '',
+          nhomVtvl4: resolvedGroup,
+          maNgach: resolvedRank,
           canCuQuyGio: isQl ? 'PP1 – theo cơ cấu và chức danh quản lý' : 'Mức chung 1.904 giờ – quy định về thời giờ làm việc'
         }
       : row

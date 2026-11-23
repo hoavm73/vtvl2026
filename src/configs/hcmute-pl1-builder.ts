@@ -31,7 +31,7 @@ export function createC1RowFromPl1(unitCode: string, item: Pl1VtvlItem, index: n
   return {
     id: `c1-pl1-${index + 1}`,
     maVtvl: `${unitCode}.${item.pl1Code}`,
-    tenVtvl: item.titleOrRole || item.positionName,
+    tenVtvl: item.positionName,
     loaiNhanLuc: 'Viên chức',
     quyetDinh: 'QĐ Hiệu trưởng / NĐ 232',
     gioChuanPp2: 1904,
@@ -64,7 +64,7 @@ export function createC2RowFromPl1(c1Row: GenericGridRow, index: number): Generi
       : item?.groupRoman === 'II'
       ? 'Năng lực chuyên môn'
       : 'Năng lực chung',
-    tenNangLuc: `Khung năng lực VTVL ${item?.titleOrRole || c1Row.tenVtvl}`,
+    tenNangLuc: `Khung năng lực VTVL ${item?.positionName || c1Row.tenVtvl}`,
     capDoYeuCau: isQl ? 'Cấp độ 4' : 'Cấp độ 3',
     moTaChiTiet: `Yêu cầu năng lực theo QĐ phê duyệt VTVL và Bậc nghề nghiệp sử dụng: ${getPl1CareerLevel(
       item?.pl1Code || maVtvl

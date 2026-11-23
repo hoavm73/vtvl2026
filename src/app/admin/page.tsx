@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, BarChart3, ShieldCheck, History
+  FileSpreadsheet, UserCheck, Building2, AlertCircle, Users, BarChart3, History
 } from 'lucide-react';
 import { AdminAuthGate } from '@/components/admin/AdminAuthGate';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -12,7 +12,6 @@ import { AdminSessionsTab } from '@/components/admin/AdminSessionsTab';
 import { AdminAccountsTab } from '@/components/admin/AdminAccountsTab';
 import { AdminSessionControlTab } from '@/components/admin/AdminSessionControlTab';
 import { AdminUnitsTab } from '@/components/admin/AdminUnitsTab';
-import { TcnsReviewListPanel } from '@/components/admin/TcnsReviewListPanel';
 import { AdminSystemLogsTab } from '@/components/admin/AdminSystemLogsTab';
 import { UnitMonitoringDashboard } from '@/components/overview/UnitMonitoringDashboard';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
@@ -23,11 +22,11 @@ import { performFullLogout } from '@/services/auth/google-auth';
 import { getAdminUnits } from '@/services/units/unit-management';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
 
-type AdminTabKey = 'overview' | 'sessions' | 'review' | 'accounts' | 'units' | 'session-control' | 'system-logs';
+type AdminTabKey = 'overview' | 'sessions' | 'accounts' | 'units' | 'session-control' | 'system-logs';
 
 function parseAdminTab(raw: string | null): AdminTabKey {
   if (raw === 'unit-monitor' || raw === 'overview') return 'overview';
-  if (raw === 'sessions' || raw === 'review' || raw === 'accounts' || raw === 'units' || raw === 'session-control' || raw === 'system-logs') return raw;
+  if (raw === 'sessions' || raw === 'accounts' || raw === 'units' || raw === 'session-control' || raw === 'system-logs') return raw;
   return 'overview';
 }
 
@@ -49,11 +48,18 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const syncFromUrl = () => setActiveTab(parseAdminTab(new URLSearchParams(window.location.search).get('tab')));
+    const syncFromUrl = () => {
+      const rawTab = new URLSearchParams(window.location.search).get('tab');
+      if (rawTab === 'review') {
+        router.replace('/admin/tham-dinh');
+        return;
+      }
+      setActiveTab(parseAdminTab(rawTab));
+    };
     syncFromUrl();
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
-  }, []);
+  }, [router]);
 
   const checkAuthAndLoadStats = useCallback(async () => {
     try {
@@ -206,11 +212,10 @@ export default function AdminPage() {
     : [
         { key: 'overview', label: '1. Tổng quan theo dõi ĐV', shortLabel: 'Tổng quan', icon: BarChart3 },
         { key: 'sessions', label: `2. Phiên & Bảng biểu (${sessBadge})`, shortLabel: `Hồ sơ (${sessBadge})`, icon: FileSpreadsheet },
-        { key: 'review', label: '3. Thẩm định cấp trường', shortLabel: 'Thẩm định', icon: ShieldCheck },
-        { key: 'accounts', label: `4. Tài khoản & Phân quyền (${accBadge})`, shortLabel: `Tài khoản (${accBadge})`, icon: Users },
-        { key: 'units', label: `5. Đơn vị (${unitCount})`, shortLabel: `Đơn vị (${unitCount})`, icon: Building2 },
-        { key: 'session-control', label: '6. Quản trị phiên', shortLabel: 'Phiên', icon: UserCheck },
-        { key: 'system-logs', label: '7. Nhật ký hệ thống', shortLabel: 'Nhật ký', icon: History }
+        { key: 'accounts', label: `3. Tài khoản & Phân quyền (${accBadge})`, shortLabel: `Tài khoản (${accBadge})`, icon: Users },
+        { key: 'units', label: `4. Đơn vị (${unitCount})`, shortLabel: `Đơn vị (${unitCount})`, icon: Building2 },
+        { key: 'session-control', label: '5. Quản trị phiên', shortLabel: 'Phiên', icon: UserCheck },
+        { key: 'system-logs', label: '6. Nhật ký hệ thống', shortLabel: 'Nhật ký', icon: History }
       ];
 
   return (
@@ -264,9 +269,6 @@ export default function AdminPage() {
         <div className="w-full max-w-full min-w-0">
           {activeTab === 'overview' && !isLeader && <UnitMonitoringDashboard />}
           {activeTab === 'sessions' && !isLeader && <AdminSessionsTab />}
-          {activeTab === 'review' && !isLeader && (
-            <TcnsReviewListPanel onSelectUnit={(u, wb) => router.push(`/admin/tham-dinh?unitCode=${encodeURIComponent(u)}&workbookId=${encodeURIComponent(wb)}`)} />
-          )}
           {activeTab === 'accounts' && <AdminAccountsTab />}
           {activeTab === 'units' && !isLeader && <AdminUnitsTab />}
           {activeTab === 'session-control' && !isLeader && <AdminSessionControlTab />}

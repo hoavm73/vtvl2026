@@ -67,14 +67,21 @@ export function useA1ExcelWorkflow({
     });
   }, []);
 
+  const isA1ValidForAutoSave = useCallback((a1Rows: GenericGridRow[]): boolean => {
+    return validateNewA1RowsForSave({
+      incomingA1: a1Rows,
+      existingA1: baselineA1Ref.current
+    }).ok;
+  }, []);
+
   const checkA1BeforeSave = useCallback((a1Rows: GenericGridRow[], focusOnError: boolean): boolean => {
     const check = validateNewA1RowsForSave({
       incomingA1: a1Rows,
       existingA1: baselineA1Ref.current
     });
     if (check.ok) {
-      setCellErrors({});
-      setValidationBanner(null);
+      setCellErrors((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setValidationBanner((prev) => (prev === null ? prev : null));
       return true;
     }
     if (focusOnError) {
@@ -150,6 +157,7 @@ export function useA1ExcelWorkflow({
     isImportingA1,
     syncA1Baseline,
     clearCellError,
+    isA1ValidForAutoSave,
     checkA1BeforeSave,
     handleDownloadA1Template,
     handleExportA1,

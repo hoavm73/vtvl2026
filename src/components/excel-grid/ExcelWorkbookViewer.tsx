@@ -95,25 +95,26 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   const effectiveC1Unlocked = !isWorkbookLocked && (isC1Unlocked || session?.role === 'admin' || session?.role === 'unit_leader');
 
   const a1Flow = useA1ExcelWorkflow({ unitCode, unitNameVi: currentUnit.nameVi, data, isReadOnly: isReadOnlyViewer, restoreWorkbookData, persistDataForSession });
+  const { checkA1BeforeSave, isA1ValidForAutoSave, syncA1Baseline, clearCellError } = a1Flow;
 
   const handleSave = useCallback((): boolean => {
     if (isReadOnlyViewer) return false;
-    if (!a1Flow.checkA1BeforeSave(data.A1 || [], true)) return false;
+    if (!checkA1BeforeSave(data.A1 || [], true)) return false;
     const synced = saveSheetData(activeSheet);
     lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(synced)}`;
-    void persistDataForSession(synced, true, unitCode).then((ok) => { if (ok) a1Flow.syncA1Baseline(synced.A1); });
+    void persistDataForSession(synced, true, unitCode).then((ok) => { if (ok) syncA1Baseline(synced.A1); });
     clearSheetDirty(activeSheet);
     return true;
-  }, [isReadOnlyViewer, activeSheet, data.A1, saveSheetData, persistDataForSession, unitCode, a1Flow]);
+  }, [isReadOnlyViewer, activeSheet, data.A1, saveSheetData, persistDataForSession, unitCode, checkA1BeforeSave, syncA1Baseline]);
 
   useEffect(() => {
     if (isReadOnlyViewer || dirtySheets.size === 0) return;
-    if (!a1Flow.checkA1BeforeSave(data.A1 || [], false)) return;
+    if (!isA1ValidForAutoSave(data.A1 || [])) return;
     const snapKey = `${unitCode}:${JSON.stringify(data)}`;
     if (snapKey === lastAutoSyncedSnapshotRef.current) return;
     lastAutoSyncedSnapshotRef.current = snapKey;
-    void persistDataForSession(data, false, unitCode).then((ok) => { if (ok) a1Flow.syncA1Baseline(data.A1); });
-  }, [dirtySheets, data, unitCode, isReadOnlyViewer, persistDataForSession, a1Flow]);
+    void persistDataForSession(data, false, unitCode).then((ok) => { if (ok) syncA1Baseline(data.A1); });
+  }, [dirtySheets, data, unitCode, isReadOnlyViewer, persistDataForSession, isA1ValidForAutoSave, syncA1Baseline]);
 
   useEffect(() => {
     if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase()) return;
@@ -139,7 +140,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
     if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || localDiffers || serverTicketDiff) {
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
-      a1Flow.syncA1Baseline(remoteWorkbook.data?.A1);
+      syncA1Baseline(remoteWorkbook.data?.A1);
       try {
         localStorage.setItem(gridKey, JSON.stringify(remoteWorkbook.data));
         localStorage.setItem(revKey, String(remoteWorkbook.revision));
@@ -222,7 +223,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         cellErrors={activeSheet === 'A1' ? a1Flow.cellErrors : undefined}
         a1Actions={activeSheet === 'A1' ? <A1ExcelToolbarActions canImport={!isReadOnlyViewer} onDownloadTemplate={a1Flow.handleDownloadA1Template} onExportA1={a1Flow.handleExportA1} onOpenImport={() => a1Flow.setShowA1ImportModal(true)} /> : undefined}
         onCellTouch={markCellTouched}
-        onCellChange={(rowId, field, val) => { if (isReadOnlyViewer) return; const key = `${rowId}_${field}`; markCellTouched(key); a1Flow.clearCellError(key); markSheetDirty(activeSheet); updateCell(activeSheet, rowId, field, val); }}
+        onCellChange={(rowId, field, val) => { if (isReadOnlyViewer) return; const key = `${rowId}_${field}`; markCellTouched(key); clearCellError(key); markSheetDirty(activeSheet); updateCell(activeSheet, rowId, field, val); }}
         onAddRow={() => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); addRow(activeSheet); }}
         onSplitRow={(rowId) => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); splitRow(activeSheet, rowId); }}
         onDeleteRow={(rowId) => { if (isReadOnlyViewer) return false; const ok = deleteRow(activeSheet, rowId); if (ok) markSheetDirty(activeSheet); return ok; }}

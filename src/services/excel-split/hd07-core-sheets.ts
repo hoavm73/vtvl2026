@@ -6,6 +6,7 @@ import {
 } from '@/configs/hcmute-hd07-catalog';
 import { TCNS_C2_PROFILES, TCNS_REAL_MISSIONS } from '@/configs/hcmute-pl1-catalog';
 import { JobTaskTemplate, NgachItem, SplitResultSummary, UnitSplitOptions } from '@/types/vtvl';
+import { A1_HEADERS, A1_SHEET_NAME } from '@/services/a1/a1-validation';
 import { buildHd07StaffSheets } from './hd07-staff-sheets';
 
 const fNum = (v: number, f: string): XLSX.CellObject => ({ t: 'n', v, f });
@@ -31,12 +32,13 @@ export function buildHd07CoreSheets(
   // 1. A1_NhiemVu (7 cột A–G — Bước 1 HD 07)
   const wsA1 = XLSX.utils.aoa_to_sheet([
     [`Biểu A1_ Nhiệm vụ (${opts.unitCode} — ${opts.unitNameVi})`, '', '', '→ Hướng dẫn điền: HD_DIEN_BIEU'],
-    ['Mã nhiệm vụ', 'Tên nhiệm vụ', 'Cơ quan', 'Căn cứ', 'Kỳ', 'Trạng thái', 'Nguồn'],
+    [...A1_HEADERS],
     ...missions.map((m) => [
       `${opts.unitCode}.${m.missionSuffix}`, m.missionName, opts.unitNameVi, m.legalBasis, opts.period, m.status, m.source
     ])
   ]);
-  XLSX.utils.book_append_sheet(wb, wsA1, '1. A1_NhiemVu');
+  wsA1['!autofilter'] = { ref: `A2:G${Math.max(500, missions.length + 2)}` };
+  XLSX.utils.book_append_sheet(wb, wsA1, A1_SHEET_NAME);
 
   // Chuẩn hóa mã công việc: [Mã nhiệm vụ].CV{01..99}
   const taskCounters: Record<string, number> = {};

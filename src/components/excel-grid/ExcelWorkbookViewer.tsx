@@ -16,6 +16,9 @@ import { WorkforceStructureChartModal } from './WorkforceStructureChartModal';
 import { UnitOrgTreeModal } from '@/components/admin/UnitOrgTreeModal';
 import { MobileStickyActionBar } from './MobileStickyActionBar';
 import { useOperatorSession } from './useOperatorSession';
+import { useA1ExcelWorkflow } from './useA1ExcelWorkflow';
+import { A1ExcelToolbarActions } from './A1ExcelToolbarActions';
+import { A1ImportModal } from './A1ImportModal';
 import { validateWorkbookData } from '@/services/validation';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
@@ -87,24 +90,30 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
 
   const activeMeta = EXCEL_SHEET_METAS[activeSheet];
   const activeRows = data[activeSheet] || [];
-  const isReadOnlyViewer = session?.role === 'staff';
-  const effectiveC1Unlocked = isC1Unlocked || session?.role === 'admin' || session?.role === 'unit_leader';
+  const isWorkbookLocked = remoteWorkbook?.status === 'approved' || remoteWorkbook?.status === 'archived';
+  const isReadOnlyViewer = session?.role === 'staff' || isWorkbookLocked;
+  const effectiveC1Unlocked = !isWorkbookLocked && (isC1Unlocked || session?.role === 'admin' || session?.role === 'unit_leader');
 
-  const handleSave = useCallback(() => {
-    if (isReadOnlyViewer) return;
+  const a1Flow = useA1ExcelWorkflow({ unitCode, unitNameVi: currentUnit.nameVi, data, isReadOnly: isReadOnlyViewer, restoreWorkbookData, persistDataForSession });
+
+  const handleSave = useCallback((): boolean => {
+    if (isReadOnlyViewer) return false;
+    if (!a1Flow.checkA1BeforeSave(data.A1 || [], true)) return false;
     const synced = saveSheetData(activeSheet);
     lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(synced)}`;
-    persistDataForSession(synced, true, unitCode);
+    void persistDataForSession(synced, true, unitCode).then((ok) => { if (ok) a1Flow.syncA1Baseline(synced.A1); });
     clearSheetDirty(activeSheet);
-  }, [isReadOnlyViewer, activeSheet, saveSheetData, persistDataForSession, unitCode]);
+    return true;
+  }, [isReadOnlyViewer, activeSheet, data.A1, saveSheetData, persistDataForSession, unitCode, a1Flow]);
 
   useEffect(() => {
     if (isReadOnlyViewer || dirtySheets.size === 0) return;
+    if (!a1Flow.checkA1BeforeSave(data.A1 || [], false)) return;
     const snapKey = `${unitCode}:${JSON.stringify(data)}`;
     if (snapKey === lastAutoSyncedSnapshotRef.current) return;
     lastAutoSyncedSnapshotRef.current = snapKey;
-    persistDataForSession(data, false, unitCode);
-  }, [dirtySheets, data, unitCode, isReadOnlyViewer, persistDataForSession]);
+    void persistDataForSession(data, false, unitCode).then((ok) => { if (ok) a1Flow.syncA1Baseline(data.A1); });
+  }, [dirtySheets, data, unitCode, isReadOnlyViewer, persistDataForSession, a1Flow]);
 
   useEffect(() => {
     if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase()) return;
@@ -130,6 +139,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
     if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || localDiffers || serverTicketDiff) {
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
+      a1Flow.syncA1Baseline(remoteWorkbook.data?.A1);
       try {
         localStorage.setItem(gridKey, JSON.stringify(remoteWorkbook.data));
         localStorage.setItem(revKey, String(remoteWorkbook.revision));
@@ -140,8 +150,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   }, [remoteWorkbook, unitCode, dirtySheets.size, isReadOnlyViewer, data, restoreWorkbookData, setStaleClientDetected]);
 
   const handleSaveAndNext = useCallback(() => {
-    handleSave();
-    goToNextSheet();
+    if (handleSave()) goToNextSheet();
   }, [handleSave, goToNextSheet]);
 
   useEffect(() => {
@@ -156,7 +165,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   }, [handleSave]);
 
   const handleSelectSheetSafe = (targetKey: ExcelSheetKey) => {
-    if (dirtySheets.has(activeSheet)) handleSave();
+    if (dirtySheets.has(activeSheet) && !handleSave()) return;
     setActiveSheet(targetKey);
     if (typeof window !== 'undefined' && (window.location.pathname === '/bang-tinh' || window.location.pathname === '/nghiep-vu-don-vi')) {
       syncContextQueryParams(window.location.pathname === '/bang-tinh' ? { unit: unitCode, sheet: targetKey } : { sheet: targetKey }, 'replace');
@@ -187,77 +196,43 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       />
       <ExcelSheetTabs activeSheet={activeSheet} sheetOrder={currentSheetOrder} orderMode={orderMode} dirtySheets={dirtySheets} onSelectSheet={handleSelectSheetSafe} onPrev={goToPrevSheet} onNext={goToNextSheet} canPrev={activeSheetIndex > 0} canNext={activeSheetIndex < currentSheetOrder.length - 1} />
 
-      {/* 4. BANNER CẢNH BÁO CACHE CŨ / CHẾ ĐỘ CHỈ XEM / LƯỚI BẢNG DỮ LIỆU CHÍNH */}
+      {/* 4. BANNER CẢNH BÁO CACHE CŨ / LỖI A1 / CHỈ XEM / LƯỚI DỮ LIỆU */}
       {staleClientDetected && !isReadOnlyViewer && (
         <div className="px-4 py-2.5 border-b border-[#f8b4af] bg-[#fdeceb] flex flex-wrap items-center justify-between gap-2 text-xs text-[#004776]">
           <span className="font-semibold">Phát hiện bản nháp cũ hơn phiên bản máy chủ. Hệ thống đã cách ly bản nháp cục bộ và chặn tự động tải lên — vui lòng tải lại phiên bản mới nhất.</span>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                import('@/services/storage/indexeddb-storage').then((m) => m.downloadStaleDraftJson(unitCode, data, currentRevision));
-              }}
-              className="px-3 py-1 rounded-lg border border-[#004776]/30 bg-white hover:bg-[#f4f7fb] text-[#004776] font-semibold cursor-pointer whitespace-nowrap"
-            >
-              Tải bản nháp cũ (.json)
-            </button>
-            <button
-              type="button"
-              onClick={() => { lastRemoteHandledRef.current = ''; setDirtySheets(new Set()); void reloadLatestFromServer(unitCode); }}
-              className="px-3 py-1 rounded-lg bg-[#006cee] hover:bg-[#0058c4] text-white font-semibold cursor-pointer whitespace-nowrap"
-            >
-              Tải lại dữ liệu máy chủ
-            </button>
+            <button type="button" onClick={() => { import('@/services/storage/indexeddb-storage').then((m) => m.downloadStaleDraftJson(unitCode, data, currentRevision)); }} className="px-3 py-1 rounded-lg border border-[#004776]/30 bg-white hover:bg-[#f4f7fb] text-[#004776] font-semibold cursor-pointer whitespace-nowrap">Tải bản nháp cũ (.json)</button>
+            <button type="button" onClick={() => { lastRemoteHandledRef.current = ''; setDirtySheets(new Set()); void reloadLatestFromServer(unitCode); }} className="px-3 py-1 rounded-lg bg-[#006cee] hover:bg-[#0058c4] text-white font-semibold cursor-pointer whitespace-nowrap">Tải lại dữ liệu máy chủ</button>
           </div>
         </div>
+      )}
+      {a1Flow.validationBanner && (
+        <div role="alert" className="px-4 py-2.5 border-b border-[#f8b4af] bg-[#fdeceb] text-xs font-semibold text-[#b42318]">{a1Flow.validationBanner}</div>
       )}
       {isReadOnlyViewer && (
         <div className="px-4 py-2.5 border-b border-amber-200 bg-amber-50 flex items-center gap-2 text-xs font-semibold text-amber-900">
           <Eye className="w-4 h-4 text-amber-700 shrink-0" />
-          <span>Chế độ chỉ xem (Cán bộ – Giảng viên)</span>
+          <span>{isWorkbookLocked ? 'Hồ sơ đơn vị đã khóa (Đã nộp / Đã phê duyệt) — chế độ chỉ xem' : 'Chế độ chỉ xem (Cán bộ – Giảng viên)'}</span>
         </div>
       )}
 
       <ExcelTableRenderer
-        meta={activeMeta}
-        rows={activeRows}
-        dynamicOptionsMap={dynamicOptionsMap}
-        lastSaved={lastSaved}
-        lastSavedSheet={lastSavedSheet}
-        isC1Unlocked={effectiveC1Unlocked}
-        isReadOnly={isReadOnlyViewer}
-        touchedCells={touchedCells}
+        meta={activeMeta} rows={activeRows} dynamicOptionsMap={dynamicOptionsMap} lastSaved={lastSaved} lastSavedSheet={lastSavedSheet}
+        isC1Unlocked={effectiveC1Unlocked} isReadOnly={isReadOnlyViewer} touchedCells={touchedCells}
+        cellErrors={activeSheet === 'A1' ? a1Flow.cellErrors : undefined}
+        a1Actions={activeSheet === 'A1' ? <A1ExcelToolbarActions canImport={!isReadOnlyViewer} onDownloadTemplate={a1Flow.handleDownloadA1Template} onExportA1={a1Flow.handleExportA1} onOpenImport={() => a1Flow.setShowA1ImportModal(true)} /> : undefined}
         onCellTouch={markCellTouched}
-        onCellChange={(rowId, field, val) => {
-          if (isReadOnlyViewer) return;
-          markCellTouched(`${rowId}_${field}`);
-          markSheetDirty(activeSheet);
-          updateCell(activeSheet, rowId, field, val);
-        }}
-        onAddRow={() => {
-          if (isReadOnlyViewer) return;
-          markSheetDirty(activeSheet);
-          addRow(activeSheet);
-        }}
-        onSplitRow={(rowId) => {
-          if (isReadOnlyViewer) return;
-          markSheetDirty(activeSheet);
-          splitRow(activeSheet, rowId);
-        }}
-        onDeleteRow={(rowId) => {
-          if (isReadOnlyViewer) return false;
-          const ok = deleteRow(activeSheet, rowId);
-          if (ok) markSheetDirty(activeSheet);
-          return ok;
-        }}
-        onSaveSheet={handleSave}
-        onSaveAndNext={handleSaveAndNext}
-        canNext={activeSheetIndex < currentSheetOrder.length - 1}
+        onCellChange={(rowId, field, val) => { if (isReadOnlyViewer) return; const key = `${rowId}_${field}`; markCellTouched(key); a1Flow.clearCellError(key); markSheetDirty(activeSheet); updateCell(activeSheet, rowId, field, val); }}
+        onAddRow={() => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); addRow(activeSheet); }}
+        onSplitRow={(rowId) => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); splitRow(activeSheet, rowId); }}
+        onDeleteRow={(rowId) => { if (isReadOnlyViewer) return false; const ok = deleteRow(activeSheet, rowId); if (ok) markSheetDirty(activeSheet); return ok; }}
+        onSaveSheet={handleSave} onSaveAndNext={handleSaveAndNext} canNext={activeSheetIndex < currentSheetOrder.length - 1}
       />
 
       <GuidanceDrawerModal isOpen={showGuidanceModal} onClose={() => setShowGuidanceModal(false)} meta={activeMeta} />
       <C1AdminLockModal isOpen={showUnlockModal} onClose={() => setShowUnlockModal(false)} onUnlock={unlockC1} />
       <DataQualityReportModal isOpen={showQualityModal} onClose={() => setShowQualityModal(false)} report={qualityReport} onSelectSheet={handleSelectSheetSafe} />
+      <A1ImportModal isOpen={a1Flow.showA1ImportModal} unitCode={unitCode} unitNameVi={currentUnit.nameVi} existingA1={data.A1 || []} isSaving={a1Flow.isImportingA1} onClose={() => a1Flow.setShowA1ImportModal(false)} onDownloadTemplate={a1Flow.handleDownloadA1Template} onConfirmImport={a1Flow.handleConfirmA1Import} />
       <WorkforceStructureChartModal
         isOpen={showChartModal} onClose={() => setShowChartModal(false)}
         unitCode={unitCode} unitNameVi={currentUnit.nameVi}

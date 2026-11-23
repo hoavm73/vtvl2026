@@ -25,6 +25,7 @@ interface TableControlBarProps {
   onFilterModeChange: (mode: 'all' | 'touched' | 'incomplete') => void;
   onDensityChange: (density: 'compact' | 'comfortable') => void;
   onToggleFullscreen: () => void;
+  a1Actions?: React.ReactNode;
 }
 
 const FILTER_OPTIONS = [
@@ -49,7 +50,8 @@ export function TableControlBar({
   onSearchChange,
   onFilterModeChange,
   onDensityChange,
-  onToggleFullscreen
+  onToggleFullscreen,
+  a1Actions
 }: TableControlBarProps) {
   const isFiltered = filterMode !== 'all';
 
@@ -69,6 +71,8 @@ export function TableControlBar({
             <span className="hidden sm:inline">{meta.key === 'A1' ? 'Thêm nhiệm vụ' : 'Thêm dòng mới'}</span>
           </button>
         )}
+
+        {a1Actions}
 
         <span className="text-xs sm:text-[13px] font-medium text-[#476885] tabular-nums">
           Tổng: <strong className="font-bold text-[#004776]">{rowsCount}</strong> dòng

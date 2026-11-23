@@ -1,4 +1,5 @@
 import { ExcelSheetKey, ExcelSheetMeta } from './excel-grid-types';
+import { A1_STATUS_OPTIONS } from '@/services/a1/a1-validation';
 
 export const CORE_EXCEL_SHEET_METAS: Record<
   'A1' | 'A2' | 'B1' | 'B2_CT' | 'B2' | 'C1',
@@ -15,12 +16,12 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     ruleHint: 'Mã nhiệm vụ chuẩn: [MÃ_ĐV].NV[01..99] (ví dụ: TCNS.NV01). Mỗi nhiệm vụ có một mã riêng, tự động tăng dần khi thêm mới.',
     columns: [
       { colLetter: 'A', field: 'maNhiemVu', headerName: 'Mã nhiệm vụ ([ĐV].NVxx)', width: '170px', isFormula: true, formulaHint: 'Tự động cấp mã nhiệm vụ tăng dần ([MÃ_ĐV].NVxx)' },
-      { colLetter: 'B', field: 'tenNhiemVu', headerName: 'Tên nhiệm vụ được giao', width: '480px' },
-      { colLetter: 'C', field: 'coQuan', headerName: 'Cơ quan / Đơn vị thực hiện', width: '250px' },
-      { colLetter: 'D', field: 'canCu', headerName: 'Căn cứ giao nhiệm vụ (QĐ 2266)', width: '280px' },
-      { colLetter: 'E', field: 'ky', headerName: 'Kỳ số liệu', width: '160px' },
-      { colLetter: 'F', field: 'trangThai', headerName: 'Trạng thái', width: '170px', type: 'select', selectOptions: ['Tiếp tục thực hiện', 'Mới tiếp nhận', 'Đã chuyển giao', 'Không còn thực hiện'] },
-      { colLetter: 'G', field: 'nguon', headerName: 'Nguồn dữ liệu / Quyết định', width: '260px' }
+      { colLetter: 'B', field: 'tenNhiemVu', headerName: 'Tên nhiệm vụ được giao', width: '480px', required: true },
+      { colLetter: 'C', field: 'coQuan', headerName: 'Cơ quan / Đơn vị thực hiện', width: '250px', required: true },
+      { colLetter: 'D', field: 'canCu', headerName: 'Căn cứ giao nhiệm vụ (QĐ 2266)', width: '280px', required: true },
+      { colLetter: 'E', field: 'ky', headerName: 'Kỳ số liệu', width: '160px', required: true },
+      { colLetter: 'F', field: 'trangThai', headerName: 'Trạng thái', width: '170px', type: 'select', required: true, selectOptions: [...A1_STATUS_OPTIONS] },
+      { colLetter: 'G', field: 'nguon', headerName: 'Nguồn dữ liệu / Quyết định', width: '260px', required: true }
     ]
   },
   A2: {

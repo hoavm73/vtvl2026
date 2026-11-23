@@ -34,7 +34,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [touchedCells, setTouchedCells] = useState<Set<string>>(new Set());
   const [isRestoredSession, setIsRestoredSession] = useState<boolean>(false);
-  const [remoteWorkbook, setRemoteWorkbook] = useState<{ unitCode: string; revision: number; data: Record<ExcelSheetKey, GenericGridRow[]> } | null>(null);
+  const [remoteWorkbook, setRemoteWorkbook] = useState<{ unitCode: string; revision: number; status?: string; data: Record<ExcelSheetKey, GenericGridRow[]> } | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastDataRef = useRef<Record<ExcelSheetKey, GenericGridRow[]> | null>(null);
@@ -58,7 +58,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
         setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
         void purgeStaleLocalDrafts(targetUnitCode, srvRev, op?.email);
         if (json.workbook.data) {
-          setRemoteWorkbook({ unitCode: json.workbook.unitId || targetUnitCode, revision: srvRev, data: json.workbook.data });
+          setRemoteWorkbook({ unitCode: json.workbook.unitId || targetUnitCode, revision: srvRev, status: json.workbook.status, data: json.workbook.data });
         }
         return json.workbook;
       }
@@ -173,14 +173,14 @@ export function useOperatorSession(preferredUnitCode?: string) {
 
   const persistDataForSession = useCallback(async (
     data: Record<ExcelSheetKey, GenericGridRow[]>, forceImmediate = false, unitOverride?: string
-  ) => {
-    if (!session) return;
+  ): Promise<boolean> => {
+    if (!session) return false;
     const targetUnit = (unitOverride || session.unitCode).toUpperCase();
     const activeWbId = (targetUnit === session.unitCode.toUpperCase() && workbookId) ? workbookId : `wb_${targetUnit}_2026`;
     if (remoteWorkbook && remoteWorkbook.unitCode.toUpperCase() === targetUnit && remoteWorkbook.revision > currentRevision) {
       setSyncStatus('conflict'); setStaleClientDetected(true);
       setApiError({ code: 'STALE_CLIENT_REVISION', message: 'Phát hiện bản nháp trình duyệt cũ hơn phiên bản máy chủ. Vui lòng tải lại trước khi lưu.', retryable: false, timestamp: Date.now() });
-      return;
+      return false;
     }
 
     setSyncStatus('saving');
@@ -192,7 +192,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
       operatorEmail: session.email, data, touchedCells: touchedArray, clientSavedAt: new Date().toISOString(), clientTimestamp: Date.now(), serverRevision: currentRevision, isDirty: false
     });
 
-    const runServerSave = async () => {
+    const runServerSave = async (): Promise<boolean> => {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
       if (session.email) headers['x-actor-email'] = session.email;
@@ -208,7 +208,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
           setSyncStatus('conflict'); setConflictData(json.currentServerWorkbook || null); setStaleClientDetected(true);
           if (typeof json.serverRevision === 'number') void purgeStaleLocalDrafts(targetUnit, json.serverRevision, session.email);
           setApiError({ code: json.code || 'STALE_CLIENT_REVISION', message: json.error || 'Dữ liệu máy chủ đã được cập nhật. Vui lòng tải lại phiên bản mới nhất.', retryable: false, timestamp: Date.now() });
-          return;
+          return false;
         }
         if (res.ok) {
           const json = await res.json();
@@ -221,19 +221,23 @@ export function useOperatorSession(preferredUnitCode?: string) {
           }
           setSyncStatus('synced'); setDataSource('server_synced'); setStaleClientDetected(false); setApiError(null);
           setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
+          return true;
         } else {
+          const errJson = await res.json().catch(() => ({}));
           setSyncStatus('offline');
-          setApiError({ code: 'SAVE_FAIL_' + res.status, message: 'Máy chủ phản hồi lỗi khi lưu hồ sơ.', retryable: true, timestamp: Date.now() });
+          setApiError({ code: errJson.code || ('SAVE_FAIL_' + res.status), message: errJson.error || 'Máy chủ phản hồi lỗi khi lưu hồ sơ.', retryable: res.status >= 500, timestamp: Date.now() });
+          return false;
         }
       } catch {
         setSyncStatus('offline');
         setApiError({ code: 'NETWORK_TIMEOUT', message: 'Lỗi mạng khi lưu máy chủ, đã ghi tạm vào hàng đợi.', retryable: true, timestamp: Date.now() });
         void queueOfflineSync({ id: `queue_${targetUnit}_${Date.now()}`, workbookId: activeWbId, unitCode: targetUnit, userId: session.email, baseRevision: currentRevision, data, touchedCells: touchedArray, queuedAt: Date.now(), operatorEmail: session.email });
+        return false;
       }
     };
 
-    if (forceImmediate) { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); await runServerSave(); }
-    else { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); debounceTimerRef.current = setTimeout(runServerSave, 1500); }
+    if (forceImmediate) { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); return await runServerSave(); }
+    else { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); debounceTimerRef.current = setTimeout(() => { void runServerSave(); }, 1500); return true; }
   }, [session, workbookId, currentRevision, touchedCells, remoteWorkbook]);
 
   const reloadLatestFromServer = useCallback(async (unitOverride?: string) => {

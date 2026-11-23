@@ -1,5 +1,6 @@
 import { GenericGridRow } from './excel-grid-types';
 import { getNextMissionCode } from './excel-grid-code-helpers';
+import { A1_DEFAULT_PERIOD } from '@/services/a1/a1-validation';
 
 /**
  * Định nghĩa cấu trúc hàng mới khi người dùng bấm "Thêm dòng mới" ở từng biểu.
@@ -20,9 +21,9 @@ export function buildNewGridRow(
         id: newId,
         maNhiemVu: nextCode,
         tenNhiemVu: '',
-        coQuan: '',
+        coQuan: currentUnit.nameVi || '',
         canCu: '',
-        ky: '',
+        ky: A1_DEFAULT_PERIOD,
         trangThai: '',
         nguon: ''
       }

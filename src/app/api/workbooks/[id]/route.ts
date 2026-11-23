@@ -24,6 +24,7 @@ import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
 import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 import { cacheGetOrSet, invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import { validateAndNormalizeUnitC1Rows } from '@/services/storage/server-vtvl-catalog-store';
+import { validateNewA1RowsForSave } from '@/services/a1/a1-validation';
 import { buildUnitWorkbookLockedResponse, isWorkbookStatusLocked } from '@/services/workbooks/workbook-lock-guard';
 
 interface RouteContext {
@@ -187,17 +188,6 @@ export async function PUT(req: Request, context: RouteContext) {
           normalizedData = { ...data, C1: c1Check.normalizedC1 };
         }
 
-        const saveParams = {
-          workbookId: id,
-          unitCode: targetUnit,
-          existingWb,
-          data: normalizedData,
-          touchedCells: Array.isArray(touchedCells) ? touchedCells : [],
-          baseRevision: typeof baseRevision === 'number' ? baseRevision : 1,
-          changeSummary: commitMessage || 'Cập nhật từ phiên làm việc',
-          actorEmail: caller.email,
-          actorTitle: participant?.roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Quản trị viên')
-        };
         if (existingWb && (typeof baseRevision !== 'number' || baseRevision < existingWb.currentRevision)) {
           return NextResponse.json(
             {
@@ -210,6 +200,31 @@ export async function PUT(req: Request, context: RouteContext) {
             { status: 409 }
           );
         }
+
+        if (Array.isArray(normalizedData?.A1)) {
+          const a1Check = validateNewA1RowsForSave({
+            incomingA1: normalizedData.A1,
+            existingA1: existingWb?.data?.A1
+          });
+          if (!a1Check.ok) {
+            return NextResponse.json(
+              { error: a1Check.error, code: a1Check.code, rowErrors: a1Check.entries },
+              { status: a1Check.status }
+            );
+          }
+        }
+
+        const saveParams = {
+          workbookId: id,
+          unitCode: targetUnit,
+          existingWb,
+          data: normalizedData,
+          touchedCells: Array.isArray(touchedCells) ? touchedCells : [],
+          baseRevision: typeof baseRevision === 'number' ? baseRevision : 1,
+          changeSummary: commitMessage || 'Cập nhật từ phiên làm việc',
+          actorEmail: caller.email,
+          actorTitle: participant?.roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Quản trị viên')
+        };
         const finalResult =
           targetUnit === prelimUnit
             ? await saveWorkbookWithPendingApprovedTicketsUnlocked(saveParams)

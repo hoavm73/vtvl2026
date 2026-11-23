@@ -20,6 +20,8 @@ interface ExcelTableRendererProps {
   isC1Unlocked?: boolean;
   isReadOnly?: boolean;
   touchedCells?: Set<string>;
+  cellErrors?: Record<string, string>;
+  a1Actions?: React.ReactNode;
   onCellTouch?: (cellKey: string) => void;
   onCellChange: (rowId: string, field: string, value: string | number) => void;
   onAddRow: () => void;
@@ -39,7 +41,7 @@ type TableQueryFilterParams = {
 
 export function ExcelTableRenderer({
   meta, rows, dynamicOptionsMap,
-  isC1Unlocked = false, isReadOnly = false, touchedCells, onCellTouch, onCellChange,
+  isC1Unlocked = false, isReadOnly = false, touchedCells, cellErrors, a1Actions, onCellTouch, onCellChange,
   onAddRow, onSplitRow, onDeleteRow
 }: ExcelTableRendererProps) {
   const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
@@ -154,6 +156,7 @@ export function ExcelTableRenderer({
         onDeleteSelected={isLocked ? undefined : () => setConfirmDeleteId('selected')}
         onSearchChange={(val) => setParam('q', val)} onFilterModeChange={(mode) => setParam('filter', mode)}
         onDensityChange={setDensity} onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+        a1Actions={a1Actions}
       />
 
       {/* MOBILE CARD MODE (< 768px default) */}
@@ -208,6 +211,7 @@ export function ExcelTableRenderer({
                       isComputed={col.isFormula || col.readOnly || isLocked}
                       isTouched={touchedCells?.has(`${row.id}_${col.field}`) ?? false}
                       cellKey={`${row.id}_${col.field}`}
+                      errorMessage={cellErrors?.[`${row.id}_${col.field}`]}
                       dynamicOptions={col.dynamicOptionsKey ? dynamicOptionsMap?.[col.dynamicOptionsKey] : undefined}
                       density={density} onCellTouch={onCellTouch} onCellChange={onCellChange}
                     />

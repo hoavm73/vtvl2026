@@ -12,6 +12,7 @@ interface ExcelDataCellProps {
   isComputed: boolean;
   isTouched: boolean;
   cellKey: string;
+  errorMessage?: string;
   dynamicOptions?: (string | ShadcnSelectOption)[];
   density?: 'compact' | 'comfortable';
   onCellTouch?: (key: string) => void;
@@ -25,6 +26,7 @@ function ExcelDataCellComponent({
   isComputed,
   isTouched,
   cellKey,
+  errorMessage,
   dynamicOptions,
   density = 'comfortable',
   onCellTouch,
@@ -34,7 +36,7 @@ function ExcelDataCellComponent({
   const [hasBlurred, setHasBlurred] = useState(false);
 
   const strVal = val !== undefined && val !== null ? String(val) : '';
-  const isEmptyRequired = hasBlurred && Boolean(col.required) && !strVal.trim();
+  const isEmptyRequired = Boolean(errorMessage) || (hasBlurred && Boolean(col.required) && !strVal.trim());
   const errorId = `${cellKey}-err`;
 
   const cellStyle = isEmptyRequired
@@ -106,7 +108,7 @@ function ExcelDataCellComponent({
       ...rawOptions.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))
     ];
     return (
-      <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative">
+      <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative" data-cell-key={cellKey}>
         <ShadcnSelect
           value={strVal}
           options={shadcnOptions}
@@ -126,7 +128,7 @@ function ExcelDataCellComponent({
         />
         {isEmptyRequired && (
           <span id={errorId} className="text-[11px] text-[var(--fix)] mt-0.5 px-1 font-medium flex items-center gap-0.5">
-            <AlertCircle className="w-3 h-3 shrink-0" /> Bắt buộc chọn
+            <AlertCircle className="w-3 h-3 shrink-0" /> {errorMessage || 'Bắt buộc chọn'}
           </span>
         )}
       </td>
@@ -167,6 +169,7 @@ function ExcelDataCellComponent({
     <td style={colStyle} className="py-1 px-1.5 border-r border-[#f1f5f9] align-middle relative">
       <textarea
         ref={textareaRef}
+        data-cell-key={cellKey}
         rows={1}
         value={strVal}
         title={strVal}
@@ -187,7 +190,7 @@ function ExcelDataCellComponent({
       />
       {isEmptyRequired && (
         <span id={errorId} className="text-[11px] text-[var(--fix)] mt-0.5 px-1 font-medium flex items-center gap-0.5">
-          <AlertCircle className="w-3 h-3 shrink-0" /> Bắt buộc nhập
+          <AlertCircle className="w-3 h-3 shrink-0" /> {errorMessage || 'Bắt buộc nhập'}
         </span>
       )}
     </td>
@@ -200,6 +203,7 @@ export const ExcelDataCell = React.memo(
     prev.val === next.val &&
     prev.rowId === next.rowId &&
     prev.cellKey === next.cellKey &&
+    prev.errorMessage === next.errorMessage &&
     prev.isComputed === next.isComputed &&
     prev.isTouched === next.isTouched &&
     prev.density === next.density &&

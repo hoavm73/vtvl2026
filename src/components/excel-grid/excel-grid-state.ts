@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, TECHNICAL_DEPENDENCY_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
+import { normalizeC2Rows, normalizeD1Rows } from './excel-c2-d1-helpers';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
 import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { validateRowDeletion } from './excel-grid-delete-guards';
@@ -92,10 +93,11 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
   }, [currentUnit.code]);
 
   const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string, resetSheet = false) => {
+    const resolvedUnit = findHcmuteUnit(newUnitCode || unitCode);
     if (newUnitCode) setUnitCode(newUnitCode);
-    setData(restoredData);
+    setData({ ...restoredData, C2: normalizeC2Rows(restoredData.C2, restoredData.C1 || []), D1: normalizeD1Rows(restoredData.D1, restoredData.C1 || [], resolvedUnit.nameVi) });
     if (resetSheet) setActiveSheet('A1');
-  }, []);
+  }, [unitCode]);
 
   const updateCell = useCallback((sheetKey: ExcelSheetKey, rowId: string, field: string, value: string | number) => {
     setData((prev) => {

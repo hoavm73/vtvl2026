@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   OperatorSession, getCurrentOperatorSession, saveCurrentOperatorSession,
-  updateOperatorSessionUnit, clearCurrentOperatorSession, getSessionByEmail,
-  saveEmailSessionData, normalizeEmail
+  updateOperatorSessionUnit, getSessionByEmail, saveEmailSessionData, normalizeEmail, clearUnitLocalGridCache
 } from '@/services/telemetry/operator-session';
-import { saveLocalDraft, queueOfflineSync } from '@/services/storage/indexeddb-storage';
+import { saveLocalDraft, queueOfflineSync, purgeStaleLocalDrafts } from '@/services/storage/indexeddb-storage';
 import { saveActiveUnitSession } from '@/services/telemetry/activity-log';
 import { consumeGoogleOAuthCallback, performFullLogout } from '@/services/auth/google-auth';
 import { ExcelSheetKey, GenericGridRow } from './excel-grid-types';
@@ -29,6 +28,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
   const [dataSource, setDataSource] = useState<DataSourceKind>('sample');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [conflictData, setConflictData] = useState<any | null>(null);
+  const [staleClientDetected, setStaleClientDetected] = useState<boolean>(false);
   const [apiError, setApiError] = useState<ApiSyncError | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -47,19 +47,23 @@ export function useOperatorSession(preferredUnitCode?: string) {
       if (op?.accessToken) headers.Authorization = `Bearer ${op.accessToken}`;
       if (op?.email) headers['x-actor-email'] = op.email;
       const res = await fetch(`/api/workbooks/wb_${encodeURIComponent(targetUnitCode)}_2026`, { headers, cache: 'no-store' });
-      if (!res.ok || !isStillMounted()) return;
+      if (!res.ok || !isStillMounted()) return null;
       const json = await res.json();
       if (json.workbook && isStillMounted()) {
+        const srvRev = Number(json.workbook.currentRevision || 1);
         setWorkbookId(json.workbook.id);
-        setCurrentRevision(json.workbook.currentRevision || 1);
+        setCurrentRevision(srvRev);
         setDataSource('server_synced');
         setSyncStatus('synced');
         setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
+        void purgeStaleLocalDrafts(targetUnitCode, srvRev, op?.email);
         if (json.workbook.data) {
-          setRemoteWorkbook({ unitCode: json.workbook.unitId || targetUnitCode, revision: json.workbook.currentRevision || 1, data: json.workbook.data });
+          setRemoteWorkbook({ unitCode: json.workbook.unitId || targetUnitCode, revision: srvRev, data: json.workbook.data });
         }
+        return json.workbook;
       }
     } catch { /* offline fallback */ }
+    return null;
   }, []);
 
   useEffect(() => {
@@ -70,7 +74,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
       const cur = consumeGoogleOAuthCallback() || getCurrentOperatorSession();
       if (!cur) {
         if (!isMounted) return;
-        setSession(null); setWorkbookId(null); setRemoteWorkbook(null);
+        setSession(null); setWorkbookId(null); setRemoteWorkbook(null); setStaleClientDetected(false);
         setDataSource('sample'); setSyncStatus('synced'); setTouchedCells(new Set());
         return;
       }
@@ -101,9 +105,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
   const markCellTouched = useCallback((cellKey: string) => {
     setTouchedCells((prev) => {
       if (prev.has(cellKey)) return prev;
-      const next = new Set(prev);
-      next.add(cellKey);
-      return next;
+      const next = new Set(prev); next.add(cellKey); return next;
     });
     setSyncStatus('unsaved');
     if (dataSource === 'sample') setDataSource('local_draft');
@@ -114,15 +116,12 @@ export function useOperatorSession(preferredUnitCode?: string) {
     if (cur?.hasSelectedUnit && cur.role !== 'admin' && cur.unitCode !== newUnitCode) return;
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     viewingUnitRef.current = newUnitCode.toUpperCase();
-    const isPreserveSessionUnit = cur?.role === 'admin' || cur?.email === 'tcns@hcmute.edu.vn';
-    const updated = isPreserveSessionUnit ? cur : updateOperatorSessionUnit(newUnitCode);
+    const isPreserve = cur?.role === 'admin' || cur?.email === 'tcns@hcmute.edu.vn';
+    const updated = isPreserve ? cur : updateOperatorSessionUnit(newUnitCode);
     if (updated) {
-      setSession(updated);
-      setWorkbookId(`wb_${newUnitCode}_2026`);
-      setCurrentRevision(1);
-      setRemoteWorkbook(null);
-      setDataSource('sample');
-      if (!isPreserveSessionUnit) saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
+      setSession(updated); setWorkbookId(`wb_${newUnitCode}_2026`); setCurrentRevision(1);
+      setRemoteWorkbook(null); setStaleClientDetected(false); setDataSource('sample');
+      if (!isPreserve) saveActiveUnitSession({ unitCode: updated.unitCode, actorEmail: updated.email, actorTitle: updated.title });
       loadUnitWorkbookFromServer(newUnitCode, updated);
     }
   }, [loadUnitWorkbookFromServer]);
@@ -132,77 +131,43 @@ export function useOperatorSession(preferredUnitCode?: string) {
   ): Promise<{ restoredData: Record<ExcelSheetKey, GenericGridRow[]> | null; isExisting: boolean }> => {
     const norm = normalizeEmail(email) || email;
     const newSession = saveCurrentOperatorSession(norm, unitCode, title);
-    setSession(newSession);
-    setIsModalOpen(false);
-    setApiError(null);
-
+    setSession(newSession); setIsModalOpen(false); setApiError(null); setStaleClientDetected(false);
     saveActiveUnitSession({ unitCode: newSession.unitCode, actorEmail: newSession.email, actorTitle: newSession.title });
 
-    let targetWorkbookId = chosenWorkbookId;
-
-    if (!targetWorkbookId) {
-      try {
-        const res = await fetch('/api/workbooks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            unitCode, reportingPeriod: '01/10/2025–30/9/2026', email: norm,
-            displayName: norm.split('@')[0], roleLabel: title
-          })
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.workbook) {
-            targetWorkbookId = json.workbook.id;
-            setWorkbookId(json.workbook.id);
-            setCurrentRevision(json.workbook.currentRevision || 1);
-            setDataSource('server_created');
-            setSyncStatus('synced');
-            setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
-            if (json.workbook.data && Object.keys(json.workbook.data).length > 0) {
-              setIsRestoredSession(true);
-              setDataSource('server_restored');
-              return { restoredData: json.workbook.data, isExisting: true };
-            }
-          }
-        } else {
-          setApiError({ code: 'HTTP_' + res.status, message: 'Lỗi khởi tạo hồ sơ máy chủ (' + res.status + ')', retryable: true, timestamp: Date.now() });
-        }
-      } catch {
-        setApiError({ code: 'NETWORK_ERROR', message: 'Không thể kết nối máy chủ tạo hồ sơ.', retryable: true, timestamp: Date.now() });
-      }
-    } else {
-      setWorkbookId(targetWorkbookId);
-      try {
-        const res = await fetch(`/api/workbooks/${targetWorkbookId}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.workbook) {
-            setCurrentRevision(json.workbook.currentRevision || 1);
-            setDataSource('server_restored');
-            setSyncStatus('synced');
-            setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
-            if (json.workbook.data) {
-              setIsRestoredSession(true);
-              return { restoredData: json.workbook.data, isExisting: true };
-            }
+    try {
+      const res = chosenWorkbookId
+        ? await fetch(`/api/workbooks/${chosenWorkbookId}`, { cache: 'no-store' })
+        : await fetch('/api/workbooks', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ unitCode, reportingPeriod: '01/10/2025–30/9/2026', email: norm, displayName: norm.split('@')[0], roleLabel: title })
+          });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.workbook) {
+          setWorkbookId(json.workbook.id);
+          setCurrentRevision(json.workbook.currentRevision || 1);
+          setDataSource(chosenWorkbookId ? 'server_restored' : 'server_created');
+          setSyncStatus('synced');
+          setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
+          if (json.workbook.data && Object.keys(json.workbook.data).length > 0) {
+            setIsRestoredSession(true);
+            return { restoredData: json.workbook.data, isExisting: true };
           }
         }
-      } catch {
-        setApiError({ code: 'NETWORK_ERROR', message: 'Không thể tải hồ sơ từ máy chủ.', retryable: true, timestamp: Date.now() });
+      } else {
+        setApiError({ code: 'HTTP_' + res.status, message: 'Lỗi khởi tạo hồ sơ máy chủ (' + res.status + ')', retryable: true, timestamp: Date.now() });
       }
+    } catch {
+      setApiError({ code: 'NETWORK_ERROR', message: 'Không thể kết nối máy chủ hồ sơ.', retryable: true, timestamp: Date.now() });
     }
 
     const savedRecord = getSessionByEmail(norm, true);
-    if (savedRecord?.data) {
-      setIsRestoredSession(true);
-      setDataSource('local_draft');
+    if (savedRecord?.data && savedRecord.unitCode === newSession.unitCode) {
+      setIsRestoredSession(true); setDataSource('local_draft');
       if (savedRecord.touchedCells) setTouchedCells(new Set(savedRecord.touchedCells));
       return { restoredData: savedRecord.data, isExisting: true };
     }
-
-    setIsRestoredSession(false);
-    setTouchedCells(new Set());
+    setIsRestoredSession(false); setTouchedCells(new Set());
     return { restoredData: null, isExisting: false };
   }, []);
 
@@ -212,13 +177,18 @@ export function useOperatorSession(preferredUnitCode?: string) {
     if (!session) return;
     const targetUnit = (unitOverride || session.unitCode).toUpperCase();
     const activeWbId = (targetUnit === session.unitCode.toUpperCase() && workbookId) ? workbookId : `wb_${targetUnit}_2026`;
+    if (remoteWorkbook && remoteWorkbook.unitCode.toUpperCase() === targetUnit && remoteWorkbook.revision > currentRevision) {
+      setSyncStatus('conflict'); setStaleClientDetected(true);
+      setApiError({ code: 'STALE_CLIENT_REVISION', message: 'Phát hiện bản nháp trình duyệt cũ hơn phiên bản máy chủ. Vui lòng tải lại trước khi lưu.', retryable: false, timestamp: Date.now() });
+      return;
+    }
+
     setSyncStatus('saving');
     lastDataRef.current = data;
-
     const touchedArray = Array.from(touchedCells);
     saveEmailSessionData(session.email, targetUnit, session.title, data, touchedArray);
-    saveLocalDraft({
-      id: activeWbId || `draft_${targetUnit}_${session.email}`, unitCode: targetUnit, reportingPeriod: '01/10/2025–30/9/2026',
+    void saveLocalDraft({
+      workbookId: activeWbId, unitCode: targetUnit, userId: session.email, reportingPeriod: '01/10/2025–30/9/2026',
       operatorEmail: session.email, data, touchedCells: touchedArray, clientSavedAt: new Date().toISOString(), clientTimestamp: Date.now(), serverRevision: currentRevision, isDirty: false
     });
 
@@ -226,22 +196,19 @@ export function useOperatorSession(preferredUnitCode?: string) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (session.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
       if (session.email) headers['x-actor-email'] = session.email;
-      const bodyBase = {
+      const bodyPayload = {
         data, touchedCells: touchedArray, baseRevision: currentRevision,
         commitMessage: `Lưu tự động lúc ${new Date().toLocaleTimeString('vi-VN')}`, unitCode: targetUnit,
         participant: { email: session.email, displayName: session.displayName || session.email.split('@')[0], roleLabel: session.title, unitCode: targetUnit }
       };
       try {
-        let res = await fetch(`/api/workbooks/${activeWbId}`, { method: 'PUT', headers, body: JSON.stringify(bodyBase) });
+        const res = await fetch(`/api/workbooks/${activeWbId}`, { method: 'PUT', headers, body: JSON.stringify(bodyPayload) });
         if (res.status === 409) {
           const json = await res.json();
-          if (typeof json.serverRevision === 'number') {
-            res = await fetch(`/api/workbooks/${activeWbId}`, { method: 'PUT', headers, body: JSON.stringify({ ...bodyBase, baseRevision: json.serverRevision }) });
-          } else {
-            setSyncStatus('conflict'); setConflictData(json.currentServerWorkbook);
-            setApiError({ code: 'CONFLICT_409', message: 'Dữ liệu máy chủ đã được cập nhật bởi phiên khác.', retryable: false, timestamp: Date.now() });
-            return;
-          }
+          setSyncStatus('conflict'); setConflictData(json.currentServerWorkbook || null); setStaleClientDetected(true);
+          if (typeof json.serverRevision === 'number') void purgeStaleLocalDrafts(targetUnit, json.serverRevision, session.email);
+          setApiError({ code: json.code || 'STALE_CLIENT_REVISION', message: json.error || 'Dữ liệu máy chủ đã được cập nhật. Vui lòng tải lại phiên bản mới nhất.', retryable: false, timestamp: Date.now() });
+          return;
         }
         if (res.ok) {
           const json = await res.json();
@@ -252,7 +219,7 @@ export function useOperatorSession(preferredUnitCode?: string) {
             setCurrentRevision(nextRev);
             try { localStorage.setItem(`hcmute_vtvl_grid_rev_${targetUnit}`, String(nextRev)); } catch { /* ignore */ }
           }
-          setSyncStatus('synced'); setDataSource('server_synced'); setApiError(null);
+          setSyncStatus('synced'); setDataSource('server_synced'); setStaleClientDetected(false); setApiError(null);
           setLastSyncedAt(new Date().toLocaleTimeString('vi-VN'));
         } else {
           setSyncStatus('offline');
@@ -261,15 +228,26 @@ export function useOperatorSession(preferredUnitCode?: string) {
       } catch {
         setSyncStatus('offline');
         setApiError({ code: 'NETWORK_TIMEOUT', message: 'Lỗi mạng khi lưu máy chủ, đã ghi tạm vào hàng đợi.', retryable: true, timestamp: Date.now() });
-        queueOfflineSync({ id: `queue_${Date.now()}`, workbookId: activeWbId, baseRevision: currentRevision, data, touchedCells: touchedArray, queuedAt: Date.now(), operatorEmail: session.email });
+        void queueOfflineSync({ id: `queue_${targetUnit}_${Date.now()}`, workbookId: activeWbId, unitCode: targetUnit, userId: session.email, baseRevision: currentRevision, data, touchedCells: touchedArray, queuedAt: Date.now(), operatorEmail: session.email });
       }
     };
 
     if (forceImmediate) { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); await runServerSave(); }
     else { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); debounceTimerRef.current = setTimeout(runServerSave, 1500); }
-  }, [session, workbookId, currentRevision, touchedCells]);
+  }, [session, workbookId, currentRevision, touchedCells, remoteWorkbook]);
 
-  const retrySync = useCallback(() => { if (lastDataRef.current) persistDataForSession(lastDataRef.current, true); }, [persistDataForSession]);
+  const reloadLatestFromServer = useCallback(async (unitOverride?: string) => {
+    const targetUnit = (unitOverride || viewingUnitRef.current || session?.unitCode || 'CNTT').toUpperCase();
+    clearUnitLocalGridCache(targetUnit, session?.email);
+    await purgeStaleLocalDrafts(targetUnit, Number.MAX_SAFE_INTEGER, session?.email);
+    setStaleClientDetected(false); setConflictData(null); setApiError(null);
+    return loadUnitWorkbookFromServer(targetUnit, session);
+  }, [session, loadUnitWorkbookFromServer]);
+
+  const retrySync = useCallback(() => {
+    if (staleClientDetected) return;
+    if (lastDataRef.current) persistDataForSession(lastDataRef.current, true);
+  }, [persistDataForSession, staleClientDetected]);
   const switchSession = useCallback(() => { const cur = getCurrentOperatorSession(); if (!cur || cur.role === 'admin') setIsModalOpen(true); }, []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
   const logoutSession = useCallback(() => {
@@ -278,9 +256,8 @@ export function useOperatorSession(preferredUnitCode?: string) {
   }, []);
 
   return {
-    session, workbookId, currentRevision, syncStatus, dataSource, remoteWorkbook,
-    lastSyncedAt, conflictData, apiError, isModalOpen, touchedCells,
-    isRestoredSession, markCellTouched, submitSession, updateSessionUnit,
-    switchSession, closeModal, logoutSession, persistDataForSession, retrySync
+    session, workbookId, currentRevision, syncStatus, dataSource, remoteWorkbook, staleClientDetected, setStaleClientDetected,
+    lastSyncedAt, conflictData, apiError, isModalOpen, touchedCells, isRestoredSession,
+    markCellTouched, submitSession, updateSessionUnit, reloadLatestFromServer, switchSession, closeModal, logoutSession, persistDataForSession, retrySync
   };
 }

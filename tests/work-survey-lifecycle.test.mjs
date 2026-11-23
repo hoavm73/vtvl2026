@@ -374,6 +374,7 @@ runTest('Ca 14: Luồng Biểu C1 -> Phiếu công việc: Lãnh đạo thêm VT
       const { generateUserSessionToken } = require('./src/services/storage/server-auth-guard');
       const { upsertUserAccount } = require('./src/services/storage/server-account-store');
       const { getOrCreateWorkbook, resetWorkbookMemoryStore } = require('./src/services/storage/server-workbook-store');
+      const { findVtvlCatalogItem } = require('./src/services/storage/server-vtvl-catalog-store');
 
       (async () => {
         await upsertUserAccount({ email: 'minhhoavo73@gmail.com', displayName: 'Lãnh đạo SĐH', unitCode: 'SDH', unitNameVi: 'Viện Sau Đại học', title: 'Lãnh đạo đơn vị', role: 'unit_leader', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
@@ -383,14 +384,15 @@ runTest('Ca 14: Luồng Biểu C1 -> Phiếu công việc: Lãnh đạo thêm VT
         const originalC1 = JSON.parse(JSON.stringify(wb.data.C1 || []));
         const tokenLeader = generateUserSessionToken({ email: 'minhhoavo73@gmail.com', role: 'unit_leader', unitCode: 'SDH' });
         const tokenStaff = generateUserSessionToken({ email: 'qa.staff.sdh@hcmute.edu.vn', role: 'staff', unitCode: 'SDH' });
+        const stdHt45 = findVtvlCatalogItem('HT45');
 
         const putReq = new NextRequest('http://localhost:3360/api/workbooks/' + wb.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenLeader, 'content-type': 'application/json' },
           body: JSON.stringify({
             baseRevision: wb.currentRevision,
-            commitMessage: 'QA thêm VTVL mới vào Biểu C1',
-            data: { ...wb.data, C1: [...originalC1, { id: 'c1-qa-cm99', maVtvl: 'SDH.CM99', tenVtvl: 'Chuyên viên kiểm định đào tạo mới', gioChuanPp2: 1904 }] }
+            commitMessage: 'QA thêm VTVL chuẩn mới vào Biểu C1',
+            data: { ...wb.data, C1: [...originalC1, { id: 'c1-qa-ht45', maVtvl: 'SDH.HT45', tenVtvl: 'Tên client gửi sẽ bị ghi đè', gioChuanPp2: 1904 }] }
           })
         });
         const putRes = await putWorkbook(putReq, { params: Promise.resolve({ id: wb.id }) });
@@ -406,8 +408,8 @@ runTest('Ca 14: Luồng Biểu C1 -> Phiếu công việc: Lãnh đạo thêm VT
         const getRes = await getTickets(getReq);
         assert.strictEqual(getRes.status, 200, 'GET /api/tickets trả 200 OK');
         const getJson = await getRes.json();
-        const foundNew = (getJson.c1Vtvls || []).find((r) => r.maVtvl === 'SDH.CM99');
-        assert.ok(foundNew && foundNew.tenVtvl === 'Chuyên viên kiểm định đào tạo mới', 'Nhân viên phải thấy VTVL SDH.CM99 vừa thêm ở Biểu C1 sau khi reset RAM cache');
+        const foundNew = (getJson.c1Vtvls || []).find((r) => r.maVtvl === 'SDH.HT45');
+        assert.ok(foundNew && foundNew.tenVtvl === stdHt45.name, 'Nhân viên phải thấy VTVL SDH.HT45 với tên chuẩn từ danh mục sau khi reset RAM cache');
 
         const restoreReq = new NextRequest('http://localhost:3360/api/workbooks/' + wb.id, {
           method: 'PUT',
@@ -449,6 +451,7 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
       const { generateUserSessionToken } = require('./src/services/storage/server-auth-guard');
       const { upsertUserAccount } = require('./src/services/storage/server-account-store');
       const { getOrCreateWorkbook, resetWorkbookMemoryStore } = require('./src/services/storage/server-workbook-store');
+      const { findVtvlCatalogItem } = require('./src/services/storage/server-vtvl-catalog-store');
 
       (async () => {
         await upsertUserAccount({ email: 'tcns@hcmute.edu.vn', displayName: 'Quản trị viên TCNS', unitCode: 'TCNS', unitNameVi: 'Phòng Tổ chức - Nhân sự', title: 'Quản trị viên', role: 'admin', authProvider: 'email', status: 'active', hasSelectedUnit: true }, true);
@@ -462,24 +465,26 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
         const tokenLeaderSdh = generateUserSessionToken({ email: 'qa.leader.sdh@hcmute.edu.vn', role: 'unit_leader', unitCode: 'SDH' });
         const tokenStaffSdh = generateUserSessionToken({ email: 'qa.staff.sdh@hcmute.edu.vn', role: 'staff', unitCode: 'SDH' });
         const tokenStaffQt = generateUserSessionToken({ email: 'qa.staff.qt@hcmute.edu.vn', role: 'staff', unitCode: 'QTTHTT' });
+        const stdHt45 = findVtvlCatalogItem('HT45');
+        const stdHt49 = findVtvlCatalogItem('HT49');
 
-        // 1. Lãnh đạo SDH thêm + sửa + xoá VTVL của đơn vị SDH
-        const c1Added = [...wbSdh.data.C1, { id: 'c1-sdh-new', maVtvl: 'SDH.VT88', tenVtvl: 'Chuyên viên đào tạo Sau ĐH mới', gioChuanPp2: 1904 }];
+        // 1. Lãnh đạo SDH chọn thêm + sửa căn cứ + xoá VTVL chuẩn của đơn vị SDH
+        const c1Added = [...wbSdh.data.C1, { id: 'c1-sdh-new', maVtvl: 'SDH.HT45', gioChuanPp2: 1904, quyetDinh: 'QĐ đơn vị' }];
         const putAddRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbSdh.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
           body: JSON.stringify({ baseRevision: wbSdh.currentRevision, data: { ...wbSdh.data, C1: c1Added } })
         }), { params: Promise.resolve({ id: wbSdh.id }) });
-        assert.strictEqual(putAddRes.status, 200, 'Lãnh đạo SDH thêm VTVL phải trả 200 OK');
+        assert.strictEqual(putAddRes.status, 200, 'Lãnh đạo SDH thêm VTVL chuẩn phải trả 200 OK');
         const revAfterAdd = (await putAddRes.json()).workbook.currentRevision;
 
-        const c1Edited = c1Added.map((r) => r.maVtvl === 'SDH.VT88' ? { ...r, tenVtvl: 'Chuyên viên SĐH đã chỉnh tên' } : r);
+        const c1Edited = c1Added.map((r) => r.maVtvl === 'SDH.HT45' ? { ...r, quyetDinh: 'QĐ cập nhật 2026' } : r);
         const putEditRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbSdh.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenLeaderSdh, 'content-type': 'application/json' },
           body: JSON.stringify({ baseRevision: revAfterAdd, data: { ...wbSdh.data, C1: c1Edited } })
         }), { params: Promise.resolve({ id: wbSdh.id }) });
-        assert.strictEqual(putEditRes.status, 200, 'Lãnh đạo SDH sửa tên VTVL phải trả 200 OK');
+        assert.strictEqual(putEditRes.status, 200, 'Lãnh đạo SDH sửa thông tin áp dụng VTVL phải trả 200 OK');
         const revAfterEdit = (await putEditRes.json()).workbook.currentRevision;
 
         const deletedCode = c1Edited[0].maVtvl;
@@ -498,9 +503,9 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
         }));
         assert.strictEqual(staffSdhTicketsRes.status, 200);
         const staffSdhJson = await staffSdhTicketsRes.json();
-        const foundEdited = (staffSdhJson.c1Vtvls || []).find((r) => r.maVtvl === 'SDH.VT88');
+        const foundEdited = (staffSdhJson.c1Vtvls || []).find((r) => r.maVtvl === 'SDH.HT45');
         const foundDeleted = (staffSdhJson.c1Vtvls || []).find((r) => r.maVtvl === deletedCode);
-        assert.ok(foundEdited && foundEdited.tenVtvl === 'Chuyên viên SĐH đã chỉnh tên', 'Nhân viên SDH phải thấy VTVL mới với tên đã sửa');
+        assert.ok(foundEdited && foundEdited.tenVtvl === stdHt45.name, 'Nhân viên SDH phải thấy VTVL mới với tên chuẩn từ danh mục');
         assert.strictEqual(foundDeleted, undefined, 'Nhân viên SDH không còn thấy VTVL đã bị lãnh đạo xóa');
 
         const createTicketRes = await postTicket(new NextRequest('http://localhost:3360/api/tickets', {
@@ -509,11 +514,11 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
           body: JSON.stringify({
             unitCode: 'SDH', ownerEmail: 'qa.staff.sdh@hcmute.edu.vn', action: 'draft',
             maNhiemVu: (staffSdhJson.a1Missions[0] && staffSdhJson.a1Missions[0].maNhiemVu) || 'SDH.NV01',
-            tenCongViec: 'Công việc thử nghiệm chọn VTVL mới SDH.VT88',
-            maVtvl: 'SDH.VT88'
+            tenCongViec: 'Công việc thử nghiệm chọn VTVL mới SDH.HT45',
+            maVtvl: 'SDH.HT45'
           })
         }));
-        assert.strictEqual(createTicketRes.status, 200, 'Nhân viên SDH tạo phiếu công việc chọn VTVL mới SDH.VT88 thành công');
+        assert.strictEqual(createTicketRes.status, 200, 'Nhân viên SDH tạo phiếu công việc chọn VTVL mới SDH.HT45 thành công');
 
         // 2. Lãnh đạo SDH bị chặn sửa C1 của đơn vị khác (QTTHTT)
         const crossLeaderRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbQt.id, {
@@ -531,26 +536,26 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
         }), { params: Promise.resolve({ id: wbSdh.id }) });
         assert.strictEqual(staffWriteRes.status, 403, 'Nhân viên sửa Biểu C1 phải bị chặn 403');
 
-        // 4. Admin thêm, sửa, xóa VTVL ở nhiều đơn vị khác nhau (SDH & QTTHTT)
+        // 4. Admin thêm, sửa, xóa VTVL chuẩn ở nhiều đơn vị khác nhau (SDH & QTTHTT)
         const adminSdhAddRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbSdh.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
-          body: JSON.stringify({ baseRevision: revAfterDel, data: { ...wbSdh.data, C1: [...c1AfterDelete, { id: 'c1-adm-sdh', maVtvl: 'SDH.ADM01', tenVtvl: 'VTVL do Admin thêm cho SĐH', gioChuanPp2: 1904 }] } })
+          body: JSON.stringify({ baseRevision: revAfterDel, data: { ...wbSdh.data, C1: [...c1AfterDelete, { id: 'c1-adm-sdh', maVtvl: 'SDH.HT47', gioChuanPp2: 1904 }] } })
         }), { params: Promise.resolve({ id: wbSdh.id }) });
-        assert.strictEqual(adminSdhAddRes.status, 200, 'Admin phải thêm được VTVL ở đơn vị SĐH');
+        assert.strictEqual(adminSdhAddRes.status, 200, 'Admin phải thêm được VTVL chuẩn ở đơn vị SĐH');
 
         const adminQtAddRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbQt.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
-          body: JSON.stringify({ baseRevision: wbQt.currentRevision, data: { ...wbQt.data, C1: [...wbQt.data.C1, { id: 'c1-adm-qt', maVtvl: 'QTTHTT.ADM02', tenVtvl: 'Chuyên viên truyền thông số (Admin thêm)', gioChuanPp2: 1904 }] } })
+          body: JSON.stringify({ baseRevision: wbQt.currentRevision, data: { ...wbQt.data, C1: [...wbQt.data.C1, { id: 'c1-adm-qt', maVtvl: 'QTTHTT.HT49', gioChuanPp2: 1904 }] } })
         }), { params: Promise.resolve({ id: wbQt.id }) });
-        assert.strictEqual(adminQtAddRes.status, 200, 'Admin phải thêm/sửa được VTVL ở đơn vị QTTHTT');
+        assert.strictEqual(adminQtAddRes.status, 200, 'Admin phải thêm/sửa được VTVL chuẩn ở đơn vị QTTHTT');
         const qtRev1 = (await adminQtAddRes.json()).workbook.currentRevision;
 
         const adminQtEditDelRes = await putWorkbook(new NextRequest('http://localhost:3360/api/workbooks/' + wbQt.id, {
           method: 'PUT',
           headers: { authorization: 'Bearer ' + tokenAdmin, 'content-type': 'application/json' },
-          body: JSON.stringify({ baseRevision: qtRev1, data: { ...wbQt.data, C1: [{ id: 'c1-adm-qt', maVtvl: 'QTTHTT.ADM02', tenVtvl: 'Chuyên viên truyền thông số đã sửa', gioChuanPp2: 1760 }] } })
+          body: JSON.stringify({ baseRevision: qtRev1, data: { ...wbQt.data, C1: [{ id: 'c1-adm-qt', maVtvl: 'QTTHTT.HT49', gioChuanPp2: 1760 }] } })
         }), { params: Promise.resolve({ id: wbQt.id }) });
         assert.strictEqual(adminQtEditDelRes.status, 200, 'Admin phải sửa & xóa được VTVL ở đơn vị QTTHTT');
 
@@ -560,7 +565,7 @@ runTest('Ca 15: RBAC đầy đủ Thêm/Sửa/Xoá VTVL (Biểu C1) cho Lãnh đ
         }));
         const staffQtJson = await staffQtTicketsRes.json();
         assert.strictEqual((staffQtJson.c1Vtvls || []).length, 1, 'Nhân viên QTTHTT thấy đúng danh sách VTVL còn lại sau khi Admin sửa/xóa');
-        assert.strictEqual(staffQtJson.c1Vtvls[0].tenVtvl, 'Chuyên viên truyền thông số đã sửa');
+        assert.strictEqual(staffQtJson.c1Vtvls[0].tenVtvl, stdHt49.name);
       })().catch((e) => { console.error(e); process.exit(1); });
     `;
     execSync(`npx tsx -e "${tsxCode.replace(/"/g, '\\"')}"`, {
@@ -600,7 +605,19 @@ runTest('Ca 16: Nút "Bảng tính toàn đơn vị" trỏ ?sheet=A2, nạp máy
     const { handleSyncDeleteRow } = require('./src/components/excel-grid/excel-grid-code-helpers');
     const { buildDefaultGridWorkbook } = require('./src/components/excel-grid/excel-grid-defaults');
 
-    const wb = buildDefaultGridWorkbook('SDH');
+    const tcnsWb = buildDefaultGridWorkbook('TCNS');
+    assert.strictEqual(tcnsWb.A1.length, 39, 'TCNS phải giữ nguyên 39 nhiệm vụ thực tế A1');
+    assert.strictEqual(tcnsWb.C1.length, 6, 'TCNS phải giữ nguyên 6 VTVL thực tế C1');
+
+    const emptySdh = buildDefaultGridWorkbook('SDH');
+    assert.strictEqual(emptySdh.A1.length, 0, 'Đơn vị ngoài TCNS phải khởi tạo A1 rỗng');
+    assert.strictEqual(emptySdh.C1.length, 0, 'Đơn vị ngoài TCNS phải khởi tạo C1 rỗng');
+
+    const wb = {
+      ...emptySdh,
+      C1: [{ id: 'c1-seed-1', maVtvl: 'SDH.QL31', tenVtvl: 'Trưởng khoa', gioChuanPp2: 1904 }],
+      D1: [{ id: 'd1-seed-1', maVtvl: 'SDH.QL31', hoTen: 'Cán bộ mẫu' }]
+    };
     // 1. Nhập tên trước khi chọn mã -> tự động sinh SDH.VT01
     const withNewRow = { ...wb, C1: [...wb.C1, { id: 'c1-test-1', maVtvl: '', tenVtvl: '' }] };
     const afterName = syncC1NameChange(withNewRow, 'c1-test-1', 'Chuyên viên hỗ trợ AI', 'SDH');
@@ -619,9 +636,9 @@ runTest('Ca 16: Nút "Bảng tính toàn đơn vị" trỏ ?sheet=A2, nạp máy
     const guardDefault = validateRowDeletion(afterDupPick, 'C1', 'c1-test-1');
     assert.strictEqual(guardDefault.canDelete, true, 'VTVL mới chưa gắn phiếu thực tế phải xóa được');
     const guardSampleSeed = validateRowDeletion(afterDupPick, 'C1', afterDupPick.C1[0].id);
-    assert.strictEqual(guardSampleSeed.canDelete, true, 'VTVL mẫu chỉ có D1/DU_BAO/D2 mặc định phải xóa được');
+    assert.strictEqual(guardSampleSeed.canDelete, true, 'VTVL chưa gắn phiếu thực tế phải xóa được');
     const cleaned = handleSyncDeleteRow(afterDupPick, 'C1', afterDupPick.C1[0].id);
-    assert.strictEqual(cleaned.D1.some((d) => d.maVtvl === firstPl1), false, 'Dữ liệu D1 mẫu gắn VTVL đã xóa phải được dọn sạch');
+    assert.strictEqual(cleaned.D1.some((d) => d.maVtvl === firstPl1), false, 'Dữ liệu D1 gắn VTVL đã xóa phải được dọn sạch');
 
     // 4. VTVL đang gắn phiếu công việc thực tế (sourceTicketId) -> bị chặn xóa để bảo toàn dữ liệu
     const wbWithRealTicket = { ...afterDupPick, A2: [...afterDupPick.A2, { id: 'a2-real-1', maCongViec: 'SDH.NV01.CV99', maNhiemVu: 'SDH.NV01', maVtvl: 'SDH.VT01', sourceTicketId: 't-123' }] };

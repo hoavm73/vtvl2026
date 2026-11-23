@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { HCMUTE_UNITS, UNIT_GROUPS } from '@/configs/hcmute-units';
 import { ND232_2026_VTVL_CATALOG } from '@/configs/hcmute-nd232-catalog';
-import { buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { getTicketCounts, loadTickets, syncTicketsFromSupabase } from '@/services/storage/server-ticket-store';
 import { getAllActiveServerWorkbooks, syncServerWorkbooksFromSupabase } from '@/services/storage/server-workbook-store';
 import { getAuditLogs, syncAuditLogsFromSupabase } from '@/services/storage/server-audit-store';
@@ -45,9 +44,7 @@ export async function GET() {
     for (const u of HCMUTE_UNITS) {
       const codeUpper = u.code.toUpperCase();
       const wb = wbByUnit.get(codeUpper);
-      const c1Rows = Array.isArray(wb?.data?.C1) && wb.data.C1.length > 0
-        ? wb.data.C1
-        : buildRecommendedC1Rows(u.code, u.group);
+      const c1Rows = Array.isArray(wb?.data?.C1) ? wb.data.C1 : [];
       const validRows = c1Rows.filter((r) => String(r?.maVtvl || r?.tenVtvl || '').trim().length > 0);
       totalC1Positions += validRows.length;
 

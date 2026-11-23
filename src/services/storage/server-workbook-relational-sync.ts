@@ -125,7 +125,7 @@ export function buildWorkbookRelationalPayload(wb: ServerWorkbook) {
     b1_khoi_luong: Array.from(b1Rows.values()), b2_ct_tac_dong: Array.from(b2CtRows.values()), b2_thay_doi: Array.from(b2Rows.values()),
     c2_nang_luc: Array.from(c2Rows.values()), c3_nhu_cau: Array.from(c3Rows.values()), d1_nhan_luc: Array.from(d1Rows.values()),
     du_bao_5_nam: duBaoRows, d2_phuong_an: d2Rows, k_kiem_tra: Array.from(kRows.values()), can_cu_goi_y: Array.from(canCuRows.values()),
-    workbook: { id: wb.id, unit_id: unitCode, reporting_period: wb.reportingPeriod || '01/10/2025–30/9/2026', status: wb.status || 'draft', current_revision: Math.max(1, wb.currentRevision || 1), data: wb.data, touched_cells: wb.touchedCells || [], is_deleted: Boolean(wb.isDeleted), updated_at: nowIso },
+    workbook: { id: wb.id, unit_id: unitCode, reporting_period: wb.reportingPeriod || '01/10/2025–30/9/2026', status: ['draft', 'submitted', 'reviewed', 'approved', 'archived'].includes(wb.status) ? wb.status : 'draft', current_revision: Math.max(1, wb.currentRevision || 1), data: wb.data, touched_cells: wb.touchedCells || [], is_deleted: Boolean(wb.isDeleted), updated_at: nowIso },
     workbook_sessions: Array.from(sessionMap.values()), session_participants: partRows,
     workbook_revisions: (wb.revisions || []).slice(0, 1).map((r) => ({ id: r.id || `rev_${wb.id}_${r.revision}`, workbook_id: wb.id, revision: Math.max(1, r.revision || 1), data: r.data, actor_email: r.actorEmail || 'tcns@hcmute.edu.vn', actor_title: r.actorTitle || null, change_summary: r.changeSummary || null })),
     activeKeys: {

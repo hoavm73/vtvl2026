@@ -83,12 +83,14 @@ export function ExcelCommandToolsMenu({
 
         <div className="my-1 border-t border-[#e8eff7]" />
 
-        <PopoverClose onClick={onLoadTcnsData}>
-          <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
-            <RefreshCw className="w-4 h-4 text-[#004776]" />
-            <span>Khôi phục dữ liệu mẫu TCNS</span>
-          </div>
-        </PopoverClose>
+        {unitCode.toUpperCase() === 'TCNS' && (
+          <PopoverClose onClick={onLoadTcnsData}>
+            <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
+              <RefreshCw className="w-4 h-4 text-[#004776]" />
+              <span>Khôi phục dữ liệu mẫu TCNS</span>
+            </div>
+          </PopoverClose>
+        )}
 
         <PopoverClose onClick={onLoadRecommendedVtvls}>
           <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">

@@ -9,7 +9,9 @@ export type CacheTag =
   | 'unit-monitor'
   | 'coordination'
   | 'audit-history'
-  | 'review-submission';
+  | 'review-submission'
+  | 'check-results'
+  | 'c1-catalog';
 
 export function buildScopedCacheKey(
   prefix: string,
@@ -132,8 +134,10 @@ export function invalidateCacheTags(tags: CacheTag[]): void {
   }
 }
 
-export function invalidateUnitMutationCache(unitCode?: string): void {
-  const target = unitCode ? `|u:${unitCode.trim().toUpperCase()}` : '';
+export function invalidateUnitMutationCache(unitCode?: string, workbookId?: string): void {
+  const cleanUnit = unitCode ? unitCode.trim().toUpperCase() : '';
+  const target = cleanUnit ? `|u:${cleanUnit}` : '';
+  const wbTarget = workbookId ? `|wb:${workbookId.trim()}` : '';
   const allTags = new Set<CacheTag>([
     'workbooks',
     'tickets',
@@ -141,14 +145,19 @@ export function invalidateUnitMutationCache(unitCode?: string): void {
     'overview-stats',
     'unit-monitor',
     'audit-history',
-    'review-submission'
+    'review-submission',
+    'check-results'
   ]);
   for (const [key, entry] of memoryCache.entries()) {
     const matchesTag = Array.from(entry.tags).some((t) => allTags.has(t));
-    if (!matchesTag) continue;
+    if (!matchesTag && !(wbTarget && key.includes(wbTarget))) continue;
     if (target && key === 'coord:sources:sync') continue;
+    const isSameWb = Boolean(wbTarget && key.includes(wbTarget));
     const isScopedOtherUnit = Boolean(target && key.includes('|u:') && !key.includes(target));
-    if (!isScopedOtherUnit) memoryCache.delete(key);
+    if (isSameWb || !isScopedOtherUnit) {
+      memoryCache.delete(key);
+      inFlightPromises.delete(key);
+    }
   }
 }
 

@@ -39,8 +39,8 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   const clearSheetDirty = (sheetKey: ExcelSheetKey) => setDirtySheets((p) => { if (!p.has(sheetKey)) return p; const n = new Set(p); n.delete(sheetKey); return n; });
 
   const {
-    session, isModalOpen, touchedCells, currentRevision, syncStatus, dataSource, remoteWorkbook, apiError, lastSyncedAt,
-    markCellTouched, submitSession, updateSessionUnit, switchSession, closeModal, persistDataForSession, retrySync
+    session, isModalOpen, touchedCells, currentRevision, syncStatus, dataSource, remoteWorkbook, staleClientDetected, setStaleClientDetected,
+    apiError, lastSyncedAt, markCellTouched, submitSession, updateSessionUnit, reloadLatestFromServer, switchSession, closeModal, persistDataForSession
   } = useOperatorSession(requestedUnitCode);
 
   const lastRemoteHandledRef = useRef<string>('');
@@ -107,10 +107,9 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   }, [dirtySheets, data, unitCode, isReadOnlyViewer, persistDataForSession]);
 
   useEffect(() => {
-    if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase() || dirtySheets.size > 0) return;
+    if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase()) return;
     const key = `${unitCode}:${remoteWorkbook.revision}`;
     if (lastRemoteHandledRef.current === key) return;
-    lastRemoteHandledRef.current = key;
     const gridKey = `hcmute_vtvl_grid_${unitCode}`;
     const revKey = `hcmute_vtvl_grid_rev_${unitCode}`;
     let hasLocalGrid = false;
@@ -119,12 +118,20 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       hasLocalGrid = Boolean(typeof window !== 'undefined' && localStorage.getItem(gridKey));
       savedRev = typeof window !== 'undefined' ? Number(localStorage.getItem(revKey) || 0) : 0;
     } catch { /* ignore */ }
-    const effectiveLocalRev = hasLocalGrid ? Math.max(savedRev, 1) : 0;
+    const localDiffers = (data.C1 || []).length !== (remoteWorkbook.data?.C1 || []).length || (data.A1 || []).length !== (remoteWorkbook.data?.A1 || []).length;
     const serverTicketDiff = (data.A2 || []).filter((r) => r.sourceTicketId).length !== (remoteWorkbook.data?.A2 || []).filter((r) => r.sourceTicketId).length;
-    const shouldPullServer = isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > effectiveLocalRev || serverTicketDiff;
-    const localDiffersOnInit = (data.C1 || []).length !== (remoteWorkbook.data?.C1 || []).length || (data.A1 || []).length !== (remoteWorkbook.data?.A1 || []).length;
+    const isStaleLocal = hasLocalGrid && savedRev < remoteWorkbook.revision;
 
-    if (shouldPullServer) {
+    if (dirtySheets.size > 0) {
+      if (isStaleLocal && !isReadOnlyViewer) setStaleClientDetected(true);
+      return;
+    }
+    lastRemoteHandledRef.current = key;
+    if (!isReadOnlyViewer && isStaleLocal && savedRev === 0 && localDiffers) {
+      setStaleClientDetected(true);
+      return;
+    }
+    if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || serverTicketDiff) {
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
       try {
@@ -132,11 +139,9 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         localStorage.setItem(revKey, String(remoteWorkbook.revision));
       } catch { /* ignore */ }
       setDirtySheets(new Set());
-    } else if (!isReadOnlyViewer && savedRev === 0 && localDiffersOnInit) {
-      lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(data)}`;
-      persistDataForSession(data, true, unitCode);
+      setStaleClientDetected(false);
     }
-  }, [remoteWorkbook, unitCode, dirtySheets.size, isReadOnlyViewer, data, restoreWorkbookData, persistDataForSession]);
+  }, [remoteWorkbook, unitCode, dirtySheets.size, isReadOnlyViewer, data, restoreWorkbookData, setStaleClientDetected]);
 
   const handleSaveAndNext = useCallback(() => {
     handleSave();
@@ -186,7 +191,30 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       />
       <ExcelSheetTabs activeSheet={activeSheet} sheetOrder={currentSheetOrder} orderMode={orderMode} dirtySheets={dirtySheets} onSelectSheet={handleSelectSheetSafe} onPrev={goToPrevSheet} onNext={goToNextSheet} canPrev={activeSheetIndex > 0} canNext={activeSheetIndex < currentSheetOrder.length - 1} />
 
-      {/* 4. BANNER CHẾ ĐỘ CHỈ XEM / BANNER C1 / LƯỚI BẢNG DỮ LIỆU CHÍNH */}
+      {/* 4. BANNER CẢNH BÁO CACHE CŨ / CHẾ ĐỘ CHỈ XEM / LƯỚI BẢNG DỮ LIỆU CHÍNH */}
+      {staleClientDetected && !isReadOnlyViewer && (
+        <div className="px-4 py-2.5 border-b border-[#f8b4af] bg-[#fdeceb] flex flex-wrap items-center justify-between gap-2 text-xs text-[#004776]">
+          <span className="font-semibold">Phát hiện bản nháp cũ hơn phiên bản máy chủ. Hệ thống đã cách ly bản nháp cục bộ và chặn tự động tải lên — vui lòng tải lại phiên bản mới nhất.</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                import('@/services/storage/indexeddb-storage').then((m) => m.downloadStaleDraftJson(unitCode, data, currentRevision));
+              }}
+              className="px-3 py-1 rounded-lg border border-[#004776]/30 bg-white hover:bg-[#f4f7fb] text-[#004776] font-semibold cursor-pointer whitespace-nowrap"
+            >
+              Tải bản nháp cũ (.json)
+            </button>
+            <button
+              type="button"
+              onClick={() => { lastRemoteHandledRef.current = ''; setDirtySheets(new Set()); void reloadLatestFromServer(unitCode); }}
+              className="px-3 py-1 rounded-lg bg-[#006cee] hover:bg-[#0058c4] text-white font-semibold cursor-pointer whitespace-nowrap"
+            >
+              Tải lại dữ liệu máy chủ
+            </button>
+          </div>
+        </div>
+      )}
       {isReadOnlyViewer && (
         <div className="px-4 py-2.5 border-b border-amber-200 bg-amber-50 flex items-center gap-2 text-xs font-semibold text-amber-900">
           <Eye className="w-4 h-4 text-amber-700 shrink-0" />

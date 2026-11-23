@@ -178,12 +178,10 @@ export function syncC1VtvlChange(
   const effectiveUnit = unitCode || (oldVtvl.includes('.') ? oldVtvl.split('.')[0] : 'TCNS');
   const newVtvl = resolveUniqueC1Code(sheetRows, rowId, effectiveUnit, rawTrimmed);
   const pl1Item = findPl1Item(newVtvl);
-  const oldPl1Item = findPl1Item(oldVtvl);
   const isQl = pl1Item?.pl1Code.startsWith('QL') ?? newVtvl.includes('.QL');
-  const posName = pl1Item ? (pl1Item.positionName || pl1Item.titleOrRole) : '';
-  const oldName = String(oldRow?.tenVtvl || '').trim();
-  const shouldKeepExistingName = Boolean(oldName) && !oldPl1Item && !(posName && !oldVtvl);
-  const resolvedName = shouldKeepExistingName ? oldName : (posName || oldName || '');
+  const resolvedName = pl1Item ? (pl1Item.titleOrRole || pl1Item.positionName) : '';
+  const resolvedGroup = pl1Item?.vtvlGroup4 || '';
+  const resolvedRank = pl1Item?.tt31OrNgachCode || '';
 
   const updatedC1 = sheetRows.map((row) =>
     row.id === rowId
@@ -191,6 +189,9 @@ export function syncC1VtvlChange(
           ...row,
           maVtvl: newVtvl,
           tenVtvl: resolvedName,
+          tenKhung: resolvedName,
+          nhomVtvl4: resolvedGroup || row.nhomVtvl4 || '',
+          maNgach: resolvedRank || row.maNgach || '',
           canCuQuyGio: isQl ? 'PP1 – theo cơ cấu và chức danh quản lý' : 'Mức chung 1.904 giờ – quy định về thời giờ làm việc'
         }
       : row

@@ -23,6 +23,7 @@ import { MAX_WORKBOOK_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth
 import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
 import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
 import { cacheGetOrSet, invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
+import { validateAndNormalizeUnitC1Rows } from '@/services/storage/server-vtvl-catalog-store';
 import { buildUnitWorkbookLockedResponse, isWorkbookStatusLocked } from '@/services/workbooks/workbook-lock-guard';
 
 interface RouteContext {
@@ -85,7 +86,14 @@ export async function GET(req: Request, context: RouteContext) {
       { forceSingleFlight: true }
     );
 
-    return NextResponse.json({ success: true, workbook: projectedWorkbook }, { headers: { 'Cache-Control': 'no-store' } });
+    const isUnstartedEmpty =
+      unitUpper !== 'TCNS' &&
+      projectedWorkbook.status === 'draft' &&
+      (projectedWorkbook.data?.A1?.length || 0) === 0 &&
+      (projectedWorkbook.data?.C1?.length || 0) === 0 &&
+      (projectedWorkbook.data?.A2?.length || 0) === 0;
+    const responseWorkbook = isUnstartedEmpty ? { ...projectedWorkbook, status: 'not_started' as const } : projectedWorkbook;
+    return NextResponse.json({ success: true, workbook: responseWorkbook }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Lỗi hệ thống';
     return NextResponse.json({ error: msg, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
@@ -166,17 +174,42 @@ export async function PUT(req: Request, context: RouteContext) {
           }
         }
 
+        let normalizedData = data;
+        if (Array.isArray(data?.C1)) {
+          const c1Check = validateAndNormalizeUnitC1Rows({
+            unitCode: targetUnit,
+            incomingC1: data.C1,
+            existingC1: existingWb?.data?.C1
+          });
+          if (!c1Check.ok) {
+            return NextResponse.json({ error: c1Check.error, code: c1Check.code }, { status: c1Check.status });
+          }
+          normalizedData = { ...data, C1: c1Check.normalizedC1 };
+        }
+
         const saveParams = {
           workbookId: id,
           unitCode: targetUnit,
           existingWb,
-          data,
+          data: normalizedData,
           touchedCells: Array.isArray(touchedCells) ? touchedCells : [],
           baseRevision: typeof baseRevision === 'number' ? baseRevision : 1,
           changeSummary: commitMessage || 'Cập nhật từ phiên làm việc',
           actorEmail: caller.email,
           actorTitle: participant?.roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Quản trị viên')
         };
+        if (existingWb && (typeof baseRevision !== 'number' || baseRevision < existingWb.currentRevision)) {
+          return NextResponse.json(
+            {
+              error: 'Phát hiện phiên bản dữ liệu trình duyệt cũ hơn máy chủ. Vui lòng tải lại dữ liệu mới nhất trước khi lưu.',
+              code: 'STALE_CLIENT_REVISION',
+              conflict: true,
+              serverRevision: existingWb.currentRevision,
+              currentServerWorkbook: existingWb
+            },
+            { status: 409 }
+          );
+        }
         const finalResult =
           targetUnit === prelimUnit
             ? await saveWorkbookWithPendingApprovedTicketsUnlocked(saveParams)
@@ -205,7 +238,7 @@ export async function PUT(req: Request, context: RouteContext) {
           actorRole: caller.role
         });
         await persistAuditLogToSupabase(audit);
-        invalidateUnitMutationCache(targetUnit);
+        invalidateUnitMutationCache(targetUnit, existingWb?.id || id);
 
         return NextResponse.json({ success: true, workbook: finalResult });
       });

@@ -223,7 +223,9 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
             )}
             {!isReadOnly && (
               <>
-                <PopoverClose onClick={props.onLoadTcnsData}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><RefreshCw className="w-4 h-4" /><span>Khôi phục dữ liệu mẫu TCNS</span></div></PopoverClose>
+                {props.unitCode.toUpperCase() === 'TCNS' && (
+                  <PopoverClose onClick={props.onLoadTcnsData}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><RefreshCw className="w-4 h-4" /><span>Khôi phục dữ liệu mẫu TCNS</span></div></PopoverClose>
+                )}
                 <PopoverClose onClick={props.onLoadRecommendedVtvls}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><Lightbulb className="w-4 h-4 text-[#8f4f00]" /><span>Nạp gợi ý VTVL chuẩn</span></div></PopoverClose>
                 {props.activeSheet === 'C1' && (
                   <PopoverClose onClick={props.onOpenUnlockModal}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 text-[#8f4f00] hover:bg-[#fdf2e1]/60">{props.isC1Unlocked ? <Unlock className="w-4 h-4 text-[#13653f]" /> : <Lock className="w-4 h-4" />}<span>{props.isC1Unlocked ? 'C1 đang mở khóa' : 'Mở khóa chỉnh sửa C1'}</span></div></PopoverClose>

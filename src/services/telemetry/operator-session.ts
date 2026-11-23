@@ -64,33 +64,17 @@ export function getCurrentOperatorSession(): OperatorSession | null {
   }
 }
 
-export function registerOperatorSession(
-  email: string,
-  unitCode: string,
-  title: string
-): EmailSessionRecord {
+export function registerOperatorSession(email: string, unitCode: string, title: string): EmailSessionRecord {
   const normEmail = normalizeEmail(email);
   const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
   const all = getAllEmailSessions();
   const existingIdx = all.findIndex((s) => s.email === normEmail);
-
-  let record: EmailSessionRecord;
-  if (existingIdx >= 0) {
-    record = {
-      ...all[existingIdx], unitCode: unit.code, unitNameVi: unit.nameVi,
-      title: title.trim() || all[existingIdx].title,
-      lastSavedAt: all[existingIdx].lastSavedAt || `Khởi tạo ${now}`
-    };
-    all[existingIdx] = record;
-  } else {
-    record = {
-      email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi,
-      title: title.trim() || 'Chuyên viên', lastSavedAt: `Khởi tạo ${now}`, touchedCells: []
-    };
-    all.unshift(record);
-  }
-
+  const record: EmailSessionRecord = existingIdx >= 0
+    ? { ...all[existingIdx], unitCode: unit.code, unitNameVi: unit.nameVi, title: title.trim() || all[existingIdx].title, lastSavedAt: all[existingIdx].lastSavedAt || `Khởi tạo ${now}` }
+    : { email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi, title: title.trim() || 'Chuyên viên', lastSavedAt: `Khởi tạo ${now}`, touchedCells: [] };
+  if (existingIdx >= 0) all[existingIdx] = record;
+  else all.unshift(record);
   if (typeof window !== 'undefined') {
     try {
       const trimmed = all.slice(0, 30);
@@ -102,41 +86,22 @@ export function registerOperatorSession(
 }
 
 export function saveCurrentOperatorSession(
-  email: string,
-  unitCode: string,
-  title: string,
-  meta?: {
-    displayName?: string;
-    avatarUrl?: string;
-    authProvider?: 'google' | 'email';
-    accessToken?: string;
-    role?: 'admin' | 'unit_leader' | 'staff';
-    hasSelectedUnit?: boolean;
-  }
+  email: string, unitCode: string, title: string,
+  meta?: { displayName?: string; avatarUrl?: string; authProvider?: 'google' | 'email'; accessToken?: string; role?: 'admin' | 'unit_leader' | 'staff'; hasSelectedUnit?: boolean }
 ): OperatorSession {
   const normEmail = normalizeEmail(email);
   const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
-  const existing = getCurrentOperatorSession();
+  const ex = getCurrentOperatorSession();
+  const same = ex?.email === normEmail;
   const session: OperatorSession = {
-    email: normEmail,
-    unitCode: unit.code,
-    unitNameVi: unit.nameVi,
-    title: title.trim(),
-    startedAt: now,
-    lastActiveAt: now,
-    displayName: meta?.displayName ?? (existing?.email === normEmail ? existing.displayName : undefined),
-    avatarUrl: meta?.avatarUrl ?? (existing?.email === normEmail ? existing.avatarUrl : undefined),
-    authProvider: meta?.authProvider ?? (existing?.email === normEmail ? existing.authProvider : 'email'),
-    accessToken: meta?.accessToken ?? (existing?.email === normEmail ? existing.accessToken : undefined),
-    role: meta?.role ?? (existing?.email === normEmail ? existing.role : undefined),
-    hasSelectedUnit: meta?.hasSelectedUnit ?? (existing?.email === normEmail ? existing.hasSelectedUnit : undefined)
+    email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi, title: title.trim(), startedAt: now, lastActiveAt: now,
+    displayName: meta?.displayName ?? (same ? ex.displayName : undefined), avatarUrl: meta?.avatarUrl ?? (same ? ex.avatarUrl : undefined),
+    authProvider: meta?.authProvider ?? (same ? ex.authProvider : 'email'), accessToken: meta?.accessToken ?? (same ? ex.accessToken : undefined),
+    role: meta?.role ?? (same ? ex.role : undefined), hasSelectedUnit: meta?.hasSelectedUnit ?? (same ? ex.hasSelectedUnit : undefined)
   };
   if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(session));
-      window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: session }));
-    } catch { /* ignore */ }
+    try { localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(session)); window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: session })); } catch { /* ignore */ }
     registerOperatorSession(normEmail, unit.code, title);
   }
   return session;
@@ -146,18 +111,9 @@ export function updateOperatorSessionUnit(unitCode: string): OperatorSession | n
   const cur = getCurrentOperatorSession();
   if (!cur) return null;
   const unit = findHcmuteUnit(cur.email === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
-  const updated: OperatorSession = {
-    ...cur,
-    unitCode: unit.code,
-    unitNameVi: unit.nameVi,
-    hasSelectedUnit: true,
-    lastActiveAt: new Date().toLocaleString('vi-VN')
-  };
+  const updated: OperatorSession = { ...cur, unitCode: unit.code, unitNameVi: unit.nameVi, hasSelectedUnit: true, lastActiveAt: new Date().toLocaleString('vi-VN') };
   if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: updated }));
-    } catch { /* ignore */ }
+    try { localStorage.setItem(CURRENT_OPERATOR_KEY, JSON.stringify(updated)); window.dispatchEvent(new CustomEvent('vtvl-operator-changed', { detail: updated })); } catch { /* ignore */ }
     registerOperatorSession(updated.email, unit.code, updated.title);
   }
   return updated;
@@ -204,18 +160,36 @@ export function getAllEmailSessions(): EmailSessionRecord[] {
   }
 }
 
-export function loadSessionData(
-  email: string,
-  unitCode: string
-): Record<ExcelSheetKey, GenericGridRow[]> {
+export function getSessionStorageKey(email: string, unitCode: string): string {
+  const normEmail = normalizeEmail(email);
+  const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
+  return `hcmute_vtvl_session_data_${normEmail}::${unit.code}`;
+}
+
+export function clearUnitLocalGridCache(unitCode: string, email?: string): void {
+  if (typeof window === 'undefined') return;
+  const uc = findHcmuteUnit(unitCode).code;
+  try {
+    localStorage.removeItem(`hcmute_vtvl_grid_${uc}`);
+    localStorage.removeItem(`hcmute_vtvl_grid_rev_${uc}`);
+    if (email) {
+      const normEmail = normalizeEmail(email);
+      localStorage.removeItem(getSessionStorageKey(normEmail, uc));
+      localStorage.removeItem(`hcmute_vtvl_session_data_${normEmail}`);
+    }
+  } catch { /* ignore */ }
+}
+
+export function loadSessionData(email: string, unitCode: string): Record<ExcelSheetKey, GenericGridRow[]> {
   if (typeof window === 'undefined') return buildDefaultGridWorkbook(unitCode);
   const normEmail = normalizeEmail(email);
+  const scopedKey = getSessionStorageKey(normEmail, unitCode);
   try {
-    const raw = localStorage.getItem(`hcmute_vtvl_session_data_${normEmail}`);
+    const raw = localStorage.getItem(scopedKey);
     if (raw) return JSON.parse(raw);
   } catch { /* fallback */ }
   try {
-    const rawUnit = localStorage.getItem(`hcmute_vtvl_grid_${unitCode}`);
+    const rawUnit = localStorage.getItem(`hcmute_vtvl_grid_${findHcmuteUnit(unitCode).code}`);
     if (rawUnit) return JSON.parse(rawUnit);
   } catch { /* fallback */ }
   return buildDefaultGridWorkbook(unitCode);
@@ -230,17 +204,12 @@ export function getSessionByEmail(email: string, withData = false): EmailSession
 }
 
 export function saveEmailSessionData(
-  email: string,
-  unitCode: string,
-  title: string,
-  data: Record<ExcelSheetKey, GenericGridRow[]>,
-  touchedCells: string[]
+  email: string, unitCode: string, title: string, data: Record<ExcelSheetKey, GenericGridRow[]>, touchedCells: string[]
 ): void {
   if (typeof window === 'undefined') return;
   const normEmail = normalizeEmail(email);
   const unit = findHcmuteUnit(normEmail === 'tcns@hcmute.edu.vn' ? 'TCNS' : unitCode);
   const now = new Date().toLocaleString('vi-VN');
-
   const sheetSummaries: Partial<Record<ExcelSheetKey, number>> = {};
   let totalRows = 0;
   if (data && typeof data === 'object') {
@@ -250,26 +219,18 @@ export function saveEmailSessionData(
       totalRows += len;
     }
   }
-
   const newRecord: EmailSessionRecord = {
     email: normEmail, unitCode: unit.code, unitNameVi: unit.nameVi,
-    title: title.trim() || 'Chuyên viên', lastSavedAt: now,
-    touchedCells: touchedCells || [], totalRows, sheetSummaries
+    title: title.trim() || 'Chuyên viên', lastSavedAt: now, touchedCells: touchedCells || [], totalRows, sheetSummaries
   };
-
   try {
-    const all = getAllEmailSessions().filter((s) => s.email !== normEmail);
-    all.unshift(newRecord);
-    const trimmed = all.slice(0, 30);
+    const trimmed = [newRecord, ...getAllEmailSessions().filter((s) => s.email !== normEmail)].slice(0, 30);
     localStorage.setItem(EMAIL_RECORDS_KEY, JSON.stringify(trimmed));
     window.dispatchEvent(new CustomEvent('vtvl-email-sessions-updated', { detail: trimmed }));
   } catch { /* ignore */ }
-
   try {
-    localStorage.setItem(`hcmute_vtvl_session_data_${normEmail}`, JSON.stringify(data));
-  } catch { /* ignore */ }
-  try {
-    localStorage.setItem(`hcmute_vtvl_grid_${unitCode}`, JSON.stringify(data));
+    localStorage.setItem(getSessionStorageKey(normEmail, unit.code), JSON.stringify(data));
+    localStorage.setItem(`hcmute_vtvl_grid_${unit.code}`, JSON.stringify(data));
   } catch { /* ignore */ }
 }
 
@@ -281,7 +242,13 @@ export function deleteEmailSession(email: string): boolean {
     const filtered = all.filter((s) => s.email !== normEmail);
     if (filtered.length === all.length) return false;
     localStorage.setItem(EMAIL_RECORDS_KEY, JSON.stringify(filtered));
-    try { localStorage.removeItem(`hcmute_vtvl_session_data_${normEmail}`); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(`hcmute_vtvl_session_data_${normEmail}`);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(`hcmute_vtvl_session_data_${normEmail}::`)) localStorage.removeItem(k);
+      }
+    } catch { /* ignore */ }
     window.dispatchEvent(new CustomEvent('vtvl-email-sessions-updated', { detail: filtered }));
     return true;
   } catch {

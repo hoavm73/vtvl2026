@@ -422,7 +422,7 @@ async function main() {
         baseRevision: wbSdh.currentRevision,
         data: {
           ...wbSdh.data,
-          C1: [{ id: 'c1-sdh-1', maVtvl: 'SDH.CV01', tenVtvl: 'Chuyên viên đào tạo Sau đại học', bacNgheNghiep: 'Bậc 3' }]
+          C1: [{ id: 'c1-sdh-1', maVtvl: 'SDH.HT45', tenVtvl: 'Chuyên viên', bacNgheNghiep: 'Bậc 3' }]
         }
       })
     }), { params: Promise.resolve({ id: wbSdh.id }) });

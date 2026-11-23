@@ -3,7 +3,7 @@ import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDE
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
-import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange, syncC1NameChange } from './excel-grid-a1-helpers';
+import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { validateRowDeletion } from './excel-grid-delete-guards';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
@@ -83,12 +83,13 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
   }, [unitCode, handleUnitChange]);
 
   const handleLoadTcnsData = useCallback(() => {
+    if (currentUnit.code.toUpperCase() !== 'TCNS') return;
     setUnitCode('TCNS');
     const tcnsData = buildDefaultGridWorkbook('TCNS');
     setData(tcnsData);
     setActiveSheet('A1');
     if (typeof window !== 'undefined') localStorage.setItem('hcmute_vtvl_grid_TCNS', JSON.stringify(tcnsData));
-  }, []);
+  }, [currentUnit.code]);
 
   const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string, resetSheet = false) => {
     if (newUnitCode) setUnitCode(newUnitCode);
@@ -125,8 +126,8 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
       if (sheetKey === 'C1' && field === 'maVtvl') {
         return recalculateGridFormulas(syncC1VtvlChange(prev, rowId, String(value), currentUnit.code), currentUnit.code, currentUnit.nameVi);
       }
-      if (sheetKey === 'C1' && field === 'tenVtvl') {
-        return recalculateGridFormulas(syncC1NameChange(prev, rowId, String(value), currentUnit.code), currentUnit.code, currentUnit.nameVi);
+      if (sheetKey === 'C1' && (field === 'tenVtvl' || field === 'nhomVtvl4' || field === 'maNgach')) {
+        return prev;
       }
 
       // 4. Khi chọn mã công việc ở B2_CT -> tự tra cứu mã VTVL từ A2

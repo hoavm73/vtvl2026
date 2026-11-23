@@ -55,8 +55,10 @@ export const CORE_EXCEL_SHEET_METAS: Record<
     guideDesc: 'Biểu 3 (Bước 3 nghiệp vụ): Khai danh mục VTVL của đơn vị, chọn chế độ làm việc và xác định quỹ giờ chuẩn PP2 (1.904h hoặc 1.760h).',
     ruleHint: 'Áp dụng mã Phụ lục I (QL10–QL60, CM63–CM113, HT26–HT62) theo quy định HCM-UTE.',
     columns: [
-      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Phụ lục I)', width: '160px', type: 'select', dynamicOptionsKey: 'pl1VtvlList', allowCustom: true },
-      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL cụ thể tại đơn vị', width: '260px' },
+      { colLetter: 'A', field: 'maVtvl', headerName: 'Mã VTVL (Danh mục chuẩn)', width: '170px', type: 'select', dynamicOptionsKey: 'pl1VtvlList', allowCustom: false },
+      { colLetter: 'B', field: 'tenVtvl', headerName: 'Tên VTVL chuẩn (chỉ đọc)', width: '260px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường (chỉ Admin/TCNS được sửa)' },
+      { colLetter: 'B1', field: 'nhomVtvl4', headerName: 'Nhóm VTVL chuẩn', width: '220px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường' },
+      { colLetter: 'B2', field: 'maNgach', headerName: 'Ngạch / Chức danh chuẩn', width: '150px', isFormula: true, formulaHint: 'Tự động điền từ Danh mục VTVL chuẩn cấp Trường' },
       { colLetter: 'C', field: 'loaiNhanLuc', headerName: 'Loại nhân lực', width: '130px', type: 'select', selectOptions: ['Viên chức', 'Hợp đồng lao động', 'Hợp đồng khoán việc', 'Thuê dịch vụ'] },
       { colLetter: 'D', field: 'quyetDinh', headerName: 'Quyết định / Căn cứ VTVL', width: '200px' },
       { colLetter: 'E', field: 'gioChuanPp2', headerName: 'Giờ chuẩn PP2', width: '110px', isFormula: true, formulaHint: '=IF(J="Đặc thù",1760,1904)' },

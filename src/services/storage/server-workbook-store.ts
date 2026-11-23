@@ -19,7 +19,7 @@ export interface ServerRevision {
 }
 export interface ServerWorkbook {
   id: string; unitId: string; unitNameVi: string; reportingPeriod: string;
-  status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'archived';
+  status: 'not_started' | 'draft' | 'returned' | 'submitted' | 'under_review' | 'reviewed' | 'approved' | 'archived';
   currentRevision: number; data: Record<ExcelSheetKey, GenericGridRow[]>;
   touchedCells: string[]; createdAt: string; updatedAt: string;
   participants: ServerParticipant[]; revisions: ServerRevision[]; isDeleted?: boolean;
@@ -38,7 +38,7 @@ let memoryWorkbooks: Map<string, ServerWorkbook> | null = null;
 let deletedWbIds: Set<string> | null = null;
 const wbLockGlobal = globalThis as unknown as { __uteVtvlWbLockStatusCache?: Map<string, { locked: boolean; fetchedAt: number }> };
 const evictWbLockCache = (uc?: string) => { const m = wbLockGlobal.__uteVtvlWbLockStatusCache; if (m) uc ? m.delete(uc.trim().toUpperCase()) : m.clear(); };
-const onUnitMutated = (uc: string) => { evictWbLockCache(uc); invalidateUnitMutationCache(uc); };
+const onUnitMutated = (uc: string, wbId?: string) => { evictWbLockCache(uc); invalidateUnitMutationCache(uc, wbId); };
 export function hasWorkbookInMemory(unitCode: string): boolean { return Boolean(memoryWorkbooks && findLatestUnitWorkbook(memoryWorkbooks, unitCode)); }
 export function resetWorkbookMemoryStore(): void {
   memoryWorkbooks = null; deletedWbIds = null; invalidateSupabaseCache(); evictWbLockCache();
@@ -121,7 +121,7 @@ export function getWorkbookForUnitReadOnly(unitId: string, reportingPeriod = '01
   const unit = findHcmuteUnit(unitId), id = `wb_${unit.code}_2026`, now = new Date().toLocaleString('vi-VN');
   const defaultData = buildDefaultGridWorkbook(unit.code);
   return {
-    id, unitId: unit.code, unitNameVi: unit.nameVi, reportingPeriod, status: 'draft', currentRevision: 1,
+    id, unitId: unit.code, unitNameVi: unit.nameVi, reportingPeriod, status: unit.code === 'TCNS' ? 'draft' : 'not_started', currentRevision: 1,
     data: defaultData, touchedCells: [], createdAt: now, updatedAt: now, participants: [], revisions: []
   };
 }
@@ -204,7 +204,7 @@ export function saveServerWorkbook(params: {
   if (wb.revisions.length > 15) wb.revisions = wb.revisions.slice(0, 15);
   persistStore();
   upsertWorkbookInSupabaseCache(wb);
-  onUnitMutated(wb.unitId);
+  onUnitMutated(wb.unitId, wb.id);
   if (!params.skipAsyncPersist) persistWorkbookToSupabase(wb).catch(() => {});
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
@@ -249,7 +249,7 @@ export function rollbackServerWorkbookRevision(
   });
   persistStore();
   upsertWorkbookInSupabaseCache(wb);
-  onUnitMutated(wb.unitId);
+  onUnitMutated(wb.unitId, wb.id);
   return { success: true, currentRevision: nextRev, serverWorkbook: wb };
 }
 
@@ -280,7 +280,7 @@ export async function deleteServerWorkbook(workbookId: string): Promise<boolean>
   [wb.id, wb.unitId, workbookId].forEach((k) => deleted.add(k));
   persistDeletedWbIds(); persistStore();
   await deleteWorkbookFromSupabase(wb.unitId);
-  onUnitMutated(wb.unitId);
+  onUnitMutated(wb.unitId, wb.id);
   return true;
 }
 

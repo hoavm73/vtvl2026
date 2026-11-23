@@ -1,13 +1,14 @@
 /**
  * src/services/org-chart/unit-org-tree-builder.ts
- * Bộ máy trích xuất và dựng Sơ đồ cây VTVL và Danh mục công việc dự kiến của 48 đơn vị
+ * Bộ máy trích xuất và dựng Sơ đồ cây VTVL từ dữ liệu thực của Biểu C1, A1, A2, C3, D1, D2
+ * Tuyệt đối không tự sinh mã giả (QL-TK, QL-PTK) hoặc VTVL mẫu khi đơn vị chưa khai tại C1.
  */
 
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { UnitGroupKind } from '@/types/vtvl';
 import { buildDefaultGridWorkbook } from '@/components/excel-grid/excel-grid-defaults';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
-import { TASK_TEMPLATES_BY_GROUP, NGACH_LIST_BY_GROUP } from '@/configs/hcmute-quotas';
+import { findPl1Item } from '@/configs/hcmute-pl1-builder';
 import { ExpectedTaskItem, UnitOrgNode, UnitOrgTreeData } from './unit-org-tree-types';
 
 const GROUP_LABELS: Record<UnitGroupKind, string> = {
@@ -27,26 +28,32 @@ function getUnitWorkbookData(unitCode: string): Record<string, GenericGridRow[]>
   return buildDefaultGridWorkbook(unitCode);
 }
 
+function getPl1Suffix(code: string): string {
+  const parts = String(code || '').trim().toUpperCase().split('.');
+  return (parts[parts.length - 1] || '').replace(/-\d+$/, '');
+}
+
 function isHeadPosition(name: string, code: string): boolean {
+  const suffix = getPl1Suffix(code);
+  if (/^QL(10|3[1-9])$/.test(suffix)) return true;
+  if (/^QL(20|4[1-9]|60)$/.test(suffix)) return false;
   const n = name.toLowerCase();
-  const c = code.toLowerCase();
-  if (n.includes('phó') || c.includes('ptk') || c.includes('ptp') || c.includes('pgd') || c.includes('pcvp') || c.includes('ql4')) {
-    return false;
-  }
+  if (n.includes('phó')) return false;
   return (
-    n.includes('trưởng khoa') || n.includes('trưởng phòng') || n.includes('viện trưởng') ||
-    n.includes('giám đốc') || n.includes('chánh văn phòng') || n.includes('trưởng trạm') ||
-    c.includes('ql3') || c.includes('ql-tk') || c.includes('ql-tp') || c.includes('ql-gd') || c.includes('ql-cvp')
+    n.includes('hiệu trưởng') || n.includes('trưởng khoa') || n.includes('trưởng phòng') ||
+    n.includes('viện trưởng') || n.includes('giám đốc') || n.includes('chánh văn phòng') ||
+    n.includes('trưởng trạm') || n.includes('trưởng ban') || n.includes('tổng biên tập')
   );
 }
 
 function isDeputyPosition(name: string, code: string): boolean {
+  const suffix = getPl1Suffix(code);
+  if (/^QL(20|4[1-9])$/.test(suffix)) return true;
   const n = name.toLowerCase();
-  const c = code.toLowerCase();
   return (
-    n.includes('phó trưởng khoa') || n.includes('phó trưởng phòng') || n.includes('phó viện trưởng') ||
-    n.includes('phó giám đốc') || n.includes('phó chánh văn phòng') || n.includes('phó trưởng trạm') ||
-    c.includes('ql4') || c.includes('ql-ptk') || c.includes('ql-ptp') || c.includes('ql-pgd') || c.includes('ql-pcvp')
+    n.includes('phó hiệu trưởng') || n.includes('phó trưởng khoa') || n.includes('phó trưởng phòng') ||
+    n.includes('phó viện trưởng') || n.includes('phó giám đốc') || n.includes('phó chánh văn phòng') ||
+    n.includes('phó trưởng trạm') || n.includes('phó trưởng ban') || n.includes('phó tổng biên tập')
   );
 }
 
@@ -55,103 +62,82 @@ export function buildUnitOrgTree(unitCode: string, customWorkbookData?: Record<s
   const group = (unitDef.group || 'khoa-vien') as UnitGroupKind;
   const wb = customWorkbookData || getUnitWorkbookData(unitCode);
 
-  const c1Rows = wb.C1 || [];
+  const c1Rows = (wb.C1 || []).filter((r) => String(r.maVtvl || '').trim() !== '');
   const a1Rows = wb.A1 || [];
   const a2Rows = wb.A2 || [];
+  const b1Rows = wb.B1 || [];
+  const c2Rows = wb.C2 || [];
+  const c3Rows = wb.C3 || [];
+  const d1Rows = wb.D1 || [];
   const d2Rows = wb.D2 || [];
 
   const missionMap = new Map<string, string>();
   a1Rows.forEach((r) => {
-    if (r.maNhiemVu) missionMap.set(String(r.maNhiemVu), String(r.tenNhiemVu || ''));
+    if (r.maNhiemVu) missionMap.set(String(r.maNhiemVu).trim().toUpperCase(), String(r.tenNhiemVu || ''));
   });
 
-  const allTasks: ExpectedTaskItem[] = a2Rows.map((r, idx) => ({
-    id: String(r.id || `task-${idx + 1}`),
-    taskCode: String(r.maCongViec || `${unitCode}.CV${String(idx + 1).padStart(2, '0')}`),
-    taskName: String(r.tenCongViec || 'Công việc chuyên môn'),
-    missionCode: String(r.maNhiemVu || ''),
-    missionName: missionMap.get(String(r.maNhiemVu)) || String(r.canCu || 'Nhiệm vụ theo QĐ 2266/QĐ-ĐHCNKT'),
-    productName: String(r.sanPham || 'Sản phẩm hoàn thành'),
-    standardMinutes: Number(r.phutChuan || r.phutDinhMuc) || 120,
-    standardHoursYear: Number(r.gioNam) || 1904,
-    method: String(r.phuongPhap || 'PP2'),
-    digitalImpact: String(r.mucDoSoHoa || 'Ứng dụng phần mềm quản trị'),
-    unitCode
-  }));
+  const b1ByTask = new Map<string, GenericGridRow>();
+  b1Rows.forEach((r) => {
+    const key = String(r.maCongViec || '').trim().toUpperCase();
+    if (key && !b1ByTask.has(key)) b1ByTask.set(key, r);
+  });
 
-  const templateTasks = TASK_TEMPLATES_BY_GROUP[group] || [];
-
-  function getTasksForPosition(posName: string, posCode: string): ExpectedTaskItem[] {
-    const matched = allTasks.filter((t) => {
-      const codeMatch = posCode && t.taskCode.toLowerCase().includes(posCode.toLowerCase());
-      const nameMatch = posName && t.taskName.toLowerCase().includes(posName.toLowerCase().replace(/bậc \d+/i, '').trim());
-      return codeMatch || nameMatch;
-    });
-
-    if (matched.length > 0) return matched;
-
-    const tplMatched = templateTasks.filter((tpl) => {
-      const isMatch =
-        tpl.vtvlName.toLowerCase().includes(posName.toLowerCase()) ||
-        posName.toLowerCase().includes(tpl.vtvlName.toLowerCase()) ||
-        posCode.toLowerCase().includes(tpl.vtvlSuffix.toLowerCase());
-      return isMatch;
-    });
-
-    if (tplMatched.length > 0) {
-      return tplMatched.map((tpl, i) => ({
-        id: `tpl-${posCode}-${i + 1}`,
-        taskCode: `${unitCode}.${tpl.taskSuffix || `CV${i + 1}`}`,
-        taskName: tpl.taskName,
-        missionCode: `${unitCode}.${tpl.missionSuffix || 'NV01'}`,
-        missionName: 'Nhiệm vụ theo QĐ 2266/QĐ-ĐHCNKT của Trường',
-        productName: tpl.productName || 'Hồ sơ / Báo cáo hoàn thành',
-        standardMinutes: tpl.defaultMinutesPerProduct || 120,
-        standardHoursYear: tpl.extraRelatedHoursYear ? 1904 : 1760,
-        method: tpl.method || 'PP2',
-        digitalImpact: tpl.digitalImpactStage || 'Chuyển đổi số quản trị',
-        unitCode
-      }));
+  const tasksByVtvl = new Map<string, ExpectedTaskItem[]>();
+  const allTasks: ExpectedTaskItem[] = a2Rows.map((r, idx) => {
+    const taskCode = String(r.maCongViec || `${unitCode}.CV${String(idx + 1).padStart(2, '0')}`).trim();
+    const missionCode = String(r.maNhiemVu || '').trim();
+    const b1 = b1ByTask.get(taskCode.toUpperCase());
+    const item: ExpectedTaskItem = {
+      id: String(r.id || `task-${idx + 1}`),
+      taskCode,
+      taskName: String(r.tenCongViec || ''),
+      missionCode,
+      missionName: missionMap.get(missionCode.toUpperCase()) || String(r.canCu || ''),
+      productName: String(r.sanPham || ''),
+      standardMinutes: Number(b1?.phutApDung || b1?.phutThucTe || r.phutChuan || 0),
+      standardHoursYear: Number(b1?.gioTong || r.gioNam || 0),
+      method: String(b1?.ppThucTe || r.phuongPhap || 'PP2'),
+      digitalImpact: String(r.mucDoSoHoa || ''),
+      unitCode
+    };
+    const vKey = String(r.maVtvl || '').trim().toUpperCase();
+    if (vKey) {
+      const list = tasksByVtvl.get(vKey) || [];
+      list.push(item);
+      tasksByVtvl.set(vKey, list);
     }
-
-    return allTasks.slice(0, 2);
-  }
+    return item;
+  });
 
   let headPosition: UnitOrgNode | null = null;
   let deputyPosition: UnitOrgNode | null = null;
   const staffPositions: UnitOrgNode[] = [];
 
-  const staffRows = c1Rows.length > 0
-    ? c1Rows
-    : (NGACH_LIST_BY_GROUP[group] || []).map((ng, i) => ({
-        id: `gen-c1-${i}`,
-        maVtvl: `${unitCode}.${ng.code}`,
-        tenVtvl: ng.name,
-        loaiNhanLuc: ng.personnelType,
-        cheDoLamViec: ng.workingRegime,
-        gioChuanPp2: ng.standardHoursPerYear,
-        dinhBien: ng.defaultCount
-      }));
-
-  staffRows.forEach((row, idx) => {
-    const code = String(row.maVtvl || `${unitCode}.VTVL${idx + 1}`);
-    const name = String(row.tenVtvl || 'Vị trí việc làm');
-    const d2Match = d2Rows.find((d) => d.maVtvl === code);
-    const expectedStaff = Number(d2Match?.canBoTri || row.dinhBien || (row.defaultCount as number) || 2);
-    const tasks = getTasksForPosition(name, code);
+  c1Rows.forEach((row) => {
+    const code = String(row.maVtvl || '').trim();
+    const codeUpper = code.toUpperCase();
+    const pl1 = findPl1Item(code);
+    const rawName = String(row.tenVtvl || '').trim();
+    const name = pl1 && (!rawName || rawName === pl1.titleOrRole) ? pl1.positionName : (rawName || pl1?.positionName || code);
+    const c2Match = c2Rows.find((r) => String(r.maVtvl || '').trim().toUpperCase() === codeUpper);
+    const c3Match = c3Rows.find((r) => String(r.maVtvl || '').trim().toUpperCase() === codeUpper);
+    const d2Match = d2Rows.find((r) => String(r.maVtvl || '').trim().toUpperCase() === codeUpper);
+    const d1Count = d1Rows.filter((r) => String(r.maVtvl || '').trim().toUpperCase() === codeUpper).length;
+    const expectedStaff = Number(c3Match?.nguoiCanBoTri ?? d2Match?.soNguoiCanBoTri ?? d1Count ?? 0) || 0;
+    const tasks = tasksByVtvl.get(codeUpper) || [];
 
     const node: UnitOrgNode = {
       id: `node-${code}`,
       title: name,
       roleCode: code,
       nodeType: 'position',
-      levelLabel: 'Cán bộ, giảng viên / chuyên viên',
-      careerLevel: String(row.bacNgheNghiep || row.careerLevel || 'Bậc 3'),
-      groupLabel: String(row.nhomVtvl || (group === 'khoa-vien' ? 'Chuyên môn đào tạo' : 'Nghiệp vụ hành chính')),
+      levelLabel: 'Vị trí việc làm',
+      careerLevel: String(c2Match?.bacNgheNghiep || pl1?.careerLevel || 'Không áp dụng bậc'),
+      groupLabel: String(row.nhomVtvl4 || pl1?.vtvlGroup4 || (group === 'khoa-vien' ? 'II. Nhóm VTVL Chuyên môn, nghiệp vụ' : 'III. Nhóm VTVL Hỗ trợ')),
       personnelType: String(row.loaiNhanLuc || 'Viên chức'),
-      workingRegime: String(row.cheDoLamViec || (group === 'khoa-vien' ? 'Đặc thù (1.760h)' : 'Phổ biến (1.904h)')),
+      workingRegime: String(row.cheDoLamViec || 'Phổ biến (40 giờ/tuần)'),
       standardHoursYear: Number(row.gioChuanPp2) || 1904,
-      expectedStaffCount: Math.max(1, expectedStaff),
+      expectedStaffCount: Math.max(0, expectedStaff),
       unitCode,
       unitNameVi: unitDef.nameVi,
       tasks,
@@ -171,62 +157,28 @@ export function buildUnitOrgTree(unitCode: string, customWorkbookData?: Record<s
     }
   });
 
-  if (!headPosition) {
-    const headTitle = unitDef.headTitleVi || (group === 'khoa-vien' ? 'Trưởng khoa' : 'Trưởng phòng');
-    headPosition = {
-      id: `head-${unitCode}`,
-      title: `${headTitle} ${unitDef.nameVi}`,
-      roleCode: `${unitCode}.QL31`,
-      nodeType: 'dean',
-      levelLabel: 'Trưởng đơn vị',
-      careerLevel: 'Không áp dụng bậc (Chức vụ quản lý)',
-      groupLabel: 'I. Nhóm VTVL Quản lý',
-      personnelType: 'Viên chức',
-      workingRegime: group === 'khoa-vien' ? 'Đặc thù (1.760h)' : 'Phổ biến (1.904h)',
-      standardHoursYear: group === 'khoa-vien' ? 1760 : 1904,
-      expectedStaffCount: 1,
-      unitCode,
-      unitNameVi: unitDef.nameVi,
-      tasks: getTasksForPosition(headTitle, 'QL31'),
-      children: []
-    };
+  const rootChildren: UnitOrgNode[] = [];
+  if (headPosition && deputyPosition) {
+    (deputyPosition as UnitOrgNode).children = staffPositions;
+    (headPosition as UnitOrgNode).children = [deputyPosition];
+    rootChildren.push(headPosition);
+  } else if (headPosition) {
+    (headPosition as UnitOrgNode).children = staffPositions;
+    rootChildren.push(headPosition);
+  } else if (deputyPosition) {
+    (deputyPosition as UnitOrgNode).children = staffPositions;
+    rootChildren.push(deputyPosition);
+  } else {
+    rootChildren.push(...staffPositions);
   }
 
-  if (!deputyPosition) {
-    const depTitle = `Phó ${unitDef.headTitleVi || (group === 'khoa-vien' ? 'Trưởng khoa' : 'Trưởng phòng')}`;
-    deputyPosition = {
-      id: `deputy-${unitCode}`,
-      title: `${depTitle} phụ trách chuyên môn`,
-      roleCode: `${unitCode}.QL41`,
-      nodeType: 'vice-dean',
-      levelLabel: 'Phó Trưởng đơn vị',
-      careerLevel: 'Không áp dụng bậc (Chức vụ quản lý)',
-      groupLabel: 'I. Nhóm VTVL Quản lý',
-      personnelType: 'Viên chức',
-      workingRegime: group === 'khoa-vien' ? 'Đặc thù (1.760h)' : 'Phổ biến (1.904h)',
-      standardHoursYear: group === 'khoa-vien' ? 1760 : 1904,
-      expectedStaffCount: group === 'khoa-vien' ? 2 : 1,
-      unitCode,
-      unitNameVi: unitDef.nameVi,
-      tasks: getTasksForPosition(depTitle, 'QL41'),
-      children: []
-    };
-  }
-
-  deputyPosition.children = staffPositions;
-  headPosition.children = [deputyPosition];
-
-  const totalPositionsCount = 1 + 1 + staffPositions.length;
-  const totalStaffSum =
-    headPosition.expectedStaffCount +
-    deputyPosition.expectedStaffCount +
-    staffPositions.reduce((acc, curr) => acc + curr.expectedStaffCount, 0);
-
-  const rootTasks = allTasks.length > 0 ? allTasks : [
-    ...headPosition.tasks,
-    ...deputyPosition.tasks,
-    ...staffPositions.flatMap((s) => s.tasks)
+  const allNodes: UnitOrgNode[] = [
+    ...(headPosition ? [headPosition] : []),
+    ...(deputyPosition ? [deputyPosition] : []),
+    ...staffPositions
   ];
+  const totalPositionsCount = allNodes.length;
+  const totalStaffSum = allNodes.reduce((acc, curr) => acc + curr.expectedStaffCount, 0);
 
   const rootNode: UnitOrgNode = {
     id: `root-${unitCode}`,
@@ -236,14 +188,14 @@ export function buildUnitOrgTree(unitCode: string, customWorkbookData?: Record<s
     levelLabel: 'Đơn vị công tác',
     careerLevel: `${totalPositionsCount} vị trí việc làm`,
     groupLabel: GROUP_LABELS[group] || 'Đơn vị trực thuộc',
-    personnelType: `${totalStaffSum} biên chế / người dự kiến`,
+    personnelType: `${totalStaffSum} người dự kiến`,
     workingRegime: 'Quy định chức năng tại Quyết định số 2266/QĐ-ĐHCNKT',
     standardHoursYear: 1904,
     expectedStaffCount: totalStaffSum,
     unitCode,
     unitNameVi: unitDef.nameVi,
-    tasks: rootTasks,
-    children: [headPosition]
+    tasks: allTasks,
+    children: rootChildren
   };
 
   return {
@@ -252,7 +204,7 @@ export function buildUnitOrgTree(unitCode: string, customWorkbookData?: Record<s
     unitGroup: group,
     unitGroupLabel: GROUP_LABELS[group] || group,
     totalPositions: totalPositionsCount,
-    totalTasks: rootTasks.length,
+    totalTasks: allTasks.length,
     totalExpectedStaff: totalStaffSum,
     rootNode
   };

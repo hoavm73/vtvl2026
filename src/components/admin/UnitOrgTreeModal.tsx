@@ -226,6 +226,11 @@ export function UnitOrgTreeModal({
             onSelectNode={setSelectedNode}
             isCompact={isCompact}
           />
+          {treeData.totalPositions === 0 && (
+            <div className="rounded-xl border border-dashed border-[#cbd5e1] bg-white p-4 text-xs text-[#64748b]">
+              Đơn vị chưa kê khai Vị trí việc làm nào tại Biểu <strong>3. C1_VTVL</strong>. Hãy thêm VTVL trong bảng biểu để hệ thống tự động khởi tạo sơ đồ.
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-6 flex flex-col overflow-hidden bg-white">

@@ -21,7 +21,7 @@ services:
       - "log_min_duration_statement=500"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-utevtvl_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-UteVtvl_Secure_2026_xP9}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
       POSTGRES_DB: ${POSTGRES_DB:-utevtvl_db}
     ports:
       - "127.0.0.1:5436:5432"
@@ -59,15 +59,15 @@ services:
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://kekhaivtvl.hcmute.edu.vn}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-https://kekhaivtvl.hcmute.edu.vn}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-utevtvl_admin}:${POSTGRES_PASSWORD:-UteVtvl_Secure_2026_xP9}@postgres:5432/${POSTGRES_DB:-utevtvl_db}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-utevtvl_admin}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/${POSTGRES_DB:-utevtvl_db}?schema=public&connection_limit=10&pool_timeout=15
     volumes:
       - utevtvl_appdata:/app/.data
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3360/ > /dev/null || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3360/api/health/live > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
     logging:
       driver: "json-file"
       options:

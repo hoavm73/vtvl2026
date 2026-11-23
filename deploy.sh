@@ -117,6 +117,8 @@ docker exec -e GIT_COMMIT="$GIT_SHORT_SHA" utevtvl-app node scripts/migrate-post
 echo "🧪 [4b/6] Kiểm thử hậu triển khai: đối soát 100% bảng Prisma & chỉ mục trên PostgreSQL..."
 docker exec utevtvl-app node scripts/verify-deployed-tables.mjs 2>&1 | tee -a "$WORK_DIR/migrations.log"
 
+mkdir -p /var/cache/nginx/vtvl_static && chown -R www-data:www-data /var/cache/nginx/vtvl_static 2>/dev/null || true
+
 for DOMAIN_NAME in kekhaivtvl.hcmute.edu.vn vtvl.utehub.vn; do
   if [ -d "/etc/nginx/sites-available" ] && [ -f "deploy/nginx/${DOMAIN_NAME}.conf" ] && [ -f "/etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem" ]; then
     if ! cmp -s "deploy/nginx/${DOMAIN_NAME}.conf" "/etc/nginx/sites-available/${DOMAIN_NAME}.conf" || [ ! -L "/etc/nginx/sites-enabled/${DOMAIN_NAME}.conf" ]; then
@@ -130,7 +132,7 @@ done
 echo "🩺 [5/6] Kiểm tra phản hồi HTTP máy chủ ứng dụng (127.0.0.1:3360)..."
 HTTP_STATUS="000"
 for _ in {1..15}; do
-  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3360/ || echo "000")
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3360/api/health/live || echo "000")
   if [ "$HTTP_STATUS" = "200" ]; then
     break
   fi

@@ -1,8 +1,9 @@
 import { GenericGridRow } from './excel-grid-types';
-import { getNextMissionCode, getNextTaskCode } from './excel-grid-code-helpers';
+import { getNextMissionCode } from './excel-grid-code-helpers';
 
 /**
- * Định nghĩa cấu trúc hàng mới khi người dùng bấm "Thêm dòng mới" ở từng biểu
+ * Định nghĩa cấu trúc hàng mới khi người dùng bấm "Thêm dòng mới" ở từng biểu.
+ * Không điền sẵn văn bản mẫu hay chọn sẵn dropdown — để trống để hiển thị "Nhập nội dung" / "Chọn".
  */
 export function buildNewGridRow(
   sheetKey: string,
@@ -19,34 +20,29 @@ export function buildNewGridRow(
         id: newId,
         maNhiemVu: nextCode,
         tenNhiemVu: '',
-        coQuan: currentUnit.nameVi,
+        coQuan: '',
         canCu: '',
-        ky: '01/10/2025–30/9/2026',
-        trangThai: 'Tiếp tục thực hiện',
+        ky: '',
+        trangThai: '',
         nguon: ''
       }
     };
   }
 
   if (sheetKey === 'A2') {
-    const existingA2 = prevData.A2 || [];
-    const lastRow = existingA2[existingA2.length - 1];
-    const targetMission =
-      (lastRow?.maNhiemVu as string) ||
-      (prevData.A1 && (prevData.A1[0]?.maNhiemVu as string)) ||
-      `${currentUnit.code}.NV01`;
-    const nextTaskCode = getNextTaskCode(existingA2, targetMission);
     return {
       newRow: {
         id: newId,
-        maCongViec: nextTaskCode,
-        maNhiemVu: targetMission,
+        maCongViec: '',
+        maNhiemVu: '',
         maVtvl: '',
         tenCongViec: '',
         sanPham: '',
         dvt: '',
         chatLuong: '',
-        canCu: ''
+        canCu: '',
+        maVtvlPhoiHop: '',
+        trangThaiPhieu: ''
       }
     };
   }
@@ -59,13 +55,15 @@ export function buildNewGridRow(
         maVtvl: '',
         soSpNam: '',
         phutThucTe: '',
-        gioBoSung: 0,
+        gioBoSung: '',
         gioSp: 0,
         gioTong: 0,
         nguon: '',
         ppThucTe: '',
         phutApDung: 0,
-        canhBao: 'CHƯA ĐẠT'
+        canhBao: 'CHƯA ĐẠT',
+        giaiTrinhKhacChuan: '',
+        trangThaiPhieu: ''
       }
     };
   }
@@ -96,8 +94,8 @@ export function buildNewGridRow(
         gioMoi: '',
         gioSauTacDong: '',
         tyLeThayDoi: '',
-        trangThai: 'Đã kiểm chứng',
-        doiChieuTrung: 'Đã đối chiếu'
+        trangThai: '',
+        doiChieuTrung: ''
       }
     };
   }
@@ -108,14 +106,16 @@ export function buildNewGridRow(
         id: newId,
         maVtvl: '',
         tenVtvl: '',
+        nhomVtvl4: '',
+        maNgach: '',
         loaiNhanLuc: '',
         quyetDinh: '',
         gioChuanPp2: 1904,
-        canCuQuyGio: 'Mức chung 1.904 giờ – quy định về thời giờ làm việc',
-        trangThai: 'Tiếp tục sử dụng',
+        canCuQuyGio: '',
+        trangThai: '',
         gioRieng: '',
-        xacNhanGioRieng: 'Không',
-        cheDoLamViec: 'Phổ biến (40 giờ/tuần)',
+        xacNhanGioRieng: '',
+        cheDoLamViec: '',
         kiemTra: 'ĐẠT'
       }
     };
@@ -126,7 +126,7 @@ export function buildNewGridRow(
       newRow: {
         id: newId,
         maVtvl: '',
-        nam: '2027',
+        nam: '',
         bienDong: '',
         noiDungThayDoi: '',
         canCuNguon: '',
@@ -142,14 +142,14 @@ export function buildNewGridRow(
       newRow: {
         id: newId,
         maVtvl: '',
-        nam: '2027',
+        nam: '',
         soNguoiCanBoTri: '',
         soNguoiCoTheBoTri: '',
         bienCheGiao: '',
         deNghiDieuChinh: '',
         nguonGiaiTrinh: '',
         canhBao: 'THIẾU BIẾN ĐỘNG (NHẬP 0 NẾU KHÔNG ĐỔI)',
-        trangThai: 'Đang xây dựng'
+        trangThai: ''
       }
     };
   }

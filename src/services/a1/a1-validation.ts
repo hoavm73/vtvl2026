@@ -1,4 +1,10 @@
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
+import {
+  HCMUTE_UNITS,
+  INACTIVE_HISTORICAL_UNITS,
+  UNIT_CODE_ALIASES,
+  findHcmuteUnit
+} from '@/configs/hcmute-units';
 
 export const A1_SHEET_NAME = '1. A1_NhiemVu';
 export const A1_DEFAULT_PERIOD = '01/10/2025–30/9/2026';
@@ -182,4 +188,56 @@ export function validateNewA1RowsForSave(params: {
   }
 
   return { ok: true, status: 200, cellErrors: {}, entries: [] };
+}
+
+function expandAbbreviatedUnitName(name: string): string {
+  return name
+    .replace(/^\[[A-Za-z0-9_-]+\]\s*/, '')
+    .trim()
+    .replace(/ĐH\s+CNKT\s+TP\.?HCM/gi, 'Đại học Công nghệ Kỹ thuật Thành phố Hồ Chí Minh');
+}
+
+/**
+ * Trả về tên tiếng Việt đầy đủ (không viết tắt) của đơn vị cho cột "Cơ quan / Đơn vị thực hiện".
+ */
+export function resolveFullUnitAgencyName(unitCode: string, fallbackNameVi?: string): string {
+  const code = trimA1Value(unitCode).toUpperCase();
+  const isKnownUnit =
+    HCMUTE_UNITS.some((u) => u.code === code) ||
+    Boolean(UNIT_CODE_ALIASES[code]) ||
+    Boolean(INACTIVE_HISTORICAL_UNITS[code]) ||
+    code === 'BGH';
+  const rawName = isKnownUnit
+    ? findHcmuteUnit(code).nameVi
+    : trimA1Value(fallbackNameVi) || (code ? findHcmuteUnit(code).nameVi : '');
+  return expandAbbreviatedUnitName(rawName);
+}
+
+/**
+ * Chuẩn hóa giá trị ô "Cơ quan / Đơn vị thực hiện": nếu trống hoặc chỉ là mã viết tắt (VD: CTL, TCNS)
+ * thì tự động chuyển thành tên đầy đủ của đơn vị.
+ */
+export function normalizeA1AgencyValue(rawVal: unknown, unitCode: string, fallbackNameVi?: string): string {
+  const raw = expandAbbreviatedUnitName(trimA1Value(rawVal));
+  if (!raw) return resolveFullUnitAgencyName(unitCode, fallbackNameVi);
+  const rawUpper = raw.toUpperCase();
+  const isUnitAbbrev =
+    rawUpper === trimA1Value(unitCode).toUpperCase() ||
+    HCMUTE_UNITS.some((u) => u.code === rawUpper) ||
+    Boolean(UNIT_CODE_ALIASES[rawUpper]) ||
+    Boolean(INACTIVE_HISTORICAL_UNITS[rawUpper]);
+  if (isUnitAbbrev) return resolveFullUnitAgencyName(rawUpper, fallbackNameVi);
+  return raw;
+}
+
+export function normalizeA1Rows(
+  rows: GenericGridRow[] | undefined,
+  unitCode: string,
+  fallbackNameVi?: string
+): GenericGridRow[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((r) => ({
+    ...r,
+    coQuan: normalizeA1AgencyValue(r.coQuan, unitCode, fallbackNameVi)
+  }));
 }

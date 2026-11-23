@@ -1,7 +1,15 @@
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
-import { A1_DEFAULT_PERIOD, A1_HEADERS, A1_SHEET_NAME, A1_STATUS_OPTIONS, trimA1Value } from './a1-validation';
+import {
+  A1_DEFAULT_PERIOD,
+  A1_HEADERS,
+  A1_SHEET_NAME,
+  A1_STATUS_OPTIONS,
+  normalizeA1AgencyValue,
+  resolveFullUnitAgencyName,
+  trimA1Value
+} from './a1-validation';
 
 function escapeXmlText(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -69,13 +77,14 @@ export async function buildA1ExcelBuffer(params: {
   mode: 'template' | 'export';
 }): Promise<Uint8Array> {
   const rows = params.mode === 'export' && Array.isArray(params.rows) ? params.rows : [];
+  const fullUnitName = resolveFullUnitAgencyName(params.unitCode, params.unitNameVi);
   const templateBlankRows: (string | number)[][] =
     params.mode === 'template'
-      ? Array.from({ length: 20 }, () => ['', '', params.unitNameVi || '', '', A1_DEFAULT_PERIOD, '', ''])
+      ? Array.from({ length: 50 }, () => ['', '', fullUnitName, '', A1_DEFAULT_PERIOD, '', ''])
       : [];
   const aoa: (string | number)[][] = [
     [
-      `Biểu A1_ Nhiệm vụ (${params.unitCode} — ${params.unitNameVi})`,
+      `Biểu A1_ Nhiệm vụ (${fullUnitName})`,
       'LƯU Ý: Nhập từ dòng 3. Cột A (Mã nhiệm vụ) ĐỂ TRỐNG khi thêm mới — hệ thống tự cấp mã.',
       '',
       '',
@@ -88,7 +97,7 @@ export async function buildA1ExcelBuffer(params: {
     ...rows.map((r) => [
       trimA1Value(r.maNhiemVu),
       trimA1Value(r.tenNhiemVu),
-      trimA1Value(r.coQuan),
+      normalizeA1AgencyValue(r.coQuan, params.unitCode, fullUnitName),
       trimA1Value(r.canCu),
       trimA1Value(r.ky),
       trimA1Value(r.trangThai),
@@ -101,7 +110,7 @@ export async function buildA1ExcelBuffer(params: {
   ws['!cols'] = [
     { wch: 22 },
     { wch: 52 },
-    { wch: 30 },
+    { wch: 42 },
     { wch: 34 },
     { wch: 22 },
     { wch: 28 },

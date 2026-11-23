@@ -7,6 +7,7 @@
 import qd2266DataRaw from './hcmute-qd2266-missions.json';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { HCMUTE_UNITS, findHcmuteUnit } from './hcmute-units';
+import { resolveFullUnitAgencyName } from '@/services/a1/a1-validation';
 
 export interface Qd2266MissionRecord {
   maNhiemVu: string;
@@ -199,14 +200,14 @@ export function getQd2266A1RowsForUnit(unitCode: string, unitNameVi?: string): G
   if (!unitRecord) return [];
 
   const actualUnitDef = findHcmuteUnit(normCode);
-  const agencyName = unitNameVi || actualUnitDef?.nameVi || unitRecord.unitName;
+  const agencyName = resolveFullUnitAgencyName(normCode, unitNameVi || actualUnitDef?.nameVi || unitRecord.unitName);
 
   if (normCode === 'TCNS' || targetPlKey === 'TCNS') {
     return unitRecord.missions.map((m, idx) => ({
       id: `a1-${idx + 1}`,
       maNhiemVu: m.maNhiemVu,
       tenNhiemVu: m.tenNhiemVu,
-      coQuan: 'Phòng Tổ chức - Nhân sự',
+      coQuan: agencyName,
       canCu: m.canCu,
       ky: '01/10/2025–30/9/2026',
       trangThai: m.trangThai || 'Tiếp tục thực hiện',

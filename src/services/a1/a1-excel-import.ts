@@ -8,6 +8,7 @@ import {
   A1_FIELD_META,
   A1_REQUIRED_FIELDS,
   diffA1ContentFields,
+  normalizeA1AgencyValue,
   normalizeA1ContentSignature,
   trimA1Value,
   validateA1Row
@@ -17,14 +18,19 @@ import {
   A1ImportCandidateRow,
   A1ImportConflictRow,
   A1ImportDuplicateContentRow,
+  A1ImportParsedRow,
+  A1ImportParsedRowStatus,
   A1ImportPreviewResult,
   A1ImportRowError
 } from './a1-excel-types';
 
+export { applyA1ImportPreview } from './a1-excel-apply';
 export type {
   A1ImportCandidateRow,
   A1ImportConflictRow,
   A1ImportDuplicateContentRow,
+  A1ImportParsedRow,
+  A1ImportParsedRowStatus,
   A1ImportPreviewResult,
   A1ImportRowError
 };
@@ -55,7 +61,7 @@ export function parseAndPreviewA1Import(params: {
   } catch {
     return {
       ok: false, sheetFound: false, fatalError: 'Không thể đọc tệp Excel (.xlsx). Vui lòng kiểm tra định dạng tệp.',
-      summary: emptySummary, newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
+      summary: emptySummary, parsedRows: [], newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
     };
   }
 
@@ -64,7 +70,7 @@ export function parseAndPreviewA1Import(params: {
     return {
       ok: false, sheetFound: false,
       fatalError: `Không tìm thấy sheet "${A1_SHEET_NAME}" trong tệp tải lên.`,
-      summary: emptySummary, newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
+      summary: emptySummary, parsedRows: [], newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
     };
   }
 
@@ -76,7 +82,7 @@ export function parseAndPreviewA1Import(params: {
     return {
       ok: false, sheetFound: true,
       fatalError: `Dòng tiêu đề (dòng 2) của sheet "${A1_SHEET_NAME}" không khớp 7 cột chuẩn: ${A1_HEADERS.join(' | ')}.`,
-      summary: emptySummary, newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
+      summary: emptySummary, parsedRows: [], newRows: [], duplicateContentRows: [], unchangedRows: [], conflictRows: [], errorRows: []
     };
   }
 
@@ -95,6 +101,7 @@ export function parseAndPreviewA1Import(params: {
 
   const virtualRows: GenericGridRow[] = [...(params.existingA1 || [])];
   const seenInFile = new Map<string, number>();
+  const parsedRows: A1ImportParsedRow[] = [];
   const newRows: A1ImportCandidateRow[] = [];
   const duplicateContentRows: A1ImportDuplicateContentRow[] = [];
   const unchangedRows: { excelRow: number; maNhiemVu: string }[] = [];
@@ -113,15 +120,18 @@ export function parseAndPreviewA1Import(params: {
 
     totalRead += 1;
     const excelRow = i + 1;
-    const [maNhiemVu, tenNhiemVu, coQuan, canCu, ky, trangThai, nguon] = cells;
+    const [maNhiemVu, tenNhiemVu, rawCoQuan, canCu, ky, trangThai, nguon] = cells;
+    const coQuan = normalizeA1AgencyValue(rawCoQuan, unitUpper);
     const codeUpper = maNhiemVu.toUpperCase();
     const rowObj: Partial<GenericGridRow> = { maNhiemVu, tenNhiemVu, coQuan, canCu, ky, trangThai, nguon };
 
     if (codeUpper) {
       if (seenInFile.has(codeUpper)) {
-        errorRows.push({
-          excelRow, colLetter: 'A', field: 'maNhiemVu', maNhiemVu,
-          message: `Mã nhiệm vụ "${maNhiemVu}" bị trùng với dòng ${seenInFile.get(codeUpper)} trong cùng tệp.`
+        const msg = `Mã nhiệm vụ "${maNhiemVu}" bị trùng với dòng ${seenInFile.get(codeUpper)} trong cùng tệp.`;
+        errorRows.push({ excelRow, colLetter: 'A', field: 'maNhiemVu', maNhiemVu, message: msg });
+        parsedRows.push({
+          excelRow, status: 'error', maNhiemVu, assignedCode: '',
+          tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, messages: [msg]
         });
         continue;
       }
@@ -129,22 +139,31 @@ export function parseAndPreviewA1Import(params: {
 
       const existingMatch = existingByCode.get(codeUpper);
       if (existingMatch) {
+        const matchedCode = trimA1Value(existingMatch.maNhiemVu);
         if (normalizeA1ContentSignature(existingMatch) === normalizeA1ContentSignature(rowObj)) {
-          unchangedRows.push({ excelRow, maNhiemVu: trimA1Value(existingMatch.maNhiemVu) });
+          unchangedRows.push({ excelRow, maNhiemVu: matchedCode });
+          parsedRows.push({
+            excelRow, status: 'unchanged', maNhiemVu, assignedCode: matchedCode,
+            tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, existingCode: matchedCode
+          });
         } else {
-          conflictRows.push({
-            excelRow,
-            maNhiemVu: trimA1Value(existingMatch.maNhiemVu),
-            differingFields: diffA1ContentFields(existingMatch, rowObj)
+          const differingFields = diffA1ContentFields(existingMatch, rowObj);
+          conflictRows.push({ excelRow, maNhiemVu: matchedCode, differingFields });
+          parsedRows.push({
+            excelRow, status: 'conflict', maNhiemVu, assignedCode: matchedCode,
+            tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, existingCode: matchedCode,
+            messages: [`Khác với dữ liệu trên bảng ở: ${differingFields.join(', ')}`]
           });
         }
         continue;
       }
 
       if (codeUpper.includes('.') && !codeUpper.startsWith(`${unitUpper}.`)) {
-        errorRows.push({
-          excelRow, colLetter: 'A', field: 'maNhiemVu', maNhiemVu,
-          message: `Mã nhiệm vụ "${maNhiemVu}" không thuộc đơn vị ${unitUpper}.`
+        const msg = `Mã nhiệm vụ "${maNhiemVu}" không thuộc đơn vị ${unitUpper}.`;
+        errorRows.push({ excelRow, colLetter: 'A', field: 'maNhiemVu', maNhiemVu, message: msg });
+        parsedRows.push({
+          excelRow, status: 'error', maNhiemVu, assignedCode: '',
+          tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, messages: [msg]
         });
         continue;
       }
@@ -152,8 +171,11 @@ export function parseAndPreviewA1Import(params: {
 
     const check = validateA1Row(rowObj);
     if (!check.valid) {
+      const rowErrMessages: string[] = [];
       for (const field of A1_REQUIRED_FIELDS) {
         if (check.errors[field]) {
+          const fieldErr = `${A1_FIELD_META[field].colLetter}: ${check.errors[field]!}`;
+          rowErrMessages.push(fieldErr);
           errorRows.push({
             excelRow,
             colLetter: A1_FIELD_META[field].colLetter,
@@ -163,24 +185,29 @@ export function parseAndPreviewA1Import(params: {
           });
         }
       }
+      parsedRows.push({
+        excelRow, status: 'error', maNhiemVu, assignedCode: '',
+        tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, messages: rowErrMessages
+      });
       continue;
     }
 
     const assignedCode = codeUpper || getNextMissionCode(virtualRows, unitUpper);
     const candidate: A1ImportCandidateRow = { excelRow, maNhiemVu, assignedCode, tenNhiemVu, coQuan, canCu, ky, trangThai, nguon };
 
-    // Kiểm tra trùng nội dung với dữ liệu đã nhập trên bảng trước đó (để người dùng xác nhận bỏ qua hoặc thêm mới)
     const sigMatch = existingBySig.get(normalizeA1ContentSignature(rowObj));
     const nameKey = tenNhiemVu.toLowerCase().replace(/\s+/g, ' ');
     const matchedExisting = sigMatch || existingByName.get(nameKey);
     if (matchedExisting) {
+      const existingCode = trimA1Value(matchedExisting.maNhiemVu);
+      const existingTenNhiemVu = trimA1Value(matchedExisting.tenNhiemVu);
       duplicateContentRows.push({
         excelRow,
         matchReason: sigMatch ? 'exact' : 'same_name',
         incoming: candidate,
         existing: {
-          maNhiemVu: trimA1Value(matchedExisting.maNhiemVu),
-          tenNhiemVu: trimA1Value(matchedExisting.tenNhiemVu),
+          maNhiemVu: existingCode,
+          tenNhiemVu: existingTenNhiemVu,
           coQuan: trimA1Value(matchedExisting.coQuan),
           canCu: trimA1Value(matchedExisting.canCu),
           ky: trimA1Value(matchedExisting.ky),
@@ -188,11 +215,19 @@ export function parseAndPreviewA1Import(params: {
           nguon: trimA1Value(matchedExisting.nguon)
         }
       });
+      parsedRows.push({
+        excelRow, status: 'duplicate', maNhiemVu, assignedCode,
+        tenNhiemVu, coQuan, canCu, ky, trangThai, nguon, existingCode, existingTenNhiemVu
+      });
       continue;
     }
 
     virtualRows.push({ id: `preview-${excelRow}`, maNhiemVu: assignedCode });
     newRows.push(candidate);
+    parsedRows.push({
+      excelRow, status: 'new', maNhiemVu, assignedCode,
+      tenNhiemVu, coQuan, canCu, ky, trangThai, nguon
+    });
   }
 
   return {
@@ -206,61 +241,11 @@ export function parseAndPreviewA1Import(params: {
       conflictCount: conflictRows.length,
       errorCount: errorRows.length
     },
+    parsedRows,
     newRows,
     duplicateContentRows,
     unchangedRows,
     conflictRows,
     errorRows
   };
-}
-
-export function applyA1ImportPreview(params: {
-  preview: A1ImportPreviewResult;
-  existingA1: GenericGridRow[];
-  unitCode: string;
-  duplicateDecisions?: Record<number, 'skip' | 'add_new'>;
-}): { ok: boolean; error?: string; nextA1: GenericGridRow[]; addedCount: number; skippedDuplicateCount: number } {
-  const { preview, existingA1, unitCode, duplicateDecisions = {} } = params;
-  if (!preview.ok || preview.summary.errorCount > 0 || preview.summary.conflictCount > 0) {
-    return {
-      ok: false,
-      error: 'Tệp nhập còn dòng lỗi hoặc xung đột mã nhiệm vụ. Hệ thống không ghi một phần lô.',
-      nextA1: existingA1,
-      addedCount: 0,
-      skippedDuplicateCount: 0
-    };
-  }
-
-  const nextA1: GenericGridRow[] = [...(existingA1 || [])];
-  const unitUpper = unitCode.trim().toUpperCase();
-  const ts = Date.now().toString(36);
-  let skippedDuplicateCount = 0;
-
-  const approvedDuplicates: A1ImportCandidateRow[] = [];
-  for (const dup of preview.duplicateContentRows || []) {
-    if (duplicateDecisions[dup.excelRow] === 'add_new') {
-      approvedDuplicates.push(dup.incoming);
-    } else {
-      skippedDuplicateCount += 1;
-    }
-  }
-
-  const allToAdd = [...preview.newRows, ...approvedDuplicates];
-  allToAdd.forEach((item, idx) => {
-    const finalCode = item.maNhiemVu.trim()
-      ? item.maNhiemVu.trim().toUpperCase()
-      : getNextMissionCode(nextA1, unitUpper);
-    nextA1.push({
-      id: `a1-imp-${ts}-${idx + 1}`,
-      maNhiemVu: finalCode,
-      tenNhiemVu: item.tenNhiemVu,
-      coQuan: item.coQuan,
-      canCu: item.canCu,
-      ky: item.ky,
-      trangThai: item.trangThai,
-      nguon: item.nguon
-    });
-  });
-
-  return { ok: true, nextA1, addedCount: allToAdd.length, skippedDuplicateCount };
 }

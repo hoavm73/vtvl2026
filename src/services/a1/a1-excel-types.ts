@@ -1,3 +1,5 @@
+export type A1ImportParsedRowStatus = 'new' | 'duplicate' | 'unchanged' | 'conflict' | 'error';
+
 export interface A1ImportRowError {
   excelRow: number;
   colLetter: string;
@@ -39,6 +41,22 @@ export interface A1ImportDuplicateContentRow {
   };
 }
 
+export interface A1ImportParsedRow {
+  excelRow: number;
+  status: A1ImportParsedRowStatus;
+  maNhiemVu: string;
+  assignedCode: string;
+  tenNhiemVu: string;
+  coQuan: string;
+  canCu: string;
+  ky: string;
+  trangThai: string;
+  nguon: string;
+  existingCode?: string;
+  existingTenNhiemVu?: string;
+  messages?: string[];
+}
+
 export interface A1ImportPreviewResult {
   ok: boolean;
   sheetFound: boolean;
@@ -51,6 +69,7 @@ export interface A1ImportPreviewResult {
     conflictCount: number;
     errorCount: number;
   };
+  parsedRows: A1ImportParsedRow[];
   newRows: A1ImportCandidateRow[];
   duplicateContentRows: A1ImportDuplicateContentRow[];
   unchangedRows: { excelRow: number; maNhiemVu: string }[];

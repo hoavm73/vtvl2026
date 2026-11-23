@@ -3,6 +3,7 @@ import { ExcelSheetKey, GenericGridRow, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDE
 import { buildDefaultGridWorkbook } from './excel-grid-defaults';
 import { recalculateGridFormulas } from './excel-grid-formulas';
 import { normalizeC2Rows, normalizeD1Rows } from './excel-c2-d1-helpers';
+import { normalizeA1Rows } from '@/services/a1/a1-validation';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
 import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { validateRowDeletion } from './excel-grid-delete-guards';
@@ -27,9 +28,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
   const [activeSheet, setActiveSheet] = useState<ExcelSheetKey>(initialSheet || 'A1');
 
   useEffect(() => {
-    if (initialSheet && (isAdmin || !ADMIN_ONLY_SHEETS.has(initialSheet))) {
-      setActiveSheet(initialSheet);
-    }
+    if (initialSheet && (isAdmin || !ADMIN_ONLY_SHEETS.has(initialSheet))) setActiveSheet(initialSheet);
   }, [initialSheet, isAdmin]);
   const { isC1Unlocked, unlockC1, lockC1 } = useC1AdminLock();
   const [data, setData] = useState<Record<ExcelSheetKey, GenericGridRow[]>>(() => buildDefaultGridWorkbook(initialUnitCode));
@@ -77,10 +76,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     };
     window.addEventListener('vtvl-grid-sync', handleGridSync);
     window.addEventListener('vtvl-units-updated', handleUnitsUpdated);
-    return () => {
-      window.removeEventListener('vtvl-grid-sync', handleGridSync);
-      window.removeEventListener('vtvl-units-updated', handleUnitsUpdated);
-    };
+    return () => { window.removeEventListener('vtvl-grid-sync', handleGridSync); window.removeEventListener('vtvl-units-updated', handleUnitsUpdated); };
   }, [unitCode, handleUnitChange]);
 
   const handleLoadTcnsData = useCallback(() => {
@@ -95,7 +91,12 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
   const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string, resetSheet = false) => {
     const resolvedUnit = findHcmuteUnit(newUnitCode || unitCode);
     if (newUnitCode) setUnitCode(newUnitCode);
-    setData({ ...restoredData, C2: normalizeC2Rows(restoredData.C2, restoredData.C1 || []), D1: normalizeD1Rows(restoredData.D1, restoredData.C1 || [], resolvedUnit.nameVi) });
+    setData({
+      ...restoredData,
+      A1: normalizeA1Rows(restoredData.A1, resolvedUnit.code, resolvedUnit.nameVi),
+      C2: normalizeC2Rows(restoredData.C2, restoredData.C1 || []),
+      D1: normalizeD1Rows(restoredData.D1, restoredData.C1 || [], resolvedUnit.nameVi)
+    });
     if (resetSheet) setActiveSheet('A1');
   }, [unitCode]);
 
@@ -244,23 +245,12 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     return isAdmin ? rawOrder : rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
   }, [orderMode, isAdmin]);
 
-  useEffect(() => {
-    if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) setActiveSheet('A1');
-  }, [isAdmin, activeSheet]);
+  useEffect(() => { if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) setActiveSheet('A1'); }, [isAdmin, activeSheet]);
 
   const activeSheetIndex = currentSheetOrder.indexOf(activeSheet);
-  const goToNextSheet = useCallback(() => {
-    if (activeSheetIndex < currentSheetOrder.length - 1) setActiveSheet(currentSheetOrder[activeSheetIndex + 1]);
-  }, [activeSheetIndex, currentSheetOrder]);
-
-  const goToPrevSheet = useCallback(() => {
-    if (activeSheetIndex > 0) setActiveSheet(currentSheetOrder[activeSheetIndex - 1]);
-  }, [activeSheetIndex, currentSheetOrder]);
-
-  const saveAndGoNext = useCallback(() => {
-    saveSheetData(activeSheet);
-    goToNextSheet();
-  }, [saveSheetData, activeSheet, goToNextSheet]);
+  const goToNextSheet = useCallback(() => { if (activeSheetIndex < currentSheetOrder.length - 1) setActiveSheet(currentSheetOrder[activeSheetIndex + 1]); }, [activeSheetIndex, currentSheetOrder]);
+  const goToPrevSheet = useCallback(() => { if (activeSheetIndex > 0) setActiveSheet(currentSheetOrder[activeSheetIndex - 1]); }, [activeSheetIndex, currentSheetOrder]);
+  const saveAndGoNext = useCallback(() => { saveSheetData(activeSheet); goToNextSheet(); }, [saveSheetData, activeSheet, goToNextSheet]);
 
   const dynamicOptionsMap = useMemo(() => ({
     vtvlList: (data.C1 || []).filter((r) => r.maVtvl).map((r) => ({ value: String(r.maVtvl), label: r.tenVtvl ? `${r.maVtvl} — ${r.tenVtvl}` : String(r.maVtvl) })),

@@ -1,6 +1,6 @@
 import { GenericGridRow } from './excel-grid-types';
 import { getNextMissionCode } from './excel-grid-code-helpers';
-import { A1_DEFAULT_PERIOD } from '@/services/a1/a1-validation';
+import { A1_DEFAULT_PERIOD, resolveFullUnitAgencyName } from '@/services/a1/a1-validation';
 
 /**
  * Định nghĩa cấu trúc hàng mới khi người dùng bấm "Thêm dòng mới" ở từng biểu.
@@ -21,7 +21,7 @@ export function buildNewGridRow(
         id: newId,
         maNhiemVu: nextCode,
         tenNhiemVu: '',
-        coQuan: currentUnit.nameVi || '',
+        coQuan: resolveFullUnitAgencyName(currentUnit.code, currentUnit.nameVi),
         canCu: '',
         ky: A1_DEFAULT_PERIOD,
         trangThai: '',

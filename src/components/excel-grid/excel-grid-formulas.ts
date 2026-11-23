@@ -7,6 +7,21 @@ export function recalculateGridFormulas(
 ): Record<ExcelSheetKey, GenericGridRow[]> {
   const next = { ...prev };
 
+  // 0. Khi A1 hoặc C1 bị xóa trống hoàn toàn, tự động xóa sạch dữ liệu phụ thuộc (giữ nguyên toàn bộ công thức)
+  if ((next.A1 || []).length === 0) {
+    next.A2 = [];
+    next.B1 = [];
+    next.B2_CT = [];
+    next.B2 = [];
+  }
+  if ((next.C1 || []).length === 0) {
+    next.C2 = [];
+    next.C3 = [];
+    next.D1 = [];
+    next.DU_BAO = [];
+    next.D2 = [];
+  }
+
   // 1. Sync tasks from A2 to B1 & B2 if missing, and sync maVtvl
   // Hỗ trợ nhiều cán bộ cùng kê khai một mã công việc (phân biệt theo sourceTicketId / id dòng)
   const existingA2 = next.A2 || [];
@@ -139,8 +154,31 @@ export function recalculateGridFormulas(
   });
   next.C3 = updatedC3;
 
-  // 4. DU_BAO_5_NAM (Đồng bộ động nhu cầu năm cơ sở từ C3)
-  const updatedDuBao: GenericGridRow[] = (next.DU_BAO || []).map((r) => {
+  // 4. DU_BAO_5_NAM (Đồng bộ động nhu cầu năm cơ sở từ C3 & tự sinh đủ 5 năm 2027-2031 khi đơn vị nhập mới C1)
+  const FORECAST_YEARS = ['2027', '2028', '2029', '2030', '2031'];
+  const existingDuBaoMap = new Map((next.DU_BAO || []).map((r) => [`${String(r.maVtvl || '')}_${String(r.nam || '')}`, r]));
+  const duBaoSourceRows: GenericGridRow[] = [];
+  const seenDuBaoKeys = new Set<string>();
+  for (const r of next.DU_BAO || []) {
+    const key = `${String(r.maVtvl || '')}_${String(r.nam || '')}`;
+    seenDuBaoKeys.add(key);
+    duBaoSourceRows.push(r);
+  }
+  c1Positions.forEach((c, idx) => {
+    const vCode = String(c.maVtvl || '').trim();
+    if (!vCode) return;
+    for (const yr of FORECAST_YEARS) {
+      const key = `${vCode}_${yr}`;
+      if (!seenDuBaoKeys.has(key) && !existingDuBaoMap.has(key)) {
+        seenDuBaoKeys.add(key);
+        duBaoSourceRows.push({
+          id: `dubao-${vCode}-${yr}-${idx + 1}`, maVtvl: vCode, nam: yr, bienDong: 0,
+          noiDungThayDoi: `Duy trì ổn định nhân lực năm ${yr}`, canCuNguon: 'Chiến lược phát triển HCM-UTE 2026–2030'
+        });
+      }
+    }
+  });
+  const updatedDuBao: GenericGridRow[] = duBaoSourceRows.map((r) => {
     const vCode = String(r.maVtvl || '');
     const c3Match = updatedC3.find((c) => c.maVtvl === vCode);
     const basePeople = Number(c3Match?.nguoiCanBoTri) || Number(r.nguoiC3) || 1;
@@ -157,11 +195,29 @@ export function recalculateGridFormulas(
   });
   next.DU_BAO = updatedDuBao;
 
-  // 5. D2_PhuongAn (Tự động đồng bộ số người cần bố trí từ 10. DU_BAO_5_NAM)
+  // 5. D2_PhuongAn (Tự động đồng bộ số người cần bố trí từ 10. DU_BAO_5_NAM & tự sinh đủ 5 năm khi nhập mới C1)
   const duBaoLookup = new Map(updatedDuBao.map((d) => [`${d.maVtvl}_${d.nam}`, d]));
   const d1Staff = next.D1 || [];
+  const d2SourceRows: GenericGridRow[] = [];
+  const seenD2Keys = new Set<string>();
+  for (const r of next.D2 || []) {
+    const key = `${String(r.maVtvl || '')}_${String(r.nam || '')}`;
+    seenD2Keys.add(key);
+    d2SourceRows.push(r);
+  }
+  c1Positions.forEach((c, idx) => {
+    const vCode = String(c.maVtvl || '').trim();
+    if (!vCode) return;
+    for (const yr of FORECAST_YEARS) {
+      const key = `${vCode}_${yr}`;
+      if (!seenD2Keys.has(key)) {
+        seenD2Keys.add(key);
+        d2SourceRows.push({ id: `d2-${vCode}-${yr}-${idx + 1}`, maVtvl: vCode, nam: yr });
+      }
+    }
+  });
 
-  const updatedD2: GenericGridRow[] = (next.D2 || []).map((r) => {
+  const updatedD2: GenericGridRow[] = d2SourceRows.map((r) => {
     const vCode = String(r.maVtvl || '');
     const yr = String(r.nam || '');
     const key = `${vCode}_${yr}`;

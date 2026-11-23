@@ -12,6 +12,8 @@ import {
 import { getAuthSecret } from '@/services/storage/account-crypto';
 import { generateUserSessionToken } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { recordAuthAuditEvent } from '@/services/storage/server-audit-store';
 
 try {
   dns.setDefaultResultOrder('ipv4first');
@@ -88,15 +90,27 @@ export function getAuthOptions(): NextAuthOptions {
       }
 
       const isTcns = email === 'tcns@hcmute.edu.vn';
+      const unitCode = (isTcns ? 'TCNS' : existing?.unitCode || 'CNTT').toUpperCase();
+      const role = normalizeRole(existing?.role, isTcns);
       await upsertUserAccount({
         email,
         displayName: user.name || existing?.displayName || email.split('@')[0],
-        unitCode: isTcns ? 'TCNS' : existing?.unitCode || 'CNTT',
+        unitCode,
         title: isTcns ? 'Phòng Tổ chức – Nhân sự' : existing?.title || 'Cán bộ – Giảng viên',
-        role: normalizeRole(existing?.role, isTcns),
+        role,
         authProvider: 'google',
         avatarUrl: user.image || existing?.avatarUrl || '',
         hasSelectedUnit: isTcns ? true : Boolean(existing?.hasSelectedUnit)
+      });
+
+      await recordAuthAuditEvent({
+        action: 'ĐĂNG_NHẬP_GOOGLE',
+        email,
+        role,
+        unitCode,
+        unitName: findHcmuteUnit(unitCode).nameVi,
+        authMethod: 'google',
+        details: `Đăng nhập hệ thống qua Google Workspace (${user.name || email})`
       });
 
       return true;

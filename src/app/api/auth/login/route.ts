@@ -14,6 +14,8 @@ import {
   DEFAULT_SESSION_MAX_AGE_SECONDS
 } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { recordAuthAuditEvent } from '@/services/storage/server-audit-store';
 import {
   MAX_AUTH_PAYLOAD_BYTES,
   checkAuthRateLimit,
@@ -45,7 +47,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sprayKey = `user_login_ip_spray:${extractClientIp(req)}`;
+    const clientIp = extractClientIp(req);
+    const userAgent = req.headers.get('user-agent') || undefined;
+    const sprayKey = `user_login_ip_spray:${clientIp}`;
     const rateCheck = checkAuthRateLimit(req, 'user_login', email);
     const sprayCheck = checkDirectRateKey(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
     if (!rateCheck.allowed || !sprayCheck.allowed) {
@@ -66,6 +70,18 @@ export async function POST(req: NextRequest) {
     if (!existing) {
       recordAuthFailure(req, 'user_login', email);
       recordDirectFailure(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
+      await recordAuthAuditEvent({
+        action: 'ĐĂNG_NHẬP_THẤT_BẠI',
+        email,
+        role: 'guest',
+        unitCode: 'SYSTEM',
+        unitName: 'Hệ thống xác thực',
+        ipAddress: clientIp,
+        userAgent,
+        authMethod: 'email',
+        reason: 'ACCOUNT_NOT_FOUND',
+        details: `Đăng nhập thất bại: tài khoản ${email} chưa tồn tại trên hệ thống`
+      });
       return NextResponse.json(
         { error: 'Tài khoản chưa được khởi tạo trong hệ thống. Vui lòng đăng nhập bằng Google (@hcmute.edu.vn) hoặc liên hệ Phòng TCNS.' },
         { status: 401 }
@@ -73,6 +89,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (existing.status === 'suspended') {
+      await recordAuthAuditEvent({
+        action: 'ĐĂNG_NHẬP_THẤT_BẠI',
+        email,
+        role: existing.role,
+        unitCode: existing.unitCode,
+        unitName: existing.unitNameVi || findHcmuteUnit(existing.unitCode).nameVi,
+        ipAddress: clientIp,
+        userAgent,
+        authMethod: 'email',
+        reason: 'ACCOUNT_SUSPENDED',
+        details: `Đăng nhập bị từ chối: tài khoản ${email} đang bị tạm khóa`
+      });
       return NextResponse.json(
         { error: 'Tài khoản này đang bị tạm khóa. Vui lòng liên hệ Phòng Tổ chức – Nhân sự.' },
         { status: 403 }
@@ -83,6 +111,18 @@ export async function POST(req: NextRequest) {
     if (!verified) {
       recordAuthFailure(req, 'user_login', email);
       recordDirectFailure(sprayKey, IP_SPRAY_MAX_ATTEMPTS, RATE_WINDOW_MS);
+      await recordAuthAuditEvent({
+        action: 'ĐĂNG_NHẬP_THẤT_BẠI',
+        email,
+        role: existing.role,
+        unitCode: existing.unitCode,
+        unitName: existing.unitNameVi || findHcmuteUnit(existing.unitCode).nameVi,
+        ipAddress: clientIp,
+        userAgent,
+        authMethod: 'email',
+        reason: 'WRONG_PASSWORD',
+        details: `Đăng nhập thất bại: sai mật khẩu cho tài khoản ${email}`
+      });
       return NextResponse.json(
         { error: 'Mật khẩu không chính xác. Nếu dùng Google Workspace HCM-UTE, vui lòng chọn nút Đăng nhập bằng Google.' },
         { status: 401 }
@@ -90,6 +130,17 @@ export async function POST(req: NextRequest) {
     }
 
     clearAuthFailures(req, 'user_login', email);
+    await recordAuthAuditEvent({
+      action: 'ĐĂNG_NHẬP',
+      email: verified.email,
+      role: verified.role,
+      unitCode: verified.unitCode,
+      unitName: verified.unitNameVi || findHcmuteUnit(verified.unitCode).nameVi,
+      ipAddress: clientIp,
+      userAgent,
+      authMethod: 'email',
+      details: `Đăng nhập hệ thống qua Email/Mật khẩu (${verified.displayName || verified.email})`
+    });
 
     const sessionToken = generateUserSessionToken({
       email: verified.email,

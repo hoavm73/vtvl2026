@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { ADMIN_COOKIE_NAME, USER_SESSION_COOKIE_NAME } from '@/services/storage/server-auth-guard';
+import { ADMIN_COOKIE_NAME, getCallerSession, USER_SESSION_COOKIE_NAME } from '@/services/storage/server-auth-guard';
+import { extractClientIp } from '@/services/auth/rate-limiter';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { recordAuthAuditEvent } from '@/services/storage/server-audit-store';
 
 const COOKIES_TO_CLEAR = [
   USER_SESSION_COOKIE_NAME,
@@ -34,11 +37,31 @@ function buildLogoutResponse() {
   return res;
 }
 
-export async function POST() {
+async function logLogoutSession(req?: Request) {
+  if (!req) return;
+  const caller = await getCallerSession(req).catch(() => null);
+  if (caller?.isAuthenticated && caller.email) {
+    await recordAuthAuditEvent({
+      action: 'ĐĂNG_XUẤT',
+      email: caller.email,
+      role: caller.role,
+      unitCode: caller.unitCode,
+      unitName: findHcmuteUnit(caller.unitCode).nameVi,
+      ipAddress: extractClientIp(req),
+      userAgent: req.headers.get('user-agent') || undefined,
+      authMethod: 'logout',
+      details: `Đăng xuất khỏi hệ thống (${caller.email})`
+    });
+  }
+}
+
+export async function POST(req: Request) {
+  await logLogoutSession(req);
   return buildLogoutResponse();
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
+  await logLogoutSession(req);
   return buildLogoutResponse();
 }
 

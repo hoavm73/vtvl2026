@@ -304,6 +304,84 @@ assert.strictEqual(staleReset.filteredTickets.map((t) => t.id).join(','), '4');
   }
 });
 
+test('TC16: Nhật ký hệ thống ghi nhận ĐĂNG_NHẬP / ĐĂNG_NHẬP_THẤT_BẠI (IP, role, đơn vị) và lọc category=auth không bị trôi bởi log sửa biểu', () => {
+  const auditFile = path.join(root, '.data', 'audit-logs.json');
+  const accountsFile = path.join(root, '.data', 'user_accounts.json');
+  const auditBackup = fs.existsSync(auditFile) ? fs.readFileSync(auditFile, 'utf8') : null;
+  const accountsBackup = fs.existsSync(accountsFile) ? fs.readFileSync(accountsFile, 'utf8') : null;
+  const tmpRunner = path.join(root, '.data', '_tmp_tc16_auth_audit.ts');
+  fs.mkdirSync(path.dirname(tmpRunner), { recursive: true });
+  fs.writeFileSync(
+    tmpRunner,
+    `
+import assert from 'node:assert';
+import { NextRequest } from 'next/server';
+import { POST as postAuthLogin } from '../src/app/api/auth/login/route';
+import { GET as getAuditLogsRoute } from '../src/app/api/audit-logs/route';
+import { appendAuditLog, getAuditLogs } from '../src/services/storage/server-audit-store';
+import { upsertUserAccount } from '../src/services/storage/server-account-store';
+import { hashAccountPassword } from '../src/services/storage/account-crypto';
+import { generateUserSessionToken } from '../src/services/storage/server-auth-guard';
+
+async function main() {
+  const testEmail = 'tc16.auth.audit@hcmute.edu.vn';
+  const adminTok = generateUserSessionToken({ email: 'tcns@hcmute.edu.vn', role: 'admin', unitCode: 'TCNS', ttlHours: 1 });
+  await upsertUserAccount({
+    email: testEmail, displayName: 'TC16 Audit User', unitCode: 'CNTT', role: 'staff',
+    passwordHash: hashAccountPassword('Pass@2026'), hasSelectedUnit: true
+  }, true);
+
+  const failRes = await postAuthLogin(new NextRequest('http://localhost:3360/api/auth/login', {
+    method: 'POST', headers: { 'x-real-ip': '10.99.88.77', 'user-agent': 'VTVL-QA-Agent/1.0', 'content-type': 'application/json' },
+    body: JSON.stringify({ email: testEmail, password: 'WrongPass999!' })
+  }));
+  assert.strictEqual(failRes.status, 401);
+
+  const okRes = await postAuthLogin(new NextRequest('http://localhost:3360/api/auth/login', {
+    method: 'POST', headers: { 'x-real-ip': '10.99.88.77', 'user-agent': 'VTVL-QA-Agent/1.0', 'content-type': 'application/json' },
+    body: JSON.stringify({ email: testEmail, password: 'Pass@2026' })
+  }));
+  assert.strictEqual(okRes.status, 200);
+
+  const rawLogsStr = JSON.stringify(getAuditLogs({ limit: 50 }));
+  assert.ok(!rawLogsStr.includes('WrongPass999!') && !rawLogsStr.includes('Pass@2026') && !rawLogsStr.includes('passwordHash'), 'Nhật ký không được rò rỉ mật khẩu');
+
+  for (let i = 0; i < 120; i++) {
+    appendAuditLog({ unitCode: 'CNTT', unitName: 'Khoa CNTT', action: 'SỬA_BIỂU', details: 'Sửa ô ' + i, actorEmail: testEmail, actorRole: 'staff' });
+  }
+
+  const authLogsRes = await getAuditLogsRoute(new Request('http://localhost:3360/api/audit-logs?category=auth&limit=50', {
+    headers: { authorization: 'Bearer ' + adminTok }
+  }));
+  assert.strictEqual(authLogsRes.status, 200);
+  const authPayload = await authLogsRes.json();
+  const authLogs = authPayload.logs || [];
+  assert.ok(!authLogs.some((l: any) => l.action === 'SỬA_BIỂU'), 'category=auth không được lẫn log SỬA_BIỂU');
+
+  const okLog = authLogs.find((l: any) => l.action === 'ĐĂNG_NHẬP' && l.actorEmail === testEmail);
+  const failLog = authLogs.find((l: any) => l.action === 'ĐĂNG_NHẬP_THẤT_BẠI' && l.actorEmail === testEmail);
+  assert.ok(okLog, 'Phải ghi nhận ĐĂNG_NHẬP khi đăng nhập thành công');
+  assert.ok(failLog, 'Phải ghi nhận ĐĂNG_NHẬP_THẤT_BẠI khi sai mật khẩu');
+  assert.strictEqual(okLog.actorRole, 'staff');
+  assert.strictEqual(okLog.unitCode, 'CNTT');
+  assert.strictEqual(okLog.ipAddress, '10.99.88.77');
+  assert.strictEqual(okLog.workbookId, undefined, 'Log auth không được gắn workbookId');
+}
+main().catch((e) => { console.error(e); process.exit(1); });
+`,
+    'utf8'
+  );
+  try {
+    execSync(`npx tsx "${tmpRunner}"`, { stdio: 'inherit', env: { ...process.env, VTVL_ISOLATED_LOCAL_STORE: 'true' } });
+  } finally {
+    if (fs.existsSync(tmpRunner)) fs.unlinkSync(tmpRunner);
+    if (auditBackup !== null) fs.writeFileSync(auditFile, auditBackup, 'utf8');
+    else if (fs.existsSync(auditFile)) fs.unlinkSync(auditFile);
+    if (accountsBackup !== null) fs.writeFileSync(accountsFile, accountsBackup, 'utf8');
+    else if (fs.existsSync(accountsFile)) fs.unlinkSync(accountsFile);
+  }
+});
+
 console.log(`\n----------------------------------------------------------------`);
-console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/15 KỊCH BẢN PASS`);
+console.log(` KẾT QUẢ KIỂM THỬ BỘ LỌC ĐƠN VỊ: ${passed}/16 KỊCH BẢN PASS`);
 console.log(`----------------------------------------------------------------\n`);

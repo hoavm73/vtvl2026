@@ -24,6 +24,14 @@ export interface ServerAuditLog {
   timestamp: number;
 }
 
+export const AUTH_AUDIT_ACTIONS = new Set([
+  'ĐĂNG_NHẬP',
+  'ĐĂNG_NHẬP_GOOGLE',
+  'ĐĂNG_NHẬP_THẤT_BẠI',
+  'XÁC_THỰC_QUẢN_TRỊ',
+  'ĐĂNG_XUẤT'
+]);
+
 const DATA_DIR = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), '.data');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit-logs.json');
 
@@ -103,16 +111,23 @@ export async function persistAuditLogToSupabase(log: ServerAuditLog): Promise<vo
   try {
     await prisma.audit_logs.create({
       data: {
-        workbook_id: log.workbookId || `wb_${log.unitCode}_2026`,
+        workbook_id: log.workbookId || (log.targetEntity === 'auth_session' ? null : `wb_${log.unitCode}_2026`),
         actor_email: log.actorEmail || 'system',
         actor_role: log.actorRole || 'staff',
         unit_id: log.unitId || log.unitCode,
         action: log.action,
         target_id: log.targetId || null,
         target_entity: log.targetEntity || null,
+        ip_address: log.ipAddress || null,
+        user_agent: log.userAgent ? log.userAgent.slice(0, 500) : null,
         old_values: log.oldValues ? (log.oldValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
         new_values: log.newValues ? (log.newValues as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
-        metadata: { details: log.details, unitName: log.unitName, clientLogId: log.id } as unknown as Prisma.InputJsonValue
+        metadata: {
+          details: log.details,
+          unitName: log.unitName,
+          clientLogId: log.id,
+          ...(log.ipAddress ? { ipAddress: log.ipAddress } : {})
+        } as unknown as Prisma.InputJsonValue
       }
     });
   } catch (e) {
@@ -133,11 +148,16 @@ export async function persistAuditLogToSupabase(log: ServerAuditLog): Promise<vo
   }
 }
 
-export async function syncAuditLogsFromSupabase(limit = 500): Promise<void> {
+export async function syncAuditLogsFromSupabase(
+  limit = 500,
+  onlyActions?: ReadonlySet<string> | string[]
+): Promise<void> {
   if (process.env.VTVL_ISOLATED_LOCAL_STORE === 'true' || !isDatabaseConfigured()) return;
   ensureLoaded();
   try {
+    const actionList = onlyActions ? Array.from(onlyActions) : [];
     const rows = await prisma.audit_logs.findMany({
+      ...(actionList.length > 0 ? { where: { action: { in: actionList } } } : {}),
       orderBy: { created_at: 'desc' },
       take: Math.max(50, Math.min(limit, 2000))
     });
@@ -169,6 +189,8 @@ export async function syncAuditLogsFromSupabase(limit = 500): Promise<void> {
         actorRole: row.actor_role || undefined,
         targetId: row.target_id || undefined,
         targetEntity: row.target_entity || undefined,
+        ipAddress: row.ip_address || (typeof meta.ipAddress === 'string' ? meta.ipAddress : undefined),
+        userAgent: row.user_agent || undefined,
         oldValues: (row.old_values && typeof row.old_values === 'object' ? row.old_values : null) as Record<string, unknown> | null,
         newValues: (row.new_values && typeof row.new_values === 'object' ? row.new_values : null) as Record<string, unknown> | null,
         createdAt,
@@ -206,4 +228,35 @@ export function getAuditLogs(filter?: {
   }
   const max = filter?.limit || 100;
   return list.slice(0, max);
+}
+
+export async function recordAuthAuditEvent(params: {
+  action: 'ĐĂNG_NHẬP' | 'ĐĂNG_NHẬP_GOOGLE' | 'ĐĂNG_NHẬP_THẤT_BẠI' | 'XÁC_THỰC_QUẢN_TRỊ' | 'ĐĂNG_XUẤT';
+  email: string;
+  role?: string;
+  unitCode?: string;
+  unitName?: string;
+  details: string;
+  ipAddress?: string;
+  userAgent?: string;
+  authMethod?: string;
+  reason?: string;
+}): Promise<ServerAuditLog> {
+  const cleanUnit = (params.unitCode || 'SYSTEM').trim().toUpperCase() || 'SYSTEM';
+  const cleanEmail = (params.email || 'anonymous').trim().toLowerCase() || 'anonymous';
+  const log = appendAuditLog({
+    unitCode: cleanUnit,
+    unitName: params.unitName || cleanUnit,
+    action: params.action,
+    details: params.details,
+    actorEmail: cleanEmail,
+    actorRole: params.role || 'guest',
+    targetId: cleanEmail,
+    targetEntity: 'auth_session',
+    ipAddress: params.ipAddress,
+    userAgent: params.userAgent ? params.userAgent.slice(0, 300) : undefined,
+    newValues: { authMethod: params.authMethod || 'unknown', ...(params.reason ? { reason: params.reason } : {}) }
+  });
+  await persistAuditLogToSupabase(log).catch(() => {});
+  return log;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
+import { recordAuthAuditEvent } from '@/services/storage/server-audit-store';
 import {
   verifyAdminPassword,
   generateAdminToken,
@@ -128,6 +129,19 @@ export async function POST(req: NextRequest) {
       );
     }
     clearDirectRateKey(primaryKey);
+    const actorEmail = hasVerifiedActor ? caller.email : 'tcns@hcmute.edu.vn';
+    const actorUnit = hasVerifiedActor ? caller.unitCode : 'TCNS';
+    await recordAuthAuditEvent({
+      action: 'XÁC_THỰC_QUẢN_TRỊ',
+      email: actorEmail,
+      role: 'admin',
+      unitCode: actorUnit,
+      unitName: findHcmuteUnit(actorUnit).nameVi,
+      ipAddress: extractClientIp(req),
+      userAgent: req.headers.get('user-agent') || undefined,
+      authMethod: 'admin_password',
+      details: 'Xác thực mật khẩu Quản trị viên thành công'
+    });
     const token = generateAdminToken();
     await setServerAdminCookie(token);
     const res = NextResponse.json({

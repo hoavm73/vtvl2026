@@ -66,7 +66,7 @@ export const EVAL_EXCEL_SHEET_METAS: Record<
       { colLetter: 'G', field: 'noiTinhBc', headerName: 'Nơi tính BC', width: '200px' },
       { colLetter: 'H', field: 'nguon', headerName: 'Nguồn', width: '220px' },
       { colLetter: 'I', field: 'trangThai', headerName: 'Trạng thái', width: '150px', type: 'select', selectOptions: ['Đã kiểm chứng', 'Chưa kiểm chứng', 'Đang rà soát'] },
-      { colLetter: 'J', field: 'canhBao', headerName: 'Cảnh báo', width: '120px', type: 'status', isFormula: true, formulaHint: '=IF(E+F>D,"Vượt quỹ giờ","Đạt")' },
+      { colLetter: 'J', field: 'canhBao', headerName: 'Cảnh báo', width: '150px', type: 'status', isFormula: true, formulaHint: '=IF(A="","",IF(COUNTIF(A:A,A)>1,"TRÙNG MÃ NGUỒN LỰC",IF(G="","THIẾU NƠI TÍNH BIÊN CHẾ",IF(OR(D="",E="",F="",H="",I<>"Đã kiểm chứng"),"Chưa đủ căn cứ",IF(E+F>D,"Vượt quỹ giờ","Đạt")))))' },
       { colLetter: 'K', field: 'gioRieng', headerName: 'Giờ riêng theo chế độ', width: '140px', type: 'number' }
     ]
   },

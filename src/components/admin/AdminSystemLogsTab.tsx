@@ -134,9 +134,9 @@ export function AdminSystemLogsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[#e2e8f0] pb-3">
-        <div className="flex items-center gap-2.5 flex-1 min-w-[240px]">
-          <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-2.5 border-b border-[#e2e8f0] pb-3">
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 flex-1 min-w-0">
+          <div className="relative w-full sm:w-[270px] lg:w-[280px] shrink-0">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-[#476885]" />
             <input
               type="search"
@@ -147,14 +147,37 @@ export function AdminSystemLogsTab() {
               className="w-full h-9 pl-8 pr-3 rounded-[8px] border border-[#cbd5e1] bg-white text-xs text-[#004776]"
             />
           </div>
+
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Lọc nhóm nhật ký hệ thống">
+            {CATEGORY_TABS.map((t) => {
+              const active = category === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setCategory(t.key)}
+                  aria-pressed={active}
+                  className={`h-8 px-3 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    active
+                      ? 'bg-[#006cee] text-white'
+                      : 'bg-[#f8fafc] border border-[#cbd5e1] text-[#004776] hover:bg-[#eef5ff]'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
           {!loading && (
             <span className="text-xs font-medium text-[#476885] whitespace-nowrap tabular-nums">
               {filtered.length} sự kiện
             </span>
           )}
         </div>
+
         <div className="flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e6f9f1] text-[#008f5d] text-[10.5px] font-semibold whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-[#00b87a] animate-pulse" />
             <span>Cập nhật liên tục</span>
           </span>
@@ -162,33 +185,12 @@ export function AdminSystemLogsTab() {
             type="button"
             onClick={() => void loadLogs(category)}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#cbd5e1] bg-white hover:bg-[#eef5ff] text-xs font-semibold text-[#004776] cursor-pointer whitespace-nowrap"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
           </button>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Lọc nhóm nhật ký hệ thống">
-        {CATEGORY_TABS.map((t) => {
-          const active = category === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setCategory(t.key)}
-              aria-pressed={active}
-              className={`h-8 px-3 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-                active
-                  ? 'bg-[#006cee] text-white'
-                  : 'bg-[#f8fafc] border border-[#cbd5e1] text-[#004776] hover:bg-[#eef5ff]'
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
       </div>
 
       {loading ? (

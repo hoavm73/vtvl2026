@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import {
   ChevronDown, ArrowUpDown,
-  Download, Lock, Unlock, Lightbulb, SlidersHorizontal, RefreshCw, Timer, PackagePlus, History
+  Download, Lock, Unlock, SlidersHorizontal, Timer, PackagePlus, History
 } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode } from './excel-grid-types';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose } from '@/components/ui/Popover';
@@ -82,22 +82,6 @@ export function ExcelCommandToolsMenu({
         </PopoverClose>
 
         <div className="my-1 border-t border-[#e8eff7]" />
-
-        {unitCode.toUpperCase() === 'TCNS' && (
-          <PopoverClose onClick={onLoadTcnsData}>
-            <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
-              <RefreshCw className="w-4 h-4 text-[#004776]" />
-              <span>Khôi phục dữ liệu mẫu TCNS</span>
-            </div>
-          </PopoverClose>
-        )}
-
-        <PopoverClose onClick={onLoadRecommendedVtvls}>
-          <div className="w-full text-left px-3 py-2 text-[13px] text-[#004776] hover:bg-[#f4f7fb] rounded-lg flex items-center gap-2.5 font-medium">
-            <Lightbulb className="w-4 h-4 text-[#8f4f00]" />
-            <span>Nạp gợi ý VTVL chuẩn theo Đề án</span>
-          </div>
-        </PopoverClose>
 
         <PopoverClose onClick={() => { if (!isExporting) onExportWorkbook(); }}>
           <div className={`w-full text-left px-3 py-2 text-[13px] text-[#13653f] hover:bg-[#e3f5ec]/60 rounded-lg flex items-center gap-2.5 font-semibold ${isExporting ? 'opacity-50' : ''}`}>

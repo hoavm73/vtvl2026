@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ChevronDown, Check, MoreHorizontal, Save, ShieldCheck, AlertTriangle,
-  HelpCircle, ArrowUpDown, Download, RefreshCw, Lightbulb, Lock, Unlock,
+  HelpCircle, ArrowUpDown, Download, RefreshCw, Lock, Unlock,
   Network, BarChart3, ArrowRight, Building2, User, Timer, History
 } from 'lucide-react';
 import { ExcelSheetKey, SheetOrderMode, EXCEL_NATURAL_SHEET_ORDER, WORKFLOW_SHEET_ORDER, ADMIN_ONLY_SHEETS } from './excel-grid-types';
@@ -221,16 +221,8 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
             {props.onOpenChartModal && (
               <PopoverClose onClick={props.onOpenChartModal}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><BarChart3 className="w-4 h-4" /><span>Biểu đồ cơ cấu nhân lực</span></div></PopoverClose>
             )}
-            {!isReadOnly && (
-              <>
-                {props.unitCode.toUpperCase() === 'TCNS' && (
-                  <PopoverClose onClick={props.onLoadTcnsData}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><RefreshCw className="w-4 h-4" /><span>Khôi phục dữ liệu mẫu TCNS</span></div></PopoverClose>
-                )}
-                <PopoverClose onClick={props.onLoadRecommendedVtvls}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 text-[#004776] hover:bg-[#f4f7fb]"><Lightbulb className="w-4 h-4 text-[#8f4f00]" /><span>Nạp gợi ý VTVL chuẩn</span></div></PopoverClose>
-                {props.activeSheet === 'C1' && (
-                  <PopoverClose onClick={props.onOpenUnlockModal}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 text-[#8f4f00] hover:bg-[#fdf2e1]/60">{props.isC1Unlocked ? <Unlock className="w-4 h-4 text-[#13653f]" /> : <Lock className="w-4 h-4" />}<span>{props.isC1Unlocked ? 'C1 đang mở khóa' : 'Mở khóa chỉnh sửa C1'}</span></div></PopoverClose>
-                )}
-              </>
+            {!isReadOnly && props.activeSheet === 'C1' && (
+              <PopoverClose onClick={props.onOpenUnlockModal}><div className="w-full px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 text-[#8f4f00] hover:bg-[#fdf2e1]/60">{props.isC1Unlocked ? <Unlock className="w-4 h-4 text-[#13653f]" /> : <Lock className="w-4 h-4" />}<span>{props.isC1Unlocked ? 'C1 đang mở khóa' : 'Mở khóa chỉnh sửa C1'}</span></div></PopoverClose>
             )}
 
             <PopoverClose onClick={() => { if (!props.isExporting) props.onExportWorkbook(); }}>

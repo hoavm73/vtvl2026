@@ -170,7 +170,7 @@ runTest('INIT-CACHE-02', 'Kiểm tra static guards trên UI/Hook: không còn t�
   assert(viewerSrc.includes('staleClientDetected') && viewerSrc.includes('Tải lại dữ liệu máy chủ'), 'UI phải hiển thị nút tải lại khi phát hiện bản nháp cũ');
   assert(viewerSrc.includes('text-[#004776]') && !viewerSrc.includes('text-black'), 'Banner tuân thủ màu chữ thương hiệu #004776');
   assert(stateSrc.includes("currentUnit.code.toUpperCase() !== 'TCNS'"), 'handleLoadTcnsData phải chặn ngoài TCNS');
-  assert(menuSrc.includes("=== 'TCNS'") && mobileSrc.includes("=== 'TCNS'"), 'Nút Khôi phục dữ liệu mẫu TCNS chỉ hiện với TCNS');
+  assert(!menuSrc.includes('Khôi phục dữ liệu mẫu TCNS') && !mobileSrc.includes('Khôi phục dữ liệu mẫu TCNS') && !menuSrc.includes('Nạp gợi ý VTVL') && !mobileSrc.includes('Nạp gợi ý VTVL'), 'Đã ẩn hoàn toàn 2 nút Khôi phục dữ liệu mẫu TCNS và Nạp gợi ý VTVL chuẩn trên menu Công cụ');
   assert(idbSrc.includes('DB_VERSION = 2') && idbSrc.includes('purgeStaleLocalDrafts'), 'IndexedDB phải dùng DB_VERSION=2 và có purgeStaleLocalDrafts');
 });
 

@@ -127,11 +127,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       return;
     }
     lastRemoteHandledRef.current = key;
-    if (!isReadOnlyViewer && isStaleLocal && savedRev === 0 && localDiffers) {
-      setStaleClientDetected(true);
-      return;
-    }
-    if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || serverTicketDiff) {
+    if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || localDiffers || serverTicketDiff) {
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
       try {

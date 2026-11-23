@@ -3,12 +3,8 @@ import JSZip from 'jszip';
 import { GenericGridRow } from '@/components/excel-grid/excel-grid-types';
 import { A1_HEADERS, A1_SHEET_NAME, A1_STATUS_OPTIONS, trimA1Value } from './a1-validation';
 
-function escapeXmlAttr(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function escapeXmlText(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /**
@@ -61,7 +57,7 @@ export async function buildA1ExcelBuffer(params: {
   const sheetFile = zip.file('xl/worksheets/sheet1.xml');
   if (sheetFile) {
     let xml = await sheetFile.async('string');
-    const listFormula = escapeXmlAttr(`"${A1_STATUS_OPTIONS.join(',')}"`);
+    const listFormula = escapeXmlText(`"${A1_STATUS_OPTIONS.join(',')}"`);
     const dvXml =
       `<dataValidations count="1">` +
       `<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" ` +
@@ -75,7 +71,13 @@ export async function buildA1ExcelBuffer(params: {
       xml = xml.replace('</sheetData>', `</sheetData><autoFilter ref="A2:G${lastFilterRow}"/>`);
     }
     if (!xml.includes('<dataValidations')) {
-      xml = xml.replace('</worksheet>', `${dvXml}</worksheet>`);
+      // OOXML XSD bắt buộc <dataValidations> đứng ngay sau <autoFilter> và trước <ignoredErrors>/<pageMargins>
+      const autoFilterMatch = xml.match(/<autoFilter[^>]*\/>/);
+      if (autoFilterMatch) {
+        xml = xml.replace(autoFilterMatch[0], `${autoFilterMatch[0]}${dvXml}`);
+      } else {
+        xml = xml.replace('</sheetData>', `</sheetData>${dvXml}`);
+      }
     }
     zip.file('xl/worksheets/sheet1.xml', xml);
   }

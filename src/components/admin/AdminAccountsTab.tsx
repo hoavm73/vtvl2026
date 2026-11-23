@@ -22,7 +22,6 @@ export function AdminAccountsTab() {
   const [updatingEmail, setUpdatingEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [onlyGoogle, setOnlyGoogle] = useState(false);
   const [assignmentsByEmail, setAssignmentsByEmail] = useState<Record<string, UserVtvlAssignment[]>>({});
   const [assigningAccount, setAssigningAccount] = useState<UserAccountRecord | null>(null);
   const { state: listState, setField: setListField } = usePersistedListState('admin-accounts-list', { limit: 10 });
@@ -76,13 +75,16 @@ export function AdminAccountsTab() {
   const googleCount = useMemo(() => accounts.filter((a) => a.authProvider === 'google').length, [accounts]);
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
-      if (onlyGoogle && acc.authProvider !== 'google') return false;
-      if (roleFilter !== 'all' && acc.role !== roleFilter) return false;
+      if (roleFilter === 'google') {
+        if (acc.authProvider !== 'google') return false;
+      } else if (roleFilter !== 'all' && acc.role !== roleFilter) {
+        return false;
+      }
       if (!searchQuery.trim()) return true;
       const q = searchQuery.trim().toLowerCase();
       return [acc.email, acc.displayName, acc.unitCode, acc.unitNameVi].some((s) => s.toLowerCase().includes(q));
     });
-  }, [accounts, onlyGoogle, roleFilter, searchQuery]);
+  }, [accounts, roleFilter, searchQuery]);
 
   const handleUpdateAccount = async (
     target: UserAccountRecord,
@@ -134,36 +136,6 @@ export function AdminAccountsTab() {
 
   return (
     <div className="space-y-4 min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f4f7fb] border border-[#d8e3ef] text-xs font-bold text-[#004776]">
-          <Users className="w-3.5 h-3.5" />
-          <span>Tổng số: {accounts.length}</span>
-        </span>
-        {ROLE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setRoleFilter((prev) => (prev === opt.value ? 'all' : opt.value))}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
-              roleFilter === opt.value
-                ? 'bg-[#006cee] text-white border-[#006cee]'
-                : 'bg-white text-[#004776] border-[#d8e3ef] hover:bg-[#f4f7fb]'
-            }`}
-          >
-            <span>{opt.label}: {roleCounts[opt.value] || 0}</span>
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => setOnlyGoogle((p) => !p)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
-            onlyGoogle ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-white text-[#004776] border-[#d8e3ef] hover:bg-[#f4f7fb]'
-          }`}
-        >
-          <span>Google OAuth: {googleCount}</span>
-        </button>
-      </div>
-
       <AdminAccountCreateForm
         unitOptions={unitOptions}
         currentUserRole={getCurrentOperatorSession()?.role}
@@ -184,13 +156,14 @@ export function AdminAccountsTab() {
               className="w-full h-10 pl-9 pr-3 text-xs bg-white border border-[#cbd5e1] rounded-xl text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
             />
           </div>
-          <div className="w-full sm:w-60 min-w-0">
+          <div className="w-full sm:w-64 min-w-0">
             <ShadcnSelect
               value={roleFilter}
               onValueChange={(v) => { setRoleFilter(v); setListField('limit', 10); }}
               options={[
                 { value: 'all', label: `Tất cả vai trò (${accounts.length})` },
-                ...ROLE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))
+                ...ROLE_OPTIONS.map((r) => ({ value: r.value, label: `${r.label} (${roleCounts[r.value] || 0})` })),
+                { value: 'google', label: `Google OAuth (${googleCount})` }
               ]}
               size="md"
             />

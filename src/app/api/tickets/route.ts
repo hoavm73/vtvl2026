@@ -244,6 +244,8 @@ export async function DELETE(req: NextRequest) {
       deleteTicketAndSyncUnit(id, actor)
     );
     if (!deleted) return NextResponse.json({ error: 'Không tìm thấy phiếu.' }, { status: 403 });
+    const delAudit = appendAuditLog({ unitCode: target.unitCode, unitName: target.unitCode, action: 'XÓA_PHIẾU_NHÁP', details: `Xóa phiếu nháp ${target.maCongViec}: ${target.tenCongViec}`, actorEmail: caller.email, actorRole: caller.role, targetId: target.id, targetEntity: 'staff_work_tickets' });
+    await persistAuditLogToSupabase(delAudit).catch(() => {});
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return handleTicketRouteError(err, 'Xóa phiếu thất bại.');

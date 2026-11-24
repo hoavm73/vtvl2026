@@ -11,6 +11,13 @@ import { getCallerSession } from '@/services/storage/server-auth-guard';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 import { REVIEW_ACTION_SET } from '@/services/workbooks/workbook-history-service';
 
+const ADMIN_ACTION_PATTERN =
+  /THAY_ĐỔI_TÀI_KHOẢN|THAY_ĐỔI_ĐƠN_VỊ|ĐỒNG_BỘ_ĐỔI_MÃ_ĐƠN_VỊ|PHÂN_CÔNG_VTVL_TÀI_KHOẢN|QUẢN_TRỊ|C1_LOCK|VTVL_CATALOG/;
+
+function isReviewOrAdminAction(action: string): boolean {
+  return REVIEW_ACTION_SET.has(action) || ADMIN_ACTION_PATTERN.test(action);
+}
+
 export async function POST(req: Request) {
   const caller = await getCallerSession(req);
   if (!caller.isAuthenticated) {
@@ -89,13 +96,15 @@ export async function GET(req: Request) {
     const limit = Math.max(1, Math.min(500, rawLimit));
 
     const onlyActions = category === 'auth' ? AUTH_AUDIT_ACTIONS : undefined;
-    await syncAuditLogsFromSupabase(Math.max(limit, 200), onlyActions).catch(() => {});
+    const syncWindow = category === 'review' ? Math.max(limit * 5, 1000) : Math.max(limit, 200);
+    await syncAuditLogsFromSupabase(syncWindow, onlyActions).catch(() => {});
 
-    let logs = getAuditLogs({ unitCode, workbookId, actions: onlyActions, limit: category === 'review' || category === 'workload' ? Math.max(limit * 3, 300) : limit });
+    const readLimit = category === 'review' ? Math.max(limit * 5, 1000) : category === 'workload' ? Math.max(limit * 3, 300) : limit;
+    let logs = getAuditLogs({ unitCode, workbookId, actions: onlyActions, limit: readLimit });
     if (category === 'review') {
-      logs = logs.filter((l) => REVIEW_ACTION_SET.has(l.action) || /TÀI_KHOẢN|ĐƠN_VỊ|QUẢN_TRỊ|C1_LOCK/.test(l.action)).slice(0, limit);
+      logs = logs.filter((l) => isReviewOrAdminAction(l.action)).slice(0, limit);
     } else if (category === 'workload') {
-      logs = logs.filter((l) => !AUTH_AUDIT_ACTIONS.has(l.action) && !REVIEW_ACTION_SET.has(l.action)).slice(0, limit);
+      logs = logs.filter((l) => !AUTH_AUDIT_ACTIONS.has(l.action) && !isReviewOrAdminAction(l.action)).slice(0, limit);
     }
     return NextResponse.json({ success: true, category, logs, total: logs.length }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {

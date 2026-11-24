@@ -10,6 +10,7 @@ import {
   downloadA1ExcelFile
 } from '@/services/a1/a1-excel-service';
 import { recalculateGridFormulas } from './excel-grid-formulas';
+import { syncActivityToSupabase } from '@/services/storage/vtvl-sync';
 
 interface UseA1ExcelWorkflowParams {
   unitCode: string;
@@ -149,6 +150,12 @@ export function useA1ExcelWorkflow({
       }
       restoreWorkbookData(nextWorkbook, unitCode);
       syncWorkbookBaseline(nextWorkbook);
+      void syncActivityToSupabase(
+        unitCode,
+        unitNameVi,
+        'NHẬP_EXCEL_BIỂU_A1',
+        `Nhập Excel Biểu A1: thêm mới ${applied.addedCount} nhiệm vụ${totalSkipped > 0 ? ` (bỏ qua ${totalSkipped} dòng trùng)` : ''}.`
+      );
       showToast({
         kind: 'success',
         title: `Nhập Excel thành công (+${applied.addedCount} nhiệm vụ)`,

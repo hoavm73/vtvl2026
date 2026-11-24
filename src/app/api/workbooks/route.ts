@@ -6,6 +6,7 @@ import {
   syncServerWorkbooksFromSupabase
 } from '@/services/storage/server-workbook-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -88,6 +89,19 @@ export async function POST(req: NextRequest) {
       caller.email,
       roleLabel || (caller.isUnitLeader ? 'Lãnh đạo đơn vị' : 'Cán bộ – Giảng viên')
     );
+
+    const initAudit = appendAuditLog({
+      workbookId: workbook.id,
+      unitCode: workbook.unitId,
+      unitName: workbook.unitNameVi,
+      action: 'KHỞI_TẠO_HỒ_SƠ',
+      details: `Khởi tạo mới bộ hồ sơ đơn vị ${workbook.unitNameVi} (kỳ ${workbook.reportingPeriod})`,
+      actorEmail: caller.email,
+      actorRole: caller.role,
+      targetId: workbook.id,
+      targetEntity: 'workbooks'
+    });
+    await persistAuditLogToSupabase(initAudit).catch(() => {});
 
     return NextResponse.json({ success: true, workbook });
   } catch (error) {

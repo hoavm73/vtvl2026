@@ -16,6 +16,8 @@ import {
 import { handleTicketRouteError, parseTicketJsonWithGuard } from '@/services/tickets/ticket-route-helpers';
 import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
 import { withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
+import { findHcmuteUnit } from '@/configs/hcmute-units';
 
 export async function GET(req: NextRequest) {
   const caller = await getCallerSession(req);
@@ -91,6 +93,17 @@ export async function POST(req: NextRequest) {
             () => batchReconcileUnitTickets(claimed.unitCode, claimed.actorEmail)
           );
           const completed = await completeBackgroundJob(claimed.id, result as unknown as Record<string, unknown>, 100);
+          const unitInfo = findHcmuteUnit(claimed.unitCode);
+          const audit = appendAuditLog({
+            unitCode: claimed.unitCode,
+            unitName: unitInfo.nameVi,
+            action: 'GỘP_PHIẾU_HÀNG_LOẠT',
+            details: `Gộp hàng loạt ${result.mergedCount} phiếu đã duyệt vào Biểu A2 & B1 (phiên bản hồ sơ v${result.unitWorkbookRevision})`,
+            actorEmail: caller.email,
+            actorRole: caller.role,
+            targetEntity: 'workbooks'
+          });
+          await persistAuditLogToSupabase(audit).catch(() => {});
           return NextResponse.json({ ok: true, mode: 'background_job', job: completed || claimed, result }, { status: 202 });
         } catch (jobErr) {
           await failBackgroundJob(claimed.id, jobErr instanceof Error ? jobErr.message : String(jobErr));
@@ -104,6 +117,17 @@ export async function POST(req: NextRequest) {
       { kind: 'unit_reconcile', op: 'reconcile_unit', unitCode: requestedUnit, actorEmail: caller.email },
       () => batchReconcileUnitTickets(requestedUnit, caller.email)
     );
+    const unitInfo = findHcmuteUnit(requestedUnit);
+    const audit = appendAuditLog({
+      unitCode: requestedUnit,
+      unitName: unitInfo.nameVi,
+      action: 'GỘP_PHIẾU_HÀNG_LOẠT',
+      details: `Gộp hàng loạt ${result.mergedCount} phiếu đã duyệt vào Biểu A2 & B1 (phiên bản hồ sơ v${result.unitWorkbookRevision})`,
+      actorEmail: caller.email,
+      actorRole: caller.role,
+      targetEntity: 'workbooks'
+    });
+    await persistAuditLogToSupabase(audit).catch(() => {});
     const payload = { ok: true, mode: 'synchronous_batch', ...result };
     if (idempotencyKey) {
       await saveIdempotencyResponse({

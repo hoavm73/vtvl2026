@@ -6,6 +6,7 @@ import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import { MAX_STANDARD_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
 import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
 import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { AuditReportResult } from '@/types/vtvl';
 
 export async function POST(req: Request) {
@@ -32,8 +33,9 @@ export async function POST(req: Request) {
       );
     }
 
+    let unitNameVi = unitCode;
     try {
-      findHcmuteUnit(unitCode);
+      unitNameVi = findHcmuteUnit(unitCode).nameVi;
     } catch {
       return NextResponse.json(
         { error: 'Đơn vị không tồn tại trong danh mục 39 đơn vị HCM-UTE.' },
@@ -83,6 +85,17 @@ export async function POST(req: Request) {
     if (evidenceRows.length > 0) {
       await postServerRestRequired('ra_soat_chua_du_can_cu', evidenceRows);
     }
+
+    const syncAudit = appendAuditLog({
+      unitCode,
+      unitName: unitNameVi,
+      action: 'RÀ_SOÁT_BỘ_BIỂU',
+      details: `Rà soát bộ biểu đơn vị ${unitNameVi} (${(report?.issues || []).length} cảnh báo, ${evidenceRows.length} mục cần bổ sung căn cứ)`,
+      actorEmail: caller.email,
+      actorRole: caller.role,
+      targetEntity: 'k_kiem_tra'
+    });
+    await persistAuditLogToSupabase(syncAudit).catch(() => {});
 
     invalidateUnitMutationCache(unitCode);
 

@@ -28,6 +28,13 @@ const REVIEW_ACTIONS = new Set([
   'NHAN_XET_THAM_DINH'
 ]);
 
+const ADMIN_ACTION_PATTERN =
+  /THAY_ĐỔI_TÀI_KHOẢN|THAY_ĐỔI_ĐƠN_VỊ|ĐỒNG_BỘ_ĐỔI_MÃ_ĐƠN_VỊ|PHÂN_CÔNG_VTVL_TÀI_KHOẢN|QUẢN_TRỊ|C1_LOCK|VTVL_CATALOG/;
+
+function isReviewOrAdminAction(action: string): boolean {
+  return REVIEW_ACTIONS.has(action) || ADMIN_ACTION_PATTERN.test(action);
+}
+
 const CATEGORY_TABS: Array<{ key: LogCategory; label: string }> = [
   { key: 'all', label: 'Tất cả sự kiện' },
   { key: 'auth', label: 'Đăng nhập & xác thực' },
@@ -95,7 +102,7 @@ export function AdminSystemLogsTab() {
     setLoading(true);
     setError(null);
     try {
-      const url = cat === 'auth' ? '/api/audit-logs?category=auth&limit=200' : '/api/audit-logs?limit=300';
+      const url = cat === 'all' ? '/api/audit-logs?limit=300' : `/api/audit-logs?category=${cat}&limit=200`;
       const res = await fetch(url, { headers: buildHeaders(), cache: 'no-store' });
       const json = await res.json();
       if (!res.ok) {
@@ -119,9 +126,9 @@ export function AdminSystemLogsTab() {
     if (category === 'auth') {
       list = list.filter((l) => AUTH_ACTIONS.has(l.action));
     } else if (category === 'review') {
-      list = list.filter((l) => REVIEW_ACTIONS.has(l.action) || /TÀI_KHOẢN|ĐƠN_VỊ|QUẢN_TRỊ|C1_LOCK/.test(l.action));
+      list = list.filter((l) => isReviewOrAdminAction(l.action));
     } else if (category === 'workload') {
-      list = list.filter((l) => !AUTH_ACTIONS.has(l.action) && !REVIEW_ACTIONS.has(l.action));
+      list = list.filter((l) => !AUTH_ACTIONS.has(l.action) && !isReviewOrAdminAction(l.action));
     }
     if (!search.trim()) return list;
     const q = search.toLowerCase();

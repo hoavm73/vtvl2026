@@ -9,6 +9,7 @@ import { invalidateUnitMutationCache } from '@/services/storage/runtime-cache';
 import { MAX_WORKBOOK_PAYLOAD_BYTES, readBoundedJsonBody } from '@/services/auth/payload-limiter';
 import { enforceApiRateLimit } from '@/services/auth/api-rate-limiter';
 import { toHeavyBusyResponse, withHeavyMutationBudget } from '@/services/storage/heavy-mutation-gate';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { SplitResultSummary, UnitScaleMetrics, NgachAllocationRow, ProposedVtvlRow } from '@/types/vtvl';
 
 export async function POST(req: Request) {
@@ -181,6 +182,17 @@ export async function POST(req: Request) {
       },
       'ma_don_vi'
     );
+
+    const splitAudit = appendAuditLog({
+      unitCode: summary.unitCode,
+      unitName: summary.unitNameVi,
+      action: 'TÁCH_TỆP_EXCEL',
+      details: `Tách tệp Excel theo đơn vị ${summary.unitNameVi} (${summary.missionCount} nhiệm vụ A1, ${summary.taskCount} công việc A2, ${summary.vtvlCount} VTVL C1)`,
+      actorEmail: caller.email,
+      actorRole: caller.role,
+      targetEntity: 't_tien_do'
+    });
+    await persistAuditLogToSupabase(splitAudit).catch(() => {});
 
     invalidateUnitMutationCache(summary.unitCode);
 

@@ -22,6 +22,7 @@ import {
   queryProposedTaskDetailForUser,
   queryProposedTasksForUser
 } from '@/services/tickets/vtvl-coordination-service';
+import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 
 async function syncAllCoordinationSources(): Promise<void> {
   if (isIsolatedLocalMode()) return;
@@ -178,6 +179,18 @@ export async function PATCH(req: NextRequest) {
       approved: body.approved !== false,
       actorEmail: caller.email
     });
+    const sideLabel = side === 'tcns' ? 'Phòng TCNS' : side === 'host' ? 'Đơn vị đề xuất' : 'Đơn vị phối hợp';
+    const coordAudit = appendAuditLog({
+      unitCode: callerUnit || rel.hostUnitCode,
+      unitName: callerUnit || rel.hostUnitCode,
+      action: 'PHẢN_HỒI_PHỐI_HỢP_VTVL',
+      details: `${body.approved !== false ? 'Xác nhận' : 'Hủy xác nhận'} đề xuất phối hợp VTVL (${sideLabel}): ${rel.hostUnitCode} → ${rel.targetUnitCode}`,
+      actorEmail: caller.email,
+      actorRole: caller.role,
+      targetId: relationshipId,
+      targetEntity: 'work_relationships'
+    });
+    await persistAuditLogToSupabase(coordAudit).catch(() => {});
     invalidateCacheTags(['coordination']);
     return NextResponse.json({ ok: true, relationship: updated });
   } catch {

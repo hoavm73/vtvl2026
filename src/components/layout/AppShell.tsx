@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { PageHeaderProvider } from '@/components/layout/PageHeaderContext';
 import { Footer } from '@/components/layout/Footer';
 import { AppSidebar } from '@/components/layout/AppSidebar';
+import { FloatingVideoGuideWidget } from '@/components/layout/FloatingVideoGuideWidget';
 import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 import { getCurrentOperatorSession, OperatorSession } from '@/services/telemetry/operator-session';
 import { consumeGoogleOAuthCallback } from '@/services/auth/google-auth';
@@ -129,6 +130,7 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       {!isLoginPage && isLoggedIn && <Footer />}
+      {!isLoginPage && isLoggedIn && <FloatingVideoGuideWidget />}
     </div>
     </PageHeaderProvider>
   );

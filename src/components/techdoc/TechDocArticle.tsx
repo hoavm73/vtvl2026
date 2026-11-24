@@ -7,6 +7,7 @@ import { HD07_OFFICIAL_DOCS } from '@/configs/hcmute-hd07-catalog';
 import { TechDocArticleData, TECHDOC_PORTAL_META } from '@/configs/hcmute-techdoc-types';
 import { TechDocHeaderBar } from './TechDocHeaderBar';
 import { TechDocMermaid } from './TechDocMermaid';
+import { TechDocVideoSection } from './TechDocVideoSection';
 
 interface TechDocArticleProps {
   article: TechDocArticleData;
@@ -99,6 +100,9 @@ export function TechDocArticle({
               )}
             </div>
           </section>
+
+          {/* Video hướng dẫn thực hành gắn theo từng bài nghiệp vụ */}
+          <TechDocVideoSection articleId={article.id} />
 
           {/* Các đề mục tác vụ chi tiết (H2 -> H3) */}
           {article.tasks.map((task) => {

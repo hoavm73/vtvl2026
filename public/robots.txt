@@ -1,0 +1,3 @@
+# Cổng nghiệp vụ nội bộ HCM-UTE VTVL 360 — Không cho phép bot tìm kiếm hoặc AI crawler thu thập dữ liệu
+User-agent: *
+Disallow: /

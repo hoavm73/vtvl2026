@@ -7,7 +7,7 @@ import { ExcelRowCardEditor } from './ExcelRowCardEditor';
 import { TableDeleteConfirmModal } from './TableDeleteConfirmModal';
 import { TableControlBar } from './TableControlBar';
 import { resolveDeleteTargetLabel } from './excel-grid-delete-guards';
-import { ArrowUpDown, Plus, Trash2, Copy } from 'lucide-react';
+import { ArrowUpDown, Plus, Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { useQueryFilter } from '@/services/query/use-query-filter';
 import { ShadcnSelectOption } from '@/components/ui/ShadcnSelect';
 
@@ -26,6 +26,8 @@ interface ExcelTableRendererProps {
   onCellChange: (rowId: string, field: string, value: string | number) => void;
   onAddRow: () => void;
   onSplitRow?: (rowId: string) => void;
+  onMoveRow?: (rowId: string, direction: 'up' | 'down') => void;
+  onRestoreRow?: (row: GenericGridRow, index: number) => void;
   onDeleteRow: (rowId: string | string[]) => boolean | void;
   onSaveSheet?: () => void;
   onSaveAndNext?: () => void;
@@ -42,7 +44,7 @@ type TableQueryFilterParams = {
 export function ExcelTableRenderer({
   meta, rows, dynamicOptionsMap,
   isC1Unlocked = false, isReadOnly = false, touchedCells, cellErrors, a1Actions, onCellTouch, onCellChange,
-  onAddRow, onSplitRow, onDeleteRow
+  onAddRow, onSplitRow, onMoveRow, onRestoreRow, onDeleteRow
 }: ExcelTableRendererProps) {
   const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -80,8 +82,8 @@ export function ExcelTableRenderer({
             return p.order === 'asc' ? valA - valB : valB - valA;
           }
           return p.order === 'asc'
-            ? String(valA).localeCompare(String(valB), 'vi')
-            : String(valB).localeCompare(String(valA), 'vi');
+            ? String(valA).localeCompare(String(valB), 'vi', { numeric: true })
+            : String(valB).localeCompare(String(valA), 'vi', { numeric: true });
         });
       }
       return res;
@@ -145,7 +147,13 @@ export function ExcelTableRenderer({
         lastDeletedCount={lastDeletedCount} targetRecordLabel={targetRecordLabel}
         sheetLabel={meta.title || meta.sheetName} deletedRowBackup={deletedRowBackup}
         onCancel={() => setConfirmDeleteId(null)} onConfirm={handleConfirmDelete}
-        onRestoreBackup={() => { onAddRow(); setDeletedRowBackup(null); }}
+        onRestoreBackup={() => {
+          if (deletedRowBackup) {
+            if (onRestoreRow) onRestoreRow(deletedRowBackup.row, deletedRowBackup.index);
+            else onAddRow();
+          }
+          setDeletedRowBackup(null);
+        }}
       />
 
       <TableControlBar
@@ -179,8 +187,8 @@ export function ExcelTableRenderer({
               <th className="w-10 min-w-[40px] py-2.5 px-2 text-center border-r border-[#e2e8f0] sticky left-0 z-11 bg-[#f8fafc]">
                 <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} aria-label="Chọn tất cả dòng" className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer" />
               </th>
-              <th onClick={() => handleSort('id')} className="w-12 min-w-[48px] py-2.5 px-1 text-center font-semibold border-r border-[#e2e8f0] cursor-pointer hover:bg-[#f1f5f9] select-none">
-                <div className="inline-flex items-center gap-1 justify-center"><span>STT</span><ArrowUpDown className="w-3 h-3 text-[#94a3b8]" /></div>
+              <th onClick={() => setParams({ sort: '', order: 'asc' })} title="Khôi phục thứ tự dòng gốc" className="w-12 min-w-[48px] py-2.5 px-1 text-center font-semibold border-r border-[#e2e8f0] cursor-pointer hover:bg-[#f1f5f9] select-none">
+                <div className="inline-flex items-center gap-1 justify-center"><span>STT</span></div>
               </th>
               {meta.columns.map((c) => (
                 <th key={c.field} style={{ width: c.width || '150px', minWidth: c.width || '140px' }} onClick={() => handleSort(c.field)} className="py-2.5 px-2.5 text-left font-semibold border-r border-[#e2e8f0] align-middle cursor-pointer hover:bg-[#f1f5f9] select-none">
@@ -220,14 +228,20 @@ export function ExcelTableRenderer({
                     {isReadOnly ? (
                       <span className="text-[#94a3b8] text-[11px] select-none">—</span>
                     ) : (
-                      <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-center gap-0.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                        {meta.key === 'A1' && !isLocked && onMoveRow && !params.sort && !params.q.trim() && (
+                          <>
+                            <button type="button" disabled={rIdx === 0} onClick={() => onMoveRow(row.id, 'up')} aria-label={`Di chuyển dòng ${rIdx + 1} lên`} title="Di chuyển lên" className="w-7 h-7 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp className="w-3.5 h-3.5" /></button>
+                            <button type="button" disabled={rIdx === rows.length - 1} onClick={() => onMoveRow(row.id, 'down')} aria-label={`Di chuyển dòng ${rIdx + 1} xuống`} title="Di chuyển xuống" className="w-7 h-7 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown className="w-3.5 h-3.5" /></button>
+                          </>
+                        )}
                         {meta.key === 'A1' && (
-                          <button type="button" onClick={() => onSplitRow?.(row.id)} aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`} title="Tách nhiệm vụ" className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer">
+                          <button type="button" onClick={() => onSplitRow?.(row.id)} aria-label={`Tách nhiệm vụ dòng ${rIdx + 1}`} title="Tách nhiệm vụ" className="w-8 h-8 inline-flex items-center justify-center text-[#004776] hover:bg-[#e6f0f8] rounded-md cursor-pointer">
                             <Copy className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {!isLocked && (
-                          <button type="button" onClick={() => handleDeleteRow(row.id)} aria-label={`Xóa dòng ${rIdx + 1}`} title="Xóa dòng" className="w-9 h-9 sm:w-8 sm:h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer">
+                          <button type="button" onClick={() => handleDeleteRow(row.id)} aria-label={`Xóa dòng ${rIdx + 1}`} title="Xóa dòng" className="w-8 h-8 inline-flex items-center justify-center text-[var(--fix)] hover:bg-[var(--fix-soft)] rounded-md cursor-pointer">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}

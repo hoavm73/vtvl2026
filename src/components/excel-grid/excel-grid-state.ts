@@ -5,7 +5,7 @@ import { recalculateGridFormulas } from './excel-grid-formulas';
 import { normalizeC2Rows, normalizeD1Rows } from './excel-c2-d1-helpers';
 import { normalizeA1Rows } from '@/services/a1/a1-validation';
 import { getNextMissionCode, getNextTaskCode, buildNewGridRow, handleSyncDeleteRow, syncFiveYearVtvlSelect } from './excel-grid-code-helpers';
-import { isMissionCodeDuplicate, performSplitMission, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
+import { isMissionCodeDuplicate, performSplitMission, moveRowByDirection, sortA1RowsByMissionCode, buildAuditLogEntry, syncA1MissionChange, syncC1VtvlChange } from './excel-grid-a1-helpers';
 import { validateRowDeletion } from './excel-grid-delete-guards';
 import { buildFullPl1C1Rows, buildFullPl1C2Rows, buildRecommendedC1Rows } from '@/configs/hcmute-pl1-builder';
 import { PL1_VTVL_CATALOG } from '@/configs/hcmute-pl1-catalog';
@@ -260,30 +260,41 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     pl1VtvlList: PL1_VTVL_CATALOG.map((item) => ({ value: item.pl1Code, label: `${item.pl1Code} – ${item.positionName}` }))
   }), [data.C1, data.A1, data.A2, data.DM_SP]);
 
-  const loadFullPl1Catalog = useCallback(() => {
-    setData((prev) => recalculateGridFormulas({ ...prev, C1: buildFullPl1C1Rows(currentUnit.code), C2: buildFullPl1C2Rows(buildFullPl1C1Rows(currentUnit.code)) }, currentUnit.code, currentUnit.nameVi));
-  }, [currentUnit.code, currentUnit.nameVi]);
-
-  const loadRecommendedVtvls = useCallback(() => {
-    setData((prev) => recalculateGridFormulas({ ...prev, C1: buildRecommendedC1Rows(currentUnit.code, currentUnit.group), C2: buildFullPl1C2Rows(buildRecommendedC1Rows(currentUnit.code, currentUnit.group)) }, currentUnit.code, currentUnit.nameVi));
-  }, [currentUnit.code, currentUnit.nameVi, currentUnit.group]);
+  const loadFullPl1Catalog = useCallback(() => setData((prev) => recalculateGridFormulas({ ...prev, C1: buildFullPl1C1Rows(currentUnit.code), C2: buildFullPl1C2Rows(buildFullPl1C1Rows(currentUnit.code)) }, currentUnit.code, currentUnit.nameVi)), [currentUnit.code, currentUnit.nameVi]);
+  const loadRecommendedVtvls = useCallback(() => setData((prev) => recalculateGridFormulas({ ...prev, C1: buildRecommendedC1Rows(currentUnit.code, currentUnit.group), C2: buildFullPl1C2Rows(buildRecommendedC1Rows(currentUnit.code, currentUnit.group)) }, currentUnit.code, currentUnit.nameVi)), [currentUnit.code, currentUnit.nameVi, currentUnit.group]);
 
   const exportFullWorkbook = useCallback(async () => {
     setIsExporting(true);
-    try {
-      exportUserWorkbookToExcel({ unitCode: currentUnit.code, unitNameVi: currentUnit.nameVi, reportingPeriod: '01/10/2025–30/9/2026', data });
-    } catch {
-      alert('Không thể tạo file Excel từ dữ liệu đang điền, vui lòng thử lại.');
-    } finally {
-      setIsExporting(false);
-    }
+    try { exportUserWorkbookToExcel({ unitCode: currentUnit.code, unitNameVi: currentUnit.nameVi, reportingPeriod: '01/10/2025–30/9/2026', data }); }
+    catch { alert('Không thể tạo file Excel từ dữ liệu đang điền, vui lòng thử lại.'); }
+    finally { setIsExporting(false); }
   }, [currentUnit, data]);
+
+  const moveRow = useCallback((sheetKey: ExcelSheetKey, rowId: string, direction: 'up' | 'down'): boolean => {
+    let moved = false;
+    setData((prev) => {
+      const nextRows = moveRowByDirection(prev[sheetKey] || [], rowId, direction);
+      if (!nextRows) return prev;
+      moved = true;
+      return recalculateGridFormulas({ ...prev, [sheetKey]: nextRows }, currentUnit.code, currentUnit.nameVi);
+    });
+    return moved;
+  }, [currentUnit.code, currentUnit.nameVi]);
+  const sortA1ByCode = useCallback(() => setData((prev) => recalculateGridFormulas({ ...prev, A1: sortA1RowsByMissionCode(prev.A1 || []) }, currentUnit.code, currentUnit.nameVi)), [currentUnit.code, currentUnit.nameVi]);
+  const restoreDeletedRow = useCallback((sheetKey: ExcelSheetKey, row: GenericGridRow, index: number) => {
+    setData((prev) => {
+      const list = [...(prev[sheetKey] || [])];
+      if (list.some((r) => r.id === row.id)) return prev;
+      list.splice(Math.max(0, Math.min(index, list.length)), 0, row);
+      return recalculateGridFormulas({ ...prev, [sheetKey]: list }, currentUnit.code, currentUnit.nameVi);
+    });
+  }, [currentUnit.code, currentUnit.nameVi]);
 
   return {
     unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder, activeSheet, activeSheetIndex,
     data, lastSaved, lastSavedSheet, isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1, lockC1,
     handleUnitChange, handleLoadTcnsData, restoreWorkbookData, loadFullPl1Catalog, loadRecommendedVtvls,
-    setActiveSheet, updateCell, addRow, splitRow, deleteRow, saveSheetData, saveAndGoNext,
+    setActiveSheet, updateCell, addRow, splitRow, moveRow, sortA1ByCode, restoreDeletedRow, deleteRow, saveSheetData, saveAndGoNext,
     exportFullWorkbook, goToNextSheet, goToPrevSheet
   };
 }

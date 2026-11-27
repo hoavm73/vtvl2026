@@ -285,9 +285,10 @@ export function validateAndNormalizeUnitC1Rows(params: {
         error: `Mã VTVL "${catalogItem.code}" đã ngừng sử dụng, không thể thêm mới vào Biểu C1.`
       };
     }
+    const suffixMatch = rawMa.match(/(-\d+)$/);
     normalizedC1.push({
       ...row,
-      maVtvl: `${uc}.${catalogItem.code}`,
+      maVtvl: `${uc}.${catalogItem.code}${suffixMatch ? suffixMatch[1] : ''}`,
       tenVtvl: catalogItem.name,
       tenKhung: catalogItem.name,
       nhomVtvl4: catalogItem.groupName,

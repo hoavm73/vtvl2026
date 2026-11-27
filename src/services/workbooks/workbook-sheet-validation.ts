@@ -55,9 +55,10 @@ export function validateNewSheetRowsForSave(params: {
 
   (params.incomingRows || []).forEach((row, idx) => {
     const rowId = String(row.id || `${params.sheetKey.toLowerCase()}-${idx + 1}`);
-    if (existingIds.has(rowId)) return;
+    const isExisting = existingIds.has(rowId);
 
     for (const col of requiredCols) {
+      if (isExisting && !(params.sheetKey === 'C1' && col.field === 'maVtvl')) continue;
       const raw = row[col.field];
       const key = `${rowId}_${col.field}`;
       let msg = '';

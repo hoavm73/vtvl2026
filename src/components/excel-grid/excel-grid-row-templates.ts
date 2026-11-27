@@ -12,7 +12,7 @@ export function buildNewGridRow(
   currentUnit: { code: string; nameVi: string }
 ): { newRow: GenericGridRow; extraC2Row?: GenericGridRow } {
   const sheetRows = prevData[sheetKey] || [];
-  const newId = `${sheetKey.toLowerCase()}-${Date.now().toString(36)}`;
+  const newId = `${sheetKey.toLowerCase()}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
   if (sheetKey === 'A1') {
     const nextCode = getNextMissionCode(sheetRows, currentUnit.code);

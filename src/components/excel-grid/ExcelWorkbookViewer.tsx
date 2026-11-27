@@ -22,6 +22,7 @@ import { A1ImportModal } from './A1ImportModal';
 import { validateWorkbookData } from '@/services/validation';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
+import { shouldApplyRemoteWorkbook } from './workbook-sync-queue';
 
 interface ExcelWorkbookViewerProps {
   initialUnitCode?: string;
@@ -43,7 +44,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
 
   const {
     session, isModalOpen, touchedCells, currentRevision, syncStatus, dataSource, remoteWorkbook, staleClientDetected, setStaleClientDetected,
-    apiError, lastSyncedAt, markCellTouched, submitSession, updateSessionUnit, reloadLatestFromServer, switchSession, closeModal, persistDataForSession
+    apiError, lastSyncedAt, markCellTouched, submitSession, updateSessionUnit, reloadLatestFromServer, forceOverwriteConflict, switchSession, closeModal, persistDataForSession
   } = useOperatorSession(requestedUnitCode);
 
   const lastRemoteHandledRef = useRef<string>('');
@@ -55,7 +56,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
   const {
     unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder, activeSheet, activeSheetIndex, data, lastSaved, lastSavedSheet,
     isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1, handleUnitChange: gridHandleUnitChange, handleLoadTcnsData, restoreWorkbookData,
-    loadRecommendedVtvls, setActiveSheet, updateCell, addRow, splitRow, deleteRow, saveSheetData, exportFullWorkbook, goToNextSheet, goToPrevSheet
+    loadRecommendedVtvls, setActiveSheet, updateCell, addRow, splitRow, moveRow, sortA1ByCode, restoreDeletedRow, deleteRow, saveSheetData, exportFullWorkbook, goToNextSheet, goToPrevSheet
   } = useExcelGridState(requestedUnitCode || session?.unitCode || initialUnitCode, isAdmin, initialSheet, Boolean(requestedUnitCode));
 
   useEffect(() => {
@@ -102,23 +103,42 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
     if (!checkSheetBeforeSave(activeSheet, data[activeSheet] || [], true)) return false;
     const synced = saveSheetData(activeSheet);
     lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(synced)}`;
-    void persistDataForSession(synced, true, unitCode).then((ok) => { if (ok) syncWorkbookBaseline(synced); });
-    clearSheetDirty(activeSheet);
+    void persistDataForSession(synced, true, unitCode).then((ok) => {
+      if (ok) {
+        clearSheetDirty(activeSheet);
+        syncWorkbookBaseline(synced);
+      }
+    });
     return true;
   }, [isReadOnlyViewer, activeSheet, data, saveSheetData, persistDataForSession, unitCode, checkSheetBeforeSave, syncWorkbookBaseline]);
 
   useEffect(() => {
-    if (isReadOnlyViewer || dirtySheets.size === 0) return;
+    if (isReadOnlyViewer || dirtySheets.size === 0 || staleClientDetected) return;
     if (!isSheetValidForAutoSave(activeSheet, data[activeSheet] || [])) return;
     const snapKey = `${unitCode}:${JSON.stringify(data)}`;
     if (snapKey === lastAutoSyncedSnapshotRef.current) return;
     lastAutoSyncedSnapshotRef.current = snapKey;
-    void persistDataForSession(data, false, unitCode).then((ok) => { if (ok) syncWorkbookBaseline(data); });
-  }, [dirtySheets, activeSheet, data, unitCode, isReadOnlyViewer, persistDataForSession, isSheetValidForAutoSave, syncWorkbookBaseline]);
+    const targetSheet = activeSheet;
+    void persistDataForSession(data, false, unitCode).then((ok) => {
+      if (ok) {
+        clearSheetDirty(targetSheet);
+        syncWorkbookBaseline(data);
+      }
+    });
+  }, [dirtySheets, activeSheet, data, unitCode, isReadOnlyViewer, staleClientDetected, persistDataForSession, isSheetValidForAutoSave, syncWorkbookBaseline]);
+
+  useEffect(() => {
+    if (isReadOnlyViewer) return;
+    const hasPending = dirtySheets.size > 0 || syncStatus === 'saving' || syncStatus === 'unsaved';
+    if (!hasPending) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirtySheets.size, syncStatus, isReadOnlyViewer]);
 
   useEffect(() => {
     if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase()) return;
-    const key = `${unitCode}:${remoteWorkbook.revision}`;
+    const key = `${unitCode}:${remoteWorkbook.revision}:${remoteWorkbook.syncToken || 0}`;
     if (lastRemoteHandledRef.current === key) return;
     const gridKey = `hcmute_vtvl_grid_${unitCode}`;
     const revKey = `hcmute_vtvl_grid_rev_${unitCode}`;
@@ -128,16 +148,24 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       hasLocalGrid = Boolean(typeof window !== 'undefined' && localStorage.getItem(gridKey));
       savedRev = typeof window !== 'undefined' ? Number(localStorage.getItem(revKey) || 0) : 0;
     } catch { /* ignore */ }
-    const localDiffers = (data.C1 || []).length !== (remoteWorkbook.data?.C1 || []).length || (data.A1 || []).length !== (remoteWorkbook.data?.A1 || []).length;
     const serverTicketDiff = (data.A2 || []).filter((r) => r.sourceTicketId).length !== (remoteWorkbook.data?.A2 || []).filter((r) => r.sourceTicketId).length;
-    const isStaleLocal = hasLocalGrid && savedRev < remoteWorkbook.revision;
+    const decision = shouldApplyRemoteWorkbook({
+      isReadOnlyViewer,
+      hasDirtySheets: dirtySheets.size > 0,
+      isSavingOrUnsaved: syncStatus === 'saving' || syncStatus === 'unsaved' || syncStatus === 'conflict',
+      hasLocalGrid,
+      savedRev,
+      remoteRev: remoteWorkbook.revision,
+      serverTicketDiff,
+      forceReload: Boolean(remoteWorkbook.syncToken)
+    });
 
-    if (dirtySheets.size > 0) {
-      if (isStaleLocal && !isReadOnlyViewer) setStaleClientDetected(true);
+    if (decision === 'mark_stale') {
+      setStaleClientDetected(true);
       return;
     }
     lastRemoteHandledRef.current = key;
-    if (isReadOnlyViewer || !hasLocalGrid || remoteWorkbook.revision > savedRev || localDiffers || serverTicketDiff) {
+    if (decision === 'apply') {
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
       syncWorkbookBaseline(remoteWorkbook.data);
@@ -148,19 +176,11 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       setDirtySheets(new Set());
       setStaleClientDetected(false);
     }
-  }, [remoteWorkbook, unitCode, dirtySheets.size, isReadOnlyViewer, data, restoreWorkbookData, setStaleClientDetected]);
+  }, [remoteWorkbook, unitCode, dirtySheets.size, syncStatus, isReadOnlyViewer, data.A2, restoreWorkbookData, syncWorkbookBaseline, setStaleClientDetected]);
 
-  const handleSaveAndNext = useCallback(() => {
-    if (handleSave()) goToNextSheet();
-  }, [handleSave, goToNextSheet]);
-
+  const handleSaveAndNext = useCallback(() => { if (handleSave()) goToNextSheet(); }, [handleSave, goToNextSheet]);
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
+    const onKeyDown = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); } };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleSave]);
@@ -200,9 +220,10 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       {/* 4. BANNER CẢNH BÁO CACHE CŨ / LỖI A1 / CHỈ XEM / LƯỚI DỮ LIỆU */}
       {staleClientDetected && !isReadOnlyViewer && (
         <div className="px-4 py-2.5 border-b border-[#f8b4af] bg-[#fdeceb] flex flex-wrap items-center justify-between gap-2 text-xs text-[#004776]">
-          <span className="font-semibold">Phát hiện bản nháp cũ hơn phiên bản máy chủ. Hệ thống đã cách ly bản nháp cục bộ và chặn tự động tải lên — vui lòng tải lại phiên bản mới nhất.</span>
-          <div className="flex items-center gap-2">
+          <span className="font-semibold">Phát hiện phiên bản máy chủ đã thay đổi. Dữ liệu bạn đang nhập vẫn được giữ an toàn — hãy chọn tải bản mới hoặc lưu đè bản đang soạn.</span>
+          <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => { import('@/services/storage/indexeddb-storage').then((m) => m.downloadStaleDraftJson(unitCode, data, currentRevision)); }} className="px-3 py-1 rounded-lg border border-[#004776]/30 bg-white hover:bg-[#f4f7fb] text-[#004776] font-semibold cursor-pointer whitespace-nowrap">Tải bản nháp cũ (.json)</button>
+            <button type="button" onClick={() => { if (!checkSheetBeforeSave(activeSheet, data[activeSheet] || [], true)) return; void forceOverwriteConflict(data, unitCode).then((ok) => { if (ok) { setDirtySheets(new Set()); syncWorkbookBaseline(data); } }); }} className="px-3 py-1 rounded-lg border border-[#006cee]/40 bg-[#eef5ff] hover:bg-[#dcebff] text-[#004776] font-semibold cursor-pointer whitespace-nowrap">Lưu bản đang soạn</button>
             <button type="button" onClick={() => { lastRemoteHandledRef.current = ''; setDirtySheets(new Set()); void reloadLatestFromServer(unitCode); }} className="px-3 py-1 rounded-lg bg-[#006cee] hover:bg-[#0058c4] text-white font-semibold cursor-pointer whitespace-nowrap">Tải lại dữ liệu máy chủ</button>
           </div>
         </div>
@@ -221,11 +242,13 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
         meta={activeMeta} rows={activeRows} dynamicOptionsMap={dynamicOptionsMap} lastSaved={lastSaved} lastSavedSheet={lastSavedSheet}
         isC1Unlocked={effectiveC1Unlocked} isReadOnly={isReadOnlyViewer} touchedCells={touchedCells}
         cellErrors={a1Flow.cellErrors}
-        a1Actions={activeSheet === 'A1' ? <A1ExcelToolbarActions canImport={!isReadOnlyViewer} onDownloadTemplate={a1Flow.handleDownloadA1Template} onExportA1={a1Flow.handleExportA1} onOpenImport={() => a1Flow.setShowA1ImportModal(true)} /> : undefined}
+        a1Actions={activeSheet === 'A1' ? <A1ExcelToolbarActions canImport={!isReadOnlyViewer} onDownloadTemplate={a1Flow.handleDownloadA1Template} onExportA1={a1Flow.handleExportA1} onOpenImport={() => a1Flow.setShowA1ImportModal(true)} onSortByCode={() => { if (!isReadOnlyViewer) { markSheetDirty('A1'); sortA1ByCode(); } }} /> : undefined}
         onCellTouch={markCellTouched}
         onCellChange={(rowId, field, val) => { if (isReadOnlyViewer) return; const key = `${rowId}_${field}`; markCellTouched(key); clearCellError(key); markSheetDirty(activeSheet); updateCell(activeSheet, rowId, field, val); }}
         onAddRow={() => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); addRow(activeSheet); }}
         onSplitRow={(rowId) => { if (isReadOnlyViewer) return; markSheetDirty(activeSheet); splitRow(activeSheet, rowId); }}
+        onMoveRow={(rowId, dir) => { if (isReadOnlyViewer) return; if (moveRow(activeSheet, rowId, dir)) markSheetDirty(activeSheet); }}
+        onRestoreRow={(row, index) => { if (isReadOnlyViewer) return; restoreDeletedRow(activeSheet, row, index); markSheetDirty(activeSheet); }}
         onDeleteRow={(rowId) => { if (isReadOnlyViewer) return false; const ok = deleteRow(activeSheet, rowId); if (ok) markSheetDirty(activeSheet); return ok; }}
         onSaveSheet={handleSave} onSaveAndNext={handleSaveAndNext} canNext={activeSheetIndex < currentSheetOrder.length - 1}
       />

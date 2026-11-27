@@ -95,6 +95,14 @@ export function ExcelCommandBar({
         </span>
       );
     }
+    if (isDirty || syncStatus === 'unsaved') {
+      return (
+        <span className="inline-flex items-center gap-1 text-[#b45309] font-medium whitespace-nowrap">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span>Chưa lưu</span>
+        </span>
+      );
+    }
     if (dataSource === 'server_synced') {
       return (
         <span className="inline-flex items-center gap-1 text-[#13653f] font-medium whitespace-nowrap">
@@ -103,11 +111,11 @@ export function ExcelCommandBar({
         </span>
       );
     }
-    if (dataSource === 'local_draft' || isDirty) {
+    if (dataSource === 'local_draft') {
       return (
         <span className="inline-flex items-center gap-1 text-[#b45309] font-medium whitespace-nowrap">
           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          <span>Chưa lưu</span>
+          <span>Bản nháp cục bộ</span>
         </span>
       );
     }
@@ -163,7 +171,7 @@ export function ExcelCommandBar({
         {!isReadOnlyViewer && (
           <button
             type="button"
-            onClick={() => { onSaveSheet(); onSaveNow(); }}
+            onClick={onSaveSheet}
             disabled={syncStatus === 'saving'}
             className="h-8 px-2.5 text-xs font-semibold text-[#004776] border border-[#cbd5e1] bg-white hover:bg-[#eef5fc] rounded-[9px] inline-flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50"
             title="Lưu biểu hiện tại lên máy chủ HCM-UTE (Ctrl+S)"

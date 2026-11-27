@@ -61,6 +61,32 @@ export function performSplitMission(
   return { nextRows, newRow, nextCode };
 }
 
+export function moveRowByDirection(
+  rows: GenericGridRow[],
+  rowId: string,
+  direction: 'up' | 'down'
+): GenericGridRow[] | null {
+  const idx = rows.findIndex((r) => r.id === rowId);
+  if (idx === -1) return null;
+  const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= rows.length) return null;
+  const next = [...rows];
+  [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
+  return next;
+}
+
+export function sortA1RowsByMissionCode(a1Rows: GenericGridRow[]): GenericGridRow[] {
+  const extractNum = (code: unknown): number => {
+    const m = String(code || '').match(/NV(\d+)/i);
+    return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER;
+  };
+  return [...a1Rows].sort((a, b) => {
+    const diff = extractNum(a.maNhiemVu) - extractNum(b.maNhiemVu);
+    if (diff !== 0) return diff;
+    return String(a.maNhiemVu || '').localeCompare(String(b.maNhiemVu || ''), 'vi', { numeric: true });
+  });
+}
+
 export function buildAuditLogEntry(params: {
   ky?: string;
   bieu: string;

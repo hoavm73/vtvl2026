@@ -29,9 +29,23 @@ Skill này chuyển hóa mô hình **Google Antigravity Automated Testing, Mocki
 
 ---
 
-## 2. Lệnh chạy kiểm thử tổng lực 1 chạm
+## 2. Lệnh chạy kiểm thử 1 chạm (Smoke Test & Full Suite)
 
-Chạy toàn bộ 13 bộ kiểm thử tự động cốt lõi (Static + Typecheck + Security + Business + Race/Sync) trong môi trường cô lập:
+### A. Smoke Testing siêu nhanh (2–4 giây, chỉ đọc, an toàn chạy trực tiếp trên Production sau khi deploy)
+Dùng ngay sau mỗi lần `git push` / deploy để xác minh nhanh 8 điểm sống còn (App Live, PostgreSQL Ready, `/login` + Security Headers, `/huong-dan`, `/robots.txt`, khóa 401 API Quản trị/Bulk Import, chặn `/.env` & `/.git`, và 3 video MP4 + mẫu Excel A1):
+
+```bash
+# Chạy Smoke Test trên Production (mặc định https://kekhaivtvl.hcmute.edu.vn)
+node ".agents/skills/vtvl-automated-testing/scripts/smoke-test.mjs"
+
+# Hoặc chạy Smoke Test trên máy local
+node ".agents/skills/vtvl-automated-testing/scripts/smoke-test.mjs" http://localhost:3360
+
+# Smoke Test trình duyệt thật theo đủ 3 vai trò (Staff, Unit Leader, Admin)
+node ".agents/skills/vtvl-automated-testing/scripts/smoke-roles-web.mjs"
+```
+
+### B. Bộ kiểm thử tổng lực 16 bộ (Static + Typecheck + Security + Business + Race/Sync) trong môi trường cô lập:
 
 ```bash
 node ".agents/skills/vtvl-automated-testing/scripts/run-full-test-suite.mjs"

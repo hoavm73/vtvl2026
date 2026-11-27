@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  Building2, CheckCircle2, ClipboardCheck, Clock, FileEdit, FileSpreadsheet, RefreshCw, ShieldCheck, Users
+  Building2, CheckCircle2, ClipboardCheck, Clock, FileEdit, FileSpreadsheet, RefreshCw, ShieldCheck, Upload, Users
 } from 'lucide-react';
 import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { UnitReviewMode } from '@/components/staff-portal/UnitTicketsFilterBar';
@@ -25,6 +25,7 @@ interface UnitTicketsHeaderBarProps {
   onSelectUnit: (unit: string) => void;
   onSelectMode: (mode: UnitReviewMode) => void;
   onRefresh: () => void;
+  onOpenBulkImport?: () => void;
 }
 
 export function UnitTicketsHeaderBar({
@@ -42,7 +43,8 @@ export function UnitTicketsHeaderBar({
   loading,
   onSelectUnit,
   onSelectMode,
-  onRefresh
+  onRefresh,
+  onOpenBulkImport
 }: UnitTicketsHeaderBarProps) {
   const currentUnitDef = selectedUnit !== 'ALL' ? findHcmuteUnit(selectedUnit) : null;
   const activeUnitTitle = isAdmin
@@ -72,6 +74,15 @@ export function UnitTicketsHeaderBar({
             </option>
           ))}
         </select>
+      )}
+      {isAdmin && onOpenBulkImport && (
+        <button
+          type="button"
+          onClick={onOpenBulkImport}
+          className="h-9 px-3 rounded-lg border border-[#0072BC]/40 bg-[#eef6ff] hover:bg-[#dbeeff] text-xs font-semibold text-[#0072BC] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+        >
+          <Upload className="w-3.5 h-3.5" /><span>Nhập Excel A2</span>
+        </button>
       )}
       <Link href={`/nghiep-vu-don-vi?unitCode=${activeUnitQuery}`} className="h-9 px-3 rounded-lg border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-xs font-semibold text-[#004776] inline-flex items-center gap-1.5 whitespace-nowrap">
         <Building2 className="w-3.5 h-3.5 text-[#0072BC]" /><span>Hồ sơ đơn vị</span>

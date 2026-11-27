@@ -13,6 +13,7 @@ import { StaffTicketDetailModal } from '@/components/staff-portal/StaffTicketDet
 import { StaffTicketPrintModal } from '@/components/staff-portal/StaffTicketPrintModal';
 import { StaffTicketRevisionModal, TicketModerationModalMode } from '@/components/staff-portal/StaffTicketRevisionModal';
 import { StaffTicketMergePreviewModal } from '@/components/staff-portal/StaffTicketMergePreviewModal';
+import { AdminA2TicketImportModal } from '@/components/staff-portal/AdminA2TicketImportModal';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
 import { PageWorkspaceSkeleton } from '@/components/ui/Skeleton';
 
@@ -28,6 +29,7 @@ export default function UnitTicketsManagementPage() {
   const [printTicket, setPrintTicket] = useState<StaffWorkTicket | null>(null);
   const [mergeTicket, setMergeTicket] = useState<StaffWorkTicket | null>(null);
   const [moderationModal, setModerationModal] = useState<{ ticket: StaffWorkTicket; mode: TicketModerationModalMode; seq: number } | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const isSyncingTokenRef = useRef(false);
 
   const loadTicketsData = useCallback(async (op: OperatorSession, showSpinner = false) => {
@@ -174,6 +176,7 @@ export default function UnitTicketsManagementPage() {
             syncContextQueryParams({ tab: nextM === 'all' ? null : nextM, unitCode: selectedUnit === 'ALL' ? null : selectedUnit }, 'push');
           }}
           onRefresh={() => loadTicketsData(session, true)}
+          onOpenBulkImport={isAdmin ? () => setShowBulkImport(true) : undefined}
         />
 
         <UnitTicketsReviewList
@@ -201,6 +204,16 @@ export default function UnitTicketsManagementPage() {
       <StaffTicketPrintModal ticket={printTicket} unitNameVi={printTicket ? findHcmuteUnit(printTicket.unitCode).nameVi : session.unitNameVi} onClose={() => setPrintTicket(null)} />
       {moderationModal && <StaffTicketRevisionModal key={`${moderationModal.ticket.id}-${moderationModal.mode}-${moderationModal.seq}`} ticket={moderationModal.ticket} mode={moderationModal.mode} onClose={() => setModerationModal(null)} onSubmit={handleModerationSubmit} />}
       <StaffTicketMergePreviewModal ticket={mergeTicket} onClose={() => setMergeTicket(null)} onConfirmMerge={handleMergeSubmit} />
+      {isAdmin && (
+        <AdminA2TicketImportModal
+          isOpen={showBulkImport}
+          defaultUnitCode={selectedUnit}
+          allTickets={tickets}
+          authHeaders={session.accessToken ? { Authorization: `Bearer ${session.accessToken}`, 'x-actor-email': session.email } : { 'x-actor-email': session.email }}
+          onClose={() => setShowBulkImport(false)}
+          onImported={() => loadTicketsData(session, false)}
+        />
+      )}
     </div>
   );
 }

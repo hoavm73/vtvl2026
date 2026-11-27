@@ -280,20 +280,12 @@ export function validateAndNormalizeUnitC1Rows(params: {
       };
     }
     if (!catalogItem.isActive && !wasAlreadyPresent) {
-      return {
-        ok: false, status: 400, code: 'INACTIVE_VTVL_CODE',
-        error: `Mã VTVL "${catalogItem.code}" đã ngừng sử dụng, không thể thêm mới vào Biểu C1.`
-      };
+      return { ok: false, status: 400, code: 'INACTIVE_VTVL_CODE', error: `Mã VTVL "${catalogItem.code}" đã ngừng sử dụng, không thể thêm mới vào Biểu C1.` };
     }
     const suffixMatch = rawMa.match(/(-\d+)$/);
     normalizedC1.push({
-      ...row,
-      maVtvl: `${uc}.${catalogItem.code}${suffixMatch ? suffixMatch[1] : ''}`,
-      tenVtvl: catalogItem.name,
-      tenKhung: catalogItem.name,
-      nhomVtvl4: catalogItem.groupName,
-      maNgach: catalogItem.rankTitle,
-      bacNgheNghiep: row.bacNgheNghiep || catalogItem.careerLevel
+      ...row, maVtvl: `${uc}.${catalogItem.code}${suffixMatch ? suffixMatch[1] : ''}`, tenVtvl: catalogItem.name, tenKhung: catalogItem.name,
+      nhomVtvl4: catalogItem.groupName, maNgach: catalogItem.rankTitle, bacNgheNghiep: row.bacNgheNghiep || catalogItem.careerLevel
     });
   }
   return { ok: true, normalizedC1 };

@@ -269,7 +269,6 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     catch { alert('Không thể tạo file Excel từ dữ liệu đang điền, vui lòng thử lại.'); }
     finally { setIsExporting(false); }
   }, [currentUnit, data]);
-
   const moveRow = useCallback((sheetKey: ExcelSheetKey, rowId: string, direction: 'up' | 'down'): boolean => {
     let moved = false;
     setData((prev) => {
@@ -289,7 +288,6 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
       return recalculateGridFormulas({ ...prev, [sheetKey]: list }, currentUnit.code, currentUnit.nameVi);
     });
   }, [currentUnit.code, currentUnit.nameVi]);
-
   return {
     unitCode, currentUnit, orderMode, setOrderMode, currentSheetOrder, activeSheet, activeSheetIndex,
     data, lastSaved, lastSavedSheet, isExporting, dynamicOptionsMap, isC1Unlocked, unlockC1, lockC1,

@@ -614,7 +614,7 @@ model staff_work_tickets {
   ma_cong_viec                                                               String                          @db.VarChar(100)
   ten_cong_viec                                                              String
   ma_vtvl                                                                    String                          @db.VarChar(50)
-  ma_vtvl_phoi_hop                                                           String?                         @default("") @db.VarChar(50)
+  ma_vtvl_phoi_hop                                                           String?                         @default("") @db.VarChar(500)
   san_pham                                                                   String?                         @default("")
   chat_luong                                                                 String?                         @default("")
   can_cu                                                                     String?                         @default("")

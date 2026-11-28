@@ -258,7 +258,7 @@ export async function syncTicketsFromWorkbook(wbData: Record<string, GenericGrid
     const b1 = b1Map.get(taskCode);
     const newTicket: StaffWorkTicket = {
       id: ticketId, unitCode, ownerEmail: normalizeEmail(author), ownerName: author.split('@')[0], ownerTitle: 'Cán bộ – Giảng viên',
-      status: (a.trangThaiPhieu === 'Đã nộp' ? 'Đã nộp' : 'Nháp') as TicketStatus,
+      status: (a.trangThaiPhieu === 'Đã duyệt' ? 'Đã duyệt' : a.trangThaiPhieu === 'Đã nộp' ? 'Đã nộp' : 'Nháp') as TicketStatus,
       maNhiemVu: String(a.maNhiemVu || ''), maCongViec: taskCode, tenCongViec: String(a.tenCongViec || ''),
       maVtvl: String(a.maVtvl || ''), maVtvlPhoiHop: String(a.maVtvlPhoiHop || ''),
       sanPham: String(a.sanPham || ''), chatLuong: String(a.chatLuong || ''), canCu: String(a.canCu || ''),

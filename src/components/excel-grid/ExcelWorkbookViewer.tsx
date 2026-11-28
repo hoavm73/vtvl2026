@@ -22,7 +22,7 @@ import { A1ImportModal } from './A1ImportModal';
 import { validateWorkbookData } from '@/services/validation';
 import { findHcmuteUnit } from '@/configs/hcmute-units';
 import { syncContextQueryParams } from '@/services/context/workbook-context';
-import { shouldApplyRemoteWorkbook } from './workbook-sync-queue';
+import { shouldApplyRemoteWorkbook, persistUnitGridCache } from './workbook-sync-queue';
 
 interface ExcelWorkbookViewerProps {
   initialUnitCode?: string;
@@ -140,8 +140,9 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
     if (!remoteWorkbook || remoteWorkbook.unitCode.toUpperCase() !== unitCode.toUpperCase()) return;
     const key = `${unitCode}:${remoteWorkbook.revision}:${remoteWorkbook.syncToken || 0}`;
     if (lastRemoteHandledRef.current === key) return;
-    const gridKey = `hcmute_vtvl_grid_${unitCode}`;
-    const revKey = `hcmute_vtvl_grid_rev_${unitCode}`;
+    const ucUpper = unitCode.toUpperCase();
+    const gridKey = `hcmute_vtvl_grid_${ucUpper}`;
+    const revKey = `hcmute_vtvl_grid_rev_${ucUpper}`;
     let hasLocalGrid = false;
     let savedRev = 0;
     try {
@@ -169,10 +170,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       lastAutoSyncedSnapshotRef.current = `${unitCode}:${JSON.stringify(remoteWorkbook.data)}`;
       restoreWorkbookData(remoteWorkbook.data, unitCode);
       syncWorkbookBaseline(remoteWorkbook.data);
-      try {
-        localStorage.setItem(gridKey, JSON.stringify(remoteWorkbook.data));
-        localStorage.setItem(revKey, String(remoteWorkbook.revision));
-      } catch { /* ignore */ }
+      persistUnitGridCache(ucUpper, remoteWorkbook.data, remoteWorkbook.revision);
       setDirtySheets(new Set());
       setStaleClientDetected(false);
     }
@@ -239,6 +237,7 @@ export function ExcelWorkbookViewer({ initialUnitCode = 'TCNS', requestedUnitCod
       )}
 
       <ExcelTableRenderer
+        key={`${unitCode.toUpperCase()}-${activeSheet}`}
         meta={activeMeta} rows={activeRows} dynamicOptionsMap={dynamicOptionsMap} lastSaved={lastSaved} lastSavedSheet={lastSavedSheet}
         isC1Unlocked={effectiveC1Unlocked} isReadOnly={isReadOnlyViewer} touchedCells={touchedCells}
         cellErrors={a1Flow.cellErrors}

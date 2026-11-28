@@ -10,19 +10,8 @@ export function recalculateGridFormulas(
   const next = { ...prev };
 
   // 0. Khi A1 hoặc C1 bị xóa trống hoàn toàn, tự động xóa sạch dữ liệu phụ thuộc (giữ nguyên toàn bộ công thức)
-  if ((next.A1 || []).length === 0) {
-    next.A2 = [];
-    next.B1 = [];
-    next.B2_CT = [];
-    next.B2 = [];
-  }
-  if ((next.C1 || []).length === 0) {
-    next.C2 = [];
-    next.C3 = [];
-    next.D1 = [];
-    next.DU_BAO = [];
-    next.D2 = [];
-  }
+  if ((next.A1 || []).length === 0) { next.A2 = []; next.B1 = []; next.B2_CT = []; next.B2 = []; }
+  if ((next.C1 || []).length === 0) { next.C2 = []; next.C3 = []; next.D1 = []; next.DU_BAO = []; next.D2 = []; }
 
   // 1. Sync tasks from A2 to B1 & B2 if missing, and sync maVtvl
   // Hỗ trợ nhiều cán bộ cùng kê khai một mã công việc (phân biệt theo sourceTicketId / id dòng)
@@ -288,6 +277,18 @@ export function recalculateGridFormulas(
     trangThai: totalErrors === 0 ? 'Đạt 6/6 chỉ tiêu kiểm tra' : `Phát hiện ${totalErrors} chỉ tiêu cần điều chỉnh`
   }];
 
+  const dedupeIds = (rows: GenericGridRow[], prefix: string): GenericGridRow[] => {
+    const seen = new Set<string>();
+    return rows.map((r, i) => {
+      const base = String(r.id || `${prefix}-${i + 1}`);
+      if (!seen.has(base)) { seen.add(base); return r; }
+      let n = 2; while (seen.has(`${base}-d${n}`)) n += 1;
+      const uid = `${base}-d${n}`; seen.add(uid);
+      return { ...r, id: uid };
+    });
+  };
+  next.B1 = dedupeIds(next.B1 || [], 'b1'); next.C3 = dedupeIds(next.C3 || [], 'c3');
+  next.DU_BAO = dedupeIds(next.DU_BAO || [], 'dubao'); next.D2 = dedupeIds(next.D2 || [], 'd2');
   return next;
 }
 

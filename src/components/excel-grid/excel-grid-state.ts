@@ -13,6 +13,7 @@ import { HCMUTE_UNITS, findHcmuteUnit } from '@/configs/hcmute-units';
 import { exportUserWorkbookToExcel } from '@/services/excel-export/user-workbook-exporter';
 import { UnitGroupKind } from '@/types/vtvl';
 import { useC1AdminLock } from './useC1AdminLock';
+import { safeSetUnitGridOnly } from './workbook-sync-queue';
 
 function getInitialUnitCode(fallback: string): string {
   if (typeof window === 'undefined') return fallback;
@@ -36,7 +37,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     const code = hasExplicitUnit ? findHcmuteUnit(initialUnitCode).code : getInitialUnitCode(initialUnitCode);
     setUnitCode(code);
     try {
-      const stored = localStorage.getItem(`hcmute_vtvl_grid_${code}`);
+      const stored = localStorage.getItem(`hcmute_vtvl_grid_${code.toUpperCase()}`);
       if (stored) { setData(JSON.parse(stored)); return; }
     } catch { /* ignore */ }
     if (code !== initialUnitCode) setData(buildDefaultGridWorkbook(code));
@@ -52,7 +53,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     let fresh = buildDefaultGridWorkbook(newUnitCode);
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem(`hcmute_vtvl_grid_${newUnitCode}`);
+        const stored = localStorage.getItem(`hcmute_vtvl_grid_${newUnitCode.toUpperCase()}`);
         if (stored) fresh = JSON.parse(stored);
       } catch { /* ignore */ }
     }
@@ -85,7 +86,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     const tcnsData = buildDefaultGridWorkbook('TCNS');
     setData(tcnsData);
     setActiveSheet('A1');
-    if (typeof window !== 'undefined') localStorage.setItem('hcmute_vtvl_grid_TCNS', JSON.stringify(tcnsData));
+    safeSetUnitGridOnly('TCNS', tcnsData);
   }, [currentUnit.code]);
 
   const restoreWorkbookData = useCallback((restoredData: Record<ExcelSheetKey, GenericGridRow[]>, newUnitCode?: string, resetSheet = false) => {
@@ -234,7 +235,7 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
     });
     synced.S = [logEntry, ...(synced.S || []).slice(0, 49)];
     setData(synced);
-    if (typeof window !== 'undefined') localStorage.setItem(`hcmute_vtvl_grid_${currentUnit.code}`, JSON.stringify(synced));
+    safeSetUnitGridOnly(currentUnit.code, synced);
     setLastSaved(timeStr);
     setLastSavedSheet(sheetKey);
     return synced;

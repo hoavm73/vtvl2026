@@ -133,10 +133,49 @@ export function buildWorkbookAuthHeaders(
   return headers;
 }
 
+export function evictOtherUnitLocalCaches(keepUnitCode: string): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const keepUpper = keepUnitCode.trim().toUpperCase();
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (k.startsWith('hcmute_vtvl_grid_rev_')) {
+        if (k.slice('hcmute_vtvl_grid_rev_'.length).toUpperCase() !== keepUpper) localStorage.removeItem(k);
+      } else if (k.startsWith('hcmute_vtvl_grid_')) {
+        if (k.slice('hcmute_vtvl_grid_'.length).toUpperCase() !== keepUpper) localStorage.removeItem(k);
+      } else if (k.startsWith('hcmute_vtvl_session_data_') && !k.toUpperCase().endsWith(`::${keepUpper}`)) {
+        localStorage.removeItem(k);
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+export function safeSetUnitGridOnly(unitCode: string, data: unknown): boolean {
+  try {
+    if (typeof window === 'undefined') return false;
+    const uc = unitCode.trim().toUpperCase();
+    const serialized = JSON.stringify(data);
+    try {
+      localStorage.setItem(`hcmute_vtvl_grid_${uc}`, serialized);
+      return true;
+    } catch {
+      evictOtherUnitLocalCaches(uc);
+      localStorage.setItem(`hcmute_vtvl_grid_${uc}`, serialized);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
 export function persistUnitGridCache(unitCode: string, data: unknown, revision: number): void {
   try {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(`hcmute_vtvl_grid_${unitCode}`, JSON.stringify(data));
-    localStorage.setItem(`hcmute_vtvl_grid_rev_${unitCode}`, String(revision));
+    const uc = unitCode.trim().toUpperCase();
+    const ok = safeSetUnitGridOnly(uc, data);
+    if (ok) {
+      localStorage.setItem(`hcmute_vtvl_grid_rev_${uc}`, String(revision));
+    }
   } catch { /* ignore quota */ }
 }

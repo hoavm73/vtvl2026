@@ -208,7 +208,7 @@ export function ExcelTableRenderer({
               pagedRows.map((row, idxInPage) => {
                 const rIdx = startRowOffset + idxInPage;
                 return (
-                <tr key={row.id} className="odd:bg-white even:bg-[#fafcff] hover:bg-[#f0f7ff] transition-colors group">
+                <tr key={`${meta.key}-${row.id || 'row'}-${rIdx}`} className="odd:bg-white even:bg-[#fafcff] hover:bg-[#f0f7ff] transition-colors group">
                   <td className="w-10 py-1.5 px-2 text-center border-r border-[#f1f5f9] sticky left-0 z-2 bg-inherit">
                     <input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleSelectRow(row.id)} aria-label={`Chọn dòng ${rIdx + 1}`} className="rounded border-[#cbd5e1] text-[#004776] focus:ring-[#004776] cursor-pointer" />
                   </td>

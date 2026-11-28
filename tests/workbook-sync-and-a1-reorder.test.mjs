@@ -24,6 +24,10 @@ assert.ok(!viewerSrc.includes('|| localDiffers ||'), 'ExcelWorkbookViewer không
 const tableSrc = fs.readFileSync(path.join(root, 'src/components/excel-grid/ExcelTableRenderer.tsx'), 'utf8');
 assert.ok(!tableSrc.includes("handleSort('id')"), 'Cột STT không được sắp xếp theo chuỗi id ngẫu nhiên');
 assert.ok(tableSrc.includes('onRestoreRow(deletedRowBackup.row, deletedRowBackup.index)'), 'Hoàn tác xóa dòng phải khôi phục đúng bản ghi đã xóa thay vì thêm dòng trống');
+assert.ok(tableSrc.includes('key={`${meta.key}-${row.id'), 'React key của mỗi <tr> phải đảm bảo duy nhất chống lỗi dòng ma');
+assert.ok(viewerSrc.includes('key={`${unitCode.toUpperCase()}-${activeSheet}`}'), 'ExcelTableRenderer phải có key theo unitCode-activeSheet để remount sạch DOM khi đổi đơn vị');
+const gridStateSrc = fs.readFileSync(path.join(root, 'src/components/excel-grid/excel-grid-state.ts'), 'utf8');
+assert.ok(!gridStateSrc.includes('localStorage.setItem('), 'excel-grid-state.ts không được gọi trực tiếp localStorage.setItem chưa bọc an toàn QuotaExceededError');
 console.log('  ✓ [PASS] Static regression guards (Save 1-call, Dirty status priority, Zero-overwrite, Undo restore, STT sort)');
 
 // 2. Runtime deep tests via tsx

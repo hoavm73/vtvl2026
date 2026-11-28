@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Briefcase, Trash2 } from 'lucide-react';
+import { Briefcase, KeyRound, Trash2 } from 'lucide-react';
 import { ShadcnSelect } from '@/components/ui/ShadcnSelect';
 import { Badge } from '@/components/ui/Badge';
 import { UserVtvlAssignment } from '@/types/staff-ticket';
@@ -30,6 +30,7 @@ interface AdminAccountRowProps {
     patch: { role?: UserRole; unitCode?: string; title?: string; status?: 'active' | 'suspended' }
   ) => void;
   onOpenAssignVtvl: (account: UserAccountRecord) => void;
+  onSetPassword?: (account: UserAccountRecord) => void;
   onDelete: (email: string) => void;
 }
 
@@ -42,6 +43,7 @@ export function AdminAccountRow({
   currentUserRole,
   onUpdate,
   onOpenAssignVtvl,
+  onSetPassword,
   onDelete
 }: AdminAccountRowProps) {
   const isLeader = currentUserRole === 'unit_leader';
@@ -141,15 +143,28 @@ export function AdminAccountRow({
         />
       </td>
       <td className="p-2.5 text-center">
-        <button
-          type="button"
-          disabled={cannotEdit || isUpdating}
-          onClick={() => onDelete(acc.email)}
-          title={isRootAdmin ? 'Không thể xóa tài khoản quản trị gốc' : cannotEdit ? 'Lãnh đạo đơn vị không thể xóa tài khoản Quản trị viên' : 'Xóa tài khoản'}
-          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        <div className="inline-flex items-center gap-1">
+          {!isLeader && onSetPassword && (
+            <button
+              type="button"
+              disabled={isRootAdmin || isUpdating}
+              onClick={() => onSetPassword(acc)}
+              title="Đặt mật khẩu đăng nhập (Admin)"
+              className="p-1.5 rounded-lg text-[#006cee] hover:bg-[#eff8ff] border border-[#bfdbfe] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={cannotEdit || isUpdating}
+            onClick={() => onDelete(acc.email)}
+            title={isRootAdmin ? 'Không thể xóa tài khoản quản trị gốc' : cannotEdit ? 'Lãnh đạo đơn vị không thể xóa tài khoản Quản trị viên' : 'Xóa tài khoản'}
+            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
   );

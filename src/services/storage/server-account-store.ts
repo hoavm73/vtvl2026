@@ -242,7 +242,7 @@ export async function upsertUserAccount(
 }
 
 export async function updateUserAccountRole(
-  email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status' | 'hasSelectedUnit'>>
+  email: string, role: UserRole, updates?: Partial<Pick<UserAccountRecord, 'unitCode' | 'title' | 'displayName' | 'status' | 'hasSelectedUnit' | 'passwordHash'>>
 ): Promise<UserAccountRecord | null> {
   const norm = normalizeEmail(email);
   return !isValidRole(role) || !norm ? null : await upsertUserAccount({ email: norm, role, hasSelectedUnit: true, ...updates }, true);

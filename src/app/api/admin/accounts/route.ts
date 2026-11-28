@@ -9,6 +9,7 @@ import {
   UserRole
 } from '@/services/storage/server-account-store';
 import { getCallerSession } from '@/services/storage/server-auth-guard';
+import { hashAccountPassword, stripAccountSensitiveFields } from '@/services/storage/account-crypto';
 import { appendAuditLog, persistAuditLogToSupabase } from '@/services/storage/server-audit-store';
 import { normalizeEmail } from '@/services/storage/server-workbook-store';
 
@@ -74,6 +75,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const rawPassword = typeof body.password === 'string' ? body.password.trim() : '';
+    if (rawPassword && !caller.isAdmin) {
+      return NextResponse.json({ error: 'Chỉ Quản trị viên (Admin) mới được phép đặt mật khẩu cho tài khoản.', code: 'FORBIDDEN_PASSWORD_ADMIN_ONLY' }, { status: 403 });
+    }
+    if (rawPassword && rawPassword.length < 8) {
+      return NextResponse.json({ error: 'Mật khẩu phải có tối thiểu 8 ký tự.', code: 'INVALID_PASSWORD' }, { status: 400 });
+    }
+
     const assignedUnit = caller.isAdmin ? (body.unitCode || existing?.unitCode || 'TCNS') : caller.unitCode;
     const assignedRole = caller.isAdmin ? (body.role as UserRole || 'staff') : (body.role === 'unit_leader' ? 'unit_leader' : 'staff');
 
@@ -86,7 +95,8 @@ export async function POST(req: NextRequest) {
         role: assignedRole,
         authProvider: body.authProvider === 'google' ? 'google' : 'email',
         status: body.status === 'suspended' ? 'suspended' : 'active',
-        hasSelectedUnit: true
+        hasSelectedUnit: true,
+        ...(rawPassword ? { passwordHash: hashAccountPassword(rawPassword) } : {})
       },
       true
     );
@@ -97,7 +107,7 @@ export async function POST(req: NextRequest) {
       action: 'THAY_ĐỔI_TÀI_KHOẢN',
       targetId: account.email,
       targetEntity: 'user_accounts',
-      details: `Tạo/cập nhật tài khoản ${account.email} (${account.displayName}) - Vai trò: ${account.role}`,
+      details: `Tạo/cập nhật tài khoản ${account.email} (${account.displayName}) - Vai trò: ${account.role}${rawPassword ? ' (đã cấp mật khẩu)' : ''}`,
       actorEmail: caller.email,
       actorRole: caller.role,
       oldValues: existing ? { role: existing.role, unitCode: existing.unitCode, status: existing.status } : null,
@@ -105,7 +115,7 @@ export async function POST(req: NextRequest) {
     });
     await persistAuditLogToSupabase(audit);
 
-    return NextResponse.json({ account });
+    return NextResponse.json({ account: stripAccountSensitiveFields(account) });
   } catch (err: unknown) {
     const errorObj = err as { code?: string; status?: number };
     if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {
@@ -152,6 +162,14 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    const rawPassword = typeof body.password === 'string' ? body.password.trim() : '';
+    if (rawPassword && !caller.isAdmin) {
+      return NextResponse.json({ error: 'Chỉ Quản trị viên (Admin) mới được phép đặt lại mật khẩu.', code: 'FORBIDDEN_PASSWORD_ADMIN_ONLY' }, { status: 403 });
+    }
+    if (rawPassword && rawPassword.length < 8) {
+      return NextResponse.json({ error: 'Mật khẩu phải có tối thiểu 8 ký tự.', code: 'INVALID_PASSWORD' }, { status: 400 });
+    }
+
     const assignedRole = caller.isAdmin ? (role || existing.role) : (role === 'unit_leader' ? 'unit_leader' : 'staff');
     const assignedUnit = caller.isAdmin ? (body.unitCode || existing.unitCode) : caller.unitCode;
 
@@ -160,7 +178,8 @@ export async function PATCH(req: NextRequest) {
       title: body.title,
       displayName: body.displayName,
       status: body.status,
-      hasSelectedUnit: true
+      hasSelectedUnit: true,
+      ...(rawPassword ? { passwordHash: hashAccountPassword(rawPassword) } : {})
     });
 
     if (!updated) return NextResponse.json({ error: 'Cập nhật phân quyền không thành công.' }, { status: 400 });
@@ -168,10 +187,12 @@ export async function PATCH(req: NextRequest) {
     const audit = appendAuditLog({
       unitCode: updated.unitCode,
       unitName: updated.unitNameVi,
-      action: 'THAY_ĐỔI_TÀI_KHOẢN',
+      action: rawPassword ? 'ĐẶT_MẬT_KHẨU_TÀI_KHOẢN' : 'THAY_ĐỔI_TÀI_KHOẢN',
       targetId: updated.email,
       targetEntity: 'user_accounts',
-      details: `Cập nhật phân quyền tài khoản ${updated.email} - Vai trò: ${updated.role}`,
+      details: rawPassword
+        ? `Quản trị viên đặt mật khẩu đăng nhập cho tài khoản ${updated.email}`
+        : `Cập nhật phân quyền tài khoản ${updated.email} - Vai trò: ${updated.role}`,
       actorEmail: caller.email,
       actorRole: caller.role,
       oldValues: { role: existing.role, unitCode: existing.unitCode, status: existing.status },
@@ -179,7 +200,7 @@ export async function PATCH(req: NextRequest) {
     });
     await persistAuditLogToSupabase(audit);
 
-    return NextResponse.json({ account: updated });
+    return NextResponse.json({ account: stripAccountSensitiveFields(updated) });
   } catch (err: unknown) {
     const errorObj = err as { code?: string; status?: number };
     if (errorObj?.code === 'SUPABASE_NOT_CONFIGURED' || errorObj?.status === 503) {

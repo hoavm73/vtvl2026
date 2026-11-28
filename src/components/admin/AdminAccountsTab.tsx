@@ -117,6 +117,34 @@ export function AdminAccountsTab() {
     setFeedback(`Đã cập nhật tài khoản ${res.account.email}: ${getRoleLabel(res.account.role)} · ${res.account.status === 'suspended' ? 'Tạm khóa' : 'Đang hoạt động'}.`);
   };
 
+  const handleSetPassword = async (target: UserAccountRecord) => {
+    const newPassword = window.prompt(`Nhập mật khẩu mới cho tài khoản ${target.email} (tối thiểu 8 ký tự):`);
+    if (newPassword === null) return;
+    if (newPassword.trim().length < 8) {
+      setError('Mật khẩu phải có tối thiểu 8 ký tự.');
+      return;
+    }
+    setUpdatingEmail(target.email); setFeedback(null); setError(null);
+    const cur = getCurrentOperatorSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (cur?.accessToken) headers.Authorization = `Bearer ${cur.accessToken}`;
+    if (cur?.email) headers['x-actor-email'] = cur.email;
+    try {
+      const res = await fetch('/api/admin/accounts', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ email: target.email, role: target.role, unitCode: target.unitCode, password: newPassword.trim() })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) setError(json.error || 'Không thể đặt mật khẩu.');
+      else setFeedback(`Đã đặt mật khẩu đăng nhập cho tài khoản ${target.email}.`);
+    } catch {
+      setError('Lỗi kết nối khi đặt mật khẩu.');
+    } finally {
+      setUpdatingEmail(null);
+    }
+  };
+
   const handleDeleteAccount = async (email: string) => {
     if (!confirm(`Bạn có chắc muốn xóa tài khoản ${email} khỏi danh sách phân quyền?`)) return;
     const cur = getCurrentOperatorSession();
@@ -211,7 +239,7 @@ export function AdminAccountsTab() {
                     </span>
                   </th>
                   <th className="p-3 font-bold border-r border-[#e2e8f0] min-w-[140px]">Trạng thái</th>
-                  <th className="p-3 font-bold text-center w-16">Xóa</th>
+                  <th className="p-3 font-bold text-center w-24">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,6 +254,7 @@ export function AdminAccountsTab() {
                     currentUserRole={getCurrentOperatorSession()?.role}
                     onUpdate={handleUpdateAccount}
                     onOpenAssignVtvl={setAssigningAccount}
+                    onSetPassword={handleSetPassword}
                     onDelete={handleDeleteAccount}
                   />
                 ))}

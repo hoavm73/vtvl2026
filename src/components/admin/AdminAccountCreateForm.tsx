@@ -26,6 +26,7 @@ export function AdminAccountCreateForm({
   const initialUnit = isLeader && currentUserUnit ? currentUserUnit : 'CNTT';
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
   const [unitCode, setUnitCode] = useState(initialUnit);
   const [role, setRole] = useState<UserRole>('staff');
   const [creating, setCreating] = useState(false);
@@ -37,6 +38,10 @@ export function AdminAccountCreateForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    if (!isLeader && password.trim() && password.trim().length < 8) {
+      onError('Mật khẩu phải có tối thiểu 8 ký tự.');
+      return;
+    }
     setCreating(true);
     try {
       const cur = getCurrentOperatorSession();
@@ -53,16 +58,19 @@ export function AdminAccountCreateForm({
           displayName: displayName.trim() || undefined,
           unitCode: targetUnit,
           title: getRoleLabel(role),
-          role
+          role,
+          ...(!isLeader && password.trim() ? { password: password.trim() } : {})
         })
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         onError(json.error || 'Không thể thêm tài khoản.');
       } else {
+        const hasPwd = Boolean(!isLeader && password.trim());
         setEmail('');
         setDisplayName('');
-        onCreated(`Đã lưu tài khoản ${json.account.email} với vai trò ${getRoleLabel(json.account.role)}.`);
+        setPassword('');
+        onCreated(`Đã lưu tài khoản ${json.account.email} (${getRoleLabel(json.account.role)})${hasPwd ? ' kèm mật khẩu đăng nhập.' : '.'}`);
       }
     } catch {
       onError('Lỗi kết nối khi lưu tài khoản mới.');
@@ -83,13 +91,13 @@ export function AdminAccountCreateForm({
         <h2 className="text-sm font-bold text-[#0072BC]">Cấp tài khoản và phân quyền nhanh</h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isLeader ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-3`}>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email công vụ @hcmute.edu.vn"
+          placeholder="Email (@hcmute.edu.vn hoặc @gmail.com)"
           className="h-10 px-3 text-xs bg-white border border-[#cbd5e1] rounded-lg text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
         />
         <input
@@ -99,6 +107,16 @@ export function AdminAccountCreateForm({
           placeholder="Họ và tên cán bộ"
           className="h-10 px-3 text-xs bg-white border border-[#cbd5e1] rounded-lg text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
         />
+        {!isLeader && (
+          <input
+            type="text"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mật khẩu (tùy chọn, ≥ 8 ký tự)"
+            autoComplete="new-password"
+            className="h-10 px-3 text-xs bg-white border border-[#cbd5e1] rounded-lg text-[#004776] font-medium focus:ring-2 focus:ring-[#004776]/25 focus:outline-none"
+          />
+        )}
         <ShadcnSelect
           value={isLeader && currentUserUnit ? currentUserUnit : unitCode}
           onValueChange={setUnitCode}

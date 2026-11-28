@@ -67,7 +67,7 @@ export function MobileWorkspaceHeader(props: MobileWorkspaceHeaderProps) {
   const activeMeta = EXCEL_SHEET_METAS[props.activeSheet];
   const fixCount = props.qualityReport.summary.fixCount;
   const rawOrder = props.orderMode === 'technical' ? WORKFLOW_SHEET_ORDER : EXCEL_NATURAL_SHEET_ORDER;
-  const sheetOrder = isAdmin ? rawOrder : rawOrder.filter((k) => !ADMIN_ONLY_SHEETS.has(k));
+  const sheetOrder = rawOrder.filter((k) => !ADMIN_ONLY_SHEETS.has(k));
   const filteredUnits = units.filter((u) => u.nameVi.toLowerCase().includes(unitSearch.toLowerCase()) || u.code.toLowerCase().includes(unitSearch.toLowerCase()));
 
   const statusMeta = props.syncStatus === 'saving'

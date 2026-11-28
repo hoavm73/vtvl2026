@@ -242,10 +242,10 @@ export function useExcelGridState(initialUnitCode = 'TCNS', isAdmin = false, ini
 
   const currentSheetOrder = useMemo(() => {
     const rawOrder = orderMode === 'technical' ? TECHNICAL_DEPENDENCY_ORDER : EXCEL_NATURAL_SHEET_ORDER;
-    return isAdmin ? rawOrder : rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
-  }, [orderMode, isAdmin]);
+    return rawOrder.filter((key) => !ADMIN_ONLY_SHEETS.has(key));
+  }, [orderMode]);
 
-  useEffect(() => { if (!isAdmin && ADMIN_ONLY_SHEETS.has(activeSheet)) setActiveSheet('A1'); }, [isAdmin, activeSheet]);
+  useEffect(() => { if (ADMIN_ONLY_SHEETS.has(activeSheet)) setActiveSheet('A1'); }, [activeSheet]);
 
   const activeSheetIndex = currentSheetOrder.indexOf(activeSheet);
   const goToNextSheet = useCallback(() => { if (activeSheetIndex < currentSheetOrder.length - 1) setActiveSheet(currentSheetOrder[activeSheetIndex + 1]); }, [activeSheetIndex, currentSheetOrder]);
